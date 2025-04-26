@@ -1,0 +1,121 @@
+{
+    "paddingNum": 2,
+    "partOrder": [
+        "Base",
+        "Type",
+        "Side",
+        "FrontBack",
+        "RealName",
+        "Index",
+        "Nub"
+    ],
+    "nameParts": [
+        {
+            "name": "Base",
+            "predefinedValues": [
+                "b",
+                "Bip001"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "SkinBone",
+                "Biped"
+            ],
+            "isDirection": false
+        },
+        {
+            "name": "Type",
+            "predefinedValues": [
+                "P",
+                "Dum",
+                "Exp",
+                "IK",
+                "T"
+            ],
+            "weights": [
+                5,
+                10,
+                15,
+                20,
+                25
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Parent",
+                "Dummy",
+                "ExposeTM",
+                "IK",
+                "Target"
+            ],
+            "isDirection": false
+        },
+        {
+            "name": "Side",
+            "predefinedValues": [
+                "L",
+                "R"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Left",
+                "Right"
+            ],
+            "isDirection": true
+        },
+        {
+            "name": "FrontBack",
+            "predefinedValues": [
+                "F",
+                "B"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Front",
+                "Back"
+            ],
+            "isDirection": true
+        },
+        {
+            "name": "RealName",
+            "predefinedValues": [],
+            "weights": [],
+            "type": "REALNAME",
+            "descriptions": [],
+            "isDirection": false
+        },
+        {
+            "name": "Index",
+            "predefinedValues": [],
+            "weights": [],
+            "type": "INDEX",
+            "descriptions": [],
+            "isDirection": false
+        },
+        {
+            "name": "Nub",
+            "predefinedValues": [
+                "Nub"
+            ],
+            "weights": [
+                5
+            ],
+            "type": "SUFFIX",
+            "descriptions": [
+                "Nub"
+            ],
+            "isDirection": false
+        }
+    ]
+}
