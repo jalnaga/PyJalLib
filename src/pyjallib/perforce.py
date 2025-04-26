@@ -10,7 +10,7 @@ class Perforce:
     Perforce 서버와의 연결을 제어하는 기능을 제공합니다.
     """
     
-    def __init__(self, server=None, user=None, workspace=None):
+    def __init__(self, server, user, workspace=None):
         """
         Perforce 클래스의 인스턴스를 초기화합니다.
         
@@ -19,8 +19,8 @@ class Perforce:
             user (str, optional): Perforce 사용자 이름. 기본값은 환경 변수 P4USER 또는 "Dev"
             workspace (str, optional): Perforce 워크스페이스 이름. 기본값은 환경 변수 P4CLIENT
         """
-        self.server = server if server else os.environ.get('P4PORT', "PC-BUILD:1666") # 환경 변수 우선 사용
-        self.user = user if user else os.environ.get('P4USER', "Dev") # 환경 변수 우선 사용
+        self.server = server
+        self.user = user
         self.workspace = workspace if workspace else os.environ.get('P4CLIENT')
         self.workspaceRoot = None
         self.localHostName = socket.gethostname()
