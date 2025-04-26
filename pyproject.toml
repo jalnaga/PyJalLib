@@ -1,7 +1,10 @@
 [project]
 name = "pyjallib"
 version = "0.1.0"
-description = "Add your description here"
+description = "A utility library for 3D game character development pipelines."
+authors = [
+    { name="Dongseok Kim", email="jalnagakds@gmail.com"}
+]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
