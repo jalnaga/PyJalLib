@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
+from pyjallib.max.header import Header
+
+jal = Header()
 
 def jal_collapse_const():
     if rt.selection.count > 0:
