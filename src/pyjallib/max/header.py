@@ -31,6 +31,15 @@ class Header:
     JalLib.max 패키지의 헤더 모듈
     3DS Max에서 사용하는 다양한 기능을 제공하는 클래스들을 초기화하고 관리합니다.
     """
+    _instance = None
+    
+    @classmethod
+    def get_instance(cls):
+        """싱글톤 패턴을 구현한 인스턴스 접근 메소드"""
+        if cls._instance is None:
+            cls._instance = Header()
+        return cls._instance
+    
     def __init__(self):
         """
         Header 클래스 초기화
@@ -55,3 +64,6 @@ class Header:
         self.skin = Skin()
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip)
+
+# 모듈 레벨에서 전역 인스턴스 생성
+jal = Header.get_instance()

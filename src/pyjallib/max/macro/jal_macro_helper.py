@@ -5,9 +5,7 @@ from pymxs import runtime as rt
 from PySide2 import QtWidgets, QtCore, QtGui
 import gc  # Import garbage collector
 
-from pyjallib.max.header import Header
-
-jal = Header()
+from pyjallib.max.header import jal  # 모듈에서 전역 인스턴스 가져오기
 
 class HelperTypeSelDialog(QtWidgets.QDialog):
     def __init__(self, parent=QtWidgets.QWidget.find(rt.windows.getMAXHWND())):
