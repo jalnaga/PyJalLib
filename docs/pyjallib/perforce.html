@@ -1,0 +1,1779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>pyjallib.perforce API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pyjallib.perforce</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pyjallib.perforce.Perforce"><code class="flex name class">
+<span>class <span class="ident">Perforce</span></span>
+<span>(</span><span>server, user, workspace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Perforce:
+    &#34;&#34;&#34;
+    Perforce 버전 관리 시스템과의 상호작용을 위한 클래스입니다.
+    
+    이 클래스는 Perforce 명령을 실행하고, 워크스페이스를 관리하며
+    Perforce 서버와의 연결을 제어하는 기능을 제공합니다.
+    &#34;&#34;&#34;
+    
+    def __init__(self, server, user, workspace=None):
+        &#34;&#34;&#34;
+        Perforce 클래스의 인스턴스를 초기화합니다.
+        
+        Parameters:
+            server (str, optional): Perforce 서버 주소. 기본값은 환경 변수 P4PORT 또는 &#34;PC-BUILD:1666&#34;
+            user (str, optional): Perforce 사용자 이름. 기본값은 환경 변수 P4USER 또는 &#34;Dev&#34;
+            workspace (str, optional): Perforce 워크스페이스 이름. 기본값은 환경 변수 P4CLIENT
+        &#34;&#34;&#34;
+        self.server = server
+        self.user = user
+        self.workspace = workspace if workspace else os.environ.get(&#39;P4CLIENT&#39;)
+        self.workspaceRoot = None
+        self.localHostName = socket.gethostname()
+        
+        os.environ[&#39;P4USER&#39;] = self.user
+        os.environ[&#39;P4PORT&#39;] = self.server
+        if self.workspace:
+            os.environ[&#39;P4CLIENT&#39;] = self.workspace
+        else:
+            # P4CLIENT가 None이면 환경 변수에서 제거 시도 (선택적)
+            if &#39;P4CLIENT&#39; in os.environ:
+                del os.environ[&#39;P4CLIENT&#39;]
+        
+        # 초기화 시 연결 확인
+        self._initialize_connection()
+        
+    def _initialize_connection(self):
+        &#34;&#34;&#34;
+        Perforce 서버와의 연결을 초기화합니다.
+        
+        서버 연결을 확인하고 워크스페이스 루트 경로를 설정합니다.
+        
+        Returns:
+            str: Perforce 서버 정보 문자열
+        
+        Raises:
+            Exception: Perforce 연결 초기화 실패 시 예외 처리
+        &#34;&#34;&#34;
+        result = None
+        try:
+            # 서버 연결 확인 (info 명령은 가볍고 빠르게 실행됨)
+            result = subprocess.run([&#39;p4&#39;, &#39;info&#39;], 
+                                   capture_output=True, 
+                                   text=True, 
+                                   encoding=&#34;utf-8&#34;)
+            
+            workSpaceRootPathResult = subprocess.run(
+                [&#39;p4&#39;, &#39;-F&#39;, &#39;%clientRoot%&#39;, &#39;-ztag&#39;, &#39;info&#39;],
+                capture_output=True, 
+                text=True, 
+                encoding=&#34;utf-8&#34;
+            ).stdout.strip()
+            self.workspaceRoot = os.path.normpath(workSpaceRootPathResult)
+            
+            if result.returncode != 0:
+                print(f&#34;Perforce 초기화 중 경고: {result.stderr}&#34;)
+        except Exception as e:
+            print(f&#34;Perforce 초기화 실패: {e}&#34;)
+        
+        return result.stdout.strip()
+        
+    def _run_command(self, inCommands):
+        &#34;&#34;&#34;
+        Perforce 명령을 실행하고 결과를 반환합니다.
+        
+        Parameters:
+            inCommands (list): 실행할 Perforce 명령어와 인수들의 리스트
+        
+        Returns:
+            str: 명령 실행 결과 문자열
+        &#34;&#34;&#34;
+        self._initialize_connection()
+        
+        commands = [&#39;p4&#39;] + inCommands
+        result = subprocess.run(commands, capture_output=True, text=True, encoding=&#34;utf-8&#34;)
+                
+        return result.stdout.strip()
+
+    def get_local_hostname(self):
+        &#34;&#34;&#34;
+        현재 로컬 머신의 호스트 이름을 반환합니다.
+        
+        Returns:
+            str: 로컬 머신의 호스트 이름
+        &#34;&#34;&#34;
+        # 현재 로컬 머신의 호스트 이름을 반환합니다.
+        return self.localHostName
+
+    def get_all_clients(self):
+        &#34;&#34;&#34;
+        모든 Perforce 클라이언트 워크스페이스의 이름 목록을 반환합니다.
+        
+        Returns:
+            list: 클라이언트 워크스페이스 이름 리스트
+        &#34;&#34;&#34;
+        # 모든 클라이언트 워크스페이스의 이름을 반환합니다.
+        result = self._run_command([&#39;clients&#39;])
+        clients = []
+        
+        if result is None:
+            return clients
+            
+        for line in result.splitlines():
+            if line.startswith(&#39;Client&#39;):
+                parts = line.split()
+                if len(parts) &gt;= 2:
+                    clients.append(parts[1])
+        return clients
+
+    def get_local_workspaces(self):
+        &#34;&#34;&#34;
+        현재 로컬 머신에 있는 워크스페이스 목록을 반환합니다.
+        
+        현재 호스트 이름으로 시작하는 모든 클라이언트를 찾습니다.
+        
+        Returns:
+            list: 로컬 머신의 워크스페이스 이름 리스트
+        &#34;&#34;&#34;
+        all_clients = self.get_all_clients()
+        local_clients = []
+
+        for client in all_clients:
+            if client.startswith(self.localHostName):
+                local_clients.append(client)
+
+        return local_clients
+    
+    def set_workspace(self, inWorkspace):
+        &#34;&#34;&#34;
+        주어진 워크스페이스로 현재 작업 환경을 전환합니다.
+        
+        Parameters:
+            inWorkspace (str): 전환할 워크스페이스 이름
+            
+        Returns:
+            str: 워크스페이스 정보 문자열
+            
+        Raises:
+            ValueError: 지정된 워크스페이스가 로컬 워크스페이스 목록에 없을 경우
+        &#34;&#34;&#34;
+        # 주어진 워크스페이스로 전환합니다.
+        localWorkSpaces = self.get_local_workspaces()
+        if inWorkspace not in localWorkSpaces:
+            print(f&#34;워크스페이스 &#39;{inWorkspace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+        
+        self.workspace = inWorkspace
+        os.environ[&#39;P4CLIENT&#39;] = self.workspace
+        
+        return True
+    
+    def sync(self, inWorkSpace=None, inPaths=None):
+        &#34;&#34;&#34;
+        Perforce 워크스페이스를 최신 버전으로 동기화합니다.
+        
+        Parameters:
+            inWorkSpace (str, optional): 동기화할 워크스페이스 이름
+            inPaths (str or list, optional): 동기화할 특정 경로 또는 경로 목록
+            
+        Returns:
+            bool: 동기화 성공 여부
+        &#34;&#34;&#34;
+        # 주어진 워크스페이스를 동기화합니다.
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+        
+        # 동기화 명령 실행
+        sync_command = [&#39;sync&#39;]
+        
+        if inPaths:
+            # 문자열로 단일 경로가 주어진 경우 리스트로 변환
+            if isinstance(inPaths, str):
+                inPaths = [inPaths]
+                
+            valid_paths = []
+            for path in inPaths:
+                if os.path.exists(path):
+                    valid_paths.append(path)
+                else:
+                    print(f&#34;경고: 지정된 경로 &#39;{path}&#39;가 로컬에 존재하지 않습니다.&#34;)
+            
+            if not valid_paths:
+                print(&#34;유효한 경로가 없어 동기화를 진행할 수 없습니다.&#34;)
+                return False
+                
+            # 유효한 경로들을 모두 동기화 명령에 추가
+            sync_command.extend(valid_paths)
+    
+        self._run_command(sync_command)
+        return True
+        
+    def get_changelists(self, inWorkSpace=None):
+        &#34;&#34;&#34;
+        특정 워크스페이스의 pending 상태 체인지 리스트를 가져옵니다.
+        
+        Parameters:
+            inWorkSpace (str, optional): 체인지 리스트를 가져올 워크스페이스 이름
+            
+        Returns:
+            list: 체인지 리스트 정보 딕셔너리의 리스트
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return []
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return []
+            
+        # 체인지 리스트 명령 실행
+        changes_command = [&#39;changes&#39;]
+        
+        # 항상 pending 상태만 가져오도록 설정
+        changes_command.extend([&#39;-s&#39;, &#39;pending&#39;])
+            
+        if self.workspace:
+            changes_command.extend([&#39;-c&#39;, self.workspace])
+            
+        result = self._run_command(changes_command)
+        changes = []
+        
+        for line in result.splitlines():
+            if line.startswith(&#39;Change&#39;):
+                parts = line.split()
+                if len(parts) &gt;= 5:
+                    change_id = parts[1]
+                    
+                    # 설명 부분 추출
+                    desc_start = line.find(&#34;&#39;&#34;)
+                    desc_end = line.rfind(&#34;&#39;&#34;)
+                    description = line[desc_start+1:desc_end] if desc_start != -1 and desc_end != -1 else &#34;&#34;
+                    
+                    changes.append({
+                        &#39;id&#39;: change_id,
+                        &#39;description&#39;: description
+                    })
+                    
+        return changes
+        
+    def create_new_changelist(self, inDescription=&#34;Created by pyjallib&#34;, inWorkSpace=None):
+        &#34;&#34;&#34;
+        새로운 체인지 리스트를 생성합니다.
+        
+        Parameters:
+            inDescription (str): 체인지 리스트 설명
+            inWorkSpace (str, optional): 체인지 리스트를 생성할 워크스페이스 이름
+            
+        Returns:
+            dict: 생성된 체인지 리스트 정보 {&#39;id&#39;: str, &#39;description&#39;: str} 또는 실패 시 None
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return None
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return None
+            
+        # 체인지 리스트 생성 명령 실행
+        change_command = [&#39;change&#39;, &#39;-o&#39;]
+        result = self._run_command(change_command)
+        
+        # 체인지 스펙 수정
+        modified_spec = []
+        for line in result.splitlines():
+            if line.startswith(&#39;Description:&#39;):
+                modified_spec.append(line)
+                # Add the new description, handling potential multi-line descriptions correctly
+                for desc_line in inDescription.splitlines():
+                    modified_spec.append(f&#34;\t{desc_line}&#34;)
+                # Skip the default empty tab line if present
+                # This assumes the default spec has an empty line after Description:
+                # If not, this logic might need adjustment based on actual &#39;p4 change -o&#39; output
+                # We&#39;ll rely on the loop structure to handle subsequent lines correctly.
+                continue # Move to the next line in the original spec
+            # Only append lines that are not part of the old description placeholder
+            # This logic assumes the default description is just a placeholder like &#39;&lt;enter description here&gt;&#39;
+            # or similar, often on a single line after &#39;Description:&#39;.
+            # A more robust approach might be needed if the default spec is complex.
+            if not (line.startswith(&#39;\t&#39;) and &#39;Description:&#39; in modified_spec[-1]):
+                 modified_spec.append(line)
+
+        # 수정된 체인지 스펙으로 체인지 리스트 생성
+        create_result = subprocess.run([&#39;p4&#39;, &#39;change&#39;, &#39;-i&#39;],
+                                     input=&#39;\n&#39;.join(modified_spec),
+                                     capture_output=True,
+                                     text=True,
+                                     encoding=&#34;utf-8&#34;)
+
+        # 결과에서 체인지 리스트 ID 추출
+        if create_result.returncode == 0 and create_result.stdout:
+            output = create_result.stdout.strip()
+            # 예: &#34;Change 12345 created.&#34;
+            if &#39;Change&#39; in output and &#39;created&#39; in output:
+                parts = output.split()
+                if len(parts) &gt;= 2:
+                    change_id = parts[1]
+                    return {&#39;id&#39;: change_id, &#39;description&#39;: inDescription} # Return dictionary
+
+        print(f&#34;Failed to create changelist. Error: {create_result.stderr}&#34;) # Log error if creation failed
+        return None
+
+    def checkout_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+        &#34;&#34;&#34;
+        지정한 파일들을 체크아웃하고 특정 체인지 리스트에 추가합니다.
+        
+        Parameters:
+            inFiles (list): 체크아웃할 파일 경로 리스트
+            inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+            
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+            
+        if not inFiles:
+            return False
+            
+        # 체크아웃 명령 실행
+        edit_command = [&#39;edit&#39;]
+        
+        target_changelist = inChangelist
+        if not target_changelist:
+            new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-checkout for {len(inFiles)} files&#34;)
+            if not new_changelist_info:
+                print(&#34;Failed to create a new changelist for checkout.&#34;)
+                return False
+            target_changelist = new_changelist_info[&#39;id&#39;]
+
+        edit_command.extend([&#39;-c&#39;, target_changelist])
+        edit_command.extend(inFiles)
+        
+        result = self._run_command(edit_command)
+        
+        if len(self.get_changelist_files(target_changelist)) == 0:
+            self.delete_changelist(target_changelist)
+        
+        return True
+        
+    def add_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+        &#34;&#34;&#34;
+        지정한 파일들을 Perforce에 추가합니다.
+        
+        Parameters:
+            inFiles (list): 추가할 파일 경로 리스트
+            inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+            
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+            
+        if not inFiles:
+            return False
+            
+        # 파일 추가 명령 실행
+        add_command = [&#39;add&#39;]
+        
+        target_changelist = inChangelist
+        if not target_changelist:
+            new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-add for {len(inFiles)} files&#34;)
+            if not new_changelist_info:
+                print(&#34;Failed to create a new changelist for add.&#34;)
+                return False
+            target_changelist = new_changelist_info[&#39;id&#39;]
+
+        add_command.extend([&#39;-c&#39;, target_changelist])
+        add_command.extend(inFiles)
+        
+        result = self._run_command(add_command)
+        
+        if len(self.get_changelist_files(target_changelist)) == 0:
+            self.delete_changelist(target_changelist)
+        
+        return True
+        
+    def delete_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+        &#34;&#34;&#34;
+        지정한 파일들을 Perforce에서 삭제합니다.
+
+        Parameters:
+            inFiles (list): 삭제할 파일 경로 리스트
+            inChangelist (str, optional): 파일 삭제를 추가할 체인지 리스트 ID
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+
+        if not inFiles:
+            return False
+
+        # 파일 삭제 명령 실행
+        delete_command = [&#39;delete&#39;]
+
+        target_changelist = inChangelist
+        if not target_changelist:
+            # If no changelist is specified, create a new one
+            new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-delete for {len(inFiles)} files&#34;)
+            if not new_changelist_info:
+                print(&#34;Failed to create a new changelist for delete.&#34;)
+                return False
+            target_changelist = new_changelist_info[&#39;id&#39;]
+
+        delete_command.extend([&#39;-c&#39;, target_changelist])
+        delete_command.extend(inFiles)
+
+        result = self._run_command(delete_command)
+        
+        if len(self.get_changelist_files(target_changelist)) == 0:
+            self.delete_changelist(target_changelist)
+            
+        return True
+
+    def revert_changelist(self, inChangelist, inWorkSpace=None):
+        &#34;&#34;&#34;
+        특정 체인지 리스트의 모든 변경 사항을 되돌립니다 (revert).
+
+        Parameters:
+            inChangelist (str): 되돌릴 체인지 리스트 ID
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+
+        if not inChangelist:
+            print(&#34;Error: Changelist ID must be provided for revert operation.&#34;)
+            return False
+
+        # Revert 명령 실행
+        revert_command = [&#39;revert&#39;, &#39;-c&#39;, inChangelist, &#39;//...&#39;] # Revert all files in the changelist
+
+        result = self._run_command(revert_command)
+        # p4 revert might not return an error code even if nothing was reverted.
+        # We&#39;ll assume success if the command ran. More robust checking might involve parsing &#39;result&#39;.
+        print(f&#34;Revert result for CL {inChangelist}:\n{result}&#34;)
+        self._run_command([&#39;change&#39;, &#39;-d&#39;, inChangelist])
+        return True
+
+    def submit_changelist(self, inChangelist, inDescription=None, inWorkSpace=None):
+        &#34;&#34;&#34;
+        특정 체인지 리스트를 서버에 제출합니다.
+
+        Parameters:
+            inChangelist (str): 제출할 체인지 리스트 ID
+            inDescription (str, optional): 제출 설명 (없으면 체인지 리스트의 기존 설명 사용)
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+
+        if not inChangelist:
+            return False
+
+        if inDescription:
+            # 체인지 리스트 스펙 가져오기
+            change_spec = self._run_command([&#39;change&#39;, &#39;-o&#39;, inChangelist])
+
+            # 설명 수정
+            modified_spec = []
+            description_lines_skipped = False
+            for line in change_spec.splitlines():
+                if line.startswith(&#39;Description:&#39;):
+                    modified_spec.append(line)
+                    # Add the new description, handling potential multi-line descriptions correctly
+                    for desc_line in inDescription.splitlines():
+                        modified_spec.append(f&#34;\t{desc_line}&#34;)
+                    description_lines_skipped = True # Start skipping old description lines
+                    continue
+
+                # Skip old description lines (indented lines after Description:)
+                if description_lines_skipped:
+                    if line.startswith(&#39;\t&#39;) or line.strip() == &#39;&#39;:
+                        continue # Skip indented lines or empty lines within the old description
+                    else:
+                        description_lines_skipped = False # Reached the next field
+
+                if not description_lines_skipped:
+                    modified_spec.append(line)
+            
+            print(modified_spec)
+
+            # 수정된 스펙 적용
+            spec_update = subprocess.run([&#39;p4&#39;, &#39;change&#39;, &#39;-i&#39;],
+                                       input=&#39;\n&#39;.join(modified_spec),
+                                       capture_output=True,
+                                       text=True,
+                                       encoding=&#34;utf-8&#34;)
+
+            if spec_update.returncode != 0:
+                print(f&#34;Error updating changelist spec for {inChangelist}: {spec_update.stderr}&#34;)
+                return False
+
+        self._run_command([&#39;submit&#39;, &#39;-c&#39;, inChangelist])
+        self.delete_empty_changelists()
+        return True
+
+    def get_changelist_files(self, inChangelist, inWorkSpace=None):
+        &#34;&#34;&#34;
+        체인지 리스트에 포함된 파일 목록을 가져옵니다.
+        
+        Parameters:
+            inChangelist (str): 체인지 리스트 ID
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+            
+        Returns:
+            list: 파일 정보 딕셔너리의 리스트
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return []
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return []
+            
+        opened_result = self._run_command([&#39;opened&#39;, &#39;-c&#39;, inChangelist])
+        files = []
+        
+        for line in opened_result.splitlines():
+            if &#39;#&#39; in line:
+                file_path = line.split(&#39;#&#39;)[0].strip()
+                action = line.split(&#39;for &#39;)[1].split(&#39; &#39;)[0] if &#39;for &#39; in line else &#39;&#39;
+                
+                files.append(file_path)
+                
+        return files
+    
+    def delete_changelist(self, inChangelist, inWorkSpace=None):
+        &#34;&#34;&#34;
+        빈 체인지 리스트를 삭제합니다.
+        
+        Parameters:
+            inChangelist (str): 삭제할 체인지 리스트 ID
+            inWorkspace (str, optional): 작업할 워크스페이스 이름
+            
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+            
+        if not inChangelist:
+            print(&#34;Error: Changelist ID must be provided for delete operation.&#34;)
+            return False
+        
+        # 체인지 리스트의 파일 목록을 확인합니다
+        files = self.get_changelist_files(inChangelist)
+        if files:
+            print(f&#34;Error: Changelist {inChangelist} is not empty. It contains {len(files)} files.&#34;)
+            return False
+            
+        # 빈 체인지 리스트를 삭제합니다
+        delete_result = self._run_command([&#39;change&#39;, &#39;-d&#39;, inChangelist])
+        
+        if &#39;deleted&#39; in delete_result:
+            return True
+        else:
+            return False
+
+    def delete_empty_changelists(self, inWorkSpace=None):
+        &#34;&#34;&#34;
+        빈 체인지 리스트를 삭제합니다.
+        
+        Parameters:
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+            
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+        
+        # 모든 체인지 리스트 가져오기
+        changes = self.get_changelists()
+        
+        for change in changes:
+            if len(self.get_changelist_files(change[&#39;id&#39;])) == 0:
+                self.delete_changelist(change[&#39;id&#39;])
+        
+        return True
+
+    def upload_files(self, inFiles, inDescription=None, inWorkSpace=None):
+        &#34;&#34;&#34;
+        지정한 파일들을 Perforce에 Submit 합니다.
+        
+        만약 파일들이 Depot에 존재하지 않으면 Add, 존재하면 Chekcout을 수행합니다.
+        
+        Parameters:
+            inFiles (list): 업로드할 파일 경로 리스트
+            inWorkSpace (str, optional): 작업할 워크스페이스 이름
+        
+        Returns:
+            bool: 성공 여부
+        &#34;&#34;&#34;
+        if inWorkSpace == None:
+            if self.workspace == None:
+                print(f&#34;워크스페이스가 없습니다.&#34;)
+                return False
+        else:
+            if not self.set_workspace(inWorkSpace):
+                print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+                return False
+        
+        if not inFiles:
+            print(&#34;업로드할 파일이 지정되지 않았습니다.&#34;)
+            return False
+        
+        # 문자열로 단일 경로가 주어진 경우 리스트로 변환
+        if isinstance(inFiles, str):
+            inFiles = [inFiles]
+            
+        # 새 체인지리스트 생성
+        description = inDescription if inDescription else f&#34;Auto-upload for {len(inFiles)} files&#34;
+        new_changelist_info = self.create_new_changelist(inDescription=description)
+        if not new_changelist_info:
+            print(&#34;Failed to create a new changelist for file upload.&#34;)
+            return False
+            
+        target_changelist = new_changelist_info[&#39;id&#39;]
+        
+        # 파일들이 이미 디포에 있는지 확인
+        files_to_add = []
+        files_to_edit = []
+        
+        for file_path in inFiles:
+            # 파일 상태 확인 (디포에 있는지 여부)
+            fstat_result = self._run_command([&#39;fstat&#39;, file_path])
+            
+            if &#39;no such file&#39; in fstat_result.lower() or not fstat_result:
+                # 디포에 없는 파일 - 추가 대상
+                files_to_add.append(file_path)
+            else:
+                # 디포에 있는 파일 - 체크아웃 대상
+                files_to_edit.append(file_path)
+        
+        # 파일 추가 (있는 경우)
+        if files_to_add:
+            add_command = [&#39;add&#39;, &#39;-c&#39;, target_changelist]
+            add_command.extend(files_to_add)
+            self._run_command(add_command)
+        
+        # 파일 체크아웃 (있는 경우)
+        if files_to_edit:
+            edit_command = [&#39;edit&#39;, &#39;-c&#39;, target_changelist]
+            edit_command.extend(files_to_edit)
+            self._run_command(edit_command)
+        
+        # 체인지리스트에 파일이 제대로 추가되었는지 확인
+        files_in_changelist = self.get_changelist_files(target_changelist)
+        
+        if not files_in_changelist:
+            # 파일 추가에 실패한 경우 빈 체인지리스트 삭제
+            self.delete_changelist(target_changelist)
+            print(&#34;파일을 체인지리스트에 추가하는 데 실패했습니다.&#34;)
+            return False
+            
+        print(f&#34;파일 {len(files_in_changelist)}개가 체인지리스트 {target_changelist}에 추가되었습니다.&#34;)
+        return True</code></pre>
+</details>
+<div class="desc"><p>Perforce 버전 관리 시스템과의 상호작용을 위한 클래스입니다.</p>
+<p>이 클래스는 Perforce 명령을 실행하고, 워크스페이스를 관리하며
+Perforce 서버와의 연결을 제어하는 기능을 제공합니다.</p>
+<p>Perforce 클래스의 인스턴스를 초기화합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>server (str, optional): Perforce 서버 주소. 기본값은 환경 변수 P4PORT 또는 "PC-BUILD:1666"
+user (str, optional): Perforce 사용자 이름. 기본값은 환경 변수 P4USER 또는 "Dev"
+workspace (str, optional): Perforce 워크스페이스 이름. 기본값은 환경 변수 P4CLIENT</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="pyjallib.perforce.Perforce.add_files"><code class="name flex">
+<span>def <span class="ident">add_files</span></span>(<span>self, inFiles, inChangelist=None, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+    &#34;&#34;&#34;
+    지정한 파일들을 Perforce에 추가합니다.
+    
+    Parameters:
+        inFiles (list): 추가할 파일 경로 리스트
+        inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+        
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+        
+    if not inFiles:
+        return False
+        
+    # 파일 추가 명령 실행
+    add_command = [&#39;add&#39;]
+    
+    target_changelist = inChangelist
+    if not target_changelist:
+        new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-add for {len(inFiles)} files&#34;)
+        if not new_changelist_info:
+            print(&#34;Failed to create a new changelist for add.&#34;)
+            return False
+        target_changelist = new_changelist_info[&#39;id&#39;]
+
+    add_command.extend([&#39;-c&#39;, target_changelist])
+    add_command.extend(inFiles)
+    
+    result = self._run_command(add_command)
+    
+    if len(self.get_changelist_files(target_changelist)) == 0:
+        self.delete_changelist(target_changelist)
+    
+    return True</code></pre>
+</details>
+<div class="desc"><p>지정한 파일들을 Perforce에 추가합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inFiles (list): 추가할 파일 경로 리스트
+inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.checkout_files"><code class="name flex">
+<span>def <span class="ident">checkout_files</span></span>(<span>self, inFiles, inChangelist=None, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def checkout_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+    &#34;&#34;&#34;
+    지정한 파일들을 체크아웃하고 특정 체인지 리스트에 추가합니다.
+    
+    Parameters:
+        inFiles (list): 체크아웃할 파일 경로 리스트
+        inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+        
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+        
+    if not inFiles:
+        return False
+        
+    # 체크아웃 명령 실행
+    edit_command = [&#39;edit&#39;]
+    
+    target_changelist = inChangelist
+    if not target_changelist:
+        new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-checkout for {len(inFiles)} files&#34;)
+        if not new_changelist_info:
+            print(&#34;Failed to create a new changelist for checkout.&#34;)
+            return False
+        target_changelist = new_changelist_info[&#39;id&#39;]
+
+    edit_command.extend([&#39;-c&#39;, target_changelist])
+    edit_command.extend(inFiles)
+    
+    result = self._run_command(edit_command)
+    
+    if len(self.get_changelist_files(target_changelist)) == 0:
+        self.delete_changelist(target_changelist)
+    
+    return True</code></pre>
+</details>
+<div class="desc"><p>지정한 파일들을 체크아웃하고 특정 체인지 리스트에 추가합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inFiles (list): 체크아웃할 파일 경로 리스트
+inChangelist (str, optional): 파일을 추가할 체인지 리스트 ID
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.create_new_changelist"><code class="name flex">
+<span>def <span class="ident">create_new_changelist</span></span>(<span>self, inDescription='Created by pyjallib', inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_new_changelist(self, inDescription=&#34;Created by pyjallib&#34;, inWorkSpace=None):
+    &#34;&#34;&#34;
+    새로운 체인지 리스트를 생성합니다.
+    
+    Parameters:
+        inDescription (str): 체인지 리스트 설명
+        inWorkSpace (str, optional): 체인지 리스트를 생성할 워크스페이스 이름
+        
+    Returns:
+        dict: 생성된 체인지 리스트 정보 {&#39;id&#39;: str, &#39;description&#39;: str} 또는 실패 시 None
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return None
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return None
+        
+    # 체인지 리스트 생성 명령 실행
+    change_command = [&#39;change&#39;, &#39;-o&#39;]
+    result = self._run_command(change_command)
+    
+    # 체인지 스펙 수정
+    modified_spec = []
+    for line in result.splitlines():
+        if line.startswith(&#39;Description:&#39;):
+            modified_spec.append(line)
+            # Add the new description, handling potential multi-line descriptions correctly
+            for desc_line in inDescription.splitlines():
+                modified_spec.append(f&#34;\t{desc_line}&#34;)
+            # Skip the default empty tab line if present
+            # This assumes the default spec has an empty line after Description:
+            # If not, this logic might need adjustment based on actual &#39;p4 change -o&#39; output
+            # We&#39;ll rely on the loop structure to handle subsequent lines correctly.
+            continue # Move to the next line in the original spec
+        # Only append lines that are not part of the old description placeholder
+        # This logic assumes the default description is just a placeholder like &#39;&lt;enter description here&gt;&#39;
+        # or similar, often on a single line after &#39;Description:&#39;.
+        # A more robust approach might be needed if the default spec is complex.
+        if not (line.startswith(&#39;\t&#39;) and &#39;Description:&#39; in modified_spec[-1]):
+             modified_spec.append(line)
+
+    # 수정된 체인지 스펙으로 체인지 리스트 생성
+    create_result = subprocess.run([&#39;p4&#39;, &#39;change&#39;, &#39;-i&#39;],
+                                 input=&#39;\n&#39;.join(modified_spec),
+                                 capture_output=True,
+                                 text=True,
+                                 encoding=&#34;utf-8&#34;)
+
+    # 결과에서 체인지 리스트 ID 추출
+    if create_result.returncode == 0 and create_result.stdout:
+        output = create_result.stdout.strip()
+        # 예: &#34;Change 12345 created.&#34;
+        if &#39;Change&#39; in output and &#39;created&#39; in output:
+            parts = output.split()
+            if len(parts) &gt;= 2:
+                change_id = parts[1]
+                return {&#39;id&#39;: change_id, &#39;description&#39;: inDescription} # Return dictionary
+
+    print(f&#34;Failed to create changelist. Error: {create_result.stderr}&#34;) # Log error if creation failed
+    return None</code></pre>
+</details>
+<div class="desc"><p>새로운 체인지 리스트를 생성합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inDescription (str): 체인지 리스트 설명
+inWorkSpace (str, optional): 체인지 리스트를 생성할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>생성된 체인지 리스트 정보 {'id': str, 'description': str} 또는 실패 시 None</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.delete_changelist"><code class="name flex">
+<span>def <span class="ident">delete_changelist</span></span>(<span>self, inChangelist, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_changelist(self, inChangelist, inWorkSpace=None):
+    &#34;&#34;&#34;
+    빈 체인지 리스트를 삭제합니다.
+    
+    Parameters:
+        inChangelist (str): 삭제할 체인지 리스트 ID
+        inWorkspace (str, optional): 작업할 워크스페이스 이름
+        
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+        
+    if not inChangelist:
+        print(&#34;Error: Changelist ID must be provided for delete operation.&#34;)
+        return False
+    
+    # 체인지 리스트의 파일 목록을 확인합니다
+    files = self.get_changelist_files(inChangelist)
+    if files:
+        print(f&#34;Error: Changelist {inChangelist} is not empty. It contains {len(files)} files.&#34;)
+        return False
+        
+    # 빈 체인지 리스트를 삭제합니다
+    delete_result = self._run_command([&#39;change&#39;, &#39;-d&#39;, inChangelist])
+    
+    if &#39;deleted&#39; in delete_result:
+        return True
+    else:
+        return False</code></pre>
+</details>
+<div class="desc"><p>빈 체인지 리스트를 삭제합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inChangelist (str): 삭제할 체인지 리스트 ID
+inWorkspace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.delete_empty_changelists"><code class="name flex">
+<span>def <span class="ident">delete_empty_changelists</span></span>(<span>self, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_empty_changelists(self, inWorkSpace=None):
+    &#34;&#34;&#34;
+    빈 체인지 리스트를 삭제합니다.
+    
+    Parameters:
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+        
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+    
+    # 모든 체인지 리스트 가져오기
+    changes = self.get_changelists()
+    
+    for change in changes:
+        if len(self.get_changelist_files(change[&#39;id&#39;])) == 0:
+            self.delete_changelist(change[&#39;id&#39;])
+    
+    return True</code></pre>
+</details>
+<div class="desc"><p>빈 체인지 리스트를 삭제합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.delete_files"><code class="name flex">
+<span>def <span class="ident">delete_files</span></span>(<span>self, inFiles, inChangelist=None, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_files(self, inFiles, inChangelist=None, inWorkSpace=None):
+    &#34;&#34;&#34;
+    지정한 파일들을 Perforce에서 삭제합니다.
+
+    Parameters:
+        inFiles (list): 삭제할 파일 경로 리스트
+        inChangelist (str, optional): 파일 삭제를 추가할 체인지 리스트 ID
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+
+    if not inFiles:
+        return False
+
+    # 파일 삭제 명령 실행
+    delete_command = [&#39;delete&#39;]
+
+    target_changelist = inChangelist
+    if not target_changelist:
+        # If no changelist is specified, create a new one
+        new_changelist_info = self.create_new_changelist(inDescription=f&#34;Auto-delete for {len(inFiles)} files&#34;)
+        if not new_changelist_info:
+            print(&#34;Failed to create a new changelist for delete.&#34;)
+            return False
+        target_changelist = new_changelist_info[&#39;id&#39;]
+
+    delete_command.extend([&#39;-c&#39;, target_changelist])
+    delete_command.extend(inFiles)
+
+    result = self._run_command(delete_command)
+    
+    if len(self.get_changelist_files(target_changelist)) == 0:
+        self.delete_changelist(target_changelist)
+        
+    return True</code></pre>
+</details>
+<div class="desc"><p>지정한 파일들을 Perforce에서 삭제합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inFiles (list): 삭제할 파일 경로 리스트
+inChangelist (str, optional): 파일 삭제를 추가할 체인지 리스트 ID
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.get_all_clients"><code class="name flex">
+<span>def <span class="ident">get_all_clients</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_all_clients(self):
+    &#34;&#34;&#34;
+    모든 Perforce 클라이언트 워크스페이스의 이름 목록을 반환합니다.
+    
+    Returns:
+        list: 클라이언트 워크스페이스 이름 리스트
+    &#34;&#34;&#34;
+    # 모든 클라이언트 워크스페이스의 이름을 반환합니다.
+    result = self._run_command([&#39;clients&#39;])
+    clients = []
+    
+    if result is None:
+        return clients
+        
+    for line in result.splitlines():
+        if line.startswith(&#39;Client&#39;):
+            parts = line.split()
+            if len(parts) &gt;= 2:
+                clients.append(parts[1])
+    return clients</code></pre>
+</details>
+<div class="desc"><p>모든 Perforce 클라이언트 워크스페이스의 이름 목록을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>클라이언트 워크스페이스 이름 리스트</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.get_changelist_files"><code class="name flex">
+<span>def <span class="ident">get_changelist_files</span></span>(<span>self, inChangelist, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_changelist_files(self, inChangelist, inWorkSpace=None):
+    &#34;&#34;&#34;
+    체인지 리스트에 포함된 파일 목록을 가져옵니다.
+    
+    Parameters:
+        inChangelist (str): 체인지 리스트 ID
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+        
+    Returns:
+        list: 파일 정보 딕셔너리의 리스트
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return []
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return []
+        
+    opened_result = self._run_command([&#39;opened&#39;, &#39;-c&#39;, inChangelist])
+    files = []
+    
+    for line in opened_result.splitlines():
+        if &#39;#&#39; in line:
+            file_path = line.split(&#39;#&#39;)[0].strip()
+            action = line.split(&#39;for &#39;)[1].split(&#39; &#39;)[0] if &#39;for &#39; in line else &#39;&#39;
+            
+            files.append(file_path)
+            
+    return files</code></pre>
+</details>
+<div class="desc"><p>체인지 리스트에 포함된 파일 목록을 가져옵니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inChangelist (str): 체인지 리스트 ID
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>파일 정보 딕셔너리의 리스트</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.get_changelists"><code class="name flex">
+<span>def <span class="ident">get_changelists</span></span>(<span>self, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_changelists(self, inWorkSpace=None):
+    &#34;&#34;&#34;
+    특정 워크스페이스의 pending 상태 체인지 리스트를 가져옵니다.
+    
+    Parameters:
+        inWorkSpace (str, optional): 체인지 리스트를 가져올 워크스페이스 이름
+        
+    Returns:
+        list: 체인지 리스트 정보 딕셔너리의 리스트
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return []
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return []
+        
+    # 체인지 리스트 명령 실행
+    changes_command = [&#39;changes&#39;]
+    
+    # 항상 pending 상태만 가져오도록 설정
+    changes_command.extend([&#39;-s&#39;, &#39;pending&#39;])
+        
+    if self.workspace:
+        changes_command.extend([&#39;-c&#39;, self.workspace])
+        
+    result = self._run_command(changes_command)
+    changes = []
+    
+    for line in result.splitlines():
+        if line.startswith(&#39;Change&#39;):
+            parts = line.split()
+            if len(parts) &gt;= 5:
+                change_id = parts[1]
+                
+                # 설명 부분 추출
+                desc_start = line.find(&#34;&#39;&#34;)
+                desc_end = line.rfind(&#34;&#39;&#34;)
+                description = line[desc_start+1:desc_end] if desc_start != -1 and desc_end != -1 else &#34;&#34;
+                
+                changes.append({
+                    &#39;id&#39;: change_id,
+                    &#39;description&#39;: description
+                })
+                
+    return changes</code></pre>
+</details>
+<div class="desc"><p>특정 워크스페이스의 pending 상태 체인지 리스트를 가져옵니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inWorkSpace (str, optional): 체인지 리스트를 가져올 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>체인지 리스트 정보 딕셔너리의 리스트</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.get_local_hostname"><code class="name flex">
+<span>def <span class="ident">get_local_hostname</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_local_hostname(self):
+    &#34;&#34;&#34;
+    현재 로컬 머신의 호스트 이름을 반환합니다.
+    
+    Returns:
+        str: 로컬 머신의 호스트 이름
+    &#34;&#34;&#34;
+    # 현재 로컬 머신의 호스트 이름을 반환합니다.
+    return self.localHostName</code></pre>
+</details>
+<div class="desc"><p>현재 로컬 머신의 호스트 이름을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>로컬 머신의 호스트 이름</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.get_local_workspaces"><code class="name flex">
+<span>def <span class="ident">get_local_workspaces</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_local_workspaces(self):
+    &#34;&#34;&#34;
+    현재 로컬 머신에 있는 워크스페이스 목록을 반환합니다.
+    
+    현재 호스트 이름으로 시작하는 모든 클라이언트를 찾습니다.
+    
+    Returns:
+        list: 로컬 머신의 워크스페이스 이름 리스트
+    &#34;&#34;&#34;
+    all_clients = self.get_all_clients()
+    local_clients = []
+
+    for client in all_clients:
+        if client.startswith(self.localHostName):
+            local_clients.append(client)
+
+    return local_clients</code></pre>
+</details>
+<div class="desc"><p>현재 로컬 머신에 있는 워크스페이스 목록을 반환합니다.</p>
+<p>현재 호스트 이름으로 시작하는 모든 클라이언트를 찾습니다.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>로컬 머신의 워크스페이스 이름 리스트</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.revert_changelist"><code class="name flex">
+<span>def <span class="ident">revert_changelist</span></span>(<span>self, inChangelist, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def revert_changelist(self, inChangelist, inWorkSpace=None):
+    &#34;&#34;&#34;
+    특정 체인지 리스트의 모든 변경 사항을 되돌립니다 (revert).
+
+    Parameters:
+        inChangelist (str): 되돌릴 체인지 리스트 ID
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+
+    if not inChangelist:
+        print(&#34;Error: Changelist ID must be provided for revert operation.&#34;)
+        return False
+
+    # Revert 명령 실행
+    revert_command = [&#39;revert&#39;, &#39;-c&#39;, inChangelist, &#39;//...&#39;] # Revert all files in the changelist
+
+    result = self._run_command(revert_command)
+    # p4 revert might not return an error code even if nothing was reverted.
+    # We&#39;ll assume success if the command ran. More robust checking might involve parsing &#39;result&#39;.
+    print(f&#34;Revert result for CL {inChangelist}:\n{result}&#34;)
+    self._run_command([&#39;change&#39;, &#39;-d&#39;, inChangelist])
+    return True</code></pre>
+</details>
+<div class="desc"><p>특정 체인지 리스트의 모든 변경 사항을 되돌립니다 (revert).</p>
+<h2 id="parameters">Parameters</h2>
+<p>inChangelist (str): 되돌릴 체인지 리스트 ID
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.set_workspace"><code class="name flex">
+<span>def <span class="ident">set_workspace</span></span>(<span>self, inWorkspace)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_workspace(self, inWorkspace):
+    &#34;&#34;&#34;
+    주어진 워크스페이스로 현재 작업 환경을 전환합니다.
+    
+    Parameters:
+        inWorkspace (str): 전환할 워크스페이스 이름
+        
+    Returns:
+        str: 워크스페이스 정보 문자열
+        
+    Raises:
+        ValueError: 지정된 워크스페이스가 로컬 워크스페이스 목록에 없을 경우
+    &#34;&#34;&#34;
+    # 주어진 워크스페이스로 전환합니다.
+    localWorkSpaces = self.get_local_workspaces()
+    if inWorkspace not in localWorkSpaces:
+        print(f&#34;워크스페이스 &#39;{inWorkspace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+        return False
+    
+    self.workspace = inWorkspace
+    os.environ[&#39;P4CLIENT&#39;] = self.workspace
+    
+    return True</code></pre>
+</details>
+<div class="desc"><p>주어진 워크스페이스로 현재 작업 환경을 전환합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inWorkspace (str): 전환할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>워크스페이스 정보 문자열</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>지정된 워크스페이스가 로컬 워크스페이스 목록에 없을 경우</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.submit_changelist"><code class="name flex">
+<span>def <span class="ident">submit_changelist</span></span>(<span>self, inChangelist, inDescription=None, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def submit_changelist(self, inChangelist, inDescription=None, inWorkSpace=None):
+    &#34;&#34;&#34;
+    특정 체인지 리스트를 서버에 제출합니다.
+
+    Parameters:
+        inChangelist (str): 제출할 체인지 리스트 ID
+        inDescription (str, optional): 제출 설명 (없으면 체인지 리스트의 기존 설명 사용)
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+
+    if not inChangelist:
+        return False
+
+    if inDescription:
+        # 체인지 리스트 스펙 가져오기
+        change_spec = self._run_command([&#39;change&#39;, &#39;-o&#39;, inChangelist])
+
+        # 설명 수정
+        modified_spec = []
+        description_lines_skipped = False
+        for line in change_spec.splitlines():
+            if line.startswith(&#39;Description:&#39;):
+                modified_spec.append(line)
+                # Add the new description, handling potential multi-line descriptions correctly
+                for desc_line in inDescription.splitlines():
+                    modified_spec.append(f&#34;\t{desc_line}&#34;)
+                description_lines_skipped = True # Start skipping old description lines
+                continue
+
+            # Skip old description lines (indented lines after Description:)
+            if description_lines_skipped:
+                if line.startswith(&#39;\t&#39;) or line.strip() == &#39;&#39;:
+                    continue # Skip indented lines or empty lines within the old description
+                else:
+                    description_lines_skipped = False # Reached the next field
+
+            if not description_lines_skipped:
+                modified_spec.append(line)
+        
+        print(modified_spec)
+
+        # 수정된 스펙 적용
+        spec_update = subprocess.run([&#39;p4&#39;, &#39;change&#39;, &#39;-i&#39;],
+                                   input=&#39;\n&#39;.join(modified_spec),
+                                   capture_output=True,
+                                   text=True,
+                                   encoding=&#34;utf-8&#34;)
+
+        if spec_update.returncode != 0:
+            print(f&#34;Error updating changelist spec for {inChangelist}: {spec_update.stderr}&#34;)
+            return False
+
+    self._run_command([&#39;submit&#39;, &#39;-c&#39;, inChangelist])
+    self.delete_empty_changelists()
+    return True</code></pre>
+</details>
+<div class="desc"><p>특정 체인지 리스트를 서버에 제출합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inChangelist (str): 제출할 체인지 리스트 ID
+inDescription (str, optional): 제출 설명 (없으면 체인지 리스트의 기존 설명 사용)
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.sync"><code class="name flex">
+<span>def <span class="ident">sync</span></span>(<span>self, inWorkSpace=None, inPaths=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sync(self, inWorkSpace=None, inPaths=None):
+    &#34;&#34;&#34;
+    Perforce 워크스페이스를 최신 버전으로 동기화합니다.
+    
+    Parameters:
+        inWorkSpace (str, optional): 동기화할 워크스페이스 이름
+        inPaths (str or list, optional): 동기화할 특정 경로 또는 경로 목록
+        
+    Returns:
+        bool: 동기화 성공 여부
+    &#34;&#34;&#34;
+    # 주어진 워크스페이스를 동기화합니다.
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+    
+    # 동기화 명령 실행
+    sync_command = [&#39;sync&#39;]
+    
+    if inPaths:
+        # 문자열로 단일 경로가 주어진 경우 리스트로 변환
+        if isinstance(inPaths, str):
+            inPaths = [inPaths]
+            
+        valid_paths = []
+        for path in inPaths:
+            if os.path.exists(path):
+                valid_paths.append(path)
+            else:
+                print(f&#34;경고: 지정된 경로 &#39;{path}&#39;가 로컬에 존재하지 않습니다.&#34;)
+        
+        if not valid_paths:
+            print(&#34;유효한 경로가 없어 동기화를 진행할 수 없습니다.&#34;)
+            return False
+            
+        # 유효한 경로들을 모두 동기화 명령에 추가
+        sync_command.extend(valid_paths)
+
+    self._run_command(sync_command)
+    return True</code></pre>
+</details>
+<div class="desc"><p>Perforce 워크스페이스를 최신 버전으로 동기화합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inWorkSpace (str, optional): 동기화할 워크스페이스 이름
+inPaths (str or list, optional): 동기화할 특정 경로 또는 경로 목록</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>동기화 성공 여부</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.perforce.Perforce.upload_files"><code class="name flex">
+<span>def <span class="ident">upload_files</span></span>(<span>self, inFiles, inDescription=None, inWorkSpace=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def upload_files(self, inFiles, inDescription=None, inWorkSpace=None):
+    &#34;&#34;&#34;
+    지정한 파일들을 Perforce에 Submit 합니다.
+    
+    만약 파일들이 Depot에 존재하지 않으면 Add, 존재하면 Chekcout을 수행합니다.
+    
+    Parameters:
+        inFiles (list): 업로드할 파일 경로 리스트
+        inWorkSpace (str, optional): 작업할 워크스페이스 이름
+    
+    Returns:
+        bool: 성공 여부
+    &#34;&#34;&#34;
+    if inWorkSpace == None:
+        if self.workspace == None:
+            print(f&#34;워크스페이스가 없습니다.&#34;)
+            return False
+    else:
+        if not self.set_workspace(inWorkSpace):
+            print(f&#34;워크스페이스 &#39;{inWorkSpace}&#39;는 로컬 워크스페이스 목록에 없습니다.&#34;)
+            return False
+    
+    if not inFiles:
+        print(&#34;업로드할 파일이 지정되지 않았습니다.&#34;)
+        return False
+    
+    # 문자열로 단일 경로가 주어진 경우 리스트로 변환
+    if isinstance(inFiles, str):
+        inFiles = [inFiles]
+        
+    # 새 체인지리스트 생성
+    description = inDescription if inDescription else f&#34;Auto-upload for {len(inFiles)} files&#34;
+    new_changelist_info = self.create_new_changelist(inDescription=description)
+    if not new_changelist_info:
+        print(&#34;Failed to create a new changelist for file upload.&#34;)
+        return False
+        
+    target_changelist = new_changelist_info[&#39;id&#39;]
+    
+    # 파일들이 이미 디포에 있는지 확인
+    files_to_add = []
+    files_to_edit = []
+    
+    for file_path in inFiles:
+        # 파일 상태 확인 (디포에 있는지 여부)
+        fstat_result = self._run_command([&#39;fstat&#39;, file_path])
+        
+        if &#39;no such file&#39; in fstat_result.lower() or not fstat_result:
+            # 디포에 없는 파일 - 추가 대상
+            files_to_add.append(file_path)
+        else:
+            # 디포에 있는 파일 - 체크아웃 대상
+            files_to_edit.append(file_path)
+    
+    # 파일 추가 (있는 경우)
+    if files_to_add:
+        add_command = [&#39;add&#39;, &#39;-c&#39;, target_changelist]
+        add_command.extend(files_to_add)
+        self._run_command(add_command)
+    
+    # 파일 체크아웃 (있는 경우)
+    if files_to_edit:
+        edit_command = [&#39;edit&#39;, &#39;-c&#39;, target_changelist]
+        edit_command.extend(files_to_edit)
+        self._run_command(edit_command)
+    
+    # 체인지리스트에 파일이 제대로 추가되었는지 확인
+    files_in_changelist = self.get_changelist_files(target_changelist)
+    
+    if not files_in_changelist:
+        # 파일 추가에 실패한 경우 빈 체인지리스트 삭제
+        self.delete_changelist(target_changelist)
+        print(&#34;파일을 체인지리스트에 추가하는 데 실패했습니다.&#34;)
+        return False
+        
+    print(f&#34;파일 {len(files_in_changelist)}개가 체인지리스트 {target_changelist}에 추가되었습니다.&#34;)
+    return True</code></pre>
+</details>
+<div class="desc"><p>지정한 파일들을 Perforce에 Submit 합니다.</p>
+<p>만약 파일들이 Depot에 존재하지 않으면 Add, 존재하면 Chekcout을 수행합니다.</p>
+<h2 id="parameters">Parameters</h2>
+<p>inFiles (list): 업로드할 파일 경로 리스트
+inWorkSpace (str, optional): 작업할 워크스페이스 이름</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>성공 여부</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pyjallib" href="index.html">pyjallib</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pyjallib.perforce.Perforce" href="#pyjallib.perforce.Perforce">Perforce</a></code></h4>
+<ul class="">
+<li><code><a title="pyjallib.perforce.Perforce.add_files" href="#pyjallib.perforce.Perforce.add_files">add_files</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.checkout_files" href="#pyjallib.perforce.Perforce.checkout_files">checkout_files</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.create_new_changelist" href="#pyjallib.perforce.Perforce.create_new_changelist">create_new_changelist</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.delete_changelist" href="#pyjallib.perforce.Perforce.delete_changelist">delete_changelist</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.delete_empty_changelists" href="#pyjallib.perforce.Perforce.delete_empty_changelists">delete_empty_changelists</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.delete_files" href="#pyjallib.perforce.Perforce.delete_files">delete_files</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.get_all_clients" href="#pyjallib.perforce.Perforce.get_all_clients">get_all_clients</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.get_changelist_files" href="#pyjallib.perforce.Perforce.get_changelist_files">get_changelist_files</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.get_changelists" href="#pyjallib.perforce.Perforce.get_changelists">get_changelists</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.get_local_hostname" href="#pyjallib.perforce.Perforce.get_local_hostname">get_local_hostname</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.get_local_workspaces" href="#pyjallib.perforce.Perforce.get_local_workspaces">get_local_workspaces</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.revert_changelist" href="#pyjallib.perforce.Perforce.revert_changelist">revert_changelist</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.set_workspace" href="#pyjallib.perforce.Perforce.set_workspace">set_workspace</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.submit_changelist" href="#pyjallib.perforce.Perforce.submit_changelist">submit_changelist</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.sync" href="#pyjallib.perforce.Perforce.sync">sync</a></code></li>
+<li><code><a title="pyjallib.perforce.Perforce.upload_files" href="#pyjallib.perforce.Perforce.upload_files">upload_files</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

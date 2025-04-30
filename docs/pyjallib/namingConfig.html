@@ -1,0 +1,2095 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>pyjallib.namingConfig API documentation</title>
+<meta name="description" content="namingConfig 모듈 - Naming 클래스의 설정을 관리하는 기능 제공
+NamePart 객체를 기반으로 네이밍 설정을 저장하고 불러오는 기능 구현">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pyjallib.namingConfig</code></h1>
+</header>
+<section id="section-intro">
+<p>namingConfig 모듈 - Naming 클래스의 설정을 관리하는 기능 제공
+NamePart 객체를 기반으로 네이밍 설정을 저장하고 불러오는 기능 구현</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pyjallib.namingConfig.NamingConfig"><code class="flex name class">
+<span>class <span class="ident">NamingConfig</span></span>
+<span>(</span><span>padding_num: int = 2,<br>name_parts: List[<a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a>] | None = None,<br>config_file_path: str = '',<br>default_file_name: str = 'namingConfig.json',<br>required_parts: List[str] | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NamingConfig:
+    &#34;&#34;&#34;
+    Naming 클래스의 설정을 관리하는 클래스.
+    NamePart 객체 리스트를 관리하고 JSON 파일로 저장/불러오기 기능 제공.
+    &#34;&#34;&#34;
+    
+    def __init__(self, padding_num: int = 2, name_parts: Optional[List[NamePart]] = None, 
+                 config_file_path: str = &#34;&#34;, default_file_name: str = &#34;namingConfig.json&#34;, 
+                 required_parts: Optional[List[str]] = None):
+        &#34;&#34;&#34;
+        클래스 초기화 및 기본 설정값 정의
+        
+        Args:
+            padding_num: 인덱스 패딩 자릿수 (기본값: 2)
+            name_parts: 초기 NamePart 객체 리스트 (기본값: None, 기본 파트로 초기화)
+            config_file_path: 설정 파일 경로 (기본값: 빈 문자열)
+            default_file_name: 기본 파일명 (기본값: &#34;namingConfig.json&#34;)
+            required_parts: 필수 namePart 목록 (기본값: [&#34;RealName&#34;])
+        &#34;&#34;&#34;
+        # NamePart 객체 리스트
+        self.name_parts = name_parts or []
+        
+        # 추가 설정
+        self.padding_num = padding_num
+        
+        # NamePart 순서 정보 저장
+        self.part_order = []
+        
+        # 필수 namePart 정의 (삭제 불가능)
+        self.required_parts = required_parts or [&#34;RealName&#34;]
+        
+        # 설정 파일 경로 및 기본 파일명
+        self.config_file_path = config_file_path
+        self.default_file_name = default_file_name
+        
+        # 스크립트 디렉토리 기준 기본 경로 설정
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_dir = os.path.join(script_dir, &#34;ConfigFiles&#34;)
+        self.default_file_path = os.path.join(config_dir, self.default_file_name)
+        
+        # name_parts가 제공되지 않은 경우에만 기본 NamePart 초기화
+        if not self.name_parts:
+            self._initialize_default_parts()
+        else:
+            # 제공된 name_parts가 있는 경우 순서 업데이트 및 타입 자동 업데이트
+            self._update_part_order()
+            self._update_part_types_based_on_order()
+    
+    def _initialize_default_parts(self):
+        &#34;&#34;&#34;기본 NamePart 객체들 초기화&#34;&#34;&#34;
+        # 기본 순서 정의 (명시적으로 순서를 저장)
+        self.part_order = []
+        
+        # Prefix 부분 (PREFIX 타입)
+        prefixPart = NamePart(&#34;Prefix&#34;, NamePartType.PREFIX, [&#34;Pr&#34;], [&#34;Prefix&#34;], False, [&#34;접두사&#34;]) # Add korean descriptions
+        
+        # RealName 부분 (REALNAME 타입)
+        realNamePart = NamePart(&#34;RealName&#34;, NamePartType.REALNAME, [], [], False, []) # Add korean descriptions
+        
+        # Index 부분 (INDEX 타입)
+        indexPart = NamePart(&#34;Index&#34;, NamePartType.INDEX, [], [], False, []) # Add korean descriptions
+        
+        # Suffix 부분 (SUFFIX 타입)
+        suffixPart = NamePart(&#34;Suffix&#34;, NamePartType.SUFFIX, [&#34;Su&#34;], [&#34;Suffix&#34;], False, [&#34;접미사&#34;]) # Add korean descriptions
+        
+        # 기본 순서대로 설정
+        self.name_parts = [prefixPart, realNamePart, indexPart, suffixPart]
+        
+        self._update_part_order()  # 초기화 후 순서 업데이트
+        
+        # 타입 자동 업데이트
+        self._update_part_types_based_on_order()
+    
+    def _update_part_order(self):
+        &#34;&#34;&#34;
+        NamePart 순서 업데이트 - 기본적으로 NamePart 객체의 순서에 따라 업데이트
+        &#34;&#34;&#34;
+        self.part_order = [part.get_name() for part in self.name_parts]
+    
+    def _get_real_name_index(self) -&gt; int:
+        &#34;&#34;&#34;
+        RealName 파트의 인덱스를 반환합니다.
+        
+        Returns:
+            RealName 파트의 인덱스, 없으면 -1
+        &#34;&#34;&#34;
+        for i, part in enumerate(self.name_parts):
+            if part.get_type() == NamePartType.REALNAME:
+                return i
+        return -1
+    
+    def _update_part_types_based_on_order(self) -&gt; bool:
+        &#34;&#34;&#34;
+        NamePart 순서에 따라 파트의 타입을 자동으로 업데이트합니다.
+        RealName을 기준으로 앞에 있는 파트는 PREFIX, 뒤에 있는 파트는 SUFFIX로 설정합니다.
+        (RealName과 Index 파트는 예외)
+        
+        Returns:
+            업데이트 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        # RealName 파트 인덱스 찾기
+        real_name_index = self._get_real_name_index()
+        if real_name_index == -1:
+            print(&#34;경고: RealName 파트를 찾을 수 없어 타입 자동 업데이트를 수행할 수 없습니다.&#34;)
+            return False
+        
+        # 각 파트의 타입을 순서에 따라 업데이트
+        for i, part in enumerate(self.name_parts):
+            partName = part.get_name()
+            
+            # RealName은 항상 REALNAME 타입
+            if partName == &#34;RealName&#34;:
+                part.set_type(NamePartType.REALNAME)
+                continue
+                
+            # Index는 항상 INDEX 타입
+            if partName == &#34;Index&#34;:
+                part.set_type(NamePartType.INDEX)
+                continue
+            
+            # RealName 앞의 파트는 PREFIX, 뒤의 파트는 SUFFIX
+            if i &lt; real_name_index:
+                part.set_type(NamePartType.PREFIX)
+            else:
+                part.set_type(NamePartType.SUFFIX)
+        
+        return True
+    
+    def get_part_names(self) -&gt; List[str]:
+        &#34;&#34;&#34;
+        모든 NamePart 이름 목록 반환
+        
+        Returns:
+            NamePart 이름 목록
+        &#34;&#34;&#34;
+        return [part.get_name() for part in self.name_parts]
+    
+    def get_part_order(self) -&gt; List[str]:
+        &#34;&#34;&#34;
+        NamePart 순서 목록 반환
+        
+        Returns:
+            NamePart 이름 순서 목록
+        &#34;&#34;&#34;
+        return self.part_order.copy()
+    
+    def get_part(self, name: str) -&gt; Optional[NamePart]:
+        &#34;&#34;&#34;
+        이름으로 NamePart 객체 가져오기
+        
+        Args:
+            name: NamePart 이름
+            
+        Returns:
+            NamePart 객체, 없으면 None
+        &#34;&#34;&#34;
+        for part in self.name_parts:
+            if part.get_name() == name:
+                return part
+        return None
+    
+    def add_part(self, name: str, part_type: NamePartType = NamePartType.UNDEFINED, 
+                 values: Optional[List[str]] = None, descriptions: Optional[List[str]] = None,
+                 korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add korean_descriptions parameter
+        &#34;&#34;&#34;
+        새 NamePart 객체 추가
+        
+        Args:
+            name: 추가할 NamePart 이름
+            part_type: NamePart 타입 (기본값: UNDEFINED)
+            values: 사전 정의된 값 목록 (기본값: None)
+            descriptions: 값에 대한 설명 목록 (기본값: None, 값과 동일하게 설정됨)
+            korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None, 값과 동일하게 설정됨) # Add korean_descriptions doc
+            
+        Returns:
+            추가 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        if not name:
+            print(&#34;오류: 유효한 NamePart 이름을 입력하세요.&#34;)
+            return False
+        
+        # 이미 존재하는지 확인
+        if self.get_part(name) is not None:
+            print(f&#34;오류: &#39;{name}&#39; NamePart가 이미 존재합니다.&#34;)
+            return False
+        
+        # 새 NamePart 객체 생성 - NamePart 클래스의 생성자 활용
+        new_part = NamePart(name, part_type, values or [], descriptions, False, korean_descriptions) # Pass korean_descriptions
+        
+        # 리스트에 추가
+        self.name_parts.append(new_part)
+        
+        # 순서 목록에 추가
+        if name not in self.part_order:
+            self.part_order.append(name)
+        
+        # 순서에 따라 타입 업데이트
+        self._update_part_types_based_on_order()
+        return True
+    
+    def remove_part(self, name: str) -&gt; bool:
+        &#34;&#34;&#34;
+        NamePart 객체 제거 (필수 부분은 제거 불가)
+        
+        Args:
+            name: 제거할 NamePart 이름
+            
+        Returns:
+            제거 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        # 필수 부분은 제거 불가능
+        if name in self.required_parts:
+            print(f&#34;오류: 필수 NamePart &#39;{name}&#39;는 제거할 수 없습니다.&#34;)
+            return False
+        
+        # 찾아서 제거
+        for i, part in enumerate(self.name_parts):
+            if part.get_name() == name:
+                del self.name_parts[i]
+                
+                # 순서 목록에서도 제거
+                if name in self.part_order:
+                    self.part_order.remove(name)
+                
+                # 순서에 따라 타입 업데이트
+                self._update_part_types_based_on_order()
+                return True
+        
+        print(f&#34;오류: &#39;{name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    def reorder_parts(self, new_order: List[str]) -&gt; bool:
+        &#34;&#34;&#34;
+        NamePart 순서 변경
+        
+        Args:
+            new_order: 새로운 NamePart 이름 순서 배열
+            
+        Returns:
+            변경 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        # 배열 길이 확인
+        if len(new_order) != len(self.name_parts):
+            print(&#34;오류: 새 순서의 항목 수가 기존 NamePart와 일치하지 않습니다.&#34;)
+            return False
+        
+        # 모든 필수 부분이 포함되어 있는지 확인
+        for part in self.required_parts:
+            if part not in new_order:
+                print(f&#34;오류: 필수 NamePart &#39;{part}&#39;가 새 순서에 포함되어 있지 않습니다.&#34;)
+                return False
+        
+        # 모든 이름이 현재 존재하는지 확인
+        current_names = self.get_part_names()
+        for name in new_order:
+            if name not in current_names:
+                print(f&#34;오류: &#39;{name}&#39; NamePart가 존재하지 않습니다.&#34;)
+                return False
+        
+        # 순서 변경을 위한 새 리스트 생성
+        reordered_parts = []
+        for name in new_order:
+            part = self.get_part(name)
+            if part:
+                reordered_parts.append(part)
+        
+        # 새 순서로 업데이트
+        self.name_parts = reordered_parts
+        self.part_order = new_order.copy()
+        
+        # 순서에 따라 타입 업데이트
+        self._update_part_types_based_on_order()
+        return True
+    
+    def set_padding_num(self, padding_num: int) -&gt; bool:
+        &#34;&#34;&#34;
+        인덱스 자릿수 설정
+        
+        Args:
+            padding_num: 설정할 패딩 자릿수
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        if not isinstance(padding_num, int) or padding_num &lt; 1:
+            print(&#34;오류: 패딩 자릿수는 1 이상의 정수여야 합니다.&#34;)
+            return False
+        
+        self.padding_num = padding_num
+        return True
+        
+    def set_part_type(self, part_name: str, part_type: NamePartType) -&gt; bool:
+        &#34;&#34;&#34;
+        특정 NamePart의 타입 설정
+        
+        Args:
+            part_name: NamePart 이름
+            part_type: 설정할 타입 (NamePartType 열거형 값)
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # 필수 RealName 부분은 항상 REALNAME 타입이어야 함
+        if part_name == &#34;RealName&#34; and part_type != NamePartType.REALNAME:
+            print(&#34;오류: RealName 부분은 반드시 REALNAME 타입이어야 합니다.&#34;)
+            return False
+        
+        # Index 부분은 항상 INDEX 타입이어야 함
+        if part_name == &#34;Index&#34; and part_type != NamePartType.INDEX:
+            print(&#34;오류: Index 부분은 반드시 INDEX 타입이어야 합니다.&#34;)
+            return False
+        
+        part.set_type(part_type)
+        return True
+    
+    def get_part_type(self, part_name: str) -&gt; Optional[NamePartType]:
+        &#34;&#34;&#34;
+        특정 NamePart의 타입 가져오기
+        
+        Args:
+            part_name: NamePart 이름
+            
+        Returns:
+            NamePart 타입, 없으면 None
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return None
+        
+        return part.get_type()
+    
+    def set_part_values(self, part_name: str, values: List[str], 
+                        descriptions: Optional[List[str]] = None, 
+                        korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add korean_descriptions parameter
+        &#34;&#34;&#34;
+        특정 NamePart의 사전 정의 값 설정
+        
+        Args:
+            part_name: NamePart 이름
+            values: 설정할 사전 정의 값 리스트
+            descriptions: 설정할 설명 목록 (기본값: None, 값과 같은 설명 사용)
+            korean_descriptions: 설정할 한국어 설명 목록 (기본값: None, 값과 같은 설명 사용) # Add korean_descriptions doc
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 사전 정의 값 설정 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 설정할 수 없습니다.&#34;)
+            return False
+        
+        if not values:
+            print(f&#34;오류: {part_name} 부분의 사전 정의 값은 적어도 하나 이상 있어야 합니다.&#34;)
+            return False
+        
+        # 값 설정
+        part.set_predefined_values(values, descriptions, korean_descriptions) # Pass korean_descriptions
+        
+        return True
+    
+    def set_part_value_by_csv(self, part_name: str, csv_file_path: str) -&gt; bool:
+        &#34;&#34;&#34;
+        특정 NamePart의 사전 정의 값을 CSV 파일로 설정
+        CSV 파일 형식: value,description,koreanDescription (각 줄당)
+        
+        Args:
+            part_name: NamePart 이름
+            csv_file_path: CSV 파일 경로
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 사전 정의 값 설정 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 설정할 수 없습니다.&#34;)
+            return False
+        
+        # CSV 파일에서 값, 설명, 한국어 설명 읽기
+        values = []
+        descriptions = []
+        korean_descriptions = []
+        try:
+            with open(csv_file_path, &#39;r&#39;, encoding=&#39;utf-8&#39;, newline=&#39;&#39;) as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) &gt;= 3: # Ensure row has at least 3 columns
+                        value = row[0].strip()
+                        description = row[1].strip()
+                        korean_description = row[2].strip()
+                        if value: # Skip empty values
+                            values.append(value)
+                            descriptions.append(description if description else value) # Use value if description is empty
+                            korean_descriptions.append(korean_description if korean_description else value) # Use value if korean_description is empty
+                    elif len(row) == 2: # Handle case with value and description only
+                        value = row[0].strip()
+                        description = row[1].strip()
+                        if value:
+                            values.append(value)
+                            descriptions.append(description if description else value)
+                            korean_descriptions.append(value) # Use value as korean description
+                    elif len(row) == 1: # Handle case with value only
+                        value = row[0].strip()
+                        if value:
+                            values.append(value)
+                            descriptions.append(value)
+                            korean_descriptions.append(value)
+
+            if not values:
+                print(f&#34;오류: CSV 파일 &#39;{csv_file_path}&#39;에서 유효한 값을 찾을 수 없습니다.&#34;)
+                return False
+
+            # 값, 설명, 한국어 설명 설정
+            return self.set_part_values(part_name, values, descriptions, korean_descriptions)
+        except FileNotFoundError:
+            print(f&#34;오류: CSV 파일을 찾을 수 없습니다: {csv_file_path}&#34;)
+            return False
+        except Exception as e:
+            print(f&#34;오류: CSV 파일을 읽는 중 오류 발생: {e}&#34;)
+            return False
+    
+    def add_part_value(self, part_name: str, value: str, 
+                       description: Optional[str] = None, 
+                       korean_description: Optional[str] = None) -&gt; bool: # Add korean_description parameter
+        &#34;&#34;&#34;
+        특정 NamePart에 사전 정의 값 추가
+        
+        Args:
+            part_name: NamePart 이름
+            value: 추가할 사전 정의 값
+            description: 추가할 값의 설명 (기본값: None, 값과 같은 설명 사용)
+            korean_description: 추가할 값의 한국어 설명 (기본값: None, 값과 같은 설명 사용) # Add korean_description doc
+            
+        Returns:
+            추가 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 사전 정의 값 추가 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 추가할 수 없습니다.&#34;)
+            return False
+        
+        # 값이 이미 존재하는지 확인
+        if part.contains_value(value):
+            print(f&#34;오류: &#39;{value}&#39;가 이미 {part_name} 부분의 사전 정의 값에 존재합니다.&#34;)
+            return False
+        
+        # description이 없으면 값을 설명으로 사용
+        if description is None:
+            description = value
+            
+        # korean_description이 없으면 값을 설명으로 사용
+        if korean_description is None:
+            korean_description = value
+            
+        # NamePart 클래스의 add_predefined_value 메소드 직접 활용
+        return part.add_predefined_value(value, description, korean_description) # Pass korean_description
+    
+    def remove_part_value(self, part_name: str, value: str) -&gt; bool:
+        &#34;&#34;&#34;
+        특정 NamePart에서 사전 정의 값과 해당 설명 제거
+        
+        Args:
+            part_name: NamePart 이름
+            value: 제거할 사전 정의 값
+            
+        Returns:
+            제거 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 사전 정의 값 제거 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 제거할 수 없습니다.&#34;)
+            return False
+        
+        # 값이 존재하는지 확인
+        if not part.contains_value(value):
+            print(f&#34;오류: &#39;{value}&#39;가 {part_name} 부분의 사전 정의 값에 존재하지 않습니다.&#34;)
+            return False
+        
+        # 마지막 값인지 확인
+        if part.get_value_count() &lt;= 1:
+            print(f&#34;오류: {part_name} 부분의 사전 정의 값은 적어도 하나 이상 있어야 합니다.&#34;)
+            return False
+        
+        # NamePart 클래스의 remove_predefined_value 메소드 직접 활용
+        return part.remove_predefined_value(value)
+    
+    def set_part_descriptions(self, part_name: str, descriptions: List[str]) -&gt; bool:
+        &#34;&#34;&#34;
+        특정 NamePart의 설명 목록 설정
+        
+        Args:
+            part_name: NamePart 이름
+            descriptions: 설정할 설명 목록
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 설명 설정 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 설명을 설정할 수 없습니다.&#34;)
+            return False
+        
+        # NamePart 클래스 메소드 활용하여 설명 설정
+        values = part.get_predefined_values()
+        
+        # 길이 맞추기
+        if len(descriptions) &lt; len(values):
+            descriptions.extend([&#34;&#34;] * (len(values) - len(descriptions)))
+        elif len(descriptions) &gt; len(values):
+            descriptions = descriptions[:len(values)]
+        
+        # 각 값에 대한 설명 설정 (NamePart.set_description 사용)
+        success = True
+        for i, value in enumerate(values):
+            if not part.set_description(value, descriptions[i]):
+                success = False # 실패 시 기록 (이론상 발생하지 않음)
+                
+        return success
+
+    def get_part_descriptions(self, part_name: str) -&gt; List[str]:
+        &#34;&#34;&#34;
+        특정 NamePart의 설명 목록 가져오기
+        
+        Args:
+            part_name: NamePart 이름
+            
+        Returns:
+            설명 목록
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return []
+        
+        return part.get_descriptions()
+
+    def set_part_korean_descriptions(self, part_name: str, korean_descriptions: List[str]) -&gt; bool:
+        &#34;&#34;&#34;
+        특정 NamePart의 한국어 설명 목록 설정
+        
+        Args:
+            part_name: NamePart 이름
+            korean_descriptions: 설정할 한국어 설명 목록
+            
+        Returns:
+            설정 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+        
+        # REALNAME이나 INDEX 타입은 설명 설정 불가
+        if part.is_realname() or part.is_index():
+            print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 한국어 설명을 설정할 수 없습니다.&#34;)
+            return False
+        
+        # NamePart 클래스 메소드 활용하여 설명 설정
+        values = part.get_predefined_values()
+        
+        # 길이 맞추기
+        if len(korean_descriptions) &lt; len(values):
+            korean_descriptions.extend([&#34;&#34;] * (len(values) - len(korean_descriptions)))
+        elif len(korean_descriptions) &gt; len(values):
+            korean_descriptions = korean_descriptions[:len(values)]
+            
+        # 각 값에 대한 한국어 설명 설정 (NamePart.set_korean_description 사용)
+        success = True
+        for i, value in enumerate(values):
+            if not part.set_korean_description(value, korean_descriptions[i]):
+                success = False # 실패 시 기록 (이론상 발생하지 않음)
+                
+        return success
+
+    def get_part_korean_descriptions(self, part_name: str) -&gt; List[str]:
+        &#34;&#34;&#34;
+        특정 NamePart의 한국어 설명 목록 가져오기
+        
+        Args:
+            part_name: NamePart 이름
+            
+        Returns:
+            한국어 설명 목록
+        &#34;&#34;&#34;
+        part = self.get_part(part_name)
+        if not part:
+            print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return []
+        
+        return part.get_korean_descriptions()
+    
+    def get_prefix_parts(self) -&gt; List[NamePart]:
+        &#34;&#34;&#34;
+        모든 PREFIX 타입 NamePart 가져오기
+        
+        Returns:
+            PREFIX 타입의 NamePart 객체 리스트
+        &#34;&#34;&#34;
+        return [part for part in self.name_parts if part.is_prefix()]
+    
+    def get_suffix_parts(self) -&gt; List[NamePart]:
+        &#34;&#34;&#34;
+        모든 SUFFIX 타입 NamePart 가져오기
+        
+        Returns:
+            SUFFIX 타입의 NamePart 객체 리스트
+        &#34;&#34;&#34;
+        return [part for part in self.name_parts if part.is_suffix()]
+    
+    def get_realname_part(self) -&gt; Optional[NamePart]:
+        &#34;&#34;&#34;
+        REALNAME 타입 NamePart 가져오기
+        
+        Returns:
+            REALNAME 타입의 NamePart 객체, 없으면 None
+        &#34;&#34;&#34;
+        for part in self.name_parts:
+            if part.is_realname():
+                return part
+        return None
+    
+    def get_index_part(self) -&gt; Optional[NamePart]:
+        &#34;&#34;&#34;
+        INDEX 타입 NamePart 가져오기
+        
+        Returns:
+            INDEX 타입의 NamePart 객체, 없으면 None
+        &#34;&#34;&#34;
+        for part in self.name_parts:
+            if part.is_index():
+                return part
+        return None
+    
+    def save(self, file_path: Optional[str] = None) -&gt; bool:
+        &#34;&#34;&#34;
+        현재 설정을 JSON 파일로 저장
+        
+        Args:
+            file_path: 저장할 파일 경로 (기본값: self.default_file_path)
+            
+        Returns:
+            저장 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        save_path = file_path or self.default_file_path
+        
+        try:
+            # 저장할 데이터 준비
+            save_data = {
+                &#34;paddingNum&#34;: self.padding_num,
+                &#34;partOrder&#34;: self.part_order,  # 순서 정보 저장
+                &#34;nameParts&#34;: []
+            }
+            
+            # 각 NamePart 객체를 딕셔너리로 변환하여 추가
+            for part in self.name_parts:
+                save_data[&#34;nameParts&#34;].append(part.to_dict())
+            
+            # JSON 파일로 저장
+            with open(save_path, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
+                json.dump(save_data, f, indent=4, ensure_ascii=False)
+            
+            self.config_file_path = save_path
+            return True
+        except Exception as e:
+            print(f&#34;설정 저장 중 오류 발생: {e}&#34;)
+            return False
+    
+    def load(self, file_path: Optional[str] = None) -&gt; bool:
+        &#34;&#34;&#34;
+        JSON 파일에서 설정 불러오기
+        
+        Args:
+            file_path: 불러올 파일 경로 (기본값: self.default_file_path)
+            
+        Returns:
+            로드 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        load_path = file_path or self.default_file_path
+        
+        try:
+            if os.path.exists(load_path):
+                with open(load_path, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+                    loaded_data = json.load(f)
+                
+                # 필수 키가 있는지 확인
+                if &#34;nameParts&#34; not in loaded_data:
+                    print(&#34;경고: 설정 파일에 필수 키 &#39;nameParts&#39;가 없습니다.&#34;)
+                    return False
+                
+                # paddingNum 불러오기
+                if &#34;paddingNum&#34; in loaded_data:
+                    self.padding_num = loaded_data[&#34;paddingNum&#34;]
+                
+                # 파트 순서 불러오기
+                if &#34;partOrder&#34; in loaded_data:
+                    self.part_order = loaded_data[&#34;partOrder&#34;]
+                else:
+                    # 없으면 기본 순서 생성
+                    self.part_order = [part_data[&#34;name&#34;] for part_data in loaded_data[&#34;nameParts&#34;]]
+                
+                # NamePart 객체 리스트 생성
+                new_parts = []
+                for part_data in loaded_data[&#34;nameParts&#34;]:
+                    part = NamePart.from_dict(part_data)
+                    new_parts.append(part)
+                
+                # 필수 NamePart가 포함되어 있는지 확인
+                part_names = [part.get_name() for part in new_parts]
+                for required_name in self.required_parts:
+                    if required_name not in part_names:
+                        print(f&#34;경고: 필수 NamePart &#39;{required_name}&#39;가 설정에 포함되어 있지 않습니다.&#34;)
+                        return False
+                
+                # 모든 확인이 통과되면 데이터 업데이트
+                self.name_parts = new_parts
+                self.config_file_path = load_path
+                
+                # 순서에 따라 타입 업데이트
+                self._update_part_types_based_on_order()
+                self._update_part_order()  # 순서 업데이트
+                return True
+            else:
+                print(f&#34;설정 파일을 찾을 수 없습니다: {load_path}&#34;)
+                return False
+        except Exception as e:
+            print(f&#34;설정 로드 중 오류 발생: {e}&#34;)
+            return False
+    
+    def apply_to_naming(self, naming_instance) -&gt; bool:
+        &#34;&#34;&#34;
+        설정을 Naming 인스턴스에 적용
+        
+        Args:
+            naming_instance: 설정을 적용할 Naming 클래스 인스턴스
+            
+        Returns:
+            적용 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        try:
+            # NamePart 객체 리스트 복사하여 적용
+            naming_instance._nameParts = copy.deepcopy(self.name_parts)
+            
+            # paddingNum 설정
+            naming_instance._paddingNum = self.padding_num
+            
+            return True
+        except Exception as e:
+            print(f&#34;설정 적용 중 오류 발생: {e}&#34;)
+            return False
+    
+    def insert_part(self, name: str, part_type: NamePartType, position: int,
+                    values: Optional[List[str]] = None, 
+                    descriptions: Optional[List[str]] = None,
+                    korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add value/description parameters
+        &#34;&#34;&#34;
+        특정 위치에 새 NamePart 삽입
+        
+        Args:
+            name: 삽입할 NamePart 이름
+            part_type: NamePart 타입
+            position: 삽입할 위치 (인덱스)
+            values: 사전 정의된 값 목록 (기본값: None) # Add doc
+            descriptions: 값에 대한 설명 목록 (기본값: None) # Add doc
+            korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None) # Add doc
+            
+        Returns:
+            삽입 성공 여부 (True/False)
+        &#34;&#34;&#34;
+        if not name:
+            print(&#34;오류: 유효한 NamePart 이름을 입력하세요.&#34;)
+            return False
+        
+        # 이미 존재하는지 확인
+        if self.get_part(name) is not None:
+            print(f&#34;오류: &#39;{name}&#39; NamePart가 이미 존재합니다.&#34;)
+            return False
+        
+        # 위치 범위 확인
+        if position &lt; 0 or position &gt; len(self.name_parts):
+            print(f&#34;오류: 위치가 유효하지 않습니다. 0에서 {len(self.name_parts)} 사이의 값이어야 합니다.&#34;)
+            return False
+        
+        # 새 NamePart 생성 (값과 설명 포함)
+        new_part = NamePart(name, part_type, values or [], descriptions, False, korean_descriptions) # Pass values/descriptions
+        
+        # 지정된 위치에 삽입
+        self.name_parts.insert(position, new_part)
+        
+        # 순서 목록 업데이트
+        if name not in self.part_order:
+            self.part_order.insert(position, name)
+        
+        # 순서에 따라 타입 업데이트
+        self._update_part_types_based_on_order()
+        return True</code></pre>
+</details>
+<div class="desc"><p>Naming 클래스의 설정을 관리하는 클래스.
+NamePart 객체 리스트를 관리하고 JSON 파일로 저장/불러오기 기능 제공.</p>
+<p>클래스 초기화 및 기본 설정값 정의</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>padding_num</code></strong></dt>
+<dd>인덱스 패딩 자릿수 (기본값: 2)</dd>
+<dt><strong><code>name_parts</code></strong></dt>
+<dd>초기 NamePart 객체 리스트 (기본값: None, 기본 파트로 초기화)</dd>
+<dt><strong><code>config_file_path</code></strong></dt>
+<dd>설정 파일 경로 (기본값: 빈 문자열)</dd>
+<dt><strong><code>default_file_name</code></strong></dt>
+<dd>기본 파일명 (기본값: "namingConfig.json")</dd>
+<dt><strong><code>required_parts</code></strong></dt>
+<dd>필수 namePart 목록 (기본값: ["RealName"])</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="pyjallib.namingConfig.NamingConfig.add_part"><code class="name flex">
+<span>def <span class="ident">add_part</span></span>(<span>self,<br>name: str,<br>part_type: <a title="pyjallib.namePart.NamePartType" href="namePart.html#pyjallib.namePart.NamePartType">NamePartType</a> = NamePartType.UNDEFINED,<br>values: List[str] | None = None,<br>descriptions: List[str] | None = None,<br>korean_descriptions: List[str] | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_part(self, name: str, part_type: NamePartType = NamePartType.UNDEFINED, 
+             values: Optional[List[str]] = None, descriptions: Optional[List[str]] = None,
+             korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add korean_descriptions parameter
+    &#34;&#34;&#34;
+    새 NamePart 객체 추가
+    
+    Args:
+        name: 추가할 NamePart 이름
+        part_type: NamePart 타입 (기본값: UNDEFINED)
+        values: 사전 정의된 값 목록 (기본값: None)
+        descriptions: 값에 대한 설명 목록 (기본값: None, 값과 동일하게 설정됨)
+        korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None, 값과 동일하게 설정됨) # Add korean_descriptions doc
+        
+    Returns:
+        추가 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    if not name:
+        print(&#34;오류: 유효한 NamePart 이름을 입력하세요.&#34;)
+        return False
+    
+    # 이미 존재하는지 확인
+    if self.get_part(name) is not None:
+        print(f&#34;오류: &#39;{name}&#39; NamePart가 이미 존재합니다.&#34;)
+        return False
+    
+    # 새 NamePart 객체 생성 - NamePart 클래스의 생성자 활용
+    new_part = NamePart(name, part_type, values or [], descriptions, False, korean_descriptions) # Pass korean_descriptions
+    
+    # 리스트에 추가
+    self.name_parts.append(new_part)
+    
+    # 순서 목록에 추가
+    if name not in self.part_order:
+        self.part_order.append(name)
+    
+    # 순서에 따라 타입 업데이트
+    self._update_part_types_based_on_order()
+    return True</code></pre>
+</details>
+<div class="desc"><p>새 NamePart 객체 추가</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>추가할 NamePart 이름</dd>
+<dt><strong><code>part_type</code></strong></dt>
+<dd>NamePart 타입 (기본값: UNDEFINED)</dd>
+<dt><strong><code>values</code></strong></dt>
+<dd>사전 정의된 값 목록 (기본값: None)</dd>
+<dt><strong><code>descriptions</code></strong></dt>
+<dd>값에 대한 설명 목록 (기본값: None, 값과 동일하게 설정됨)</dd>
+<dt><strong><code>korean_descriptions</code></strong></dt>
+<dd>값에 대한 한국어 설명 목록 (기본값: None, 값과 동일하게 설정됨) # Add korean_descriptions doc</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>추가 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.add_part_value"><code class="name flex">
+<span>def <span class="ident">add_part_value</span></span>(<span>self,<br>part_name: str,<br>value: str,<br>description: str | None = None,<br>korean_description: str | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_part_value(self, part_name: str, value: str, 
+                   description: Optional[str] = None, 
+                   korean_description: Optional[str] = None) -&gt; bool: # Add korean_description parameter
+    &#34;&#34;&#34;
+    특정 NamePart에 사전 정의 값 추가
+    
+    Args:
+        part_name: NamePart 이름
+        value: 추가할 사전 정의 값
+        description: 추가할 값의 설명 (기본값: None, 값과 같은 설명 사용)
+        korean_description: 추가할 값의 한국어 설명 (기본값: None, 값과 같은 설명 사용) # Add korean_description doc
+        
+    Returns:
+        추가 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 사전 정의 값 추가 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 추가할 수 없습니다.&#34;)
+        return False
+    
+    # 값이 이미 존재하는지 확인
+    if part.contains_value(value):
+        print(f&#34;오류: &#39;{value}&#39;가 이미 {part_name} 부분의 사전 정의 값에 존재합니다.&#34;)
+        return False
+    
+    # description이 없으면 값을 설명으로 사용
+    if description is None:
+        description = value
+        
+    # korean_description이 없으면 값을 설명으로 사용
+    if korean_description is None:
+        korean_description = value
+        
+    # NamePart 클래스의 add_predefined_value 메소드 직접 활용
+    return part.add_predefined_value(value, description, korean_description) # Pass korean_description</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart에 사전 정의 값 추가</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>추가할 사전 정의 값</dd>
+<dt><strong><code>description</code></strong></dt>
+<dd>추가할 값의 설명 (기본값: None, 값과 같은 설명 사용)</dd>
+<dt><strong><code>korean_description</code></strong></dt>
+<dd>추가할 값의 한국어 설명 (기본값: None, 값과 같은 설명 사용) # Add korean_description doc</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>추가 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.apply_to_naming"><code class="name flex">
+<span>def <span class="ident">apply_to_naming</span></span>(<span>self, naming_instance) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_to_naming(self, naming_instance) -&gt; bool:
+    &#34;&#34;&#34;
+    설정을 Naming 인스턴스에 적용
+    
+    Args:
+        naming_instance: 설정을 적용할 Naming 클래스 인스턴스
+        
+    Returns:
+        적용 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    try:
+        # NamePart 객체 리스트 복사하여 적용
+        naming_instance._nameParts = copy.deepcopy(self.name_parts)
+        
+        # paddingNum 설정
+        naming_instance._paddingNum = self.padding_num
+        
+        return True
+    except Exception as e:
+        print(f&#34;설정 적용 중 오류 발생: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>설정을 Naming 인스턴스에 적용</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>naming_instance</code></strong></dt>
+<dd>설정을 적용할 Naming 클래스 인스턴스</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>적용 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_index_part"><code class="name flex">
+<span>def <span class="ident">get_index_part</span></span>(<span>self) ‑> <a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_index_part(self) -&gt; Optional[NamePart]:
+    &#34;&#34;&#34;
+    INDEX 타입 NamePart 가져오기
+    
+    Returns:
+        INDEX 타입의 NamePart 객체, 없으면 None
+    &#34;&#34;&#34;
+    for part in self.name_parts:
+        if part.is_index():
+            return part
+    return None</code></pre>
+</details>
+<div class="desc"><p>INDEX 타입 NamePart 가져오기</p>
+<h2 id="returns">Returns</h2>
+<p>INDEX 타입의 NamePart 객체, 없으면 None</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part"><code class="name flex">
+<span>def <span class="ident">get_part</span></span>(<span>self, name: str) ‑> <a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part(self, name: str) -&gt; Optional[NamePart]:
+    &#34;&#34;&#34;
+    이름으로 NamePart 객체 가져오기
+    
+    Args:
+        name: NamePart 이름
+        
+    Returns:
+        NamePart 객체, 없으면 None
+    &#34;&#34;&#34;
+    for part in self.name_parts:
+        if part.get_name() == name:
+            return part
+    return None</code></pre>
+</details>
+<div class="desc"><p>이름으로 NamePart 객체 가져오기</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>NamePart 이름</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>NamePart 객체, 없으면 None</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part_descriptions"><code class="name flex">
+<span>def <span class="ident">get_part_descriptions</span></span>(<span>self, part_name: str) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part_descriptions(self, part_name: str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    특정 NamePart의 설명 목록 가져오기
+    
+    Args:
+        part_name: NamePart 이름
+        
+    Returns:
+        설명 목록
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return []
+    
+    return part.get_descriptions()</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 설명 목록 가져오기</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설명 목록</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part_korean_descriptions"><code class="name flex">
+<span>def <span class="ident">get_part_korean_descriptions</span></span>(<span>self, part_name: str) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part_korean_descriptions(self, part_name: str) -&gt; List[str]:
+    &#34;&#34;&#34;
+    특정 NamePart의 한국어 설명 목록 가져오기
+    
+    Args:
+        part_name: NamePart 이름
+        
+    Returns:
+        한국어 설명 목록
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return []
+    
+    return part.get_korean_descriptions()</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 한국어 설명 목록 가져오기</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>한국어 설명 목록</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part_names"><code class="name flex">
+<span>def <span class="ident">get_part_names</span></span>(<span>self) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part_names(self) -&gt; List[str]:
+    &#34;&#34;&#34;
+    모든 NamePart 이름 목록 반환
+    
+    Returns:
+        NamePart 이름 목록
+    &#34;&#34;&#34;
+    return [part.get_name() for part in self.name_parts]</code></pre>
+</details>
+<div class="desc"><p>모든 NamePart 이름 목록 반환</p>
+<h2 id="returns">Returns</h2>
+<p>NamePart 이름 목록</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part_order"><code class="name flex">
+<span>def <span class="ident">get_part_order</span></span>(<span>self) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part_order(self) -&gt; List[str]:
+    &#34;&#34;&#34;
+    NamePart 순서 목록 반환
+    
+    Returns:
+        NamePart 이름 순서 목록
+    &#34;&#34;&#34;
+    return self.part_order.copy()</code></pre>
+</details>
+<div class="desc"><p>NamePart 순서 목록 반환</p>
+<h2 id="returns">Returns</h2>
+<p>NamePart 이름 순서 목록</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_part_type"><code class="name flex">
+<span>def <span class="ident">get_part_type</span></span>(<span>self, part_name: str) ‑> <a title="pyjallib.namePart.NamePartType" href="namePart.html#pyjallib.namePart.NamePartType">NamePartType</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_part_type(self, part_name: str) -&gt; Optional[NamePartType]:
+    &#34;&#34;&#34;
+    특정 NamePart의 타입 가져오기
+    
+    Args:
+        part_name: NamePart 이름
+        
+    Returns:
+        NamePart 타입, 없으면 None
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return None
+    
+    return part.get_type()</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 타입 가져오기</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>NamePart 타입, 없으면 None</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_prefix_parts"><code class="name flex">
+<span>def <span class="ident">get_prefix_parts</span></span>(<span>self) ‑> List[<a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_prefix_parts(self) -&gt; List[NamePart]:
+    &#34;&#34;&#34;
+    모든 PREFIX 타입 NamePart 가져오기
+    
+    Returns:
+        PREFIX 타입의 NamePart 객체 리스트
+    &#34;&#34;&#34;
+    return [part for part in self.name_parts if part.is_prefix()]</code></pre>
+</details>
+<div class="desc"><p>모든 PREFIX 타입 NamePart 가져오기</p>
+<h2 id="returns">Returns</h2>
+<p>PREFIX 타입의 NamePart 객체 리스트</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_realname_part"><code class="name flex">
+<span>def <span class="ident">get_realname_part</span></span>(<span>self) ‑> <a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_realname_part(self) -&gt; Optional[NamePart]:
+    &#34;&#34;&#34;
+    REALNAME 타입 NamePart 가져오기
+    
+    Returns:
+        REALNAME 타입의 NamePart 객체, 없으면 None
+    &#34;&#34;&#34;
+    for part in self.name_parts:
+        if part.is_realname():
+            return part
+    return None</code></pre>
+</details>
+<div class="desc"><p>REALNAME 타입 NamePart 가져오기</p>
+<h2 id="returns">Returns</h2>
+<p>REALNAME 타입의 NamePart 객체, 없으면 None</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.get_suffix_parts"><code class="name flex">
+<span>def <span class="ident">get_suffix_parts</span></span>(<span>self) ‑> List[<a title="pyjallib.namePart.NamePart" href="namePart.html#pyjallib.namePart.NamePart">NamePart</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_suffix_parts(self) -&gt; List[NamePart]:
+    &#34;&#34;&#34;
+    모든 SUFFIX 타입 NamePart 가져오기
+    
+    Returns:
+        SUFFIX 타입의 NamePart 객체 리스트
+    &#34;&#34;&#34;
+    return [part for part in self.name_parts if part.is_suffix()]</code></pre>
+</details>
+<div class="desc"><p>모든 SUFFIX 타입 NamePart 가져오기</p>
+<h2 id="returns">Returns</h2>
+<p>SUFFIX 타입의 NamePart 객체 리스트</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.insert_part"><code class="name flex">
+<span>def <span class="ident">insert_part</span></span>(<span>self,<br>name: str,<br>part_type: <a title="pyjallib.namePart.NamePartType" href="namePart.html#pyjallib.namePart.NamePartType">NamePartType</a>,<br>position: int,<br>values: List[str] | None = None,<br>descriptions: List[str] | None = None,<br>korean_descriptions: List[str] | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def insert_part(self, name: str, part_type: NamePartType, position: int,
+                values: Optional[List[str]] = None, 
+                descriptions: Optional[List[str]] = None,
+                korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add value/description parameters
+    &#34;&#34;&#34;
+    특정 위치에 새 NamePart 삽입
+    
+    Args:
+        name: 삽입할 NamePart 이름
+        part_type: NamePart 타입
+        position: 삽입할 위치 (인덱스)
+        values: 사전 정의된 값 목록 (기본값: None) # Add doc
+        descriptions: 값에 대한 설명 목록 (기본값: None) # Add doc
+        korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None) # Add doc
+        
+    Returns:
+        삽입 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    if not name:
+        print(&#34;오류: 유효한 NamePart 이름을 입력하세요.&#34;)
+        return False
+    
+    # 이미 존재하는지 확인
+    if self.get_part(name) is not None:
+        print(f&#34;오류: &#39;{name}&#39; NamePart가 이미 존재합니다.&#34;)
+        return False
+    
+    # 위치 범위 확인
+    if position &lt; 0 or position &gt; len(self.name_parts):
+        print(f&#34;오류: 위치가 유효하지 않습니다. 0에서 {len(self.name_parts)} 사이의 값이어야 합니다.&#34;)
+        return False
+    
+    # 새 NamePart 생성 (값과 설명 포함)
+    new_part = NamePart(name, part_type, values or [], descriptions, False, korean_descriptions) # Pass values/descriptions
+    
+    # 지정된 위치에 삽입
+    self.name_parts.insert(position, new_part)
+    
+    # 순서 목록 업데이트
+    if name not in self.part_order:
+        self.part_order.insert(position, name)
+    
+    # 순서에 따라 타입 업데이트
+    self._update_part_types_based_on_order()
+    return True</code></pre>
+</details>
+<div class="desc"><p>특정 위치에 새 NamePart 삽입</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>삽입할 NamePart 이름</dd>
+<dt><strong><code>part_type</code></strong></dt>
+<dd>NamePart 타입</dd>
+<dt><strong><code>position</code></strong></dt>
+<dd>삽입할 위치 (인덱스)</dd>
+<dt><strong><code>values</code></strong></dt>
+<dd>사전 정의된 값 목록 (기본값: None) # Add doc</dd>
+<dt><strong><code>descriptions</code></strong></dt>
+<dd>값에 대한 설명 목록 (기본값: None) # Add doc</dd>
+<dt><strong><code>korean_descriptions</code></strong></dt>
+<dd>값에 대한 한국어 설명 목록 (기본값: None) # Add doc</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>삽입 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>self, file_path: str | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load(self, file_path: Optional[str] = None) -&gt; bool:
+    &#34;&#34;&#34;
+    JSON 파일에서 설정 불러오기
+    
+    Args:
+        file_path: 불러올 파일 경로 (기본값: self.default_file_path)
+        
+    Returns:
+        로드 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    load_path = file_path or self.default_file_path
+    
+    try:
+        if os.path.exists(load_path):
+            with open(load_path, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+                loaded_data = json.load(f)
+            
+            # 필수 키가 있는지 확인
+            if &#34;nameParts&#34; not in loaded_data:
+                print(&#34;경고: 설정 파일에 필수 키 &#39;nameParts&#39;가 없습니다.&#34;)
+                return False
+            
+            # paddingNum 불러오기
+            if &#34;paddingNum&#34; in loaded_data:
+                self.padding_num = loaded_data[&#34;paddingNum&#34;]
+            
+            # 파트 순서 불러오기
+            if &#34;partOrder&#34; in loaded_data:
+                self.part_order = loaded_data[&#34;partOrder&#34;]
+            else:
+                # 없으면 기본 순서 생성
+                self.part_order = [part_data[&#34;name&#34;] for part_data in loaded_data[&#34;nameParts&#34;]]
+            
+            # NamePart 객체 리스트 생성
+            new_parts = []
+            for part_data in loaded_data[&#34;nameParts&#34;]:
+                part = NamePart.from_dict(part_data)
+                new_parts.append(part)
+            
+            # 필수 NamePart가 포함되어 있는지 확인
+            part_names = [part.get_name() for part in new_parts]
+            for required_name in self.required_parts:
+                if required_name not in part_names:
+                    print(f&#34;경고: 필수 NamePart &#39;{required_name}&#39;가 설정에 포함되어 있지 않습니다.&#34;)
+                    return False
+            
+            # 모든 확인이 통과되면 데이터 업데이트
+            self.name_parts = new_parts
+            self.config_file_path = load_path
+            
+            # 순서에 따라 타입 업데이트
+            self._update_part_types_based_on_order()
+            self._update_part_order()  # 순서 업데이트
+            return True
+        else:
+            print(f&#34;설정 파일을 찾을 수 없습니다: {load_path}&#34;)
+            return False
+    except Exception as e:
+        print(f&#34;설정 로드 중 오류 발생: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>JSON 파일에서 설정 불러오기</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>불러올 파일 경로 (기본값: self.default_file_path)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>로드 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.remove_part"><code class="name flex">
+<span>def <span class="ident">remove_part</span></span>(<span>self, name: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_part(self, name: str) -&gt; bool:
+    &#34;&#34;&#34;
+    NamePart 객체 제거 (필수 부분은 제거 불가)
+    
+    Args:
+        name: 제거할 NamePart 이름
+        
+    Returns:
+        제거 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    # 필수 부분은 제거 불가능
+    if name in self.required_parts:
+        print(f&#34;오류: 필수 NamePart &#39;{name}&#39;는 제거할 수 없습니다.&#34;)
+        return False
+    
+    # 찾아서 제거
+    for i, part in enumerate(self.name_parts):
+        if part.get_name() == name:
+            del self.name_parts[i]
+            
+            # 순서 목록에서도 제거
+            if name in self.part_order:
+                self.part_order.remove(name)
+            
+            # 순서에 따라 타입 업데이트
+            self._update_part_types_based_on_order()
+            return True
+    
+    print(f&#34;오류: &#39;{name}&#39; NamePart가 존재하지 않습니다.&#34;)
+    return False</code></pre>
+</details>
+<div class="desc"><p>NamePart 객체 제거 (필수 부분은 제거 불가)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>제거할 NamePart 이름</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>제거 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.remove_part_value"><code class="name flex">
+<span>def <span class="ident">remove_part_value</span></span>(<span>self, part_name: str, value: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_part_value(self, part_name: str, value: str) -&gt; bool:
+    &#34;&#34;&#34;
+    특정 NamePart에서 사전 정의 값과 해당 설명 제거
+    
+    Args:
+        part_name: NamePart 이름
+        value: 제거할 사전 정의 값
+        
+    Returns:
+        제거 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 사전 정의 값 제거 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 제거할 수 없습니다.&#34;)
+        return False
+    
+    # 값이 존재하는지 확인
+    if not part.contains_value(value):
+        print(f&#34;오류: &#39;{value}&#39;가 {part_name} 부분의 사전 정의 값에 존재하지 않습니다.&#34;)
+        return False
+    
+    # 마지막 값인지 확인
+    if part.get_value_count() &lt;= 1:
+        print(f&#34;오류: {part_name} 부분의 사전 정의 값은 적어도 하나 이상 있어야 합니다.&#34;)
+        return False
+    
+    # NamePart 클래스의 remove_predefined_value 메소드 직접 활용
+    return part.remove_predefined_value(value)</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart에서 사전 정의 값과 해당 설명 제거</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>제거할 사전 정의 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>제거 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.reorder_parts"><code class="name flex">
+<span>def <span class="ident">reorder_parts</span></span>(<span>self, new_order: List[str]) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reorder_parts(self, new_order: List[str]) -&gt; bool:
+    &#34;&#34;&#34;
+    NamePart 순서 변경
+    
+    Args:
+        new_order: 새로운 NamePart 이름 순서 배열
+        
+    Returns:
+        변경 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    # 배열 길이 확인
+    if len(new_order) != len(self.name_parts):
+        print(&#34;오류: 새 순서의 항목 수가 기존 NamePart와 일치하지 않습니다.&#34;)
+        return False
+    
+    # 모든 필수 부분이 포함되어 있는지 확인
+    for part in self.required_parts:
+        if part not in new_order:
+            print(f&#34;오류: 필수 NamePart &#39;{part}&#39;가 새 순서에 포함되어 있지 않습니다.&#34;)
+            return False
+    
+    # 모든 이름이 현재 존재하는지 확인
+    current_names = self.get_part_names()
+    for name in new_order:
+        if name not in current_names:
+            print(f&#34;오류: &#39;{name}&#39; NamePart가 존재하지 않습니다.&#34;)
+            return False
+    
+    # 순서 변경을 위한 새 리스트 생성
+    reordered_parts = []
+    for name in new_order:
+        part = self.get_part(name)
+        if part:
+            reordered_parts.append(part)
+    
+    # 새 순서로 업데이트
+    self.name_parts = reordered_parts
+    self.part_order = new_order.copy()
+    
+    # 순서에 따라 타입 업데이트
+    self._update_part_types_based_on_order()
+    return True</code></pre>
+</details>
+<div class="desc"><p>NamePart 순서 변경</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>new_order</code></strong></dt>
+<dd>새로운 NamePart 이름 순서 배열</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>변경 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>self, file_path: str | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(self, file_path: Optional[str] = None) -&gt; bool:
+    &#34;&#34;&#34;
+    현재 설정을 JSON 파일로 저장
+    
+    Args:
+        file_path: 저장할 파일 경로 (기본값: self.default_file_path)
+        
+    Returns:
+        저장 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    save_path = file_path or self.default_file_path
+    
+    try:
+        # 저장할 데이터 준비
+        save_data = {
+            &#34;paddingNum&#34;: self.padding_num,
+            &#34;partOrder&#34;: self.part_order,  # 순서 정보 저장
+            &#34;nameParts&#34;: []
+        }
+        
+        # 각 NamePart 객체를 딕셔너리로 변환하여 추가
+        for part in self.name_parts:
+            save_data[&#34;nameParts&#34;].append(part.to_dict())
+        
+        # JSON 파일로 저장
+        with open(save_path, &#39;w&#39;, encoding=&#39;utf-8&#39;) as f:
+            json.dump(save_data, f, indent=4, ensure_ascii=False)
+        
+        self.config_file_path = save_path
+        return True
+    except Exception as e:
+        print(f&#34;설정 저장 중 오류 발생: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>현재 설정을 JSON 파일로 저장</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>저장할 파일 경로 (기본값: self.default_file_path)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>저장 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_padding_num"><code class="name flex">
+<span>def <span class="ident">set_padding_num</span></span>(<span>self, padding_num: int) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_padding_num(self, padding_num: int) -&gt; bool:
+    &#34;&#34;&#34;
+    인덱스 자릿수 설정
+    
+    Args:
+        padding_num: 설정할 패딩 자릿수
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    if not isinstance(padding_num, int) or padding_num &lt; 1:
+        print(&#34;오류: 패딩 자릿수는 1 이상의 정수여야 합니다.&#34;)
+        return False
+    
+    self.padding_num = padding_num
+    return True</code></pre>
+</details>
+<div class="desc"><p>인덱스 자릿수 설정</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>padding_num</code></strong></dt>
+<dd>설정할 패딩 자릿수</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_part_descriptions"><code class="name flex">
+<span>def <span class="ident">set_part_descriptions</span></span>(<span>self, part_name: str, descriptions: List[str]) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_part_descriptions(self, part_name: str, descriptions: List[str]) -&gt; bool:
+    &#34;&#34;&#34;
+    특정 NamePart의 설명 목록 설정
+    
+    Args:
+        part_name: NamePart 이름
+        descriptions: 설정할 설명 목록
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 설명 설정 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 설명을 설정할 수 없습니다.&#34;)
+        return False
+    
+    # NamePart 클래스 메소드 활용하여 설명 설정
+    values = part.get_predefined_values()
+    
+    # 길이 맞추기
+    if len(descriptions) &lt; len(values):
+        descriptions.extend([&#34;&#34;] * (len(values) - len(descriptions)))
+    elif len(descriptions) &gt; len(values):
+        descriptions = descriptions[:len(values)]
+    
+    # 각 값에 대한 설명 설정 (NamePart.set_description 사용)
+    success = True
+    for i, value in enumerate(values):
+        if not part.set_description(value, descriptions[i]):
+            success = False # 실패 시 기록 (이론상 발생하지 않음)
+            
+    return success</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 설명 목록 설정</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>descriptions</code></strong></dt>
+<dd>설정할 설명 목록</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_part_korean_descriptions"><code class="name flex">
+<span>def <span class="ident">set_part_korean_descriptions</span></span>(<span>self, part_name: str, korean_descriptions: List[str]) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_part_korean_descriptions(self, part_name: str, korean_descriptions: List[str]) -&gt; bool:
+    &#34;&#34;&#34;
+    특정 NamePart의 한국어 설명 목록 설정
+    
+    Args:
+        part_name: NamePart 이름
+        korean_descriptions: 설정할 한국어 설명 목록
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 설명 설정 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 한국어 설명을 설정할 수 없습니다.&#34;)
+        return False
+    
+    # NamePart 클래스 메소드 활용하여 설명 설정
+    values = part.get_predefined_values()
+    
+    # 길이 맞추기
+    if len(korean_descriptions) &lt; len(values):
+        korean_descriptions.extend([&#34;&#34;] * (len(values) - len(korean_descriptions)))
+    elif len(korean_descriptions) &gt; len(values):
+        korean_descriptions = korean_descriptions[:len(values)]
+        
+    # 각 값에 대한 한국어 설명 설정 (NamePart.set_korean_description 사용)
+    success = True
+    for i, value in enumerate(values):
+        if not part.set_korean_description(value, korean_descriptions[i]):
+            success = False # 실패 시 기록 (이론상 발생하지 않음)
+            
+    return success</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 한국어 설명 목록 설정</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>korean_descriptions</code></strong></dt>
+<dd>설정할 한국어 설명 목록</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_part_type"><code class="name flex">
+<span>def <span class="ident">set_part_type</span></span>(<span>self,<br>part_name: str,<br>part_type: <a title="pyjallib.namePart.NamePartType" href="namePart.html#pyjallib.namePart.NamePartType">NamePartType</a>) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_part_type(self, part_name: str, part_type: NamePartType) -&gt; bool:
+    &#34;&#34;&#34;
+    특정 NamePart의 타입 설정
+    
+    Args:
+        part_name: NamePart 이름
+        part_type: 설정할 타입 (NamePartType 열거형 값)
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # 필수 RealName 부분은 항상 REALNAME 타입이어야 함
+    if part_name == &#34;RealName&#34; and part_type != NamePartType.REALNAME:
+        print(&#34;오류: RealName 부분은 반드시 REALNAME 타입이어야 합니다.&#34;)
+        return False
+    
+    # Index 부분은 항상 INDEX 타입이어야 함
+    if part_name == &#34;Index&#34; and part_type != NamePartType.INDEX:
+        print(&#34;오류: Index 부분은 반드시 INDEX 타입이어야 합니다.&#34;)
+        return False
+    
+    part.set_type(part_type)
+    return True</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 타입 설정</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>part_type</code></strong></dt>
+<dd>설정할 타입 (NamePartType 열거형 값)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_part_value_by_csv"><code class="name flex">
+<span>def <span class="ident">set_part_value_by_csv</span></span>(<span>self, part_name: str, csv_file_path: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_part_value_by_csv(self, part_name: str, csv_file_path: str) -&gt; bool:
+    &#34;&#34;&#34;
+    특정 NamePart의 사전 정의 값을 CSV 파일로 설정
+    CSV 파일 형식: value,description,koreanDescription (각 줄당)
+    
+    Args:
+        part_name: NamePart 이름
+        csv_file_path: CSV 파일 경로
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 사전 정의 값 설정 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 설정할 수 없습니다.&#34;)
+        return False
+    
+    # CSV 파일에서 값, 설명, 한국어 설명 읽기
+    values = []
+    descriptions = []
+    korean_descriptions = []
+    try:
+        with open(csv_file_path, &#39;r&#39;, encoding=&#39;utf-8&#39;, newline=&#39;&#39;) as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if len(row) &gt;= 3: # Ensure row has at least 3 columns
+                    value = row[0].strip()
+                    description = row[1].strip()
+                    korean_description = row[2].strip()
+                    if value: # Skip empty values
+                        values.append(value)
+                        descriptions.append(description if description else value) # Use value if description is empty
+                        korean_descriptions.append(korean_description if korean_description else value) # Use value if korean_description is empty
+                elif len(row) == 2: # Handle case with value and description only
+                    value = row[0].strip()
+                    description = row[1].strip()
+                    if value:
+                        values.append(value)
+                        descriptions.append(description if description else value)
+                        korean_descriptions.append(value) # Use value as korean description
+                elif len(row) == 1: # Handle case with value only
+                    value = row[0].strip()
+                    if value:
+                        values.append(value)
+                        descriptions.append(value)
+                        korean_descriptions.append(value)
+
+        if not values:
+            print(f&#34;오류: CSV 파일 &#39;{csv_file_path}&#39;에서 유효한 값을 찾을 수 없습니다.&#34;)
+            return False
+
+        # 값, 설명, 한국어 설명 설정
+        return self.set_part_values(part_name, values, descriptions, korean_descriptions)
+    except FileNotFoundError:
+        print(f&#34;오류: CSV 파일을 찾을 수 없습니다: {csv_file_path}&#34;)
+        return False
+    except Exception as e:
+        print(f&#34;오류: CSV 파일을 읽는 중 오류 발생: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 사전 정의 값을 CSV 파일로 설정
+CSV 파일 형식: value,description,koreanDescription (각 줄당)</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>csv_file_path</code></strong></dt>
+<dd>CSV 파일 경로</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namingConfig.NamingConfig.set_part_values"><code class="name flex">
+<span>def <span class="ident">set_part_values</span></span>(<span>self,<br>part_name: str,<br>values: List[str],<br>descriptions: List[str] | None = None,<br>korean_descriptions: List[str] | None = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_part_values(self, part_name: str, values: List[str], 
+                    descriptions: Optional[List[str]] = None, 
+                    korean_descriptions: Optional[List[str]] = None) -&gt; bool: # Add korean_descriptions parameter
+    &#34;&#34;&#34;
+    특정 NamePart의 사전 정의 값 설정
+    
+    Args:
+        part_name: NamePart 이름
+        values: 설정할 사전 정의 값 리스트
+        descriptions: 설정할 설명 목록 (기본값: None, 값과 같은 설명 사용)
+        korean_descriptions: 설정할 한국어 설명 목록 (기본값: None, 값과 같은 설명 사용) # Add korean_descriptions doc
+        
+    Returns:
+        설정 성공 여부 (True/False)
+    &#34;&#34;&#34;
+    part = self.get_part(part_name)
+    if not part:
+        print(f&#34;오류: &#39;{part_name}&#39; NamePart가 존재하지 않습니다.&#34;)
+        return False
+    
+    # REALNAME이나 INDEX 타입은 사전 정의 값 설정 불가
+    if part.is_realname() or part.is_index():
+        print(f&#34;오류: {part_name} 부분은 {part.get_type().name} 타입이므로 사전 정의 값을 설정할 수 없습니다.&#34;)
+        return False
+    
+    if not values:
+        print(f&#34;오류: {part_name} 부분의 사전 정의 값은 적어도 하나 이상 있어야 합니다.&#34;)
+        return False
+    
+    # 값 설정
+    part.set_predefined_values(values, descriptions, korean_descriptions) # Pass korean_descriptions
+    
+    return True</code></pre>
+</details>
+<div class="desc"><p>특정 NamePart의 사전 정의 값 설정</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>part_name</code></strong></dt>
+<dd>NamePart 이름</dd>
+<dt><strong><code>values</code></strong></dt>
+<dd>설정할 사전 정의 값 리스트</dd>
+<dt><strong><code>descriptions</code></strong></dt>
+<dd>설정할 설명 목록 (기본값: None, 값과 같은 설명 사용)</dd>
+<dt><strong><code>korean_descriptions</code></strong></dt>
+<dd>설정할 한국어 설명 목록 (기본값: None, 값과 같은 설명 사용) # Add korean_descriptions doc</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (True/False)</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pyjallib" href="index.html">pyjallib</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pyjallib.namingConfig.NamingConfig" href="#pyjallib.namingConfig.NamingConfig">NamingConfig</a></code></h4>
+<ul class="">
+<li><code><a title="pyjallib.namingConfig.NamingConfig.add_part" href="#pyjallib.namingConfig.NamingConfig.add_part">add_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.add_part_value" href="#pyjallib.namingConfig.NamingConfig.add_part_value">add_part_value</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.apply_to_naming" href="#pyjallib.namingConfig.NamingConfig.apply_to_naming">apply_to_naming</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_index_part" href="#pyjallib.namingConfig.NamingConfig.get_index_part">get_index_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part" href="#pyjallib.namingConfig.NamingConfig.get_part">get_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part_descriptions" href="#pyjallib.namingConfig.NamingConfig.get_part_descriptions">get_part_descriptions</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part_korean_descriptions" href="#pyjallib.namingConfig.NamingConfig.get_part_korean_descriptions">get_part_korean_descriptions</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part_names" href="#pyjallib.namingConfig.NamingConfig.get_part_names">get_part_names</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part_order" href="#pyjallib.namingConfig.NamingConfig.get_part_order">get_part_order</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_part_type" href="#pyjallib.namingConfig.NamingConfig.get_part_type">get_part_type</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_prefix_parts" href="#pyjallib.namingConfig.NamingConfig.get_prefix_parts">get_prefix_parts</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_realname_part" href="#pyjallib.namingConfig.NamingConfig.get_realname_part">get_realname_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.get_suffix_parts" href="#pyjallib.namingConfig.NamingConfig.get_suffix_parts">get_suffix_parts</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.insert_part" href="#pyjallib.namingConfig.NamingConfig.insert_part">insert_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.load" href="#pyjallib.namingConfig.NamingConfig.load">load</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.remove_part" href="#pyjallib.namingConfig.NamingConfig.remove_part">remove_part</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.remove_part_value" href="#pyjallib.namingConfig.NamingConfig.remove_part_value">remove_part_value</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.reorder_parts" href="#pyjallib.namingConfig.NamingConfig.reorder_parts">reorder_parts</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.save" href="#pyjallib.namingConfig.NamingConfig.save">save</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_padding_num" href="#pyjallib.namingConfig.NamingConfig.set_padding_num">set_padding_num</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_part_descriptions" href="#pyjallib.namingConfig.NamingConfig.set_part_descriptions">set_part_descriptions</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_part_korean_descriptions" href="#pyjallib.namingConfig.NamingConfig.set_part_korean_descriptions">set_part_korean_descriptions</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_part_type" href="#pyjallib.namingConfig.NamingConfig.set_part_type">set_part_type</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_part_value_by_csv" href="#pyjallib.namingConfig.NamingConfig.set_part_value_by_csv">set_part_value_by_csv</a></code></li>
+<li><code><a title="pyjallib.namingConfig.NamingConfig.set_part_values" href="#pyjallib.namingConfig.NamingConfig.set_part_values">set_part_values</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

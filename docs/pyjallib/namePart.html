@@ -1,0 +1,1880 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>pyjallib.namePart API documentation</title>
+<meta name="description" content="namePart 모듈 - 이름의 각 부분을 표현하는 기능 제공
+이름 부분의 사전 정의된 값과 가중치 매핑을 관리하는 클래스 구현">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pyjallib.namePart</code></h1>
+</header>
+<section id="section-intro">
+<p>namePart 모듈 - 이름의 각 부분을 표현하는 기능 제공
+이름 부분의 사전 정의된 값과 가중치 매핑을 관리하는 클래스 구현</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pyjallib.namePart.NamePart"><code class="flex name class">
+<span>class <span class="ident">NamePart</span></span>
+<span>(</span><span>inName='',<br>inType=NamePartType.UNDEFINED,<br>inPredefinedValues=None,<br>inDescriptions=None,<br>inIsDirection=False,<br>inKoreanDescriptions=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NamePart:
+    &#34;&#34;&#34;
+    이름 부분(name part)을 관리하기 위한 클래스.
+    이름과 해당 부분에 대한 사전 선언된 값들을 관리합니다.
+    &#34;&#34;&#34;
+    
+    def __init__(self, inName=&#34;&#34;, inType=NamePartType.UNDEFINED, inPredefinedValues=None, inDescriptions=None, inIsDirection=False, inKoreanDescriptions=None):
+        &#34;&#34;&#34;
+        NamePart 클래스 초기화
+        
+        Args:
+            inName: 이름 부분의 이름 (예: &#34;Base&#34;, &#34;Type&#34;, &#34;Side&#34; 등)
+            inPredefinedValues: 사전 선언된 값 목록 (기본값: None, 빈 리스트로 초기화)
+            inType: NamePart의 타입 (NamePartType 열거형 값)
+            inDescriptions: 사전 선언된 값들의 설명 목록 (기본값: None, 빈 리스트로 초기화)
+            inIsDirection: 방향성 여부 (기본값: False)
+            inKoreanDescriptions: 사전 선언된 값들의 한국어 설명 목록 (기본값: None, 빈 리스트로 초기화)
+        &#34;&#34;&#34;
+        self._name = inName
+        self._predefinedValues = inPredefinedValues if inPredefinedValues is not None else []
+        self._weights = []
+        self._type = inType
+        self._descriptions = inDescriptions if inDescriptions is not None else [&#34;&#34;] * len(self._predefinedValues)
+        self._koreanDescriptions = inKoreanDescriptions if inKoreanDescriptions is not None else [&#34;&#34;] * len(self._predefinedValues) # Add korean descriptions
+        self._isDirection = inIsDirection if inIsDirection is True else False  # 방향성 여부 (기본값: False)
+        
+        # 길이 일치 확인 (Descriptions)
+        if len(self._descriptions) &lt; len(self._predefinedValues):
+            self._descriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._descriptions)))
+        elif len(self._descriptions) &gt; len(self._predefinedValues):
+            self._descriptions = self._descriptions[:len(self._predefinedValues)]
+
+        # 길이 일치 확인 (Korean Descriptions)
+        if len(self._koreanDescriptions) &lt; len(self._predefinedValues):
+            self._koreanDescriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._koreanDescriptions)))
+        elif len(self._koreanDescriptions) &gt; len(self._predefinedValues):
+            self._koreanDescriptions = self._koreanDescriptions[:len(self._predefinedValues)]
+        
+        # 타입에 따른 기본 값 설정
+        self._initialize_type_defaults()
+        self._update_weights()
+    
+    def _initialize_type_defaults(self):
+        &#34;&#34;&#34;타입에 따른 기본 설정을 초기화합니다.&#34;&#34;&#34;
+        if self._type == NamePartType.INDEX:
+            # Index 타입은 숫자만 처리하므로 predefined values는 사용하지 않음
+            self._predefinedValues = []
+            self._descriptions = []
+            self._koreanDescriptions = [] # Clear korean descriptions
+            self._weights = []
+        elif self._type == NamePartType.REALNAME:
+            # RealName 타입은 predefined values를 사용하지 않음
+            self._predefinedValues = []
+            self._descriptions = []
+            self._koreanDescriptions = [] # Clear korean descriptions
+            self._weights = []
+    
+    def _update_weights(self):
+        &#34;&#34;&#34;
+        predefined values의 순서에 따라 자동으로 가중치를 설정합니다.
+        값들은 5부터 시작해서 5씩 증가하는 가중치를 갖습니다.
+        &#34;&#34;&#34;
+        # REALNAME이나 INDEX 타입인 경우 weights를 사용하지 않음
+        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+            self._weights = []
+            return
+            
+        self._weights = []
+        # 가중치는 5부터 시작해서 5씩 증가 (순서대로 내림차순 가중치)
+        num_values = len(self._predefinedValues)
+        for i in range(num_values):
+            weight_value = 5 * (i + 1)  # 내림차순 가중치
+            self._weights.append(weight_value)
+    
+    def set_name(self, inName):
+        &#34;&#34;&#34;
+        이름 부분의 이름을 설정합니다.
+        
+        Args:
+            inName: 설정할 이름
+        &#34;&#34;&#34;
+        self._name = inName
+    
+    def get_name(self):
+        &#34;&#34;&#34;
+        이름 부분의 이름을 반환합니다.
+        
+        Returns:
+            이름 부분의 이름
+        &#34;&#34;&#34;
+        return self._name
+    
+    def set_type(self, inType):
+        &#34;&#34;&#34;
+        이름 부분의 타입을 설정합니다.
+        
+        Args:
+            inType: 설정할 타입 (NamePartType 열거형 값)
+        &#34;&#34;&#34;
+        self._type = inType
+        self._initialize_type_defaults()
+        self._update_weights()
+    
+    def get_type(self):
+        &#34;&#34;&#34;
+        이름 부분의 타입을 반환합니다.
+        
+        Returns:
+            이름 부분의 타입 (NamePartType 열거형 값)
+        &#34;&#34;&#34;
+        return self._type
+    
+    def is_prefix(self):
+        &#34;&#34;&#34;
+        이름 부분이 PREFIX 타입인지 확인합니다.
+        
+        Returns:
+            PREFIX 타입이면 True, 아니면 False
+        &#34;&#34;&#34;
+        return self._type == NamePartType.PREFIX
+    
+    def is_suffix(self):
+        &#34;&#34;&#34;
+        이름 부분이 SUFFIX 타입인지 확인합니다.
+        
+        Returns:
+            SUFFIX 타입이면 True, 아니면 False
+        &#34;&#34;&#34;
+        return self._type == NamePartType.SUFFIX
+    
+    def is_realname(self):
+        &#34;&#34;&#34;
+        이름 부분이 REALNAME 타입인지 확인합니다.
+        
+        Returns:
+            REALNAME 타입이면 True, 아니면 False
+        &#34;&#34;&#34;
+        return self._type == NamePartType.REALNAME
+    
+    def is_index(self):
+        &#34;&#34;&#34;
+        이름 부분이 INDEX 타입인지 확인합니다.
+        
+        Returns:
+            INDEX 타입이면 True, 아니면 False
+        &#34;&#34;&#34;
+        return self._type == NamePartType.INDEX
+    
+    def add_predefined_value(self, inValue, inDescription=&#34;&#34;, inKoreanDescription=&#34;&#34;):
+        &#34;&#34;&#34;
+        사전 선언된 값 목록에 새 값을 추가합니다.
+        
+        Args:
+            inValue: 추가할 값
+            inDescription: 추가할 값에 대한 설명 (기본값: 빈 문자열)
+            inKoreanDescription: 추가할 값에 대한 한국어 설명 (기본값: 빈 문자열)
+            
+        Returns:
+            추가 성공 여부 (이미 존재하는 경우 False)
+        &#34;&#34;&#34;
+        # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
+        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+            return False
+            
+        if inValue not in self._predefinedValues:
+            self._predefinedValues.append(inValue)
+            self._descriptions.append(inDescription)
+            self._koreanDescriptions.append(inKoreanDescription) # Add korean description
+            self._update_weights()  # 가중치 자동 업데이트
+            return True
+        return False
+    
+    def remove_predefined_value(self, inValue):
+        &#34;&#34;&#34;
+        사전 선언된 값 목록에서 값을 제거합니다.
+        
+        Args:
+            inValue: 제거할 값
+            
+        Returns:
+            제거 성공 여부 (존재하지 않는 경우 False)
+        &#34;&#34;&#34;
+        if inValue in self._predefinedValues:
+            index = self._predefinedValues.index(inValue)
+            self._predefinedValues.remove(inValue)
+            self._descriptions.pop(index)
+            self._koreanDescriptions.pop(index) # Remove korean description
+            if index &lt; len(self._weights):
+                self._weights.pop(index)
+            self._update_weights()  # 가중치 자동 업데이트
+            return True
+        return False
+    
+    def set_predefined_values(self, inValues, inDescriptions=None, inKoreanDescriptions=None):
+        &#34;&#34;&#34;
+        사전 선언된 값 목록을 설정합니다.
+        
+        Args:
+            inValues: 설정할 값 목록
+            inDescriptions: 설정할 값들의 설명 목록 (기본값: None, 빈 문자열로 초기화)
+            inKoreanDescriptions: 설정할 값들의 한국어 설명 목록 (기본값: None, 빈 문자열로 초기화)
+        &#34;&#34;&#34;
+        # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
+        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+            return
+            
+        self._predefinedValues = inValues.copy() if inValues else []
+        
+        # 설명 세팅
+        if inDescriptions:
+            self._descriptions = inDescriptions.copy()
+            # 길이 일치 확인
+            if len(self._descriptions) &lt; len(self._predefinedValues):
+                self._descriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._descriptions)))
+            elif len(self._descriptions) &gt; len(self._predefinedValues):
+                self._descriptions = self._descriptions[:len(self._predefinedValues)]
+        else:
+            self._descriptions = [&#34;&#34;] * len(self._predefinedValues)
+
+        # 한국어 설명 세팅
+        if inKoreanDescriptions:
+            self._koreanDescriptions = inKoreanDescriptions.copy()
+            # 길이 일치 확인
+            if len(self._koreanDescriptions) &lt; len(self._predefinedValues):
+                self._koreanDescriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._koreanDescriptions)))
+            elif len(self._koreanDescriptions) &gt; len(self._predefinedValues):
+                self._koreanDescriptions = self._koreanDescriptions[:len(self._predefinedValues)]
+        else:
+            self._koreanDescriptions = [&#34;&#34;] * len(self._predefinedValues)
+        
+        # 가중치 자동 업데이트
+        self._update_weights()
+    
+    def get_predefined_values(self):
+        &#34;&#34;&#34;
+        사전 선언된 값 목록을 반환합니다.
+        
+        Returns:
+            사전 선언된 값 목록
+        &#34;&#34;&#34;
+        return self._predefinedValues.copy()
+    
+    def contains_value(self, inValue):
+        &#34;&#34;&#34;
+        특정 값이 사전 선언된 값 목록에 있는지 확인합니다.
+        
+        Args:
+            inValue: 확인할 값
+            
+        Returns:
+            값이 존재하면 True, 아니면 False
+        &#34;&#34;&#34;
+        # INDEX 타입인 경우 숫자인지 확인
+        if self._type == NamePartType.INDEX:
+            return isinstance(inValue, str) and inValue.isdigit()
+            
+        return inValue in self._predefinedValues
+    
+    def get_value_at_index(self, inIndex):
+        &#34;&#34;&#34;
+        지정된 인덱스의 사전 선언된 값을 반환합니다.
+        
+        Args:
+            inIndex: 값의 인덱스
+            
+        Returns:
+            값 (인덱스가 범위를 벗어나면 None)
+        &#34;&#34;&#34;
+        if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+            return self._predefinedValues[inIndex]
+        return None
+    
+    def get_value_count(self):
+        &#34;&#34;&#34;
+        사전 선언된 값의 개수를 반환합니다.
+        
+        Returns:
+            값 개수
+        &#34;&#34;&#34;
+        return len(self._predefinedValues)
+    
+    def clear_predefined_values(self):
+        &#34;&#34;&#34;
+        모든 사전 선언된 값을 제거합니다.
+        &#34;&#34;&#34;
+        # REALNAME이나 INDEX 타입인 경우 아무것도 하지 않음
+        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+            return
+            
+        self._predefinedValues.clear()
+        self._descriptions.clear()
+        self._koreanDescriptions.clear() # Clear korean descriptions
+        self._weights.clear()  # 가중치도 초기화
+    
+    # 가중치 매핑 관련 메서드들
+    
+    def get_value_by_weight(self, inRank=0):
+        returnStr = &#34;&#34;
+        if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+            return returnStr
+        foundIndex = self._weights.index(inRank)
+        returnStr = self._predefinedValues[foundIndex] if foundIndex &gt;= 0 else self._predefinedValues[0]
+        
+        return returnStr
+    
+    def get_most_different_weight_value(self, inValue):
+        &#34;&#34;&#34;
+        주어진 값의 가중치와 가장 차이가 큰 값을 반환합니다.
+        
+        Args:
+            inValue: 기준이 되는 값
+            
+        Returns:
+            가중치 차이가 가장 큰 값, 없으면 빈 문자열
+        &#34;&#34;&#34;
+        if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+            return &#34;&#34;
+            
+        if inValue not in self._predefinedValues:
+            return &#34;&#34;
+            
+        # 값의 가중치 가져오기
+        index = self._predefinedValues.index(inValue)
+        currentWeight = self._weights[index]
+            
+        maxDiff = -1
+        maxDiffValue = &#34;&#34;
+        
+        # 가중치 차이가 가장 큰 값 찾기
+        for i, predValue in enumerate(self._predefinedValues):
+            if predValue == inValue:
+                continue
+                
+            predWeight = self._weights[i] if i &lt; len(self._weights) else 0
+            diff = abs(currentWeight - predWeight)
+            if diff &gt; maxDiff:
+                maxDiff = diff
+                maxDiffValue = predValue
+                
+        return maxDiffValue
+    
+    def get_value_by_min_weight(self):
+        &#34;&#34;&#34;
+        가중치가 가장 낮은 값을 반환합니다.
+        
+        Returns:
+            가중치가 가장 낮은 값, 없으면 빈 문자열
+        &#34;&#34;&#34;
+        if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+            return &#34;&#34;
+        return self._predefinedValues[0]
+    
+    def get_value_by_max_weight(self):
+        &#34;&#34;&#34;
+        가중치가 가장 높은 값을 반환합니다.
+        
+        Returns:
+            가중치가 가장 높은 값, 없으면 빈 문자열
+        &#34;&#34;&#34;
+        if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+            return &#34;&#34;
+        return self._predefinedValues[-1]
+    
+    def validate_value(self, inValue):
+        &#34;&#34;&#34;
+        값이 이 NamePart 타입에 유효한지 검증합니다.
+        
+        Args:
+            inValue: 검증할 값
+            
+        Returns:
+            유효하면 True, 아니면 False
+        &#34;&#34;&#34;
+        # INDEX 타입은 숫자 문자열만 유효
+        if self._type == NamePartType.INDEX:
+            return isinstance(inValue, str) and inValue.isdigit()
+            
+        # PREFIX와 SUFFIX 타입은 predefined values 중 하나여야 함
+        if (self._type == NamePartType.PREFIX or self._type == NamePartType.SUFFIX) and self._predefinedValues:
+            return inValue in self._predefinedValues
+            
+        # REALNAME 타입은 모든 문자열 유효
+        if self._type == NamePartType.REALNAME:
+            return isinstance(inValue, str)
+            
+        # 정의되지 않은 타입이면 기존 동작대로 처리
+        return True
+    
+    # 추가: 설명 관련 메서드들
+    
+    def set_description(self, inValue, inDescription):
+        &#34;&#34;&#34;
+        특정 predefined value의 설명을 설정합니다.
+        
+        Args:
+            inValue: 설명을 설정할 값
+            inDescription: 설정할 설명
+            
+        Returns:
+            설정 성공 여부 (값이 존재하지 않는 경우 False)
+        &#34;&#34;&#34;
+        if inValue in self._predefinedValues:
+            index = self._predefinedValues.index(inValue)
+            self._descriptions[index] = inDescription
+            return True
+        return False
+    
+    def get_description_by_value(self, inValue):
+        &#34;&#34;&#34;
+        특정 predefined value의 설명을 반환합니다.
+        
+        Args:
+            inValue: 설명을 가져올 값
+            
+        Returns:
+            해당 값의 설명, 값이 존재하지 않으면 빈 문자열
+        &#34;&#34;&#34;
+        if inValue in self._predefinedValues:
+            index = self._predefinedValues.index(inValue)
+            return self._descriptions[index]
+        return &#34;&#34;
+    
+    def get_descriptions(self):
+        &#34;&#34;&#34;
+        모든 설명을 반환합니다.
+        
+        Returns:
+            설명 목록
+        &#34;&#34;&#34;
+        return self._descriptions.copy()
+    
+    def get_value_by_description(self, inDescription):
+        &#34;&#34;&#34;
+        특정 설명에 해당하는 값을 반환합니다.
+        
+        Args:
+            inDescription: 찾을 설명
+            
+        Returns:
+            해당 설명의 값, 없으면 빈 문자열
+        &#34;&#34;&#34;
+        if inDescription in self._descriptions:
+            index = self._descriptions.index(inDescription)
+            return self._predefinedValues[index]
+        return &#34;&#34;
+    
+    def get_value_with_description(self, inIndex):
+        &#34;&#34;&#34;
+        지정된 인덱스의 값과 설명을 튜플로 반환합니다.
+        
+        Args:
+            inIndex: 값의 인덱스
+            
+        Returns:
+            (값, 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)
+        &#34;&#34;&#34;
+        if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+            return (self._predefinedValues[inIndex], self._descriptions[inIndex])
+        return (None, None)
+    
+    def get_values_with_descriptions(self):
+        &#34;&#34;&#34;
+        모든 값과 설명의 튜플 리스트를 반환합니다.
+        
+        Returns:
+            (값, 설명) 튜플의 리스트
+        &#34;&#34;&#34;
+        return list(zip(self._predefinedValues, self._descriptions))
+
+    # 추가: 한국어 설명 관련 메서드들
+    
+    def set_korean_description(self, inValue, inKoreanDescription):
+        &#34;&#34;&#34;
+        특정 predefined value의 한국어 설명을 설정합니다.
+        
+        Args:
+            inValue: 설명을 설정할 값
+            inKoreanDescription: 설정할 한국어 설명
+            
+        Returns:
+            설정 성공 여부 (값이 존재하지 않는 경우 False)
+        &#34;&#34;&#34;
+        if inValue in self._predefinedValues:
+            index = self._predefinedValues.index(inValue)
+            self._koreanDescriptions[index] = inKoreanDescription
+            return True
+        return False
+    
+    def get_korean_description_by_value(self, inValue):
+        &#34;&#34;&#34;
+        특정 predefined value의 한국어 설명을 반환합니다.
+        
+        Args:
+            inValue: 설명을 가져올 값
+            
+        Returns:
+            해당 값의 한국어 설명, 값이 존재하지 않으면 빈 문자열
+        &#34;&#34;&#34;
+        if inValue in self._predefinedValues:
+            index = self._predefinedValues.index(inValue)
+            return self._koreanDescriptions[index]
+        return &#34;&#34;
+    
+    def get_korean_descriptions(self):
+        &#34;&#34;&#34;
+        모든 한국어 설명을 반환합니다.
+        
+        Returns:
+            한국어 설명 목록
+        &#34;&#34;&#34;
+        return self._koreanDescriptions.copy()
+    
+    def get_value_by_korean_description(self, inKoreanDescription):
+        &#34;&#34;&#34;
+        특정 한국어 설명에 해당하는 값을 반환합니다.
+        
+        Args:
+            inKoreanDescription: 찾을 한국어 설명
+            
+        Returns:
+            해당 설명의 값, 없으면 빈 문자열
+        &#34;&#34;&#34;
+        if inKoreanDescription in self._koreanDescriptions:
+            index = self._koreanDescriptions.index(inKoreanDescription)
+            return self._predefinedValues[index]
+        return &#34;&#34;
+    
+    def get_value_with_korean_description(self, inIndex):
+        &#34;&#34;&#34;
+        지정된 인덱스의 값과 한국어 설명을 튜플로 반환합니다.
+        
+        Args:
+            inIndex: 값의 인덱스
+            
+        Returns:
+            (값, 한국어 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)
+        &#34;&#34;&#34;
+        if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+            return (self._predefinedValues[inIndex], self._koreanDescriptions[inIndex])
+        return (None, None)
+    
+    def get_values_with_korean_descriptions(self):
+        &#34;&#34;&#34;
+        모든 값과 한국어 설명의 튜플 리스트를 반환합니다.
+        
+        Returns:
+            (값, 한국어 설명) 튜플의 리스트
+        &#34;&#34;&#34;
+        return list(zip(self._predefinedValues, self._koreanDescriptions))
+    
+    def is_direction(self):
+        &#34;&#34;&#34;
+        방향성 여부를 반환합니다.
+        
+        Returns:
+            방향성 여부 (True/False)
+        &#34;&#34;&#34;
+        return self._isDirection
+    
+    def to_dict(self):
+        &#34;&#34;&#34;
+        NamePart 객체를 사전 형태로 변환합니다.
+        
+        Returns:
+            사전 형태의 NamePart 정보
+        &#34;&#34;&#34;
+        return {
+            &#34;name&#34;: self._name,
+            &#34;predefinedValues&#34;: self._predefinedValues.copy(),
+            &#34;weights&#34;: self._weights.copy(),  # 가중치를 리스트 형태로 직접 전달
+            &#34;type&#34;: self._type.name if hasattr(self._type, &#39;name&#39;) else str(self._type),
+            &#34;descriptions&#34;: self._descriptions.copy(),
+            &#34;koreanDescriptions&#34;: self._koreanDescriptions.copy(), # Add korean descriptions
+            &#34;isDirection&#34;: self._isDirection
+        }
+    
+    @staticmethod
+    def from_dict(inData):
+        &#34;&#34;&#34;
+        사전 형태의 데이터로부터 NamePart 객체를 생성합니다.
+        
+        Args:
+            inData: 사전 형태의 NamePart 정보
+            
+        Returns:
+            NamePart 객체
+        &#34;&#34;&#34;
+        if isinstance(inData, dict) and &#34;name&#34; in inData:
+            # 타입 변환 (문자열 -&gt; NamePartType 열거형)
+            type_str = inData.get(&#34;type&#34;, &#34;UNDEFINED&#34;)
+            try:
+                part_type = NamePartType[type_str] if isinstance(type_str, str) else NamePartType.UNDEFINED
+            except KeyError:
+                part_type = NamePartType.UNDEFINED
+                
+            result = NamePart(
+                inData[&#34;name&#34;],
+                part_type,  # 두 번째 인자로 타입 전달
+                inData.get(&#34;predefinedValues&#34;, []),  # 세 번째 인자로 predefinedValues 전달
+                inData.get(&#34;descriptions&#34;, []),  # 네 번째 인자로 descriptions 전달
+                inData.get(&#34;isDirection&#34;, False),  # 다섯 번째 인자로 isDirection 전달
+                inData.get(&#34;koreanDescriptions&#34;, []) # 여섯 번째 인자로 koreanDescriptions 전달
+            )
+            
+            return result
+        return NamePart()</code></pre>
+</details>
+<div class="desc"><p>이름 부분(name part)을 관리하기 위한 클래스.
+이름과 해당 부분에 대한 사전 선언된 값들을 관리합니다.</p>
+<p>NamePart 클래스 초기화</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inName</code></strong></dt>
+<dd>이름 부분의 이름 (예: "Base", "Type", "Side" 등)</dd>
+<dt><strong><code>inPredefinedValues</code></strong></dt>
+<dd>사전 선언된 값 목록 (기본값: None, 빈 리스트로 초기화)</dd>
+<dt><strong><code>inType</code></strong></dt>
+<dd>NamePart의 타입 (NamePartType 열거형 값)</dd>
+<dt><strong><code>inDescriptions</code></strong></dt>
+<dd>사전 선언된 값들의 설명 목록 (기본값: None, 빈 리스트로 초기화)</dd>
+<dt><strong><code>inIsDirection</code></strong></dt>
+<dd>방향성 여부 (기본값: False)</dd>
+<dt><strong><code>inKoreanDescriptions</code></strong></dt>
+<dd>사전 선언된 값들의 한국어 설명 목록 (기본값: None, 빈 리스트로 초기화)</dd>
+</dl></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="pyjallib.namePart.NamePart.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>inData)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def from_dict(inData):
+    &#34;&#34;&#34;
+    사전 형태의 데이터로부터 NamePart 객체를 생성합니다.
+    
+    Args:
+        inData: 사전 형태의 NamePart 정보
+        
+    Returns:
+        NamePart 객체
+    &#34;&#34;&#34;
+    if isinstance(inData, dict) and &#34;name&#34; in inData:
+        # 타입 변환 (문자열 -&gt; NamePartType 열거형)
+        type_str = inData.get(&#34;type&#34;, &#34;UNDEFINED&#34;)
+        try:
+            part_type = NamePartType[type_str] if isinstance(type_str, str) else NamePartType.UNDEFINED
+        except KeyError:
+            part_type = NamePartType.UNDEFINED
+            
+        result = NamePart(
+            inData[&#34;name&#34;],
+            part_type,  # 두 번째 인자로 타입 전달
+            inData.get(&#34;predefinedValues&#34;, []),  # 세 번째 인자로 predefinedValues 전달
+            inData.get(&#34;descriptions&#34;, []),  # 네 번째 인자로 descriptions 전달
+            inData.get(&#34;isDirection&#34;, False),  # 다섯 번째 인자로 isDirection 전달
+            inData.get(&#34;koreanDescriptions&#34;, []) # 여섯 번째 인자로 koreanDescriptions 전달
+        )
+        
+        return result
+    return NamePart()</code></pre>
+</details>
+<div class="desc"><p>사전 형태의 데이터로부터 NamePart 객체를 생성합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inData</code></strong></dt>
+<dd>사전 형태의 NamePart 정보</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>NamePart 객체</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pyjallib.namePart.NamePart.add_predefined_value"><code class="name flex">
+<span>def <span class="ident">add_predefined_value</span></span>(<span>self, inValue, inDescription='', inKoreanDescription='')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_predefined_value(self, inValue, inDescription=&#34;&#34;, inKoreanDescription=&#34;&#34;):
+    &#34;&#34;&#34;
+    사전 선언된 값 목록에 새 값을 추가합니다.
+    
+    Args:
+        inValue: 추가할 값
+        inDescription: 추가할 값에 대한 설명 (기본값: 빈 문자열)
+        inKoreanDescription: 추가할 값에 대한 한국어 설명 (기본값: 빈 문자열)
+        
+    Returns:
+        추가 성공 여부 (이미 존재하는 경우 False)
+    &#34;&#34;&#34;
+    # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
+    if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        return False
+        
+    if inValue not in self._predefinedValues:
+        self._predefinedValues.append(inValue)
+        self._descriptions.append(inDescription)
+        self._koreanDescriptions.append(inKoreanDescription) # Add korean description
+        self._update_weights()  # 가중치 자동 업데이트
+        return True
+    return False</code></pre>
+</details>
+<div class="desc"><p>사전 선언된 값 목록에 새 값을 추가합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>추가할 값</dd>
+<dt><strong><code>inDescription</code></strong></dt>
+<dd>추가할 값에 대한 설명 (기본값: 빈 문자열)</dd>
+<dt><strong><code>inKoreanDescription</code></strong></dt>
+<dd>추가할 값에 대한 한국어 설명 (기본값: 빈 문자열)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>추가 성공 여부 (이미 존재하는 경우 False)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.clear_predefined_values"><code class="name flex">
+<span>def <span class="ident">clear_predefined_values</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_predefined_values(self):
+    &#34;&#34;&#34;
+    모든 사전 선언된 값을 제거합니다.
+    &#34;&#34;&#34;
+    # REALNAME이나 INDEX 타입인 경우 아무것도 하지 않음
+    if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        return
+        
+    self._predefinedValues.clear()
+    self._descriptions.clear()
+    self._koreanDescriptions.clear() # Clear korean descriptions
+    self._weights.clear()  # 가중치도 초기화</code></pre>
+</details>
+<div class="desc"><p>모든 사전 선언된 값을 제거합니다.</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.contains_value"><code class="name flex">
+<span>def <span class="ident">contains_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def contains_value(self, inValue):
+    &#34;&#34;&#34;
+    특정 값이 사전 선언된 값 목록에 있는지 확인합니다.
+    
+    Args:
+        inValue: 확인할 값
+        
+    Returns:
+        값이 존재하면 True, 아니면 False
+    &#34;&#34;&#34;
+    # INDEX 타입인 경우 숫자인지 확인
+    if self._type == NamePartType.INDEX:
+        return isinstance(inValue, str) and inValue.isdigit()
+        
+    return inValue in self._predefinedValues</code></pre>
+</details>
+<div class="desc"><p>특정 값이 사전 선언된 값 목록에 있는지 확인합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>확인할 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>값이 존재하면 True, 아니면 False</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_description_by_value"><code class="name flex">
+<span>def <span class="ident">get_description_by_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_description_by_value(self, inValue):
+    &#34;&#34;&#34;
+    특정 predefined value의 설명을 반환합니다.
+    
+    Args:
+        inValue: 설명을 가져올 값
+        
+    Returns:
+        해당 값의 설명, 값이 존재하지 않으면 빈 문자열
+    &#34;&#34;&#34;
+    if inValue in self._predefinedValues:
+        index = self._predefinedValues.index(inValue)
+        return self._descriptions[index]
+    return &#34;&#34;</code></pre>
+</details>
+<div class="desc"><p>특정 predefined value의 설명을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>설명을 가져올 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>해당 값의 설명, 값이 존재하지 않으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_descriptions"><code class="name flex">
+<span>def <span class="ident">get_descriptions</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_descriptions(self):
+    &#34;&#34;&#34;
+    모든 설명을 반환합니다.
+    
+    Returns:
+        설명 목록
+    &#34;&#34;&#34;
+    return self._descriptions.copy()</code></pre>
+</details>
+<div class="desc"><p>모든 설명을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>설명 목록</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_korean_description_by_value"><code class="name flex">
+<span>def <span class="ident">get_korean_description_by_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_korean_description_by_value(self, inValue):
+    &#34;&#34;&#34;
+    특정 predefined value의 한국어 설명을 반환합니다.
+    
+    Args:
+        inValue: 설명을 가져올 값
+        
+    Returns:
+        해당 값의 한국어 설명, 값이 존재하지 않으면 빈 문자열
+    &#34;&#34;&#34;
+    if inValue in self._predefinedValues:
+        index = self._predefinedValues.index(inValue)
+        return self._koreanDescriptions[index]
+    return &#34;&#34;</code></pre>
+</details>
+<div class="desc"><p>특정 predefined value의 한국어 설명을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>설명을 가져올 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>해당 값의 한국어 설명, 값이 존재하지 않으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_korean_descriptions"><code class="name flex">
+<span>def <span class="ident">get_korean_descriptions</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_korean_descriptions(self):
+    &#34;&#34;&#34;
+    모든 한국어 설명을 반환합니다.
+    
+    Returns:
+        한국어 설명 목록
+    &#34;&#34;&#34;
+    return self._koreanDescriptions.copy()</code></pre>
+</details>
+<div class="desc"><p>모든 한국어 설명을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>한국어 설명 목록</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_most_different_weight_value"><code class="name flex">
+<span>def <span class="ident">get_most_different_weight_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_most_different_weight_value(self, inValue):
+    &#34;&#34;&#34;
+    주어진 값의 가중치와 가장 차이가 큰 값을 반환합니다.
+    
+    Args:
+        inValue: 기준이 되는 값
+        
+    Returns:
+        가중치 차이가 가장 큰 값, 없으면 빈 문자열
+    &#34;&#34;&#34;
+    if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+        return &#34;&#34;
+        
+    if inValue not in self._predefinedValues:
+        return &#34;&#34;
+        
+    # 값의 가중치 가져오기
+    index = self._predefinedValues.index(inValue)
+    currentWeight = self._weights[index]
+        
+    maxDiff = -1
+    maxDiffValue = &#34;&#34;
+    
+    # 가중치 차이가 가장 큰 값 찾기
+    for i, predValue in enumerate(self._predefinedValues):
+        if predValue == inValue:
+            continue
+            
+        predWeight = self._weights[i] if i &lt; len(self._weights) else 0
+        diff = abs(currentWeight - predWeight)
+        if diff &gt; maxDiff:
+            maxDiff = diff
+            maxDiffValue = predValue
+            
+    return maxDiffValue</code></pre>
+</details>
+<div class="desc"><p>주어진 값의 가중치와 가장 차이가 큰 값을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>기준이 되는 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>가중치 차이가 가장 큰 값, 없으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_name"><code class="name flex">
+<span>def <span class="ident">get_name</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_name(self):
+    &#34;&#34;&#34;
+    이름 부분의 이름을 반환합니다.
+    
+    Returns:
+        이름 부분의 이름
+    &#34;&#34;&#34;
+    return self._name</code></pre>
+</details>
+<div class="desc"><p>이름 부분의 이름을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>이름 부분의 이름</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_predefined_values"><code class="name flex">
+<span>def <span class="ident">get_predefined_values</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_predefined_values(self):
+    &#34;&#34;&#34;
+    사전 선언된 값 목록을 반환합니다.
+    
+    Returns:
+        사전 선언된 값 목록
+    &#34;&#34;&#34;
+    return self._predefinedValues.copy()</code></pre>
+</details>
+<div class="desc"><p>사전 선언된 값 목록을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>사전 선언된 값 목록</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_type"><code class="name flex">
+<span>def <span class="ident">get_type</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_type(self):
+    &#34;&#34;&#34;
+    이름 부분의 타입을 반환합니다.
+    
+    Returns:
+        이름 부분의 타입 (NamePartType 열거형 값)
+    &#34;&#34;&#34;
+    return self._type</code></pre>
+</details>
+<div class="desc"><p>이름 부분의 타입을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>이름 부분의 타입 (NamePartType 열거형 값)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_at_index"><code class="name flex">
+<span>def <span class="ident">get_value_at_index</span></span>(<span>self, inIndex)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_at_index(self, inIndex):
+    &#34;&#34;&#34;
+    지정된 인덱스의 사전 선언된 값을 반환합니다.
+    
+    Args:
+        inIndex: 값의 인덱스
+        
+    Returns:
+        값 (인덱스가 범위를 벗어나면 None)
+    &#34;&#34;&#34;
+    if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+        return self._predefinedValues[inIndex]
+    return None</code></pre>
+</details>
+<div class="desc"><p>지정된 인덱스의 사전 선언된 값을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inIndex</code></strong></dt>
+<dd>값의 인덱스</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>값 (인덱스가 범위를 벗어나면 None)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_by_description"><code class="name flex">
+<span>def <span class="ident">get_value_by_description</span></span>(<span>self, inDescription)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_by_description(self, inDescription):
+    &#34;&#34;&#34;
+    특정 설명에 해당하는 값을 반환합니다.
+    
+    Args:
+        inDescription: 찾을 설명
+        
+    Returns:
+        해당 설명의 값, 없으면 빈 문자열
+    &#34;&#34;&#34;
+    if inDescription in self._descriptions:
+        index = self._descriptions.index(inDescription)
+        return self._predefinedValues[index]
+    return &#34;&#34;</code></pre>
+</details>
+<div class="desc"><p>특정 설명에 해당하는 값을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inDescription</code></strong></dt>
+<dd>찾을 설명</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>해당 설명의 값, 없으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_by_korean_description"><code class="name flex">
+<span>def <span class="ident">get_value_by_korean_description</span></span>(<span>self, inKoreanDescription)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_by_korean_description(self, inKoreanDescription):
+    &#34;&#34;&#34;
+    특정 한국어 설명에 해당하는 값을 반환합니다.
+    
+    Args:
+        inKoreanDescription: 찾을 한국어 설명
+        
+    Returns:
+        해당 설명의 값, 없으면 빈 문자열
+    &#34;&#34;&#34;
+    if inKoreanDescription in self._koreanDescriptions:
+        index = self._koreanDescriptions.index(inKoreanDescription)
+        return self._predefinedValues[index]
+    return &#34;&#34;</code></pre>
+</details>
+<div class="desc"><p>특정 한국어 설명에 해당하는 값을 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inKoreanDescription</code></strong></dt>
+<dd>찾을 한국어 설명</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>해당 설명의 값, 없으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_by_max_weight"><code class="name flex">
+<span>def <span class="ident">get_value_by_max_weight</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_by_max_weight(self):
+    &#34;&#34;&#34;
+    가중치가 가장 높은 값을 반환합니다.
+    
+    Returns:
+        가중치가 가장 높은 값, 없으면 빈 문자열
+    &#34;&#34;&#34;
+    if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+        return &#34;&#34;
+    return self._predefinedValues[-1]</code></pre>
+</details>
+<div class="desc"><p>가중치가 가장 높은 값을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>가중치가 가장 높은 값, 없으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_by_min_weight"><code class="name flex">
+<span>def <span class="ident">get_value_by_min_weight</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_by_min_weight(self):
+    &#34;&#34;&#34;
+    가중치가 가장 낮은 값을 반환합니다.
+    
+    Returns:
+        가중치가 가장 낮은 값, 없으면 빈 문자열
+    &#34;&#34;&#34;
+    if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+        return &#34;&#34;
+    return self._predefinedValues[0]</code></pre>
+</details>
+<div class="desc"><p>가중치가 가장 낮은 값을 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>가중치가 가장 낮은 값, 없으면 빈 문자열</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_by_weight"><code class="name flex">
+<span>def <span class="ident">get_value_by_weight</span></span>(<span>self, inRank=0)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_by_weight(self, inRank=0):
+    returnStr = &#34;&#34;
+    if len(self._predefinedValues) != len(self._weights) or len(self._predefinedValues) &lt;= 0:
+        return returnStr
+    foundIndex = self._weights.index(inRank)
+    returnStr = self._predefinedValues[foundIndex] if foundIndex &gt;= 0 else self._predefinedValues[0]
+    
+    return returnStr</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_count"><code class="name flex">
+<span>def <span class="ident">get_value_count</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_count(self):
+    &#34;&#34;&#34;
+    사전 선언된 값의 개수를 반환합니다.
+    
+    Returns:
+        값 개수
+    &#34;&#34;&#34;
+    return len(self._predefinedValues)</code></pre>
+</details>
+<div class="desc"><p>사전 선언된 값의 개수를 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>값 개수</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_with_description"><code class="name flex">
+<span>def <span class="ident">get_value_with_description</span></span>(<span>self, inIndex)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_with_description(self, inIndex):
+    &#34;&#34;&#34;
+    지정된 인덱스의 값과 설명을 튜플로 반환합니다.
+    
+    Args:
+        inIndex: 값의 인덱스
+        
+    Returns:
+        (값, 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)
+    &#34;&#34;&#34;
+    if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+        return (self._predefinedValues[inIndex], self._descriptions[inIndex])
+    return (None, None)</code></pre>
+</details>
+<div class="desc"><p>지정된 인덱스의 값과 설명을 튜플로 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inIndex</code></strong></dt>
+<dd>값의 인덱스</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(값, 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_value_with_korean_description"><code class="name flex">
+<span>def <span class="ident">get_value_with_korean_description</span></span>(<span>self, inIndex)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_value_with_korean_description(self, inIndex):
+    &#34;&#34;&#34;
+    지정된 인덱스의 값과 한국어 설명을 튜플로 반환합니다.
+    
+    Args:
+        inIndex: 값의 인덱스
+        
+    Returns:
+        (값, 한국어 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)
+    &#34;&#34;&#34;
+    if 0 &lt;= inIndex &lt; len(self._predefinedValues):
+        return (self._predefinedValues[inIndex], self._koreanDescriptions[inIndex])
+    return (None, None)</code></pre>
+</details>
+<div class="desc"><p>지정된 인덱스의 값과 한국어 설명을 튜플로 반환합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inIndex</code></strong></dt>
+<dd>값의 인덱스</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(값, 한국어 설명) 튜플, 인덱스가 범위를 벗어나면 (None, None)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_values_with_descriptions"><code class="name flex">
+<span>def <span class="ident">get_values_with_descriptions</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_values_with_descriptions(self):
+    &#34;&#34;&#34;
+    모든 값과 설명의 튜플 리스트를 반환합니다.
+    
+    Returns:
+        (값, 설명) 튜플의 리스트
+    &#34;&#34;&#34;
+    return list(zip(self._predefinedValues, self._descriptions))</code></pre>
+</details>
+<div class="desc"><p>모든 값과 설명의 튜플 리스트를 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>(값, 설명) 튜플의 리스트</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.get_values_with_korean_descriptions"><code class="name flex">
+<span>def <span class="ident">get_values_with_korean_descriptions</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_values_with_korean_descriptions(self):
+    &#34;&#34;&#34;
+    모든 값과 한국어 설명의 튜플 리스트를 반환합니다.
+    
+    Returns:
+        (값, 한국어 설명) 튜플의 리스트
+    &#34;&#34;&#34;
+    return list(zip(self._predefinedValues, self._koreanDescriptions))</code></pre>
+</details>
+<div class="desc"><p>모든 값과 한국어 설명의 튜플 리스트를 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>(값, 한국어 설명) 튜플의 리스트</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.is_direction"><code class="name flex">
+<span>def <span class="ident">is_direction</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_direction(self):
+    &#34;&#34;&#34;
+    방향성 여부를 반환합니다.
+    
+    Returns:
+        방향성 여부 (True/False)
+    &#34;&#34;&#34;
+    return self._isDirection</code></pre>
+</details>
+<div class="desc"><p>방향성 여부를 반환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>방향성 여부 (True/False)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.is_index"><code class="name flex">
+<span>def <span class="ident">is_index</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_index(self):
+    &#34;&#34;&#34;
+    이름 부분이 INDEX 타입인지 확인합니다.
+    
+    Returns:
+        INDEX 타입이면 True, 아니면 False
+    &#34;&#34;&#34;
+    return self._type == NamePartType.INDEX</code></pre>
+</details>
+<div class="desc"><p>이름 부분이 INDEX 타입인지 확인합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>INDEX 타입이면 True, 아니면 False</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.is_prefix"><code class="name flex">
+<span>def <span class="ident">is_prefix</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_prefix(self):
+    &#34;&#34;&#34;
+    이름 부분이 PREFIX 타입인지 확인합니다.
+    
+    Returns:
+        PREFIX 타입이면 True, 아니면 False
+    &#34;&#34;&#34;
+    return self._type == NamePartType.PREFIX</code></pre>
+</details>
+<div class="desc"><p>이름 부분이 PREFIX 타입인지 확인합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>PREFIX 타입이면 True, 아니면 False</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.is_realname"><code class="name flex">
+<span>def <span class="ident">is_realname</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_realname(self):
+    &#34;&#34;&#34;
+    이름 부분이 REALNAME 타입인지 확인합니다.
+    
+    Returns:
+        REALNAME 타입이면 True, 아니면 False
+    &#34;&#34;&#34;
+    return self._type == NamePartType.REALNAME</code></pre>
+</details>
+<div class="desc"><p>이름 부분이 REALNAME 타입인지 확인합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>REALNAME 타입이면 True, 아니면 False</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.is_suffix"><code class="name flex">
+<span>def <span class="ident">is_suffix</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_suffix(self):
+    &#34;&#34;&#34;
+    이름 부분이 SUFFIX 타입인지 확인합니다.
+    
+    Returns:
+        SUFFIX 타입이면 True, 아니면 False
+    &#34;&#34;&#34;
+    return self._type == NamePartType.SUFFIX</code></pre>
+</details>
+<div class="desc"><p>이름 부분이 SUFFIX 타입인지 확인합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>SUFFIX 타입이면 True, 아니면 False</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.remove_predefined_value"><code class="name flex">
+<span>def <span class="ident">remove_predefined_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_predefined_value(self, inValue):
+    &#34;&#34;&#34;
+    사전 선언된 값 목록에서 값을 제거합니다.
+    
+    Args:
+        inValue: 제거할 값
+        
+    Returns:
+        제거 성공 여부 (존재하지 않는 경우 False)
+    &#34;&#34;&#34;
+    if inValue in self._predefinedValues:
+        index = self._predefinedValues.index(inValue)
+        self._predefinedValues.remove(inValue)
+        self._descriptions.pop(index)
+        self._koreanDescriptions.pop(index) # Remove korean description
+        if index &lt; len(self._weights):
+            self._weights.pop(index)
+        self._update_weights()  # 가중치 자동 업데이트
+        return True
+    return False</code></pre>
+</details>
+<div class="desc"><p>사전 선언된 값 목록에서 값을 제거합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>제거할 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>제거 성공 여부 (존재하지 않는 경우 False)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.set_description"><code class="name flex">
+<span>def <span class="ident">set_description</span></span>(<span>self, inValue, inDescription)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_description(self, inValue, inDescription):
+    &#34;&#34;&#34;
+    특정 predefined value의 설명을 설정합니다.
+    
+    Args:
+        inValue: 설명을 설정할 값
+        inDescription: 설정할 설명
+        
+    Returns:
+        설정 성공 여부 (값이 존재하지 않는 경우 False)
+    &#34;&#34;&#34;
+    if inValue in self._predefinedValues:
+        index = self._predefinedValues.index(inValue)
+        self._descriptions[index] = inDescription
+        return True
+    return False</code></pre>
+</details>
+<div class="desc"><p>특정 predefined value의 설명을 설정합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>설명을 설정할 값</dd>
+<dt><strong><code>inDescription</code></strong></dt>
+<dd>설정할 설명</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (값이 존재하지 않는 경우 False)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.set_korean_description"><code class="name flex">
+<span>def <span class="ident">set_korean_description</span></span>(<span>self, inValue, inKoreanDescription)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_korean_description(self, inValue, inKoreanDescription):
+    &#34;&#34;&#34;
+    특정 predefined value의 한국어 설명을 설정합니다.
+    
+    Args:
+        inValue: 설명을 설정할 값
+        inKoreanDescription: 설정할 한국어 설명
+        
+    Returns:
+        설정 성공 여부 (값이 존재하지 않는 경우 False)
+    &#34;&#34;&#34;
+    if inValue in self._predefinedValues:
+        index = self._predefinedValues.index(inValue)
+        self._koreanDescriptions[index] = inKoreanDescription
+        return True
+    return False</code></pre>
+</details>
+<div class="desc"><p>특정 predefined value의 한국어 설명을 설정합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>설명을 설정할 값</dd>
+<dt><strong><code>inKoreanDescription</code></strong></dt>
+<dd>설정할 한국어 설명</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>설정 성공 여부 (값이 존재하지 않는 경우 False)</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.set_name"><code class="name flex">
+<span>def <span class="ident">set_name</span></span>(<span>self, inName)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_name(self, inName):
+    &#34;&#34;&#34;
+    이름 부분의 이름을 설정합니다.
+    
+    Args:
+        inName: 설정할 이름
+    &#34;&#34;&#34;
+    self._name = inName</code></pre>
+</details>
+<div class="desc"><p>이름 부분의 이름을 설정합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inName</code></strong></dt>
+<dd>설정할 이름</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.set_predefined_values"><code class="name flex">
+<span>def <span class="ident">set_predefined_values</span></span>(<span>self, inValues, inDescriptions=None, inKoreanDescriptions=None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_predefined_values(self, inValues, inDescriptions=None, inKoreanDescriptions=None):
+    &#34;&#34;&#34;
+    사전 선언된 값 목록을 설정합니다.
+    
+    Args:
+        inValues: 설정할 값 목록
+        inDescriptions: 설정할 값들의 설명 목록 (기본값: None, 빈 문자열로 초기화)
+        inKoreanDescriptions: 설정할 값들의 한국어 설명 목록 (기본값: None, 빈 문자열로 초기화)
+    &#34;&#34;&#34;
+    # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
+    if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        return
+        
+    self._predefinedValues = inValues.copy() if inValues else []
+    
+    # 설명 세팅
+    if inDescriptions:
+        self._descriptions = inDescriptions.copy()
+        # 길이 일치 확인
+        if len(self._descriptions) &lt; len(self._predefinedValues):
+            self._descriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._descriptions)))
+        elif len(self._descriptions) &gt; len(self._predefinedValues):
+            self._descriptions = self._descriptions[:len(self._predefinedValues)]
+    else:
+        self._descriptions = [&#34;&#34;] * len(self._predefinedValues)
+
+    # 한국어 설명 세팅
+    if inKoreanDescriptions:
+        self._koreanDescriptions = inKoreanDescriptions.copy()
+        # 길이 일치 확인
+        if len(self._koreanDescriptions) &lt; len(self._predefinedValues):
+            self._koreanDescriptions.extend([&#34;&#34;] * (len(self._predefinedValues) - len(self._koreanDescriptions)))
+        elif len(self._koreanDescriptions) &gt; len(self._predefinedValues):
+            self._koreanDescriptions = self._koreanDescriptions[:len(self._predefinedValues)]
+    else:
+        self._koreanDescriptions = [&#34;&#34;] * len(self._predefinedValues)
+    
+    # 가중치 자동 업데이트
+    self._update_weights()</code></pre>
+</details>
+<div class="desc"><p>사전 선언된 값 목록을 설정합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValues</code></strong></dt>
+<dd>설정할 값 목록</dd>
+<dt><strong><code>inDescriptions</code></strong></dt>
+<dd>설정할 값들의 설명 목록 (기본값: None, 빈 문자열로 초기화)</dd>
+<dt><strong><code>inKoreanDescriptions</code></strong></dt>
+<dd>설정할 값들의 한국어 설명 목록 (기본값: None, 빈 문자열로 초기화)</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.set_type"><code class="name flex">
+<span>def <span class="ident">set_type</span></span>(<span>self, inType)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_type(self, inType):
+    &#34;&#34;&#34;
+    이름 부분의 타입을 설정합니다.
+    
+    Args:
+        inType: 설정할 타입 (NamePartType 열거형 값)
+    &#34;&#34;&#34;
+    self._type = inType
+    self._initialize_type_defaults()
+    self._update_weights()</code></pre>
+</details>
+<div class="desc"><p>이름 부분의 타입을 설정합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inType</code></strong></dt>
+<dd>설정할 타입 (NamePartType 열거형 값)</dd>
+</dl></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self):
+    &#34;&#34;&#34;
+    NamePart 객체를 사전 형태로 변환합니다.
+    
+    Returns:
+        사전 형태의 NamePart 정보
+    &#34;&#34;&#34;
+    return {
+        &#34;name&#34;: self._name,
+        &#34;predefinedValues&#34;: self._predefinedValues.copy(),
+        &#34;weights&#34;: self._weights.copy(),  # 가중치를 리스트 형태로 직접 전달
+        &#34;type&#34;: self._type.name if hasattr(self._type, &#39;name&#39;) else str(self._type),
+        &#34;descriptions&#34;: self._descriptions.copy(),
+        &#34;koreanDescriptions&#34;: self._koreanDescriptions.copy(), # Add korean descriptions
+        &#34;isDirection&#34;: self._isDirection
+    }</code></pre>
+</details>
+<div class="desc"><p>NamePart 객체를 사전 형태로 변환합니다.</p>
+<h2 id="returns">Returns</h2>
+<p>사전 형태의 NamePart 정보</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePart.validate_value"><code class="name flex">
+<span>def <span class="ident">validate_value</span></span>(<span>self, inValue)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_value(self, inValue):
+    &#34;&#34;&#34;
+    값이 이 NamePart 타입에 유효한지 검증합니다.
+    
+    Args:
+        inValue: 검증할 값
+        
+    Returns:
+        유효하면 True, 아니면 False
+    &#34;&#34;&#34;
+    # INDEX 타입은 숫자 문자열만 유효
+    if self._type == NamePartType.INDEX:
+        return isinstance(inValue, str) and inValue.isdigit()
+        
+    # PREFIX와 SUFFIX 타입은 predefined values 중 하나여야 함
+    if (self._type == NamePartType.PREFIX or self._type == NamePartType.SUFFIX) and self._predefinedValues:
+        return inValue in self._predefinedValues
+        
+    # REALNAME 타입은 모든 문자열 유효
+    if self._type == NamePartType.REALNAME:
+        return isinstance(inValue, str)
+        
+    # 정의되지 않은 타입이면 기존 동작대로 처리
+    return True</code></pre>
+</details>
+<div class="desc"><p>값이 이 NamePart 타입에 유효한지 검증합니다.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>inValue</code></strong></dt>
+<dd>검증할 값</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>유효하면 True, 아니면 False</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="pyjallib.namePart.NamePartType"><code class="flex name class">
+<span>class <span class="ident">NamePartType</span></span>
+<span>(</span><span>*args, **kwds)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NamePartType(Enum):
+    &#34;&#34;&#34;
+    이름 부분(name part)의 유형을 정의하는 열거형 클래스.
+    
+    - PREFIX: RealName 앞에 오는 부분, 사전 정의 값 필수
+    - SUFFIX: RealName 뒤에 오는 부분, 사전 정의 값 필수
+    - REALNAME: 실제 이름 부분, 자유 텍스트 가능
+    - INDEX: 숫자만 허용되는 부분
+    - UNDEFINED: 정의되지 않은 타입 (기본값)
+    &#34;&#34;&#34;
+    PREFIX = auto()
+    SUFFIX = auto()
+    REALNAME = auto()
+    INDEX = auto()
+    UNDEFINED = auto()</code></pre>
+</details>
+<div class="desc"><p>이름 부분(name part)의 유형을 정의하는 열거형 클래스.</p>
+<ul>
+<li>PREFIX: RealName 앞에 오는 부분, 사전 정의 값 필수</li>
+<li>SUFFIX: RealName 뒤에 오는 부분, 사전 정의 값 필수</li>
+<li>REALNAME: 실제 이름 부분, 자유 텍스트 가능</li>
+<li>INDEX: 숫자만 허용되는 부분</li>
+<li>UNDEFINED: 정의되지 않은 타입 (기본값)</li>
+</ul></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="pyjallib.namePart.NamePartType.INDEX"><code class="name">var <span class="ident">INDEX</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePartType.PREFIX"><code class="name">var <span class="ident">PREFIX</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePartType.REALNAME"><code class="name">var <span class="ident">REALNAME</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePartType.SUFFIX"><code class="name">var <span class="ident">SUFFIX</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+<dt id="pyjallib.namePart.NamePartType.UNDEFINED"><code class="name">var <span class="ident">UNDEFINED</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pyjallib" href="index.html">pyjallib</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pyjallib.namePart.NamePart" href="#pyjallib.namePart.NamePart">NamePart</a></code></h4>
+<ul class="">
+<li><code><a title="pyjallib.namePart.NamePart.add_predefined_value" href="#pyjallib.namePart.NamePart.add_predefined_value">add_predefined_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.clear_predefined_values" href="#pyjallib.namePart.NamePart.clear_predefined_values">clear_predefined_values</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.contains_value" href="#pyjallib.namePart.NamePart.contains_value">contains_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.from_dict" href="#pyjallib.namePart.NamePart.from_dict">from_dict</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_description_by_value" href="#pyjallib.namePart.NamePart.get_description_by_value">get_description_by_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_descriptions" href="#pyjallib.namePart.NamePart.get_descriptions">get_descriptions</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_korean_description_by_value" href="#pyjallib.namePart.NamePart.get_korean_description_by_value">get_korean_description_by_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_korean_descriptions" href="#pyjallib.namePart.NamePart.get_korean_descriptions">get_korean_descriptions</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_most_different_weight_value" href="#pyjallib.namePart.NamePart.get_most_different_weight_value">get_most_different_weight_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_name" href="#pyjallib.namePart.NamePart.get_name">get_name</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_predefined_values" href="#pyjallib.namePart.NamePart.get_predefined_values">get_predefined_values</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_type" href="#pyjallib.namePart.NamePart.get_type">get_type</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_at_index" href="#pyjallib.namePart.NamePart.get_value_at_index">get_value_at_index</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_by_description" href="#pyjallib.namePart.NamePart.get_value_by_description">get_value_by_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_by_korean_description" href="#pyjallib.namePart.NamePart.get_value_by_korean_description">get_value_by_korean_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_by_max_weight" href="#pyjallib.namePart.NamePart.get_value_by_max_weight">get_value_by_max_weight</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_by_min_weight" href="#pyjallib.namePart.NamePart.get_value_by_min_weight">get_value_by_min_weight</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_by_weight" href="#pyjallib.namePart.NamePart.get_value_by_weight">get_value_by_weight</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_count" href="#pyjallib.namePart.NamePart.get_value_count">get_value_count</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_with_description" href="#pyjallib.namePart.NamePart.get_value_with_description">get_value_with_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_value_with_korean_description" href="#pyjallib.namePart.NamePart.get_value_with_korean_description">get_value_with_korean_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_values_with_descriptions" href="#pyjallib.namePart.NamePart.get_values_with_descriptions">get_values_with_descriptions</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.get_values_with_korean_descriptions" href="#pyjallib.namePart.NamePart.get_values_with_korean_descriptions">get_values_with_korean_descriptions</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.is_direction" href="#pyjallib.namePart.NamePart.is_direction">is_direction</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.is_index" href="#pyjallib.namePart.NamePart.is_index">is_index</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.is_prefix" href="#pyjallib.namePart.NamePart.is_prefix">is_prefix</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.is_realname" href="#pyjallib.namePart.NamePart.is_realname">is_realname</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.is_suffix" href="#pyjallib.namePart.NamePart.is_suffix">is_suffix</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.remove_predefined_value" href="#pyjallib.namePart.NamePart.remove_predefined_value">remove_predefined_value</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.set_description" href="#pyjallib.namePart.NamePart.set_description">set_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.set_korean_description" href="#pyjallib.namePart.NamePart.set_korean_description">set_korean_description</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.set_name" href="#pyjallib.namePart.NamePart.set_name">set_name</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.set_predefined_values" href="#pyjallib.namePart.NamePart.set_predefined_values">set_predefined_values</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.set_type" href="#pyjallib.namePart.NamePart.set_type">set_type</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.to_dict" href="#pyjallib.namePart.NamePart.to_dict">to_dict</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePart.validate_value" href="#pyjallib.namePart.NamePart.validate_value">validate_value</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pyjallib.namePart.NamePartType" href="#pyjallib.namePart.NamePartType">NamePartType</a></code></h4>
+<ul class="">
+<li><code><a title="pyjallib.namePart.NamePartType.INDEX" href="#pyjallib.namePart.NamePartType.INDEX">INDEX</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePartType.PREFIX" href="#pyjallib.namePart.NamePartType.PREFIX">PREFIX</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePartType.REALNAME" href="#pyjallib.namePart.NamePartType.REALNAME">REALNAME</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePartType.SUFFIX" href="#pyjallib.namePart.NamePartType.SUFFIX">SUFFIX</a></code></li>
+<li><code><a title="pyjallib.namePart.NamePartType.UNDEFINED" href="#pyjallib.namePart.NamePartType.UNDEFINED">UNDEFINED</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
