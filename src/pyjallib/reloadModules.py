@@ -9,7 +9,7 @@ import sys
 import importlib
 
 
-def reload_jallib_modules():
+def reload_modules():
     """
     pyjallib 패키지와 모든 하위 모듈을 다시 로드합니다.
     
