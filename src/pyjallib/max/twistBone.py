@@ -38,7 +38,7 @@ class TwistBone:
         # Ensure dependent services use the potentially newly created instances
         self.const = constService if constService else Constraint(nameService=self.name)
         self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name) # Pass potentially new instances
-        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, constService=self.const)
+        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         
         # 표현식 초기화
         self._init_expressions()
@@ -443,8 +443,10 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
+        
+        returnVal = self.name.sort_by_name(returnVal)
         
         return returnVal
     
@@ -472,8 +474,10 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
+        
+        returnVal = self.name.sort_by_name(returnVal)
         
         return returnVal
     
@@ -501,8 +505,10 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
+        
+        returnVal = self.name.sort_by_name(returnVal)
         
         return returnVal
     
@@ -530,7 +536,9 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
+        
+        returnVal = self.name.sort_by_name(returnVal)
         
         return returnVal
