@@ -13,6 +13,7 @@ from .name import Name
 from .anim import Anim
 from .constraint import Constraint
 from .bip import Bip
+from .bone import Bone
 
 
 class TwistBone:
@@ -22,7 +23,7 @@ class TwistBone:
     3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
-    def __init__(self, nameService=None, animService=None, constService=None, bipService=None):
+    def __init__(self, nameService=None, animService=None, constService=None, bipService=None, boneService=None):
         """
         클래스 초기화.
         
@@ -37,6 +38,7 @@ class TwistBone:
         # Ensure dependent services use the potentially newly created instances
         self.const = constService if constService else Constraint(nameService=self.name)
         self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name) # Pass potentially new instances
+        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, constService=self.const)
         
         # 표현식 초기화
         self._init_expressions()
@@ -416,3 +418,119 @@ class TwistBone:
         (아직 구현되지 않음)
         """
         pass
+    
+    def get_upperArm_type(self, inObj):
+        """
+        상완(Upper Arm) 타입의 트위스트 뼈대 가져오기
+        
+        Args:
+            inObj: 상완 뼈대 객체
+            
+        Returns:
+            상완 타입의 트위스트 뼈대 또는 False(실패 시)
+        """
+        returnVal = []
+        
+        parentBipObj = None
+        
+        if not self.bip.is_biped_object(inObj):
+            return returnVal
+        
+        if self.bip.is_left_node(inObj):
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("lArm"), link=2)
+        else:
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("rArm"), link=2)
+            
+        children = self.bone.get_every_children(parentBipObj)
+        for child in children:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+                returnVal.append(child)
+        
+        return returnVal
+    
+    def get_foreArm_type(self, inObj):
+        """
+        전완(Forearm) 타입의 트위스트 뼈대 가져오기
+        
+        Args:
+            inObj: 전완 뼈대 객체
+            
+        Returns:
+            전완 타입의 트위스트 뼈대 또는 False(실패 시)
+        """
+        returnVal = []
+        
+        parentBipObj = None
+        
+        if not self.bip.is_biped_object(inObj):
+            return returnVal
+        
+        if self.bip.is_left_node(inObj):
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("lArm"), link=3)
+        else:
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("rArm"), link=3)
+            
+        children = self.bone.get_every_children(parentBipObj)
+        for child in children:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+                returnVal.append(child)
+        
+        return returnVal
+    
+    def get_thigh_type(self, inObj):
+        """
+        허벅지(Thigh) 타입의 트위스트 뼈대 가져오기
+        
+        Args:
+            inObj: 허벅지 뼈대 객체
+            
+        Returns:
+            허벅지 타입의 트위스트 뼈대 또는 False(실패 시)
+        """
+        returnVal = []
+        
+        parentBipObj = None
+        
+        if not self.bip.is_biped_object(inObj):
+            return returnVal
+        
+        if self.bip.is_left_node(inObj):
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("lLeg"), link=1)
+        else:
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("rLeg"), link=1)
+            
+        children = self.bone.get_every_children(parentBipObj)
+        for child in children:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+                returnVal.append(child)
+        
+        return returnVal
+    
+    def get_calf_type(self, inObj):
+        """
+        종아리(Calf) 타입의 트위스트 뼈대 가져오기
+        
+        Args:
+            inObj: 종아리 뼈대 객체
+            
+        Returns:
+            종아리 타입의 트위스트 뼈대 또는 False(실패 시)
+        """
+        returnVal = []
+        
+        parentBipObj = None
+        
+        if not self.bip.is_biped_object(inObj):
+            return returnVal
+        
+        if self.bip.is_left_node(inObj):
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("lLeg"), link=2)
+        else:
+            parentBipObj = rt.biped.getNode(inObj.controller.rootNode, rt.Name("rLeg"), link=2)
+            
+        children = self.bone.get_every_children(parentBipObj)
+        for child in children:
+            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.Bone:
+                returnVal.append(child)
+        
+        return returnVal

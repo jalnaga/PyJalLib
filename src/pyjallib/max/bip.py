@@ -436,12 +436,11 @@ class Bip:
             if colNum > 0:
                 rt.biped.deleteAllCopyCollections(inBipRoot.controller)
     
-    def link_base_skeleton(self):
+    def link_base_skeleton(self, skinBoneBaseName="b"):
         """
         기본 스켈레톤 링크 (Biped와 일반 뼈대 연결)
         """
         rt.setWaitCursor()
-        skinBoneBaseName = "b"
         
         bipSkel = self.get_bips()
         baseSkel = [None] * len(bipSkel)
@@ -473,12 +472,11 @@ class Bip:
                 
         rt.setArrowCursor()
     
-    def unlink_base_skeleton(self):
+    def unlink_base_skeleton(self, skinBoneBaseName="b"):
         """
         기본 스켈레톤 링크 해제
         """
         rt.setWaitCursor()
-        skinBoneBaseName = "b"
         
         bipSkel = self.get_bips()
         baseSkel = [None] * len(bipSkel)

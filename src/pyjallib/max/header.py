@@ -63,7 +63,7 @@ class Header:
         self.bip = Bip(animService=self.anim, nameService=self.name, boneService=self.bone)
         self.skin = Skin()
 
-        self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip)
+        self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip, boneService=self.bone)
 
 # 모듈 레벨에서 전역 인스턴스 생성
 jal = Header.get_instance()
