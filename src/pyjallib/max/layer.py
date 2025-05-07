@@ -65,12 +65,15 @@ class Layer:
         Returns:
             레이어에 포함된 노드 배열 또는 빈 배열
         """
+        returnVal = rt.Array()
         layer = rt.ILayerManager.getLayerObject(inLayerNum)
         if layer is not None:
             layerNodes = rt.refs.dependents(layer)
-            return layerNodes
-        else:
-            return rt.Array()
+            for item in layerNodes:
+                if rt.isValidNode(item):
+                    returnVal.append(item)
+                    
+        return returnVal
     
     def get_layer_number(self, inLayerName):
         """
