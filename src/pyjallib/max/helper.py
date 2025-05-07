@@ -431,3 +431,57 @@ class Helper:
             inObj.centermarker = False
             inObj.axistripod = False
             inObj.cross = False
+            
+    def get_shape(self, inObj):
+        """
+        헬퍼 객체의 시각적 형태 속성을 가져옵니다.
+            inObj (object): 형태 정보를 가져올 대상 3ds Max 헬퍼 객체.
+            dict: 헬퍼의 형태 속성을 나타내는 딕셔너리.
+                - "size" (float): 크기
+                - "centermarker" (bool): 센터 마커 활성화 여부
+                - "axistripod" (bool): 축 삼각대 활성화 여부
+                - "cross" (bool): 십자 표시 활성화 여부
+                - "box" (bool): 박스 표시 활성화 여부
+                `inObj`가 `rt.ExposeTm` 또는 `rt.Point` 타입의 객체인 경우 해당 객체의
+                속성값을 반영하며, 그렇지 않은 경우 미리 정의된 기본값을 반환합니다.
+        """
+        returnDict = {
+            "size": 2.0,
+            "centermarker": False,
+            "axistripod": False,
+            "cross": True,
+            "box": False
+        }
+        if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
+            returnDict["size"] = inObj.size
+            returnDict["centermarker"] = inObj.centermarker
+            returnDict["axistripod"] = inObj.axistripod
+            returnDict["cross"] = inObj.cross
+            returnDict["box"] = inObj.box
+        
+        return returnDict
+    
+    def set_shape(self, inObj, inShapeDict):
+        """
+        헬퍼 객체의 표시 형태를 설정합니다.
+        `rt.ExposeTm` 또는 `rt.Point` 타입의 헬퍼 객체에 대해 크기, 센터 마커, 축 삼각대, 십자, 박스 표시 여부를 설정합니다.
+            inObj (rt.ExposeTm | rt.Point): 설정을 적용할 헬퍼 객체입니다.
+            inShapeDict (dict): 헬퍼의 형태를 정의하는 딕셔너리입니다.
+                다음 키와 값을 포함해야 합니다:
+                - "size" (float | int): 헬퍼의 크기.
+                - "centermarker" (bool): 센터 마커 표시 여부 (True/False).
+                - "axistripod" (bool): 축 삼각대(axis tripod) 표시 여부 (True/False).
+                - "cross" (bool): 십자(cross) 표시 여부 (True/False).
+                - "box" (bool): 박스(box) 표시 여부 (True/False).
+            rt.ExposeTm | rt.Point | None: 형태가 설정된 객체를 반환합니다.
+                만약 `inObj`가 `rt.ExposeTm` 또는 `rt.Point` 타입이 아닐 경우,
+                아무 작업도 수행하지 않고 `None`을 반환합니다.
+        """
+        if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
+            inObj.size = inShapeDict["size"]
+            inObj.centermarker = inShapeDict["centermarker"]
+            inObj.axistripod = inShapeDict["axistripod"]
+            inObj.cross = inShapeDict["cross"]
+            inObj.box = inShapeDict["box"]
+            
+            return inObj

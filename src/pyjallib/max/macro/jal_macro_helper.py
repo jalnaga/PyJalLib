@@ -15,7 +15,7 @@ class HelperTypeSelDialog(QtWidgets.QDialog):
         self.changeHelperType = False
         
         self.setWindowTitle("Helper Type")
-        self.setMinimumWidth(100)
+        self.setMinimumWidth(150)
 
         self.layout = QtWidgets.QVBoxLayout(self)
 
@@ -41,6 +41,7 @@ class HelperTypeSelDialog(QtWidgets.QDialog):
 class ModifyHelperShapeDialog(QtWidgets.QDialog):
     def __init__(self, parent=QtWidgets.QWidget.find(rt.windows.getMAXHWND())):
         super(ModifyHelperShapeDialog, self).__init__(parent)
+        self.defaultHelperShapes = []
         self.helperArray = []
 
         self.setWindowTitle("Modify Helper Shape")
@@ -55,6 +56,8 @@ class ModifyHelperShapeDialog(QtWidgets.QDialog):
         self.size_spinbox = QtWidgets.QDoubleSpinBox()
         self.size_spinbox.setValue(1.0) # Default value
         self.size_spinbox.setSingleStep(0.1)
+        # Install event filter for mouse tracking
+        self.size_spinbox.installEventFilter(self)
         sizeLayout.addWidget(sizeLabel)
         sizeLayout.addWidget(self.size_spinbox)
 
@@ -62,6 +65,8 @@ class ModifyHelperShapeDialog(QtWidgets.QDialog):
         self.add_spinbox = QtWidgets.QDoubleSpinBox()
         self.add_spinbox.setValue(0.0) # Default value
         self.add_spinbox.setSingleStep(0.1)
+        # Install event filter for mouse tracking
+        self.add_spinbox.installEventFilter(self)
         addLayout.addWidget(addLabel)
         addLayout.addWidget(self.add_spinbox)
 
@@ -91,6 +96,7 @@ class ModifyHelperShapeDialog(QtWidgets.QDialog):
         self.layout.addWidget(shapeGroup)  # Add the group box to the layout instead of the raw radioLayout
         self.layout.addLayout(buttonLayout)
         
+        # Replace incorrect stepUp/stepDown connections with proper valueChanged connections
         self.size_spinbox.valueChanged.connect(self.change_helper_size)
         self.add_spinbox.valueChanged.connect(self.add_helper_size)
         self.add_spinbox.editingFinished.connect(self.reset_add_spinbox)
@@ -100,8 +106,10 @@ class ModifyHelperShapeDialog(QtWidgets.QDialog):
         self.radio_axis.toggled.connect(self.change_helper_shape)
         self.radio_center.toggled.connect(self.change_helper_shape)
         
-        self.ok_button.clicked.connect(self.accept)
-        self.cancel_button.clicked.connect(self.reject)
+        # Make the dialog apply changes immediately without needing to click OK
+        # by removing the requirement for explicit acceptance
+        self.ok_button.clicked.connect(self.close)  # Just close instead of accept
+        self.cancel_button.clicked.connect(self.restore_helper_shape)
 
     def change_helper_size(self):
         if len(self.helperArray) == 0:
@@ -130,6 +138,21 @@ class ModifyHelperShapeDialog(QtWidgets.QDialog):
                 jal.helper.set_shape_to_axis(obj)
             elif self.radio_center.isChecked():
                 jal.helper.set_shape_to_center(obj)
+
+    def save_helper_shape(self):
+        if len(self.helperArray) == 0:
+            return
+        for obj in self.helperArray:
+            shape = jal.helper.get_shape(obj)
+            self.defaultHelperShapes.append(shape)
+    
+    def restore_helper_shape(self):
+        if len(self.helperArray) == 0 or len(self.defaultHelperShapes) == 0:
+            return
+        for i, obj in enumerate(self.helperArray):
+            jal.helper.set_shape(obj, self.defaultHelperShapes[i])
+        
+        self.reject()  # Close the dialog without accepting
 
 def jal_create_parentHelper():
     jal.helper.create_parent_helper()
@@ -229,17 +252,22 @@ def jal_modify_helperShape():
 
     # Assuming the first selected object is the one to modify
     helperObj = helperArray[0]
+    helperObjShape = jal.helper.get_shape(helperObj)
 
     modDialog = ModifyHelperShapeDialog()
 
     # Set initial values from the selected helper (if possible)
     modDialog.size_spinbox.setValue(helperObj.size)
+    modDialog.radio_box.setChecked(helperObjShape["box"])
+    modDialog.radio_cross.setChecked(helperObjShape["cross"])
+    modDialog.radio_axis.setChecked(helperObjShape["axistripod"])
+    modDialog.radio_center.setChecked(helperObjShape["centermarker"])
     
     modDialog.helperArray = helperArray
+    modDialog.save_helper_shape()
 
-    result = modDialog.exec_()
+    modDialog.show()
 
-    modDialog.deleteLater()
     modDialog = None
     gc.collect()
 
