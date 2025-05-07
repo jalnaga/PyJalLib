@@ -65,7 +65,7 @@ class Layer:
         Returns:
             레이어에 포함된 노드 배열 또는 빈 배열
         """
-        returnVal = rt.Array()
+        returnVal = []
         layer = rt.ILayerManager.getLayerObject(inLayerNum)
         if layer is not None:
             layerNodes = rt.refs.dependents(layer)
