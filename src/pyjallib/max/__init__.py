@@ -26,6 +26,7 @@ from .bip import Bip
 from .skin import Skin
 
 from .twistBone import TwistBone
+from .groinBone import GroinBone
 
 # 모듈 내보내기
 __all__ = [
@@ -42,5 +43,6 @@ __all__ = [
     'Link',
     'Bip',
     'Skin',
-    'TwistBone'
+    'TwistBone',
+    'GroinBone'
 ]

@@ -25,6 +25,7 @@ from .bip import Bip
 from .skin import Skin
 
 from .twistBone import TwistBone
+from .groinBone import GroinBone
 
 class Header:
     """
@@ -64,6 +65,7 @@ class Header:
         self.skin = Skin()
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip, boneService=self.bone)
+        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, helperService=self.helper, constService=self.constraint, bipService=self.bip, boneService=self.bone, twistBoneService=self.twistBone)
 
 # 모듈 레벨에서 전역 인스턴스 생성
 jal = Header.get_instance()
