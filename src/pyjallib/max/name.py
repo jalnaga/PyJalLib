@@ -6,6 +6,8 @@
 3ds Max에 특화된 네이밍 기능 (pymxs 의존)
 """
 
+import os
+
 from pymxs import runtime as rt
 from pyjallib.naming import Naming
 from pyjallib.namePart import NamePart, NamePartType
@@ -35,35 +37,9 @@ class Name(Naming):
             # 사용자가 지정한 설정 파일 사용
             self.load_from_config_file(configPath=configPath)
         else:
-            # 설정 파일이 없는 경우, 기본 설정값으로 초기화
-            # Base 부분 (PREFIX 타입)
-            basePart = NamePart("Base", NamePartType.PREFIX, 
-                             ["b", "Bip001"], 
-                             ["SkinBone", "Biped"])
-            # Type 부분 (PREFIX 타입)
-            typePart = NamePart("Type", NamePartType.PREFIX, 
-                             ["P", "Dum", "Exp", "IK", "T"], 
-                             ["Parent", "Dummy", "ExposeTM", "IK", "Target"])
-            # Side 부분 (PREFIX 타입)
-            sidePart = NamePart("Side", NamePartType.PREFIX,
-                             ["L", "R"], 
-                             ["Left", "Right"],
-                             True)
-            # FrontBack 부분 (PREFIX 타입)
-            frontBackPart = NamePart("FrontBack", NamePartType.PREFIX,
-                                 ["F", "B"], 
-                                 ["Front", "Back"],
-                                 True)
-            # RealName 부분 (REALNAME 타입)
-            realNamePart = NamePart("RealName", NamePartType.REALNAME, [], [])
-            # Index 부분 (INDEX 타입)
-            indexPart = NamePart("Index", NamePartType.INDEX, [], [])
-            # Nub 부분 (SUFFIX 타입)
-            nubPart = NamePart("Nub", NamePartType.SUFFIX,
-                             ["Nub"], 
-                             ["Nub"])
-            # 기본 순서대로 설정
-            self._nameParts = [basePart, typePart, sidePart, frontBackPart, realNamePart, indexPart, nubPart]
+            configDir = os.path.join(os.path.dirname(__file__), "ConfigFiles")
+            nameConfigDir = os.path.join(configDir, "3DSMaxNamingConfig.json")
+            self.load_from_config_file(configPath=nameConfigDir)
     
     # NamePart 직접 액세스 메소드들
     # get_<NamePart 이름>_values 메소드들
