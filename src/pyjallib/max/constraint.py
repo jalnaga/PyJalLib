@@ -675,7 +675,8 @@ class Constraint:
         # 객체 이름 생성
         if self.name:
             objName = self.name.get_string(oriObj.name)
-            indexNum = self.name.get_index_as_digit(oriObj.name)
+            indexVal = self.name.get_index_as_digit(oriObj.name)
+            indexNum = 0 if indexVal is False else indexVal
             dummyName = self.name.add_prefix_to_real_name(objName, self.name.get_dummy_value())
             
             lookAtPointName = self.name.replace_Index(dummyName, str(indexNum))
@@ -752,6 +753,8 @@ class Constraint:
         x_controller.Update()
         y_controller.Update()
         z_controller.Update()
+        
+        return {"lookAt":lookAtPoint_rot_controller, "x":x_controller, "y":y_controller, "z":z_controller}
     
     def assign_attachment(self, inPlacedObj, inSurfObj, bAlign=False, shiftAxis=(0, 0, 1), shiftAmount=3.0):
         """

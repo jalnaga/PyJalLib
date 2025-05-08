@@ -352,11 +352,12 @@ class Naming:
         partValues = partObj.get_predefined_values()
         
         if partType == NamePartType.PREFIX or partType == NamePartType.SUFFIX:
-            foundIndex = partObj._descriptions.index(inDescription)
-            if foundIndex >= 0:
+            try:
+                foundIndex = partObj._descriptions.index(inDescription)
                 return partValues[foundIndex]
-        
-        return ""
+            except ValueError:
+                # Description not found in the list
+                return ""
 
     def pick_name(self, inNamePartName, inStr):
         nameArray = self._split_to_array(inStr)

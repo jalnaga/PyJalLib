@@ -27,6 +27,7 @@ from .skin import Skin
 
 from .twistBone import TwistBone
 from .groinBone import GroinBone
+from .autoClavicle import AutoClavicle
 
 # 모듈 내보내기
 __all__ = [
@@ -44,5 +45,6 @@ __all__ = [
     'Bip',
     'Skin',
     'TwistBone',
-    'GroinBone'
+    'GroinBone',
+    'AutoClavicle'
 ]

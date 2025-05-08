@@ -25,6 +25,10 @@
                 "SkinBone",
                 "Biped"
             ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
             "isDirection": false
         },
         {
@@ -34,14 +38,22 @@
                 "Dum",
                 "Exp",
                 "IK",
-                "T"
+                "T",
+                "Rot",
+                "Pos",
+                "Lat",
+                "UpN"
             ],
             "weights": [
                 5,
                 10,
                 15,
                 20,
-                25
+                25,
+                30,
+                35,
+                40,
+                45
             ],
             "type": "PREFIX",
             "descriptions": [
@@ -49,7 +61,22 @@
                 "Dummy",
                 "ExposeTM",
                 "IK",
-                "Target"
+                "Target",
+                "Rotation",
+                "Position",
+                "LookAt",
+                "UpNode"
+            ],
+            "koreanDescriptions": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
             ],
             "isDirection": false
         },
@@ -68,6 +95,10 @@
                 "Left",
                 "Right"
             ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
             "isDirection": true
         },
         {
@@ -85,6 +116,10 @@
                 "Front",
                 "Back"
             ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
             "isDirection": true
         },
         {
@@ -93,6 +128,7 @@
             "weights": [],
             "type": "REALNAME",
             "descriptions": [],
+            "koreanDescriptions": [],
             "isDirection": false
         },
         {
@@ -101,6 +137,7 @@
             "weights": [],
             "type": "INDEX",
             "descriptions": [],
+            "koreanDescriptions": [],
             "isDirection": false
         },
         {
@@ -114,6 +151,9 @@
             "type": "SUFFIX",
             "descriptions": [
                 "Nub"
+            ],
+            "koreanDescriptions": [
+                ""
             ],
             "isDirection": false
         }
