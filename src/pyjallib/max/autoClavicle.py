@@ -120,3 +120,50 @@ class AutoClavicle:
         ikGoal.parent = autoClavicleRotHelper
         
         return autoClavicleBones
+    
+    def get_bones(self, inClavicle, inUpperArm):
+        """
+        자동 쇄골 뼈를 가져옵니다.
+        
+        Args:
+            inClavicle: 쇄골 뼈 객체
+            inUpperArm: 상완 뼈 객체
+            
+        Returns:
+            자동 쇄골 뼈대 배열
+        """
+        clavicleChildren = [item for item in self.bone.get_every_children(inClavicle) if rt.classOf(item) == rt.BoneGeometry]
+        upperArmChildren = [item for item in self.bone.get_every_children(inUpperArm) if rt.classOf(item) == rt.BoneGeometry]
+        returnVal = []
+        for item in clavicleChildren:
+            if item not in returnVal:
+                returnVal.append(item)
+        for item in upperArmChildren:
+            if item not in returnVal:
+                returnVal.append(item)
+        
+        return returnVal
+    
+    def get_helpers(self, inClavicle, inUpperArm):
+        """
+        자동 쇄골 헬퍼를 가져옵니다.
+        
+        Args:
+            inClavicle: 쇄골 뼈 객체
+            inUpperArm: 상완 뼈 객체
+            
+        Returns:
+            자동 쇄골 헬퍼 배열
+        """
+        clavicleChildren = [item for item in self.bone.get_every_children(inClavicle) if rt.classOf(item) == rt.Point]
+        upperArmChildren = [item for item in self.bone.get_every_children(inUpperArm) if rt.classOf(item) == rt.Point]
+        returnVal = []
+        for item in clavicleChildren:
+            if item not in returnVal:
+                returnVal.append(item)
+        for item in upperArmChildren:
+            if item not in returnVal:
+                returnVal.append(item)
+        
+        return returnVal
+        
