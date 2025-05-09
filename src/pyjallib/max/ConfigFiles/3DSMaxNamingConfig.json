@@ -34,8 +34,8 @@
         {
             "name": "Type",
             "predefinedValues": [
-                "P",
                 "Dum",
+                "P",
                 "Exp",
                 "IK",
                 "T",
@@ -57,8 +57,8 @@
             ],
             "type": "PREFIX",
             "descriptions": [
-                "Parent",
                 "Dummy",
+                "Parent",
                 "ExposeTM",
                 "IK",
                 "Target",

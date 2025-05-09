@@ -212,6 +212,8 @@ class Constraint:
         """
         for item in inTargetArray:
             self.assign_pos_const(inObj, item, keepInit=keepInit)
+        
+        return self.get_pos_const(inObj)
     
     def add_target_to_pos_const(self, inObj, inTarget, inWeight):
         """
@@ -251,8 +253,36 @@ class Constraint:
         posList = self.assign_pos_list(inObj)
         
         # Position_XYZ 컨트롤러 할당
-        rt.setPropertyController(posList, "Available", rt.Position_XYZ())
+        posXYZ = rt.Position_XYZ()
+        rt.setPropertyController(posList, "Available", posXYZ)
         posList.setActive(posList.count)
+        
+        return posXYZ
+    
+    def assign_pos_script_controller(self, inObj):
+        """
+        객체에 스크립트 기반 위치 컨트롤러를 할당.
+        
+        Args:
+            inObj: 컨트롤러를 할당할 객체
+            
+        Returns:
+            None
+        """
+        # 위치 컨트롤러가 리스트 형태가 아니면 변환
+        pos_controller = rt.getPropertyController(inObj.controller, "Position")
+        if rt.classOf(pos_controller) != rt.Position_list:
+            rt.setPropertyController(inObj.controller, "Position", rt.Position_list())
+            
+        # 위치 리스트 컨트롤러 가져오기
+        posList = self.assign_pos_list(inObj)
+        
+        # 스크립트 기반 위치 컨트롤러 할당
+        scriptPos = rt.Position_Script()
+        rt.setPropertyController(posList, "Available", scriptPos)
+        posList.setActive(posList.count)
+        
+        return scriptPos
     
     def get_rot_list_controller(self, inObj):
         """
@@ -392,6 +422,8 @@ class Constraint:
         """
         for item in inTargetArray:
             self.assign_rot_const(inObj, item, keepInit=keepInit)
+        
+        return self.get_rot_const(inObj)
     
     def add_target_to_rot_const(self, inObj, inTarget, inWeight):
         """
@@ -431,8 +463,11 @@ class Constraint:
         rotList = self.assign_rot_list(inObj)
         
         # Euler_XYZ 컨트롤러 할당
-        rt.setPropertyController(rotList, "Available", rt.Euler_XYZ())
+        eulerXYZ = rt.Euler_XYZ()
+        rt.setPropertyController(rotList, "Available", eulerXYZ)
         rotList.setActive(rotList.count)
+        
+        return eulerXYZ
     
     def get_lookat(self, inObj):
         """
@@ -528,6 +563,8 @@ class Constraint:
         """
         for item in inTargetArray:
             self.assign_lookat(inObj, item, keepInit=keepInit)
+        
+        return self.get_lookat(inObj)
     
     def assign_lookat_flipless(self, inObj, inTarget):
         """

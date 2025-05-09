@@ -264,6 +264,7 @@ class Helper:
         부모 헬퍼 생성
         """
         # 선택된 객체가 있는 경우에만 처리
+        returnHelpers = []
         if rt.selection.count > 0:
             selArray = rt.getCurrentSelection()
             
@@ -297,6 +298,11 @@ class Helper:
                 # 부모 헬퍼로 이름 변경
                 finalName = self.name.replace_name_part("Type", genPoint.name, self.get_name_by_type("Parent"))
                 rt.setProperty(genPoint, "name", finalName)
+                
+                returnHelpers.append(genPoint)
+            
+        return returnHelpers
+        
     
     def create_exp_tm(self):
         """
