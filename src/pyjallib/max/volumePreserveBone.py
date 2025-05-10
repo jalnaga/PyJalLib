@@ -41,9 +41,6 @@ class VolumePreserveBone:
         
         self.obj = None
         
-        self.genBones = []
-        self.genHelpers = []
-        
     def create_rot_helpers(self, inObj, inRotScale=0.5):
         if rt.isValidNode(inObj) == False or rt.isValidNode(inObj.parent) == False:
             return False
@@ -172,8 +169,8 @@ class VolumePreserveBone:
         if not len(inTransAxiese) == len(inTransScales) == len(inTransAxiese) == len(inRotAxises):
             return False
         
-        self.genBones = []
-        self.genHelpers = []
+        allBones = []
+        allHelpers = []
         
         returnVal = {
             "VolumeSize": inVolumeSize,
@@ -191,51 +188,18 @@ class VolumePreserveBone:
         
         for i in range(len(inRotAxises)):
             genResult = self.create_init_bone(inObj, inVolumeSize, rotHelpers, inRotAxises[i], inTransAxiese[i], inTransScales[i])
-            self.genBones.extend(genResult["Bones"])
-            self.genHelpers.extend(genResult["Helpers"])
+            allBones.extend(genResult["Bones"])
+            allHelpers.extend(genResult["Helpers"])
             
             # Add the individual bone group result to our return value
             returnVal["BoneGroups"].append(genResult)
         
         # Add rotation helpers to the helpers list
-        self.genHelpers.insert(0, rotHelpers[0])
-        self.genHelpers.insert(1, rotHelpers[1])
+        allHelpers.insert(0, rotHelpers[0])
+        allHelpers.insert(1, rotHelpers[1])
         
         # Add all bones and helpers to the return value
-        returnVal["AllBones"] = self.genBones
-        returnVal["AllHelpers"] = self.genHelpers
+        returnVal["AllBones"] = allBones
+        returnVal["AllHelpers"] = allHelpers
             
         return returnVal
-    
-    def delete(self):
-        """
-        생성된 본과 헬퍼를 삭제하는 메소드.
-        
-        Returns:
-            None
-        """
-        rt.delete(self.genBones)
-        rt.delete(self.genHelpers)
-        
-        self.genBones = []
-        self.genHelpers = []
-    
-    def update_setting(self, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales):
-        """
-        생성된 본과 헬퍼의 설정을 업데이트하는 메소드.
-        
-        Args:
-            inVolumeSize: 부피 크기
-            inRotAxises: 회전 축 배열
-            inRotScale: 회전 스케일
-            inTransAxiese: 변환 축 배열
-            inTransScales: 변환 스케일 배열
-            
-        Returns:
-            None
-        """
-        if len(self.genBones) == 0:
-            return False
-        
-        self.delete()
-        self.create_bones(self.obj, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales)
