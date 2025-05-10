@@ -6,7 +6,7 @@ pyjallib Package
 Python library for game character development pipeline.
 """
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 
 # reload_modules 함수를 패키지 레벨에서 사용 가능하게 함
 from .namePart import NamePart, NamePartType
@@ -14,4 +14,5 @@ from .naming import Naming
 from .namingConfig import NamingConfig
 from .nameToPath import NameToPath
 from .perforce import Perforce
+from .p4module import P4Module
 from .reloadModules import reload_modules

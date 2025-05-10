@@ -7,25 +7,24 @@
 
 from pymxs import runtime as rt
 
-# Import necessary service classes for default initialization
-from .name import Name
-from .anim import Anim
-from .constraint import Constraint
-from .bone import Bone
-from .helper import Helper
+from .header import jal
 
 class VolumePreserveBone:
     """
     관절 부피 유지 본(Volume preserve Bone) 클래스
     3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스
     """
-    def __init__(self, nameService=None, animService=None, constService=None, boneService=None, helperService=None):
-        self.name = nameService if nameService else Name()
-        self.anim = animService if animService else Anim()
-        # Ensure dependent services use the potentially newly created instances
-        self.const = constService if constService else Constraint(nameService=self.name)
-        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
-        self.helper = helperService if helperService else Helper(nameService=self.name)
+    def __init__(self):
+        self.name = jal.name
+        self.anim = jal.anim
+        self.const = jal.constraint
+        self.bone = jal.bone
+        self.helper = jal.helper
+        
+        self.obj = None
+        
+        self.genBones = []
+        self.genHelpers = []
         
     def create_rot_helpers(self, inObj, inRotScale=0.5):
         if rt.isValidNode(inObj) == False or rt.isValidNode(inObj.parent) == False:
@@ -96,11 +95,7 @@ class VolumePreserveBone:
         row = ""
         sourceUpAxist = 0
         upAxis = 0
-        if inRotAxis == "X":
-            row = "row1"
-            sourceUpAxist = 1
-            upAxis = 1
-        elif inRotAxis == "Y":
+        if inRotAxis == "Y":
             row = "row3"
             sourceUpAxist = 2
             upAxis = 2
@@ -131,15 +126,18 @@ class VolumePreserveBone:
         # posConst.AddNode("rotExp", expHelper)
         posConst.AddNode("rotObj", inRotHelpers[0])
         posConst.AddNode("rotParent", inRotHelpers[1])
+        posConst.AddConstant("volumeSize", inVolumeSize)
+        posConst.AddConstant("transScale", inTransScale)
         
         posConstCode = f""
         posConstCode += f"local parentXAxis = (normalize rotParent.objectTransform.{row})\n"
         posConstCode += f"local rotObjXAxis = (normalize rotObj.objectTransform.{row})\n"
         posConstCode += f"local rotAmount = (1.0 - (dot parentXAxis rotObjXAxis))/2.0\n"
-        posConstCode += f"local posX = rotAmount * {inVolumeSize*inTransScale}\n"
+        posConstCode += f"local posX = rotAmount * volumeSize * transScale\n"
         posConstCode += f"[posX, 0.0, 0.0]\n"
         
         posConst.SetExpression(posConstCode)
+        posConst.Update()
         
         returnVal["Bones"] = volumeBones
         returnVal["Helpers"] = [parentHelper]
@@ -153,19 +151,59 @@ class VolumePreserveBone:
         if not len(inTransAxiese) == len(inTransScales) == len(inTransAxiese) == len(inRotAxises):
             return False
         
-        rotHelpers = self.create_rot_helpers(inObj, inRotScale=inRotScale)
-        
+        self.genBones = []
+        self.genHelpers = []
         returnVal = {
             "Bones": [],
             "Helpers": []
         }
         
+        self.obj = inObj
+        
+        rotHelpers = self.create_rot_helpers(inObj, inRotScale=inRotScale)
+        
         for i in range(len(inRotAxises)):
             genResult = self.create_init_bone(inObj, inVolumeSize, rotHelpers, inRotAxises[i], inTransAxiese[i], inTransScales[i])
-            returnVal["Bones"].extend(genResult["Bones"])
-            returnVal["Helpers"].extend(genResult["Helpers"])
+            self.genBones.extend(genResult["Bones"])
+            self.genHelpers.extend(genResult["Helpers"])
         
-        returnVal["Helpers"].insert(0, rotHelpers[0])
-        returnVal["Helpers"].insert(1, rotHelpers[1])
+        self.genHelpers.insert(0, rotHelpers[0])
+        self.genHelpers.insert(1, rotHelpers[1])
+        
+        returnVal["Bones"] = self.genBones
+        returnVal["Helpers"] = self.genHelpers
             
         return returnVal
+    
+    def delete(self):
+        """
+        생성된 본과 헬퍼를 삭제하는 메소드.
+        
+        Returns:
+            None
+        """
+        rt.delete(self.genBones)
+        rt.delete(self.genHelpers)
+        
+        self.genBones = []
+        self.genHelpers = []
+    
+    def update_setting(self, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales):
+        """
+        생성된 본과 헬퍼의 설정을 업데이트하는 메소드.
+        
+        Args:
+            inVolumeSize: 부피 크기
+            inRotAxises: 회전 축 배열
+            inRotScale: 회전 스케일
+            inTransAxiese: 변환 축 배열
+            inTransScales: 변환 스케일 배열
+            
+        Returns:
+            None
+        """
+        if len(self.genBones) == 0:
+            return False
+        
+        self.delete()
+        self.create_bones(self.obj, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales)

@@ -712,7 +712,7 @@ class Bone:
         
         return True
     
-    def create_skin_bone(self, inBoneArray, skipNub=True, mesh=True, link=True, skinBoneBaseName="b"):
+    def create_skin_bone(self, inBoneArray, skipNub=True, mesh=True, link=True, skinBoneBaseName=""):
         """
         스킨 뼈대 생성.
         
@@ -731,11 +731,18 @@ class Bone:
         skinBonePushAmount = -0.02
         returnBones = []
         
+        definedSkinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
+        if skinBoneBaseName == "":
+            if definedSkinBoneBaseName == "":
+                skinBoneBaseName = "b"
+            else:
+                skinBoneBaseName = definedSkinBoneBaseName
+        
         for i in range(len(inBoneArray)):
-            skinBoneName = self.name.replace_base(inBoneArray[i].name, skinBoneBaseName)
+            skinBoneName = self.name.replace_name_part("Base", inBoneArray[i].name, skinBoneBaseName)
             skinBoneName = self.name.replace_filtering_char(skinBoneName, skinBoneFilteringChar)
             
-            skinBone = self.create_nub_bone("b_TempSkin", 2)
+            skinBone = self.create_nub_bone(f"{skinBoneBaseName}_TempSkin", 2)
             skinBone.name = skinBoneName
             skinBone.wireColor = rt.Color(255, 88, 199)
             skinBone.transform = inBoneArray[i].transform
@@ -753,7 +760,7 @@ class Bone:
             
             skinBone.boneEnable = True
             skinBone.renderable = False
-            skinBone.boneScaleType = rt.Name("none")
+            skinBone.boneScaleType = rt.Name("None")
             
             bones.append(skinBone)
         
@@ -771,7 +778,7 @@ class Bone:
         
         if skipNub:
             for item in bones:
-                if not rt.matchPattern(item.name, pattern=("*" + self.name.get_nub_str())):
+                if not rt.matchPattern(item.name, pattern=("*" + self.name.get_name_part_value_by_description("Nub", "Nub"))):
                     returnBones.append(item)
                 else:
                     rt.delete(item)
@@ -782,7 +789,7 @@ class Bone:
         
         return returnBones
     
-    def create_skin_bone_from_bip(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName="b"):
+    def create_skin_bone_from_bip(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName=""):
         """
         바이페드 객체에서 스킨 뼈대 생성.
         
@@ -806,7 +813,7 @@ class Bone:
         
         return returnSkinBones
     
-    def create_skin_bone_from_bip_for_unreal(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName="b"):
+    def create_skin_bone_from_bip_for_unreal(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName=""):
         """
         언리얼 엔진용 바이페드 객체에서 스킨 뼈대 생성.
         

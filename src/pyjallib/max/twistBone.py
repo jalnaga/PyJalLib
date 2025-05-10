@@ -37,7 +37,7 @@ class TwistBone:
         self.anim = animService if animService else Anim()
         # Ensure dependent services use the potentially newly created instances
         self.const = constService if constService else Constraint(nameService=self.name)
-        self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name) # Pass potentially new instances
+        self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         
         # 표현식 초기화

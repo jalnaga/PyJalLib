@@ -7,14 +7,7 @@
 
 from pymxs import runtime as rt
 
-# Import necessary service classes for default initialization
-from .name import Name
-from .anim import Anim
-from .constraint import Constraint
-from .bip import Bip
-from .bone import Bone
-from .helper import Helper
-from .twistBone import TwistBone
+from .header import jal
 
 class GroinBone:
     """
@@ -22,7 +15,7 @@ class GroinBone:
     3DS Max에서 고간 부 본을 생성하고 관리하는 기능을 제공합니다.
     """
     
-    def __init__(self, nameService=None, animService=None, helperService=None, constService=None, bipService=None, boneService=None, twistBoneService=None):
+    def __init__(self):
         """
         클래스 초기화.
         
@@ -32,16 +25,20 @@ class GroinBone:
             constService: 제약 서비스 (제공되지 않으면 새로 생성)
             bipService: 바이페드 서비스 (제공되지 않으면 새로 생성)
         """
-        self.name = nameService if nameService else Name()
-        self.anim = animService if animService else Anim()
+        self.name = jal.name
+        self.anim = jal.anim
         # Ensure dependent services use the potentially newly created instances
-        self.const = constService if constService else Constraint(nameService=self.name)
-        self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name)
-        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
-        self.twistBone = twistBoneService if twistBoneService else TwistBone(nameService=self.name, animService=self.anim, constService=self.const, bipService=self.bip, boneService=self.bone)
-        self.helper = helperService if helperService else Helper(nameService=self.name)
+        self.const = jal.constraint
+        self.bip = jal.bip
+        self.bone = jal.bone
+        self.twistBone = jal.twistBone
+        self.helper = jal.helper
+        
+        self.bipObj = None
+        self.genBones = []
+        self.genHelpers = []
     
-    def create_bone(self, inObj):
+    def create_bone(self, inObj, inPelvisWeight=40.0, inThighWeight=60.0):
         """
         고간 부 본을 생성하는 메소드.
         
@@ -57,6 +54,7 @@ class GroinBone:
             return False
         
         bipObj = self.bip.get_com(inObj)
+        self.bipObj = bipObj
         
         lThigh = self.bip.get_grouped_nodes(inObj, "lLeg")[0]
         rThigh = self.bip.get_grouped_nodes(inObj, "rLeg")[0]
@@ -75,16 +73,49 @@ class GroinBone:
         self.anim.rotate_local(pelvisHelper, 0, 0, -90)
         pelvisHelper.parent = pelvis
         self.helper.set_shape_to_box(pelvisHelper)
+        self.genHelpers.append(pelvisHelper)
         
         groinBones = self.bone.create_simple_bone(3.0, bipObj.name +" Groin 00", size=2)
         groinBones[0].transform = pelvisHelper.transform
         groinBones[0].parent = pelvis
+        for groinBone in groinBones:
+            self.genBones.append(groinBone)
         
         self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, lThigh, rThigh])
         rotConst = self.const.get_rot_list_controller(groinBones[0])[1]
-        rotConst.setWeight(1, 40.0)
-        rotConst.setWeight(2, 30.0)
-        rotConst.setWeight(3, 30.0)
+        rotConst.setWeight(1, inPelvisWeight)
+        rotConst.setWeight(2, inThighWeight/2.0)
+        rotConst.setWeight(3, inThighWeight/2.0)
+        
+    def delete(self):
+        """
+        생성된 고간 부 본과 헬퍼를 삭제하는 메소드.
+        
+        Returns:
+            None
+        """
+        rt.delete(self.genBones)
+        rt.delete(self.genHelpers)
+        
+        self.genBones = []
+        self.genHelpers = []
+    
+    def update_weight(self, inPelvisWeight=40.0, inThighWeight=60.0):
+        """
+        고간 부 본의 가중치를 업데이트하는 메소드.
+        
+        Args:
+            inPelvisWeight: 골반 가중치
+            inThighWeight: 허벅지 가중치
+        
+        Returns:
+            None
+        """
+        if len(self.genBones) == 0:
+            return False
+        
+        self.delete()
+        self.create_bone(self.bipObj, inPelvisWeight, inThighWeight)
         
         
         

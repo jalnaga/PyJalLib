@@ -25,9 +25,8 @@ from .bip import Bip
 from .skin import Skin
 
 from .twistBone import TwistBone
-from .groinBone import GroinBone
-from .autoClavicle import AutoClavicle
-from .volumePreserveBone import VolumePreserveBone
+# from .autoClavicle import AutoClavicle
+# from .volumePreserveBone import VolumePreserveBone
 
 from .morph import Morph
 
@@ -69,9 +68,8 @@ class Header:
         self.skin = Skin()
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip, boneService=self.bone)
-        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, helperService=self.helper, constService=self.constraint, bipService=self.bip, boneService=self.bone, twistBoneService=self.twistBone)
-        self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
-        self.volumePreserveBone = VolumePreserveBone(nameService=self.name, animService=self.anim, constService=self.constraint, boneService=self.bone, helperService=self.helper)
+        # self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
+        # self.volumePreserveBone = VolumePreserveBone(nameService=self.name, animService=self.anim, constService=self.constraint, boneService=self.bone, helperService=self.helper)
         
         self.morph = Morph()
         

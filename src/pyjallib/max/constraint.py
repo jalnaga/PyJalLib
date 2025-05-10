@@ -233,6 +233,8 @@ class Constraint:
         # 마지막 타겟에 특정 가중치 적용
         targetNum = targetPosConst.getNumTargets()
         targetPosConst.SetWeight(targetNum, inWeight)
+        
+        return targetPosConst
     
     def assign_pos_xyz(self, inObj):
         """
@@ -443,6 +445,8 @@ class Constraint:
         # 마지막 타겟에 특정 가중치 적용
         targetNum = targetRotConstraint.getNumTargets()
         targetRotConstraint.SetWeight(targetNum, inWeight)
+        
+        return targetRotConstraint
     
     def assign_euler_xyz(self, inObj):
         """
@@ -609,6 +613,8 @@ class Constraint:
             rot_list = self.get_rot_list_controller(inObj)
             rt.setPropertyController(rot_list, "Available", targetRotConstraint)
             rot_list.setActive(rot_list.count)
+            
+            return targetRotConstraint
     
     def assign_rot_const_scripted(self, inObj, inTarget):
         """
@@ -635,32 +641,19 @@ class Constraint:
         rot_list.setActive(rot_list.count)
         
         # 헬퍼 객체 이름 생성
-        if self.name:
-            rotPointName = self.name.replace_Type(inObj.name, self.name.get_dummy_value())
-            rotMeasurePointName = self.name.increase_index(rotPointName, 1)
-            rotExpName = self.name.replace_Type(inObj.name, self.name.get_exposeTm_value())
-            rotExpName = self.name.replace_Index(rotExpName, "0")
-            
-            print(f"dumStr: {self.name.get_dummy_value()}")
-            print(f"exposeTmStr: {self.name.get_exposeTm_value()}")
-            print(f"rotPointName: {rotPointName}, rotMeasurePointName: {rotMeasurePointName}, rotExpName: {rotExpName}")
-        else:
-            # name 서비스가 없는 경우 기본 이름 사용
-            base_name = rt.getProperty(inObj, "name")
-            rotPointName = f"dum_{base_name}"
-            rotMeasurePointName = f"dum_{base_name}_01"
-            rotExpName = f"exp_{base_name}_0"
+        rotPointName = self.name.replace_Type(inObj.name, self.name.get_dummy_value())
+        rotMeasurePointName = self.name.increase_index(rotPointName, 1)
+        rotExpName = self.name.replace_Type(inObj.name, self.name.get_exposeTm_value())
+        rotExpName = self.name.replace_Index(rotExpName, "0")
+        
+        print(f"dumStr: {self.name.get_dummy_value()}")
+        print(f"exposeTmStr: {self.name.get_exposeTm_value()}")
+        print(f"rotPointName: {rotPointName}, rotMeasurePointName: {rotMeasurePointName}, rotExpName: {rotExpName}")
         
         # 헬퍼 객체 생성
-        if self.helper:
-            rotPoint = self.helper.create_point(rotPointName, size=2, boxToggle=True, crossToggle=False)
-            rotMeasuerPoint = self.helper.create_point(rotMeasurePointName, size=3, boxToggle=True, crossToggle=False)
-            rotExpPoint = rt.ExposeTm(name=rotExpName, size=3, box=False, cross=True, wirecolor=rt.Color(14, 255, 2))
-        else:
-            # 직접 헬퍼 객체 생성
-            rotPoint = rt.Point(name=rotPointName, size=2, box=True, cross=False)
-            rotMeasuerPoint = rt.Point(name=rotMeasurePointName, size=3, box=True, cross=False)
-            rotExpPoint = rt.ExposeTm(name=rotExpName, size=3, box=False, cross=True, wirecolor=rt.Color(14, 255, 2))
+        rotPoint = self.helper.create_point(rotPointName, size=2, boxToggle=True, crossToggle=False)
+        rotMeasuerPoint = self.helper.create_point(rotMeasurePointName, size=3, boxToggle=True, crossToggle=False)
+        rotExpPoint = rt.ExposeTm(name=rotExpName, size=3, box=False, cross=True, wirecolor=rt.Color(14, 255, 2))
         
         # 초기 변환 설정
         rt.setProperty(rotPoint, "transform", rt.getProperty(inObj, "transform"))
@@ -710,22 +703,20 @@ class Constraint:
         targetObjArray = inTarget
         
         # 객체 이름 생성
-        if self.name:
-            objName = self.name.get_string(oriObj.name)
-            indexVal = self.name.get_index_as_digit(oriObj.name)
-            indexNum = 0 if indexVal is False else indexVal
-            dummyName = self.name.add_prefix_to_real_name(objName, self.name.get_dummy_value())
-            
-            lookAtPointName = self.name.replace_Index(dummyName, str(indexNum))
-            lookAtMeasurePointName = self.name.replace_Index(dummyName, str(indexNum+1))
-            lookAtExpPointName = dummyName + self.name.get_exposeTm_value()
-            lookAtExpPointName = self.name.replace_Index(lookAtExpPointName, "0")
+        objName = self.name.get_string(oriObj.name)
+        indexVal = self.name.get_index_as_digit(oriObj.name)
+        indexNum = 0 if indexVal is False else indexVal
+        dummyName = self.name.add_prefix_to_real_name(objName, self.name.get_dummy_value())
+        
+        lookAtPointName = self.name.replace_Index(dummyName, str(indexNum))
+        lookAtMeasurePointName = self.name.replace_Index(dummyName, str(indexNum+1))
+        lookAtExpPointName = dummyName + self.name.get_exposeTm_value()
+        lookAtExpPointName = self.name.replace_Index(lookAtExpPointName, "0")
         
         # 헬퍼 객체 생성
-        if self.helper:
-            lookAtPoint = self.helper.create_point(lookAtPointName, size=2, boxToggle=True, crossToggle=False)
-            lookAtMeasurePoint = self.helper.create_point(lookAtMeasurePointName, size=3, boxToggle=True, crossToggle=False)
-            lookAtExpPoint = rt.ExposeTm(name=lookAtExpPointName, size=3, box=False, cross=True, wirecolor=rt.Color(14, 255, 2))
+        lookAtPoint = self.helper.create_point(lookAtPointName, size=2, boxToggle=True, crossToggle=False)
+        lookAtMeasurePoint = self.helper.create_point(lookAtMeasurePointName, size=3, boxToggle=True, crossToggle=False)
+        lookAtExpPoint = rt.ExposeTm(name=lookAtExpPointName, size=3, box=False, cross=True, wirecolor=rt.Color(14, 255, 2))
         
         # 초기 변환 설정
         rt.setProperty(lookAtPoint, "transform", rt.getProperty(oriObj, "transform"))

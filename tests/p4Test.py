@@ -9,17 +9,14 @@ project_root = os.path.abspath(os.path.join(current_dir, "..", "src"))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from pymxs import runtime as rt
 import pyjallib
 pyjallib.reload_modules()
 
-tempJal = pyjallib.max.header.Header()
+import pyjallib
+from pyjallib.p4module import P4Module
 
-selObjs = rt.getCurrentSelection()
-
-clavicle = tempJal.bip.get_grouped_nodes(selObjs[0], "lArm")[0]
-upperArm = tempJal.bip.get_grouped_nodes(selObjs[0], "lArm")[1]
-
-print(clavicle, upperArm)
-
-tempJal.autoClavicle.create_bones(clavicle, upperArm, liftScale=0.8)
+testP4 = P4Module()
+testP4.connect("DongseokKim_DevStorage")
+pendingList = testP4.get_pending_changes()
+print(pendingList[0])
+print(testP4.edit_change_list(pendingList[0], "[TA 김동석]"))
