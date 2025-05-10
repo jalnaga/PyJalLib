@@ -1,6 +1,6 @@
 [project]
 name = "pyjallib"
-version = "0.1.8"
+version = "0.1.9"
 description = "A utility library for 3D game character development pipelines."
 readme = "README.md"
 authors = [

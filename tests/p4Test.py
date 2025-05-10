@@ -13,11 +13,11 @@ import pyjallib
 pyjallib.reload_modules()
 
 import pyjallib
-from pyjallib.p4module import P4Module
+from pyjallib.perforce import Perforce
 
-testP4 = P4Module()
+testP4 = Perforce()
+testP4.connect("DongseokKim_Omni")
+print(testP4.workspaceRoot)
+testP4.disconnect()
 testP4.connect("DongseokKim_DevStorage")
-pendingList = testP4.get_pending_change_list()
-print(pendingList[0])
-print(testP4.edit_change_list(pendingList[0]["Change"], description="test"))
-print(testP4.revert_change_list(pendingList[0]["Change"]))
+print(testP4.workspaceRoot)

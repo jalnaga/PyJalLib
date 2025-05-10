@@ -31,6 +31,7 @@ class Perforce:
         """Perforce 인스턴스를 초기화합니다."""
         self.p4 = P4()
         self.connected = False
+        self.workspaceRoot = r""
         logger.info("Perforce 인스턴스 생성됨")
 
     def _is_connected(self) -> bool:
@@ -71,6 +72,21 @@ class Perforce:
             self.p4.client = workspace_name
             self.p4.connect()
             self.connected = True
+            
+            # 워크스페이스 루트 경로 가져오기
+            try:
+                client_info = self.p4.run_client("-o", workspace_name)[0]
+                root_path = client_info.get("Root", "")
+                
+                # Windows 경로 형식으로 변환 (슬래시를 백슬래시로)
+                root_path = os.path.normpath(root_path)
+                
+                self.workspaceRoot = root_path
+                logger.info(f"워크스페이스 루트 절대 경로: {self.workspaceRoot}")
+            except (IndexError, KeyError) as e:
+                logger.error(f"워크스페이스 루트 경로 가져오기 실패: {e}")
+                self.workspaceRoot = ""
+                
             logger.info(f"'{workspace_name}' 워크스페이스에 성공적으로 연결됨 (User: {self.p4.user}, Port: {self.p4.port})")
             return True
         except P4Exception as e:
@@ -404,10 +420,11 @@ class Perforce:
             return False
 
     def check_update_required(self, file_paths: list) -> bool:
-        """파일들의 업데이트 필요 여부를 확인합니다.
+        """파일이나 폴더의 업데이트 필요 여부를 확인합니다.
 
         Args:
-            file_paths (list): 확인할 파일 경로 리스트
+            file_paths (list): 확인할 파일 또는 폴더 경로 리스트. 
+                              폴더 경로는 자동으로 재귀적으로 처리됩니다.
 
         Returns:
             bool: 업데이트가 필요한 파일이 있으면 True, 없으면 False
@@ -415,11 +432,22 @@ class Perforce:
         if not self._is_connected():
             return False
         if not file_paths:
-            logger.debug("업데이트 필요 여부 확인할 파일 목록이 비어있습니다.")
+            logger.debug("업데이트 필요 여부 확인할 파일/폴더 목록이 비어있습니다.")
             return False
-        logger.debug(f"파일 업데이트 필요 여부 확인 중 (파일 {len(file_paths)}개): {file_paths}")
+        
+        # 폴더 경로에 재귀적 와일드카드 패턴을 추가
+        processed_paths = []
+        for path in file_paths:
+            if os.path.isdir(path):
+                # 폴더 경로에 '...'(재귀) 패턴을 추가
+                processed_paths.append(os.path.join(path, '...'))
+                logger.debug(f"폴더 경로를 재귀 패턴으로 변환: {path} -> {os.path.join(path, '...')}")
+            else:
+                processed_paths.append(path)
+        
+        logger.debug(f"파일/폴더 업데이트 필요 여부 확인 중 (항목 {len(processed_paths)}개): {processed_paths}")
         try:
-            sync_preview_results = self.p4.run_sync("-n", file_paths)
+            sync_preview_results = self.p4.run_sync("-n", processed_paths)
             needs_update = False
             for result in sync_preview_results:
                 if isinstance(result, dict):
@@ -440,19 +468,20 @@ class Perforce:
                         break
             
             if needs_update:
-                logger.info(f"지정된 파일 중 업데이트가 필요한 파일이 있습니다.")
+                logger.info(f"지정된 파일/폴더 중 업데이트가 필요한 파일이 있습니다.")
             else:
-                logger.info(f"지정된 모든 파일이 최신 상태입니다.")
+                logger.info(f"지정된 모든 파일/폴더가 최신 상태입니다.")
             return needs_update
         except P4Exception as e:
-            self._handle_p4_exception(e, f"파일 업데이트 필요 여부 확인 ({file_paths})")
+            self._handle_p4_exception(e, f"파일/폴더 업데이트 필요 여부 확인 ({processed_paths})")
             return False
 
     def sync_files(self, file_paths: list) -> bool:
-        """파일들을 동기화합니다.
+        """파일이나 폴더를 동기화합니다.
 
         Args:
-            file_paths (list): 동기화할 파일 경로 리스트
+            file_paths (list): 동기화할 파일 또는 폴더 경로 리스트.
+                             폴더 경로는 자동으로 재귀적으로 처리됩니다.
 
         Returns:
             bool: 동기화 성공 시 True, 실패 시 False
@@ -460,15 +489,26 @@ class Perforce:
         if not self._is_connected():
             return False
         if not file_paths:
-            logger.debug("싱크할 파일 목록이 비어있습니다.")
+            logger.debug("싱크할 파일/폴더 목록이 비어있습니다.")
             return True
-        logger.info(f"파일 싱크 시도 (파일 {len(file_paths)}개): {file_paths}")
+        
+        # 폴더 경로에 재귀적 와일드카드 패턴을 추가
+        processed_paths = []
+        for path in file_paths:
+            if os.path.isdir(path):
+                # 폴더 경로에 '...'(재귀) 패턴을 추가
+                processed_paths.append(os.path.join(path, '...'))
+                logger.debug(f"폴더 경로를 재귀 패턴으로 변환: {path} -> {os.path.join(path, '...')}")
+            else:
+                processed_paths.append(path)
+        
+        logger.info(f"파일/폴더 싱크 시도 (항목 {len(processed_paths)}개): {processed_paths}")
         try:
-            self.p4.run_sync(file_paths)
-            logger.info(f"파일 싱크 완료: {file_paths}")
+            self.p4.run_sync(processed_paths)
+            logger.info(f"파일/폴더 싱크 완료: {processed_paths}")
             return True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"파일 싱크 ({file_paths})")
+            self._handle_p4_exception(e, f"파일/폴더 싱크 ({processed_paths})")
             return False
 
     def disconnect(self):
