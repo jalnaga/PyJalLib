@@ -14,7 +14,6 @@ from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
 from .bip import Bip
-from .twistBone import TwistBone
 
 class GroinBone:
     """
@@ -22,7 +21,7 @@ class GroinBone:
     3DS Max에서 고간 부 본을 생성하고 관리하는 기능을 제공합니다.
     """
     
-    def __init__(self, nameService=None, animService=None, constraintService=None, bipService=None, boneService=None, twistBoneService=None, helperService=None):
+    def __init__(self, nameService=None, animService=None, constraintService=None, bipService=None, boneService=None, helperService=None):
         """
         클래스 초기화.
         
@@ -44,19 +43,12 @@ class GroinBone:
         self.bip = bipService if bipService else Bip(nameService=self.name, animService=self.anim)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.helper = helperService if helperService else Helper(nameService=self.name)
-        self.twistBone = twistBoneService if twistBoneService else TwistBone(
-            nameService=self.name, 
-            animService=self.anim, 
-            constService=self.const, 
-            bipService=self.bip,
-            boneService=self.bone
-        )
         
         self.bipObj = None
         self.genBones = []
         self.genHelpers = []
     
-    def create_bone(self, inObj, inPelvisWeight=40.0, inThighWeight=60.0):
+    def create_bone(self, inObj, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
         """
         고간 부 본을 생성하는 메소드.
         
@@ -72,19 +64,16 @@ class GroinBone:
             rt.messageBox("This is not a biped object.")
             return False
         
+        if rt.isValidNode(inObj) == False or rt.isValidNode(inLThighTwist) == False or rt.isValidNode(inRThighTwist) == False:
+            rt.messageBox("There is no valid node.")
+            return False
+        
         bipObj = self.bip.get_com(inObj)
         self.bipObj = bipObj
         
         lThigh = self.bip.get_grouped_nodes(inObj, "lLeg")[0]
         rThigh = self.bip.get_grouped_nodes(inObj, "rLeg")[0]
         pelvis = self.bip.get_grouped_nodes(inObj, "pelvis")[0]
-        
-        lThighTwists = self.twistBone.get_thigh_type(lThigh)
-        rThighTwists = self.twistBone.get_thigh_type(rThigh)
-        
-        if len(lThighTwists) == 0 or len(rThighTwists) == 0:
-            rt.messageBox("There is no twist bone.")
-            return False
         
         groinBaseName = bipObj.name + " Groin"
         
@@ -105,43 +94,13 @@ class GroinBone:
         for groinBone in groinBones:
             self.genBones.append(groinBone)
         
-        self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, lThighTwists[0], rThighTwists[0]])
+        self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, inLThighTwist, inRThighTwist])
         rotConst = self.const.get_rot_list_controller(groinBones[0])[1]
         rotConst.setWeight(1, inPelvisWeight)
         rotConst.setWeight(2, inThighWeight/2.0)
         rotConst.setWeight(3, inThighWeight/2.0)
         
         return True
-    
-    def delete(self):
-        """
-        생성된 고간 부 본과 헬퍼를 삭제하는 메소드.
-        
-        Returns:
-            None
-        """
-        rt.delete(self.genBones)
-        rt.delete(self.genHelpers)
-        
-        self.genBones = []
-        self.genHelpers = []
-    
-    def update_weight(self, inPelvisWeight=40.0, inThighWeight=60.0):
-        """
-        고간 부 본의 가중치를 업데이트하는 메소드.
-        
-        Args:
-            inPelvisWeight: 골반 가중치
-            inThighWeight: 허벅지 가중치
-        
-        Returns:
-            None
-        """
-        if len(self.genBones) == 0:
-            return False
-        
-        self.delete()
-        self.create_bone(self.bipObj, inPelvisWeight, inThighWeight)
 
 class GroinBoneChain:
     """
@@ -226,56 +185,6 @@ class GroinBoneChain:
             return True
         except:
             return False
-    
-    def rename_bones(self, prefix="", suffix=""):
-        """
-        체인의 모든 본 이름 변경
-        
-        Args:
-            prefix: 추가할 접두사 (기본값: "")
-            suffix: 추가할 접미사 (기본값: "")
-        """
-        for i, bone in enumerate(self.bones):
-            current_name = bone.name
-            # 인덱스 부분을 찾아서 유지
-            index_part = ""
-            for char in current_name[::-1]:  # 뒤에서부터 검색
-                if char.isdigit():
-                    index_part = char + index_part
-                else:
-                    break
-                    
-            if index_part:
-                new_name = f"{prefix}{current_name.rstrip(index_part)}{suffix}{index_part}"
-            else:
-                new_name = f"{prefix}{current_name}{suffix}{i}"
-                
-            bone.name = new_name
-    
-    def rename_helpers(self, prefix="", suffix=""):
-        """
-        체인의 모든 헬퍼 이름 변경
-        
-        Args:
-            prefix: 추가할 접두사 (기본값: "")
-            suffix: 추가할 접미사 (기본값: "")
-        """
-        for i, helper in enumerate(self.helpers):
-            current_name = helper.name
-            # 인덱스 부분을 찾아서 유지
-            index_part = ""
-            for char in current_name[::-1]:  # 뒤에서부터 검색
-                if char.isdigit():
-                    index_part = char + index_part
-                else:
-                    break
-                    
-            if index_part:
-                new_name = f"{prefix}{current_name.rstrip(index_part)}{suffix}{index_part}"
-            else:
-                new_name = f"{prefix}{current_name}{suffix}{i}"
-                
-            helper.name = new_name
     
     def update_weights(self, pelvis_weight=None, thigh_weight=None):
         """

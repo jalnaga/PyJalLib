@@ -90,7 +90,7 @@ class Header:
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip, boneService=self.bone)
         self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
-        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, bipService=self.bip, boneService=self.bone, twistBoneService=self.twistBone, helperService=self.helper)
+        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, bipService=self.bip, boneService=self.bone, helperService=self.helper)
         self.volumePreserveBone = VolumePreserveBone(nameService=self.name, animService=self.anim, constService=self.constraint, boneService=self.bone, helperService=self.helper)
         
         self.morph = Morph()
