@@ -48,49 +48,38 @@ class GroinBone:
         self.genBones = []
         self.genHelpers = []
     
-    def create_bone(self, inObj, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
+    def create_bone(self, inPelvis, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
         """
         고간 부 본을 생성하는 메소드.
         
         Args:
-            inObj: Biped 객체
+            inPelvis: Biped 객체
             inPelvisWeight: 골반 가중치 (기본값: 40.0)
             inThighWeight: 허벅지 가중치 (기본값: 60.0)
         
         Returns:
             성공 여부 (Boolean)
         """
-        if self.bip.is_biped_object(inObj) == False:
-            rt.messageBox("This is not a biped object.")
-            return False
-        
-        if rt.isValidNode(inObj) == False or rt.isValidNode(inLThighTwist) == False or rt.isValidNode(inRThighTwist) == False:
+        if rt.isValidNode(inPelvis) == False or rt.isValidNode(inLThighTwist) == False or rt.isValidNode(inRThighTwist) == False:
             rt.messageBox("There is no valid node.")
             return False
         
-        bipObj = self.bip.get_com(inObj)
-        self.bipObj = bipObj
-        
-        lThigh = self.bip.get_grouped_nodes(inObj, "lLeg")[0]
-        rThigh = self.bip.get_grouped_nodes(inObj, "rLeg")[0]
-        pelvis = self.bip.get_grouped_nodes(inObj, "pelvis")[0]
-        
-        groinBaseName = bipObj.name + " Groin"
+        groinBaseName = self.name.add_suffix_to_real_name(inPelvis.name, self.name._get_filtering_char(inPelvis.name) + "Groin")
         
         pelvisHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "00")
         pelvisHelper = self.helper.create_point(pelvisHelperName)
-        pelvisHelper.transform = bipObj.transform
+        pelvisHelper.transform = inPelvis.transform
         self.anim.rotate_local(pelvisHelper, 90, 0, 0)
         self.anim.rotate_local(pelvisHelper, 0, 0, -90)
-        pelvisHelper.parent = pelvis
+        pelvisHelper.parent = inPelvis
         self.helper.set_shape_to_box(pelvisHelper)
         self.genHelpers.append(pelvisHelper)
         
         groinBoneName = self.name.replace_name_part("Index", groinBaseName, "00")
         groinBones = self.bone.create_simple_bone(3.0, groinBoneName, size=2)
         groinBones[0].transform = pelvisHelper.transform
-        groinBones[0].parent = pelvis
+        groinBones[0].parent = inPelvis
         for groinBone in groinBones:
             self.genBones.append(groinBone)
         
