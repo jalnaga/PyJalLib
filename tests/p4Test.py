@@ -17,6 +17,7 @@ from pyjallib.p4module import P4Module
 
 testP4 = P4Module()
 testP4.connect("DongseokKim_DevStorage")
-pendingList = testP4.get_pending_changes()
+pendingList = testP4.get_pending_change_list()
 print(pendingList[0])
-print(testP4.edit_change_list(pendingList[0], "[TA 김동석]"))
+print(testP4.edit_change_list(pendingList[0]["Change"], description="test"))
+print(testP4.revert_change_list(pendingList[0]["Change"]))

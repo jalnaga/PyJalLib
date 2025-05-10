@@ -14,5 +14,4 @@ from .naming import Naming
 from .namingConfig import NamingConfig
 from .nameToPath import NameToPath
 from .perforce import Perforce
-from .p4module import P4Module
 from .reloadModules import reload_modules

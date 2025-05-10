@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 # 사용자 문서 폴더 내 로그 파일 저장
 log_path = os.path.join(Path.home() / "Documents", 'p4module.log')
-file_handler = logging.FileHandler(log_path)
+file_handler = logging.FileHandler(log_path, encoding='utf-8')
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
 
@@ -78,11 +78,11 @@ class P4Module:
             self._handle_p4_exception(e, f"'{workspace_name}' 워크스페이스 연결")
             return False
 
-    def get_pending_changes(self) -> list:
+    def get_pending_change_list(self) -> list:
         """워크스페이스의 Pending된 체인지 리스트를 가져옵니다.
 
         Returns:
-            list: 체인지 리스트 번호들의 리스트
+            list: 체인지 리스트 정보 딕셔너리들의 리스트
         """
         if not self._is_connected():
             return []
@@ -90,23 +90,31 @@ class P4Module:
         try:
             pending_changes = self.p4.run_changes("-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
             change_numbers = [int(cl['change']) for cl in pending_changes]
-            logger.info(f"Pending 체인지 리스트 {len(change_numbers)}개 조회 완료: {change_numbers}")
-            return change_numbers
+            
+            # 각 체인지 리스트 번호에 대한 상세 정보 가져오기
+            change_list_info = []
+            for change_number in change_numbers:
+                cl_info = self.get_change_list_by_number(change_number)
+                if cl_info:
+                    change_list_info.append(cl_info)
+            
+            logger.info(f"Pending 체인지 리스트 {len(change_list_info)}개 조회 완료")
+            return change_list_info
         except P4Exception as e:
             self._handle_p4_exception(e, "Pending 체인지 리스트 조회")
             return []
 
-    def create_change_list(self, description: str) -> int:
+    def create_change_list(self, description: str) -> dict:
         """새로운 체인지 리스트를 생성합니다.
 
         Args:
             description (str): 체인지 리스트 설명
 
         Returns:
-            int: 생성된 체인지 리스트 번호. 실패 시 -1
+            dict: 생성된 체인지 리스트 정보. 실패 시 빈 딕셔너리
         """
         if not self._is_connected():
-            return -1
+            return {}
         logger.info(f"새 체인지 리스트 생성 시도: '{description}'")
         try:
             change_spec = self.p4.fetch_change()
@@ -114,13 +122,13 @@ class P4Module:
             result = self.p4.save_change(change_spec)
             created_change_number = int(result[0].split()[1])
             logger.info(f"체인지 리스트 {created_change_number} 생성 완료: '{description}'")
-            return created_change_number
+            return self.get_change_list_by_number(created_change_number)
         except P4Exception as e:
             self._handle_p4_exception(e, f"체인지 리스트 생성 ('{description}')")
-            return -1
+            return {}
         except (IndexError, ValueError) as e:
             logger.error(f"체인지 리스트 번호 파싱 오류: {e}")
-            return -1
+            return {}
 
     def get_change_list_by_number(self, change_list_number: int) -> dict:
         """체인지 리스트 번호로 체인지 리스트를 가져옵니다.
@@ -129,7 +137,7 @@ class P4Module:
             change_list_number (int): 체인지 리스트 번호
 
         Returns:
-            dict: 체인지 리스트 정보
+            dict: 체인지 리스트 정보. 실패 시 빈 딕셔너리
         """
         if not self._is_connected():
             return {}
@@ -307,23 +315,92 @@ class P4Module:
             return False
 
     def revert_change_list(self, change_list_number: int) -> bool:
-        """체인지 리스트를 되돌립니다.
+        """체인지 리스트를 되돌리고 삭제합니다.
+
+        체인지 리스트 내 모든 파일을 되돌린 후 빈 체인지 리스트를 삭제합니다.
 
         Args:
             change_list_number (int): 되돌릴 체인지 리스트 번호
+
+        Returns:
+            bool: 되돌리기 및 삭제 성공 시 True, 실패 시 False
+        """
+        if not self._is_connected():
+            return False
+        logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 및 삭제 시도...")
+        try:
+            # 체인지 리스트의 모든 파일 되돌리기
+            self.p4.run_revert("-c", change_list_number, "//...")
+            logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 성공.")
+            
+            # 빈 체인지 리스트 삭제
+            try:
+                self.p4.run_change("-d", change_list_number)
+                logger.info(f"체인지 리스트 {change_list_number} 삭제 완료.")
+            except P4Exception as e_delete:
+                self._handle_p4_exception(e_delete, f"체인지 리스트 {change_list_number} 삭제")
+                logger.warning(f"파일 되돌리기는 성공했으나 체인지 리스트 {change_list_number} 삭제에 실패했습니다.")
+                return False
+                
+            return True
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 전체 되돌리기")
+            return False
+    
+    def delete_empty_change_list(self, change_list_number: int) -> bool:
+        """빈 체인지 리스트를 삭제합니다.
+
+        Args:
+            change_list_number (int): 삭제할 체인지 리스트 번호
+
+        Returns:
+            bool: 삭제 성공 시 True, 실패 시 False
+        """
+        if not self._is_connected():
+            return False
+        
+        logger.info(f"체인지 리스트 {change_list_number} 삭제 시도 중...")
+        try:
+            # 체인지 리스트 정보 가져오기
+            change_spec = self.p4.fetch_change(change_list_number)
+            
+            # 파일이 있는지 확인
+            if change_spec and change_spec.get('Files') and len(change_spec['Files']) > 0:
+                logger.warning(f"체인지 리스트 {change_list_number}에 파일이 {len(change_spec['Files'])}개 있어 삭제할 수 없습니다.")
+                return False
+            
+            # 빈 체인지 리스트 삭제
+            self.p4.run_change("-d", change_list_number)
+            logger.info(f"빈 체인지 리스트 {change_list_number} 삭제 완료.")
+            return True
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 삭제")
+            return False
+
+    def revert_files(self, change_list_number: int, file_paths: list) -> bool:
+        """체인지 리스트 내의 특정 파일들을 되돌립니다.
+
+        Args:
+            change_list_number (int): 체인지 리스트 번호
+            file_paths (list): 되돌릴 파일 경로 리스트
 
         Returns:
             bool: 되돌리기 성공 시 True, 실패 시 False
         """
         if not self._is_connected():
             return False
-        logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 시도...")
+        if not file_paths:
+            logger.warning("되돌릴 파일 목록이 비어있습니다.")
+            return True
+            
+        logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 되돌리기 시도...")
         try:
-            self.p4.run_revert("-c", change_list_number, "//...")
-            logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 성공.")
+            for file_path in file_paths:
+                self.p4.run_revert("-c", change_list_number, file_path)
+                logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기 성공.")
             return True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 전체 되돌리기")
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number}에서 파일 되돌리기")
             return False
 
     def check_update_required(self, file_paths: list) -> bool:
