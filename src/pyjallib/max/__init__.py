@@ -7,6 +7,7 @@ JalTools 3DS 패키지
 """
 
 # 모듈 임포트
+from .configPath import ConfigPath
 from .header import Header
 
 from .name import Name
@@ -35,6 +36,7 @@ from .ui.Container import Container
 
 # 모듈 내보내기
 __all__ = [
+    'ConfigPath',
     'Header',
     'Name',
     'Anim',

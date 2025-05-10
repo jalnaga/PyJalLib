@@ -7,27 +7,32 @@
 
 from pymxs import runtime as rt
 
-from .header import jal
-
 class GroinBone:
     """
     고간 부 본 관련 기능을 위한 클래스
     3DS Max에서 고간 부 본을 생성하고 관리하는 기능을 제공합니다.
     """
     
-    def __init__(self):
+    def __init__(self, jalService=None):
         """
         클래스 초기화.
         
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constService: 제약 서비스 (제공되지 않으면 새로 생성)
-            bipService: 바이페드 서비스 (제공되지 않으면 새로 생성)
+            jalService: jal 서비스 인스턴스 (제공되지 않으면 전역 jal 사용)
         """
+        # jalService가 제공되면 사용, 그렇지 않으면 전역 jal 사용
+        if jalService is not None:
+            jal = jalService
+        else:
+            try:
+                import __main__
+                jal = __main__.jal
+            except (ImportError, AttributeError) as e:
+                raise RuntimeError("jal 서비스를 찾을 수 없습니다. __main__.jal이 설정되어 있는지 확인하거나, jalService 인자를 전달하세요.") from e
+        
+        # 서비스 설정
         self.name = jal.name
         self.anim = jal.anim
-        # Ensure dependent services use the potentially newly created instances
         self.const = jal.constraint
         self.bip = jal.bip
         self.bone = jal.bone
@@ -37,6 +42,7 @@ class GroinBone:
         self.bipObj = None
         self.genBones = []
         self.genHelpers = []
+        print("TestName:", self.name.get_name_part_value_by_description("Type", "Dummy"))
     
     def create_bone(self, inObj, inPelvisWeight=40.0, inThighWeight=60.0):
         """
@@ -67,7 +73,11 @@ class GroinBone:
             rt.messageBox("There is no twist bone.")
             return False
         
-        pelvisHelper = self.helper.create_point(bipObj.name + " Dum Groin 00")
+        groinBaseName = bipObj.name + " Groin"
+        
+        pelvisHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
+        pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "00")
+        pelvisHelper = self.helper.create_point(pelvisHelperName)
         pelvisHelper.transform = bipObj.transform
         self.anim.rotate_local(pelvisHelper, 90, 0, 0)
         self.anim.rotate_local(pelvisHelper, 0, 0, -90)
@@ -75,13 +85,14 @@ class GroinBone:
         self.helper.set_shape_to_box(pelvisHelper)
         self.genHelpers.append(pelvisHelper)
         
-        groinBones = self.bone.create_simple_bone(3.0, bipObj.name +" Groin 00", size=2)
+        groinBoneName = self.name.replace_name_part("Index", groinBaseName, "00")
+        groinBones = self.bone.create_simple_bone(3.0, groinBoneName, size=2)
         groinBones[0].transform = pelvisHelper.transform
         groinBones[0].parent = pelvis
         for groinBone in groinBones:
             self.genBones.append(groinBone)
         
-        self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, lThigh, rThigh])
+        self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, lThighTwists[0], rThighTwists[0]])
         rotConst = self.const.get_rot_list_controller(groinBones[0])[1]
         rotConst.setWeight(1, inPelvisWeight)
         rotConst.setWeight(2, inThighWeight/2.0)
@@ -116,6 +127,5 @@ class GroinBone:
         
         self.delete()
         self.create_bone(self.bipObj, inPelvisWeight, inThighWeight)
-        
-        
-        
+
+

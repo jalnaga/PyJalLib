@@ -7,14 +7,27 @@
 
 from pymxs import runtime as rt
 
-from .header import jal
-
 class VolumePreserveBone:
     """
     관절 부피 유지 본(Volume preserve Bone) 클래스
     3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스
     """
-    def __init__(self):
+    def __init__(self, jalService=None):
+        """
+        클래스 초기화.
+        
+        Args:
+            jalService: jal 서비스 인스턴스 (제공되지 않으면 전역 jal 사용)
+        """
+        # jalService가 제공되면 사용, 그렇지 않으면 전역 jal 사용
+        if jalService is not None:
+            jal = jalService
+        else:
+            try:
+                import __main__
+                jal = __main__.jal
+            except (ImportError, AttributeError) as e:
+                raise RuntimeError("jal 서비스를 찾을 수 없습니다. __main__.jal이 설정되어 있는지 확인하거나, jalService 인자를 전달하세요.") from e
         self.name = jal.name
         self.anim = jal.anim
         self.const = jal.constraint

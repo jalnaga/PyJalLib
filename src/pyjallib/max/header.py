@@ -8,6 +8,8 @@
 
 import os
 
+from .configPath import ConfigPath
+
 from .name import Name
 from .anim import Anim
 
@@ -36,20 +38,38 @@ class Header:
     3DS Max에서 사용하는 다양한 기능을 제공하는 클래스들을 초기화하고 관리합니다.
     """
     _instance = None
+    _config_path = None
     
     @classmethod
-    def get_instance(cls):
-        """싱글톤 패턴을 구현한 인스턴스 접근 메소드"""
+    def reset_instance(cls):
+        """싱글톤 인스턴스를 재설정합니다."""
+        cls._instance = None
+    
+    @classmethod
+    def get_instance(cls, config_path=None):
+        """
+        싱글톤 패턴을 구현한 인스턴스 접근 메소드
+        
+        Args:
+            config_path: ConfigPath 인스턴스, 처음 호출 시에만 필요
+        """
+        # 이미 인스턴스가 있고 새로운 config_path가 제공된 경우 인스턴스 재설정
+        if cls._instance is not None and config_path is not None:
+            cls.reset_instance()
+            
         if cls._instance is None:
-            cls._instance = Header()
+            if config_path is None:
+                # 기본 ConfigPath 생성
+                config_path = ConfigPath()
+            cls._instance = cls(config_path)
         return cls._instance
     
-    def __init__(self):
+    def __init__(self, configPath):
         """
         Header 클래스 초기화
         """
-        self.configDir = os.path.join(os.path.dirname(__file__), "ConfigFiles")
-        self.nameConfigDir = os.path.join(self.configDir, "3DSMaxNamingConfig.json")
+        self.configDir = configPath.configRootPath
+        self.nameConfigDir = configPath.nameconfigPath
 
         self.name = Name(configPath=self.nameConfigDir)
         self.anim = Anim()
@@ -74,6 +94,3 @@ class Header:
         self.morph = Morph()
         
         self.tools = []
-
-# 모듈 레벨에서 전역 인스턴스 생성
-jal = Header.get_instance()

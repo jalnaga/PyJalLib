@@ -8,8 +8,6 @@
 
 from pymxs import runtime as rt
 
-from .header import jal
-
 
 class AutoClavicle:
     """
@@ -18,7 +16,7 @@ class AutoClavicle:
     3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
-    def __init__(self):
+    def __init__(self, jalService=None):
         """
         클래스 초기화
         
@@ -29,7 +27,18 @@ class AutoClavicle:
             boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
             constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
             bipService: Biped 서비스 (제공되지 않으면 새로 생성)
+            jalService: jal 서비스 인스턴스 (제공되지 않으면 전역 jal 사용)
         """
+        # jalService가 제공되면 사용, 그렇지 않으면 전역 jal 사용
+        if jalService is not None:
+            jal = jalService
+        else:
+            try:
+                import __main__
+                jal = __main__.jal
+            except (ImportError, AttributeError) as e:
+                raise RuntimeError("jal 서비스를 찾을 수 없습니다. __main__.jal이 설정되어 있는지 확인하거나, jalService 인자를 전달하세요.") from e
+        
         self.name = jal.name
         self.anim = jal.anim
         self.helper = jal.helper

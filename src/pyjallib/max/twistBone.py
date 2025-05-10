@@ -154,7 +154,7 @@ class TwistBone:
             inChild.transform.position,
             rt.Point3(0, 0, 1)
         )
-        boneName = self.name.get_string(inObj.name) + "Twist"
+        boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "twist")
         TwistBone.name = self.name.replace_Index(boneName, "0")
         TwistBone.transform = Limb.transform
         TwistBone.parent = Limb
@@ -443,7 +443,8 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
+            childName = child.name.lower()
+            if rt.matchPattern(childName, pattern="*twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
         
         returnVal = self.name.sort_by_name(returnVal)
@@ -474,7 +475,8 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
+            childName = child.name.lower()
+            if rt.matchPattern(childName, pattern="*twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
         
         returnVal = self.name.sort_by_name(returnVal)
@@ -505,7 +507,8 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
+            childName = child.name.lower()
+            if rt.matchPattern(childName, pattern="*twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
         
         returnVal = self.name.sort_by_name(returnVal)
@@ -536,7 +539,8 @@ class TwistBone:
             
         children = self.bone.get_every_children(parentBipObj)
         for child in children:
-            if rt.matchPattern(child.name, pattern="*Twist*") and rt.classOf(child) == rt.BoneGeometry:
+            childName = child.name.lower()
+            if rt.matchPattern(childName, pattern="*twist*") and rt.classOf(child) == rt.BoneGeometry:
                 returnVal.append(child)
         
         returnVal = self.name.sort_by_name(returnVal)

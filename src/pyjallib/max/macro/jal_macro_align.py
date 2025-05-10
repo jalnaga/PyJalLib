@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
-from pyjallib.max.header import jal  # 모듈에서 전역 인스턴스 가져오기
+import __main__
+jal = __main__.jal
 
 def jal_align_to_last():
     jal.align.align_to_last_sel()
