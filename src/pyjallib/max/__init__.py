@@ -28,7 +28,9 @@ from .skin import Skin
 from .morph import Morph
 
 from .twistBone import TwistBone
+from .twistBone import TwistBoneChain
 from .groinBone import GroinBone
+from .groinBone import GroinBoneChain
 from .autoClavicle import AutoClavicle
 from .volumePreserveBone import VolumePreserveBone
 
@@ -52,7 +54,9 @@ __all__ = [
     'Skin',
     'Morph',
     'TwistBone',
+    'TwistBoneChain',
     'GroinBone',
+    'GroinBoneChain',
     'AutoClavicle',
     'VolumePreserveBone',
     'Container'

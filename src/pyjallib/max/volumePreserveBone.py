@@ -7,32 +7,37 @@
 
 from pymxs import runtime as rt
 
+# Import necessary service classes for default initialization
+from .name import Name
+from .anim import Anim
+from .helper import Helper
+from .bone import Bone
+from .constraint import Constraint
+
 class VolumePreserveBone:
     """
     관절 부피 유지 본(Volume preserve Bone) 클래스
     3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스
     """
-    def __init__(self, jalService=None):
+    def __init__(self, nameService=None, animService=None, constService=None, boneService=None, helperService=None):
         """
         클래스 초기화.
         
         Args:
-            jalService: jal 서비스 인스턴스 (제공되지 않으면 전역 jal 사용)
+            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
+            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
+            constService: 제약 서비스 (제공되지 않으면 새로 생성)
+            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
+            helperService: 헬퍼 서비스 (제공되지 않으면 새로 생성)
         """
-        # jalService가 제공되면 사용, 그렇지 않으면 전역 jal 사용
-        if jalService is not None:
-            jal = jalService
-        else:
-            try:
-                import __main__
-                jal = __main__.jal
-            except (ImportError, AttributeError) as e:
-                raise RuntimeError("jal 서비스를 찾을 수 없습니다. __main__.jal이 설정되어 있는지 확인하거나, jalService 인자를 전달하세요.") from e
-        self.name = jal.name
-        self.anim = jal.anim
-        self.const = jal.constraint
-        self.bone = jal.bone
-        self.helper = jal.helper
+        # 서비스 인스턴스 설정 또는 생성
+        self.name = nameService if nameService else Name()
+        self.anim = animService if animService else Anim()
+        
+        # 종속성이 있는 서비스들은 이미 생성된 서비스들을 전달
+        self.const = constService if constService else Constraint(nameService=self.name)
+        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
+        self.helper = helperService if helperService else Helper(nameService=self.name)
         
         self.obj = None
         
@@ -68,7 +73,10 @@ class VolumePreserveBone:
         
         returnVal = {
             "Bones": [],
-            "Helpers": []
+            "Helpers": [],
+            "RotAxis": inRotAxis,
+            "TransAxis": inTransAxis,
+            "TransScale": inTransScale
         }
         
         volName = self.name.get_RealName(inObj.name)
@@ -157,7 +165,7 @@ class VolumePreserveBone:
         
         return returnVal
     
-    def create_bones(self,inObj, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales):
+    def create_bones(self, inObj, inVolumeSize, inRotAxises, inRotScale, inTransAxiese, inTransScales):
         if rt.isValidNode(inObj) == False or rt.isValidNode(inObj.parent) == False:
             return False
         
@@ -166,25 +174,36 @@ class VolumePreserveBone:
         
         self.genBones = []
         self.genHelpers = []
+        
         returnVal = {
-            "Bones": [],
-            "Helpers": []
+            "VolumeSize": inVolumeSize,
+            "RotScale": inRotScale,
+            "RotHelpers": [],
+            "BoneGroups": [],
+            "AllBones": [],
+            "AllHelpers": []
         }
         
         self.obj = inObj
         
         rotHelpers = self.create_rot_helpers(inObj, inRotScale=inRotScale)
+        returnVal["RotHelpers"] = rotHelpers
         
         for i in range(len(inRotAxises)):
             genResult = self.create_init_bone(inObj, inVolumeSize, rotHelpers, inRotAxises[i], inTransAxiese[i], inTransScales[i])
             self.genBones.extend(genResult["Bones"])
             self.genHelpers.extend(genResult["Helpers"])
+            
+            # Add the individual bone group result to our return value
+            returnVal["BoneGroups"].append(genResult)
         
+        # Add rotation helpers to the helpers list
         self.genHelpers.insert(0, rotHelpers[0])
         self.genHelpers.insert(1, rotHelpers[1])
         
-        returnVal["Bones"] = self.genBones
-        returnVal["Helpers"] = self.genHelpers
+        # Add all bones and helpers to the return value
+        returnVal["AllBones"] = self.genBones
+        returnVal["AllHelpers"] = self.genHelpers
             
         return returnVal
     
