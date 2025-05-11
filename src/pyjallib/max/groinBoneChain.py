@@ -154,7 +154,7 @@ class GroinBoneChain:
         return (self.pelvis_weight, self.thigh_weight)
     
     @classmethod
-    def from_groin_bone_result(cls, inPelvis, inLThighTwist, inRThighTwist, bones, helpers, pelvis_weight=40.0, thigh_weight=60.0):
+    def from_groin_bone_result(cls, inPelvis, inLThighTwist, inRThighTwist, bones, helpers, pelvisWeight, thighWeight):
         """
         GroinBone 클래스의 결과로부터 GroinBoneChain 인스턴스 생성
         
@@ -162,13 +162,12 @@ class GroinBoneChain:
             bones: GroinBone 클래스가 생성한 뼈대 배열
             helpers: GroinBone 클래스가 생성한 헬퍼 배열
             biped_obj: 연관된 Biped 객체 (기본값: None)
-            pelvis_weight: 골반 가중치 (기본값: 40.0)
-            thigh_weight: 허벅지 가중치 (기본값: 60.0)
+            pelvisWeight: 골반 가중치 (기본값: 40.0)
+            thighWeight: 허벅지 가중치 (기본값: 60.0)
             
         Returns:
             GroinBoneChain 인스턴스
         """
-        chain = cls(bones, helpers, biped_obj)
-        chain.pelvis_weight = pelvis_weight
-        chain.thigh_weight = thigh_weight
+        chain = cls(inPelvis, inLThighTwist, inRThighTwist, bones, helpers, pelvisWeight, thighWeight)
+        
         return chain

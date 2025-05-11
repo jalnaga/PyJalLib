@@ -42,7 +42,7 @@ from pymxs import runtime as rt
 from .header import jal
 
 class TwistBoneChain:
-    def __init__(self, bones=None):
+    def __init__(self, bones, type, parent, limb, twistNum, weight):
         """
         클래스 초기화.
         
@@ -50,8 +50,11 @@ class TwistBoneChain:
             bones: 트위스트 뼈대 체인을 구성하는 뼈대 배열 (기본값: None)
         """
         self.bones = bones if bones else []
-        self.source_bone = None  # 트위스트의 원본 뼈대 (예: 상완, 전완 등)
-        self.type = None  # 트위스트 타입 ('upperArm', 'foreArm', 'thigh', 'calf', 'bend')
+        self.parent = parent  # 부모 뼈대 객체
+        self.limb = limb  # 리미트 객체
+        self.twistNum = twistNum  # 트위스트 개수
+        self.weight = weight  # 트위스트 가중치
+        self.type = type
     
     def get_bone_at_index(self, index):
         """
@@ -92,7 +95,7 @@ class TwistBoneChain:
         Returns:
             뼈대 개수
         """
-        return len(self.bones)
+        return self.twistNum
     
     def is_empty(self):
         """
@@ -125,31 +128,6 @@ class TwistBoneChain:
         except:
             return False
     
-    def rename_bones(self, prefix="", suffix=""):
-        """
-        체인의 모든 뼈대 이름 변경
-        
-        Args:
-            prefix: 추가할 접두사 (기본값: "")
-            suffix: 추가할 접미사 (기본값: "")
-        """
-        for i, bone in enumerate(self.bones):
-            current_name = bone.name
-            # 인덱스 부분을 찾아서 유지
-            index_part = ""
-            for char in current_name[::-1]:  # 뒤에서부터 검색
-                if char.isdigit():
-                    index_part = char + index_part
-                else:
-                    break
-                    
-            if index_part:
-                new_name = f"{prefix}{current_name.rstrip(index_part)}{suffix}{index_part}"
-            else:
-                new_name = f"{prefix}{current_name}{suffix}{i}"
-                
-            bone.name = new_name
-    
     def get_type(self):
         """
         트위스트 뼈대 체인의 타입을 반환합니다.
@@ -160,7 +138,7 @@ class TwistBoneChain:
         return self.type
     
     @classmethod
-    def from_twist_bone_result(cls, twist_bone_result, source_bone=None, type_name=None):
+    def from_twist_bone_result(cls, bones, type, parent, limb, twistNum, weight):
         """
         TwistBone 클래스의 결과로부터 TwistBoneChain 인스턴스 생성
         
@@ -172,12 +150,6 @@ class TwistBoneChain:
         Returns:
             TwistBoneChain 인스턴스
         """
-        chain = cls(twist_bone_result)
-        
-        if source_bone:
-            chain.source_bone = source_bone
-            
-        if type_name:
-            chain.type = type_name
+        chain = cls(bones, type, parent, limb, twistNum, weight)
             
         return chain

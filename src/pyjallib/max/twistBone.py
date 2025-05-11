@@ -292,16 +292,28 @@ class TwistBone:
             return False
         
         weightVal = 100.0
+        controllerLimb = inObj.children[0]
         
-        return self.create_bones(
+        genBones = self.create_bones(
             inObj,
-            inObj.children[0],
+            controllerLimb,
             inTwistNum,
             self.upperArmExpression,
             self.upperArmExtraExpression,
             inObj,
             weightVal
         )
+        
+        returnVal = {
+            "Bones": genBones,
+            "Type": "upperArm",
+            "Parent": inObj,
+            "Limb": controllerLimb,
+            "TwistNum": inTwistNum,
+            "Weight": weightVal
+        }
+        
+        return returnVal
     
     def create_foreArm_type(self, inObj, inTwistNum, reorder=True):
         """
@@ -343,7 +355,18 @@ class TwistBone:
             weightVal
         )
         
-        return self.reorder_bones(createdBones) if reorder else createdBones
+        genBones = self.reorder_bones(createdBones) if reorder else createdBones
+        
+        returnVal = {
+            "Bones": genBones,
+            "Type": "foreArm",
+            "Parent": inObj,
+            "Limb": controllerLimb,
+            "TwistNum": inTwistNum,
+            "Weight": weightVal
+        }
+        
+        return returnVal
     
     def create_thigh_type(self, inObj, inTwistNum):
         """
@@ -359,18 +382,28 @@ class TwistBone:
         if inObj.parent is None or inObj.children.count == 0:
             return False
         
-        controllerLimb = None
+        controllerLimb = inObj.children[0]
         weightVal = 100
-        
-        return self.create_bones(
+        genBones = self.create_bones(
             inObj,
-            inObj.children[0],
+            controllerLimb,
             inTwistNum,
             self.thighExpression,
             self.thighExtraExpression,
             inObj,
             weightVal
         )
+        
+        returnVal = {
+            "Bones": genBones,
+            "Type": "thigh",
+            "Parent": inObj,
+            "Limb": controllerLimb,
+            "TwistNum": inTwistNum,
+            "Weight": weightVal
+        }
+        
+        return returnVal
     
     def create_calf_type(self, inObj, inTwistNum, reorder=True):
         """
@@ -409,8 +442,18 @@ class TwistBone:
             controllerLimb,
             weightVal
         )
+        genBones = self.reorder_bones(createdBones) if reorder else createdBones
         
-        return self.reorder_bones(createdBones) if reorder else createdBones
+        returnVal = {
+            "Bones": genBones,
+            "Type": "calf",
+            "Parent": inObj,
+            "Limb": controllerLimb,
+            "TwistNum": inTwistNum,
+            "Weight": weightVal
+        }
+        
+        return returnVal
     
     def create_bend_type(self):
         """
