@@ -1,0 +1,161 @@
+{
+    "paddingNum": 2,
+    "partOrder": [
+        "Base",
+        "Type",
+        "Side",
+        "FrontBack",
+        "RealName",
+        "Index",
+        "Nub"
+    ],
+    "nameParts": [
+        {
+            "name": "Base",
+            "predefinedValues": [
+                "b",
+                "Bip001"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "SkinBone",
+                "Biped"
+            ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
+            "isDirection": false
+        },
+        {
+            "name": "Type",
+            "predefinedValues": [
+                "Dum",
+                "P",
+                "Exp",
+                "IK",
+                "T",
+                "Rot",
+                "Pos",
+                "Lat",
+                "UpN"
+            ],
+            "weights": [
+                5,
+                10,
+                15,
+                20,
+                25,
+                30,
+                35,
+                40,
+                45
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Dummy",
+                "Parent",
+                "ExposeTM",
+                "IK",
+                "Target",
+                "Rotation",
+                "Position",
+                "LookAt",
+                "UpNode"
+            ],
+            "koreanDescriptions": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ],
+            "isDirection": false
+        },
+        {
+            "name": "Side",
+            "predefinedValues": [
+                "L",
+                "R"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Left",
+                "Right"
+            ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
+            "isDirection": true
+        },
+        {
+            "name": "FrontBack",
+            "predefinedValues": [
+                "F",
+                "B"
+            ],
+            "weights": [
+                5,
+                10
+            ],
+            "type": "PREFIX",
+            "descriptions": [
+                "Front",
+                "Back"
+            ],
+            "koreanDescriptions": [
+                "",
+                ""
+            ],
+            "isDirection": true
+        },
+        {
+            "name": "RealName",
+            "predefinedValues": [],
+            "weights": [],
+            "type": "REALNAME",
+            "descriptions": [],
+            "koreanDescriptions": [],
+            "isDirection": false
+        },
+        {
+            "name": "Index",
+            "predefinedValues": [],
+            "weights": [],
+            "type": "INDEX",
+            "descriptions": [],
+            "koreanDescriptions": [],
+            "isDirection": false
+        },
+        {
+            "name": "Nub",
+            "predefinedValues": [
+                "Nub"
+            ],
+            "weights": [
+                5
+            ],
+            "type": "SUFFIX",
+            "descriptions": [
+                "Nub"
+            ],
+            "koreanDescriptions": [
+                ""
+            ],
+            "isDirection": false
+        }
+    ]
+}
