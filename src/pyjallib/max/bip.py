@@ -6,6 +6,9 @@ Biped 모듈 - 3ds Max의 Biped 객체 관련 기능 제공
 원본 MAXScript의 bip.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
+
+import os
+
 from pymxs import runtime as rt
 
 # Import necessary service classes for default initialization
@@ -504,3 +507,146 @@ class Bip:
                 baseSkel[i].boneEnable = True
                 
         rt.setArrowCursor()
+        
+    def convert_name_for_ue5(self, inBipRoot, inBipNameConfigFile):
+        """
+        Biped 이름을 UE5에 맞게 변환
+        
+        Args:
+            inBipRoot: 변환할 Biped 객체
+            
+        Returns:
+            변환된 Biped 객체
+        """
+        bipComs = self.get_coms()
+    
+        if len(bipComs) > 1:
+            rt.messageBox("Please select only one Biped object.")
+            return False
+        
+        from pyjallib.max.name import Name
+        
+        bipNameTool = Name(configPath=inBipNameConfigFile)
+        
+        bipObj = bipComs[0]
+        bipNodes = self.get_all(bipObj)
+        for bipNode in bipNodes:
+            if bipNode.name == bipObj.contgroller.rootName:
+                bipNode.name = bipNode.name.lower()
+                continue
+            
+            bipNodeNameDict = bipNameTool.convert_to_dictionary(bipNode.name)
+            
+            newNameDict = {}
+            for namePartName, value in bipNodeNameDict.items():
+                namePart = bipNameTool.get_name_part(namePartName)
+                desc = namePart.get_description_by_value(value)
+                
+                if namePartName == "RealName" or namePartName == "Index" or namePartName == "Nub":
+                    newNameDict[namePartName] = value
+                else:
+                    newNameDict[namePartName] = self.name.get_name_part(namePartName).get_value_by_description(desc)
+            
+            if newNameDict["Index"] == "" and self.name._has_digit(newNameDict["RealName"]):
+                if "Finger" not in newNameDict["RealName"]:
+                    splitedRealName = self.name._split_into_string_and_digit(newNameDict["RealName"])
+                    newNameDict["RealName"] = splitedRealName[0]
+                    newNameDict["Index"] = splitedRealName[1]
+            if newNameDict["Nub"] == "" and bipNameTool.get_name_part_value_by_description("Nub", "Nub") in (newNameDict["RealName"]):
+                newNameDict["RealName"] = newNameDict["RealName"].replace(bipNameTool.get_name_part_value_by_description("Nub", "Nub"), "")
+                newNameDict["Nub"] = self.name.get_name_part_value_by_description("Nub", "Nub")
+            
+            if newNameDict["RealName"] == "Forearm":
+                newNameDict["RealName"] = "Lowerarm"
+            
+            if newNameDict["RealName"] == "Spine" or newNameDict["RealName"] == "Neck":
+                if newNameDict["Index"] == "":
+                    newNameDict["Index"] = str(int(1)).zfill(self.name.get_padding_num())
+                else:
+                    newNameDict["Index"] = str(int(newNameDict["Index"]) + 1).zfill(self.name.get_padding_num())
+                
+            newBipName = self.name.combine(newNameDict)
+            
+            bipNode.name = newBipName.lower()
+            
+        # 손가락 바꾸는 부분
+        # 5개가 아닌 손가락은 지원하지 않음
+        # 손가락 하나의 최대 링크는 3개
+        lFingers = self.get_grouped_nodes(bipObj, "lFingers")
+        rFingers = self.get_grouped_nodes(bipObj, "rFingers")
+        lFingersList = [lFingers[i] for i in indices if lFingers[i]]
+        rFingersList = [rFingers[i] for i in indices if rFingers[i]]
+        fingerName = ["thumb", "index", "middle", "ring", "pinky"]
+        indices = []
+        
+        if bipObj.knuckles:
+            pass
+        else:
+            indices = list(range(0, 15, 3))
+        
+        for i, item in enumerate(lFingersList):
+            item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
+            item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+            fingerChildren = self.bone.get_every_children(item)
+            for j, child in enumerate(fingerChildren):
+                child.name = self.name.replace_name_part("RealName", child.name, fingerName[i])
+                child.name = self.name.replace_name_part("Index", child.name, str(j+2))
+            fingerNub = fingerChildren[-1].children[0]
+            fingerNub.name = self.name.replace_name_part("RealName", fingerNub.name, fingerName[i])
+            fingerNub.name = self.name.remove_name_part("Index", fingerNub.name)
+            fingerNub.name = self.name.replace_name_part("Nub", fingerNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        for i, item in enumerate(rFingersList):
+            item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
+            item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+            fingerChildren = self.bone.get_every_children(item)
+            for j, child in enumerate(fingerChildren):
+                child.name = self.name.replace_name_part("RealName", child.name, fingerName[i])
+                child.name = self.name.replace_name_part("Index", child.name, str(j+2))
+            fingerNub = fingerChildren[-1].children[0]
+            fingerNub.name = self.name.replace_name_part("RealName", fingerNub.name, fingerName[i])
+            fingerNub.name = self.name.remove_name_part("Index", fingerNub.name)
+            fingerNub.name = self.name.replace_name_part("Nub", fingerNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        
+        # Toe 이름 바꾸는 부분
+        lToes = self.get_grouped_nodes(bipObj, "lToes")
+        rToes = self.get_grouped_nodes(bipObj, "rToes")
+        indices = list(range(0, 15, 3))
+        lToesList = [lToes[i] for i in indices if lToes[i]]
+        rToesList = [rToes[i] for i in indices if rToes[i]]
+        if len(lToesList) == 1:
+            lToes[0].name = self.name.replace_name_part("RealName", lToes[0].name, "ball")
+            lToes[0].children[0].name = self.name.replace_name_part("RealName", lToes[0].children[0].name, "ball")
+            lToes[0].children[0] = self.name.remove_name_part("Index", lToes[0].children[0].name)
+            lToes[0].children[0].name = self.name.replace_name_part("Nub", lToes[0].children[0].name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        if len(rToesList) == 1:
+            rToes[0].name = self.name.replace_name_part("RealName", rToes[0].name, "ball")
+            rToes[0].children[0].name = self.name.replace_name_part("RealName", rToes[0].children[0].name, "ball")
+            rToes[0].children[0] = self.name.remove_name_part("Index", rToes[0].children[0].name)
+            rToes[0].children[0].name = self.name.replace_name_part("Nub", rToes[0].children[0].name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        
+        if len(lToesList) > 1:
+            for i, item in enumerate(lToesList):
+                item.name = self.name.replace_name_part("RealName", item.name, "ball"+str(i+1))
+                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+                toeChildren = self.bone.get_every_children(item)
+                for j, child in enumerate(toeChildren):
+                    child.name = self.name.replace_name_part("RealName", child.name, "ball"+str(i+1))
+                    child.name = self.name.replace_name_part("Index", child.name, str(j+2))
+                toeNub = toeChildren[-1].children[0]
+                toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
+                toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+                toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        if len(rToesList) > 1:
+            for i, item in enumerate(rToesList):
+                item.name = self.name.replace_name_part("RealName", item.name, "ball"+str(i+1))
+                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+                toeChildren = self.bone.get_every_children(item)
+                for j, child in enumerate(toeChildren):
+                    child.name = self.name.replace_name_part("RealName", child.name, "ball"+str(i+1))
+                    child.name = self.name.replace_name_part("Index", child.name, str(j+2))
+                toeNub = toeChildren[-1].children[0]
+                toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
+                toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+                toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        
+        return True

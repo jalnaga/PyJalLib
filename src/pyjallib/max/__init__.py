@@ -7,7 +7,6 @@ JalTools 3DS 패키지
 """
 
 # 모듈 임포트
-from .configPath import ConfigPath
 from .header import Header
 
 from .name import Name
@@ -28,9 +27,9 @@ from .skin import Skin
 from .morph import Morph
 
 from .twistBone import TwistBone
-from .twistBone import TwistBoneChain
+from .twistBoneChain import TwistBoneChain
 from .groinBone import GroinBone
-from .groinBone import GroinBoneChain
+from .groinBoneChain import GroinBoneChain
 from .autoClavicle import AutoClavicle
 from .volumePreserveBone import VolumePreserveBone
 
@@ -38,7 +37,6 @@ from .ui.Container import Container
 
 # 모듈 내보내기
 __all__ = [
-    'ConfigPath',
     'Header',
     'Name',
     'Anim',

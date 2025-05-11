@@ -8,8 +8,6 @@
 
 import os
 
-from .configPath import ConfigPath
-
 from .name import Name
 from .anim import Anim
 
@@ -39,38 +37,20 @@ class Header:
     3DS Max에서 사용하는 다양한 기능을 제공하는 클래스들을 초기화하고 관리합니다.
     """
     _instance = None
-    _config_path = None
     
     @classmethod
-    def reset_instance(cls):
-        """싱글톤 인스턴스를 재설정합니다."""
-        cls._instance = None
-    
-    @classmethod
-    def get_instance(cls, config_path=None):
-        """
-        싱글톤 패턴을 구현한 인스턴스 접근 메소드
-        
-        Args:
-            config_path: ConfigPath 인스턴스, 처음 호출 시에만 필요
-        """
-        # 이미 인스턴스가 있고 새로운 config_path가 제공된 경우 인스턴스 재설정
-        if cls._instance is not None and config_path is not None:
-            cls.reset_instance()
-            
+    def get_instance(cls):
+        """싱글톤 패턴을 구현한 인스턴스 접근 메소드"""
         if cls._instance is None:
-            if config_path is None:
-                # 기본 ConfigPath 생성
-                config_path = ConfigPath()
-            cls._instance = cls(config_path)
+            cls._instance = Header()
         return cls._instance
     
-    def __init__(self, configPath):
+    def __init__(self):
         """
         Header 클래스 초기화
         """
-        self.configDir = configPath.configRootPath
-        self.nameConfigDir = configPath.nameconfigPath
+        self.configDir = os.path.join(os.path.dirname(__file__), "ConfigFiles")
+        self.nameConfigDir = os.path.join(self.configDir, "3DSMaxNamingConfig.json")
 
         self.name = Name(configPath=self.nameConfigDir)
         self.anim = Anim()
@@ -89,10 +69,34 @@ class Header:
         self.skin = Skin()
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constService=self.constraint, bipService=self.bip, boneService=self.bone)
+        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
-        self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, bipService=self.bip, boneService=self.bone, helperService=self.helper)
         self.volumePreserveBone = VolumePreserveBone(nameService=self.name, animService=self.anim, constService=self.constraint, boneService=self.bone, helperService=self.helper)
         
         self.morph = Morph()
         
         self.tools = []
+    
+    def update_nameConifg(self, configPath):
+        """
+        이름 설정을 업데이트합니다.
+        
+        Args:
+            configPath: ConfigPath 인스턴스
+        """
+        self.name.load_from_config_file(configPath)
+    
+    def add_tool(self, tool):
+        """
+        도구를 추가합니다.
+        
+        Args:
+            tool: 추가할 도구
+        """
+        if tool in self.tools:
+            self.tools.remove(tool)
+        
+        self.tools.append(tool)
+
+# 모듈 레벨에서 전역 인스턴스 생성
+jal = Header.get_instance()
