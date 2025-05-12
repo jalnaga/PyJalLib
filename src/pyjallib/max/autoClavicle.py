@@ -68,72 +68,69 @@ class AutoClavicle:
         
         # 쇄골과 상완 사이의 거리 계산
         clavicleLength = rt.distance(inClavicle, inUpperArm)
-        
-        # 임시 헬퍼 포인트 생성
-        tempHelperA = rt.Point()
-        tempHelperB = rt.Point()
-        tempHelperA.transform = inClavicle.transform
-        tempHelperB.transform = inClavicle.transform
-        self.anim.move_local(tempHelperB, clavicleLength/2.0, 0.0, 0.0)
+        facingDirVec = inUpperArm.transform.position - inClavicle.transform.position
+        inObjXAxisVec = inClavicle.objectTransform.row1
+        distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
+        clavicleLength *= distanceDir
         
         # 자동 쇄골 이름 생성 및 뼈대 생성
         autoClavicleName = self.name.replace_name_part("RealName", inClavicle.name, "Auto" + self.name._get_filtering_char(inClavicle.name) + "Clavicle")
         if inClavicle.name[0].islower():
             autoClavicleName = autoClavicleName.lower()
         
-        autoClavicleBones = self.bone.create_bone(
-            [tempHelperA, tempHelperB], 
-            autoClavicleName, 
-            end=True, 
-            delPoint=True, 
-            parent=False, 
-            size=self.boneSize
-        )
-        autoClavicleBones[0].transform = inClavicle.transform
-        self.anim.move_local(autoClavicleBones[0], clavicleLength/2.0, 0.0, 0.0)
-        autoClavicleBones[0].parent = inClavicle
-        genBones.extend(autoClavicleBones)
-        
-        # LookAt 설정
-        ikGoal = self.helper.create_point(autoClavicleName, boxToggle=False, crossToggle=True)
-        ikGoal.transform = autoClavicleBones[1].transform
-        ikGoal.name = self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target"))
-        autClavicleLookAtConst = self.const.assign_lookat(autoClavicleBones[0], ikGoal)
-        autClavicleLookAtConst.upnode_world = False
-        autClavicleLookAtConst.pickUpNode = inClavicle
-        autClavicleLookAtConst.lookat_vector_length = 0.0
-        genHelpers.append(ikGoal)
-        
-        # 회전 헬퍼 포인트 생성
-        autoClavicleRotHelper = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Rotation")))
-        autoClavicleRotHelper.transform = autoClavicleBones[0].transform
-        autoClavicleRotHelper.parent = inClavicle
-        genHelpers.append(autoClavicleRotHelper)
+        autoClavicleBone = self.bone.create_nub_bone(autoClavicleName, 2)
+        autoClavicleBone.name = self.name.remove_name_part("Nub", autoClavicleBone.name)
+        autoClavicleBone.transform = inClavicle.transform
+        self.anim.move_local(autoClavicleBone, clavicleLength/2.0, 0.0, 0.0)
+        autoClavicleBone.parent = inClavicle
+        genBones.extend(autoClavicleBone)
         
         # 타겟 헬퍼 포인트 생성 (쇄골과 상완용)
         rotTargetClavicle = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
+        rotTargetClavicle.name = self.name.replace_name_part("Index", rotTargetClavicle.name, "0")
         rotTargetClavicle.transform = inClavicle.transform
         self.anim.move_local(rotTargetClavicle, clavicleLength, 0.0, 0.0)
+        
+        rotTargetClavicle.parent = inClavicle
         genHelpers.append(rotTargetClavicle)
         
         rotTargetUpperArm = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
-        rotTargetUpperArm.name = self.name.add_suffix_to_real_name(rotTargetUpperArm.name, self.name._get_filtering_char(inClavicle.name) + "upper")
+        rotTargetUpperArm.name = self.name.add_suffix_to_real_name(rotTargetUpperArm.name, self.name._get_filtering_char(inClavicle.name) + "arm")
         rotTargetUpperArm.transform = inUpperArm.transform
         self.anim.move_local(rotTargetUpperArm, (clavicleLength/2.0)*liftScale, 0.0, 0.0)
+        
+        rotTargetUpperArm.parent = inUpperArm
         genHelpers.append(rotTargetUpperArm)
         
-        # 부모 설정
-        rotTargetClavicle.parent = inClavicle
-        rotTargetUpperArm.parent = inUpperArm
+        # 회전 헬퍼 포인트 생성
+        autoClavicleRotHelper = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Rotation")))
+        autoClavicleRotHelper.transform = autoClavicleBone.transform
+        autoClavicleRotHelper.parent = inClavicle
         
-        # LookAt 제약 설정
         lookAtConst = self.const.assign_lookat_multi(autoClavicleRotHelper, [rotTargetClavicle, rotTargetUpperArm])
         
         lookAtConst.upnode_world = False
         lookAtConst.pickUpNode = inClavicle
         lookAtConst.lookat_vector_length = 0.0
         
+        genHelpers.append(autoClavicleRotHelper)
+        
+        # ik 헬퍼 포인트 생성
+        ikGoal = self.helper.create_point(autoClavicleName, boxToggle=False, crossToggle=True)
+        ikGoal.transform = inClavicle.transform
+        self.anim.move_local(ikGoal, clavicleLength, 0.0, 0.0)
+        ikGoal.name = self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target"))
+        ikGoal.name = self.name.replace_name_part("Index", ikGoal.name, "1")
+        
         ikGoal.parent = autoClavicleRotHelper
+        
+        autClavicleLookAtConst = self.const.assign_lookat(autoClavicleBone, ikGoal)
+        if clavicleLength < 0:
+            autClavicleLookAtConst.target_axisFlip = True
+        autClavicleLookAtConst.upnode_world = False
+        autClavicleLookAtConst.pickUpNode = inClavicle
+        autClavicleLookAtConst.lookat_vector_length = 0.0
+        genHelpers.append(ikGoal)
         
         # 결과를 멤버 변수에 저장
         self.genBones = genBones
@@ -141,16 +138,10 @@ class AutoClavicle:
         # AutoClavicleChain에 전달할 수 있는 딕셔너리 형태로 결과 반환
         result = {
             "Bones": genBones,
-            "Helpers": self.helpers,
+            "Helpers": genHelpers,
             "Clavicle": inClavicle,
             "UpperArm": inUpperArm,
             "LiftScale": liftScale
         }
-        
-        result["Bones"] = genBones
-        result["Helpers"] = genHelpers
-        result["Clavicle"] = inClavicle
-        result["UpperArm"] = inUpperArm
-        result["LiftScale"] = liftScale
         
         return result

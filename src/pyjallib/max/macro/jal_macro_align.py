@@ -12,10 +12,10 @@ def jal_align_to_last_center():
     jal.align.align_to_last_sel_center()
 
 def jal_align_pos_only():
-    jal.align.align_pos_only()
+    jal.align.align_to_last_sel_pos()
     
 def jal_align_rot_only():
-    jal.align.align_rot_only()
+    jal.align.align_to_last_sel_rot()
     
 def jal_align_mirror_x():
     if rt.selection.count == 0:

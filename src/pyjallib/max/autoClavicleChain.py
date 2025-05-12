@@ -62,31 +62,28 @@ class AutoClavicleChain:
         self.upperArm = inResult.get("UpperArm", None)
         self.liftScale = inResult.get("LiftScale", 0.8)
     
-    def get_bone(self):
-        """
-        자동 쇄골 뼈대 가져오기
-        
-        Returns:
-            자동 쇄골 뼈대 객체 또는 None (체인이 비어있는 경우)
-        """
-        return self.bones[0] if self.bones else None
-    
-    def get_all_bones(self):
+    def get_bones(self):
         """
         체인의 모든 뼈대 가져오기
         
         Returns:
             모든 뼈대 객체의 배열
         """
+        if self.is_empty():
+            return []
+        
         return self.bones
     
-    def get_all_helpers(self):
+    def get_helpers(self):
         """
         체인의 모든 헬퍼 가져오기
         
         Returns:
             모든 헬퍼 객체의 배열
         """
+        if self.is_empty():
+            return []
+        
         return self.helpers
     
     def is_empty(self):
@@ -142,63 +139,23 @@ class AutoClavicleChain:
         if self.is_empty() or not rt.isValidNode(self.clavicle) or not rt.isValidNode(self.upperArm):
             return False
         
+        clavicle = self.clavicle
+        upperArm = self.upperArm
+        
         # 기존 본과 헬퍼 삭제
         self.delete_all()
         
         # 새로운 LiftScale 값 설정
         self.liftScale = newLiftScale
+        self.clavicle = clavicle
+        self.upperArm = upperArm
         
         # 재생성
         result = jal.autoClavicle.create_bones(self.clavicle, self.upperArm, self.liftScale)
         if result:
-            self.bones = result
-            self.helpers = jal.autoClavicle.helpers
             return True
+        
         return False
-    
-    def rename_bones(self, prefix="", suffix=""):
-        """
-        체인의 모든 뼈대 이름 변경
-        
-        Args:
-            prefix: 이름 앞에 추가할 접두사 (기본값: "")
-            suffix: 이름 뒤에 추가할 접미사 (기본값: "")
-            
-        Returns:
-            이름 변경 성공 여부 (boolean)
-        """
-        if self.is_empty():
-            return False
-            
-        try:
-            for bone in self.bones:
-                if rt.isValidNode(bone):
-                    bone.name = prefix + bone.name + suffix
-            return True
-        except:
-            return False
-    
-    def rename_helpers(self, prefix="", suffix=""):
-        """
-        체인의 모든 헬퍼 이름 변경
-        
-        Args:
-            prefix: 이름 앞에 추가할 접두사 (기본값: "")
-            suffix: 이름 뒤에 추가할 접미사 (기본값: "")
-            
-        Returns:
-            이름 변경 성공 여부 (boolean)
-        """
-        if not self.helpers:
-            return False
-            
-        try:
-            for helper in self.helpers:
-                if rt.isValidNode(helper):
-                    helper.name = prefix + helper.name + suffix
-            return True
-        except:
-            return False
     
     @classmethod
     def from_auto_clavicle_result(cls, inResult):
