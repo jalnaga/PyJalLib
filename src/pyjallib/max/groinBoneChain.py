@@ -41,7 +41,7 @@ from pymxs import runtime as rt
 from .header import jal
 
 class GroinBoneChain:
-    def __init__(self, pelvis=None, lThighTwist=None, rThighTwist=None, bones=None, helpers=None, pelvisWeight=40.0, thighWeight=60.0):
+    def __init__(self, inResult):
         """
         클래스 초기화.
         
@@ -50,14 +50,13 @@ class GroinBoneChain:
             helpers: 고간 부 본과 연관된 헬퍼 객체 배열 (기본값: None)
             biped_obj: 연관된 Biped 객체 (기본값: None)
         """
-        
-        self.pelvis = pelvis
-        self.lThighTwist = lThighTwist
-        self.rThighTwist = rThighTwist
-        self.bones = bones if bones else []
-        self.helpers = helpers if helpers else []
-        self.pelvisWeight = pelvisWeight  # 기본 골반 가중치
-        self.thighWeight = thighWeight   # 기본 허벅지 가중치
+        self.pelvis =inResult["Pelvis"]
+        self.lThighTwist = inResult["LThighTwist"]
+        self.rThighTwist = inResult["RThighTwist"]
+        self.bones = inResult["Bones"]
+        self.helpers = inResult["Helpers"]
+        self.pelvisWeight = inResult["PelvisWeight"]
+        self.thighWeight = inResult["ThighWeight"]
     
     def is_empty(self):
         """
@@ -154,7 +153,7 @@ class GroinBoneChain:
         return (self.pelvis_weight, self.thigh_weight)
     
     @classmethod
-    def from_groin_bone_result(cls, inPelvis, inLThighTwist, inRThighTwist, bones, helpers, pelvisWeight, thighWeight):
+    def from_groin_bone_result(cls, inResult):
         """
         GroinBone 클래스의 결과로부터 GroinBoneChain 인스턴스 생성
         
@@ -168,6 +167,6 @@ class GroinBoneChain:
         Returns:
             GroinBoneChain 인스턴스
         """
-        chain = cls(inPelvis, inLThighTwist, inRThighTwist, bones, helpers, pelvisWeight, thighWeight)
+        chain = cls(inResult)
         
         return chain

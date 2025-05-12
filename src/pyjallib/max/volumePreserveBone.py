@@ -19,7 +19,7 @@ class VolumePreserveBone:
     관절 부피 유지 본(Volume preserve Bone) 클래스
     3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스
     """
-    def __init__(self, nameService=None, animService=None, constService=None, boneService=None, helperService=None):
+    def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
         """
         클래스 초기화.
         
@@ -35,7 +35,7 @@ class VolumePreserveBone:
         self.anim = animService if animService else Anim()
         
         # 종속성이 있는 서비스들은 이미 생성된 서비스들을 전달
-        self.const = constService if constService else Constraint(nameService=self.name)
+        self.const = constraintService if constraintService else Constraint(nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.helper = helperService if helperService else Helper(nameService=self.name)
         

@@ -42,19 +42,20 @@ from pymxs import runtime as rt
 from .header import jal
 
 class TwistBoneChain:
-    def __init__(self, bones, type, parent, limb, twistNum, weight):
+    def __init__(self, inResult):
         """
         클래스 초기화.
         
         Args:
             bones: 트위스트 뼈대 체인을 구성하는 뼈대 배열 (기본값: None)
         """
-        self.bones = bones if bones else []
-        self.parent = parent  # 부모 뼈대 객체
-        self.limb = limb  # 리미트 객체
-        self.twistNum = twistNum  # 트위스트 개수
-        self.weight = weight  # 트위스트 가중치
-        self.type = type
+        self.bones = inResult["Bones"]
+        self.type = inResult["Type"]
+        self.parent = inResult["Parent"]
+        self.limb = inResult["Limb"]
+        self.twistNum = inResult["TwistNum"]
+        self.weight = inResult["Weight"]
+        
     
     def get_bone_at_index(self, index):
         """
@@ -138,7 +139,7 @@ class TwistBoneChain:
         return self.type
     
     @classmethod
-    def from_twist_bone_result(cls, bones, type, parent, limb, twistNum, weight):
+    def from_twist_bone_result(cls, inResult):
         """
         TwistBone 클래스의 결과로부터 TwistBoneChain 인스턴스 생성
         
@@ -150,6 +151,6 @@ class TwistBoneChain:
         Returns:
             TwistBoneChain 인스턴스
         """
-        chain = cls(bones, type, parent, limb, twistNum, weight)
+        chain = cls(inResult)
             
         return chain
