@@ -7,7 +7,13 @@ Hip 모듈 - 3ds Max용 Hip 관련 기능 제공
 """
 
 from pymxs import runtime as rt
-from .header import jal
+
+# Import necessary service classes for default initialization
+from .name import Name
+from .anim import Anim
+from .helper import Helper
+from .bone import Bone
+from .constraint import Constraint
 
 
 class Hip:
@@ -17,7 +23,7 @@ class Hip:
     3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
-    def __init__(self):
+    def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None):
         """
         클래스 초기화.
         
@@ -29,13 +35,14 @@ class Hip:
             constraintService: 제약 관련 서비스 (제공되지 않으면 새로 생성)
             bipService: Biped 관련 서비스 (제공되지 않으면 새로 생성)
         """
-        # 서비스 초기화
-        self.name = jal.name
-        self.anim = jal.anim
-        self.helper = jal.helper
-        self.bone = jal.bone
-        self.const = jal.constraint
-        self.bip = jal.bip
+        # 서비스 인스턴스 설정 또는 생성
+        self.name = nameService if nameService else Name()
+        self.anim = animService if animService else Anim()
+        
+        # 종속성이 있는 서비스들은 이미 생성된 서비스들을 전달
+        self.helper = helperService if helperService else Helper(nameService=self.name)
+        self.const = constraintService if constraintService else Constraint(nameService=self.name, helperService=self.helper)
+        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, helperService=self.helper, constraintService=self.const)
         
         # 기본 속성 초기화
         self.bone_size = 2.0
@@ -62,7 +69,7 @@ class Hip:
         
         self.helper_array = []
     
-    def init(self, in_bip, in_l_thigh_twist, in_r_thigh_twist, 
+    def init(self, in_pelvis, in_spine, in_l_thigh, in_r_thigh, in_l_thigh_twist, in_r_thigh_twist, 
              in_x_axis_offset=0.1,
              in_pelvis_weight=60.0, in_thigh_weight=40.0,
              in_bone_size=2.0):
@@ -73,10 +80,10 @@ class Hip:
         self.pelvis_weight = in_pelvis_weight
         self.thigh_weight = in_thigh_weight
         
-        self.pelvis = self.bip.get_grouped_nodes(in_bip, "pelvis")[0]
-        self.spine = rt.biped.getNode(in_bip, rt.Name("spine"), link=1)
-        self.l_thigh = rt.biped.getNode(in_bip, rt.Name("lleg"), link=1)
-        self.r_thigh = rt.biped.getNode(in_bip, rt.Name("rleg"), link=1)
+        self.pelvis = in_pelvis
+        self.spine = in_spine
+        self.l_thigh = in_l_thigh
+        self.r_thigh = in_r_thigh
         self.l_thigh_twist = in_l_thigh_twist
         self.r_thigh_twist = in_r_thigh_twist
         
@@ -101,14 +108,15 @@ class Hip:
         pos_list.setActive(pos_list.count)
         
         # 표현식 객체 추가 및 스크립트 설정
-        pos_script.AddNode("exp", in_exp)
+        pos_script.addNode("exp", in_exp)
+        pos_script.addConstant("xOffsetScale", in_scale)
         script_str = ""
         script_str += "zRotValue = amin 0.0 exp.localEulerZ\n"
-        script_str += f"result = [0, zRotValue * {in_scale}, 0]\n"
+        script_str += f"result = [0, zRotValue * xOffsetScale, 0]\n"
         script_str += "result"
         
-        pos_script.SetExpression(script_str)
-        pos_script.Update()
+        pos_script.setExpession(script_str)
+        pos_script.update()
         
         # 마지막 컨트롤러 활성화
         self.const.set_active_last(in_obj)

@@ -33,6 +33,7 @@ from .groinBoneChain import GroinBoneChain
 from .autoClavicle import AutoClavicle
 from .autoClavicleChain import AutoClavicleChain
 from .volumePreserveBone import VolumePreserveBone
+from .hip import Hip
 
 from .ui.Container import Container
 
@@ -59,5 +60,6 @@ __all__ = [
     'AutoClavicle',
     'AutoClavicleChain',
     'VolumePreserveBone',
+    'Hip',
     'Container'
 ]
