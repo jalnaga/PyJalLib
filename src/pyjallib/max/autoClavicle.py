@@ -46,11 +46,6 @@ class AutoClavicle:
         self.bip = bipService if bipService else Bip(nameService=self.name, animService=self.anim)
         
         self.boneSize = 2.0
-        self.clavicle = None
-        self.upperArm = None
-        self.liftScale = 0.8
-        self.genBones = []
-        self.genHelpers = []
     
     def create_bones(self, inClavicle, inUpperArm, liftScale=0.8):
         """
@@ -62,16 +57,14 @@ class AutoClavicle:
             liftScale: 들어올림 스케일 (기본값: 0.8)
             
         Returns:
-            생성된 자동 쇄골 뼈대 배열
+            생성된 자동 쇄골 뼈대 배열 또는 AutoClavicleChain 클래스에 전달할 수 있는 딕셔너리
         """
         if not rt.isValidNode(inClavicle) or not rt.isValidNode(inUpperArm):
             return False
         
-        self.clavicle = inClavicle
-        self.upperArm = inUpperArm
-        self.liftScale = liftScale
-        self.genBones = []
-        self.genHelpers = []
+        # 리스트 초기화
+        genBones = []
+        genHelpers = []
         
         # 쇄골과 상완 사이의 거리 계산
         clavicleLength = rt.distance(inClavicle, inUpperArm)
@@ -84,7 +77,10 @@ class AutoClavicle:
         self.anim.move_local(tempHelperB, clavicleLength/2.0, 0.0, 0.0)
         
         # 자동 쇄골 이름 생성 및 뼈대 생성
-        autoClavicleName = self.name.replace_name_part("RealName", inClavicle.name, "AutoClavicle")
+        autoClavicleName = self.name.replace_name_part("RealName", inClavicle.name, "Auto" + self.name._get_filtering_char(inClavicle.name) + "Clavicle")
+        if inClavicle.name[0].islower():
+            autoClavicleName = autoClavicleName.lower()
+        
         autoClavicleBones = self.bone.create_bone(
             [tempHelperA, tempHelperB], 
             autoClavicleName, 
@@ -96,43 +92,42 @@ class AutoClavicle:
         autoClavicleBones[0].transform = inClavicle.transform
         self.anim.move_local(autoClavicleBones[0], clavicleLength/2.0, 0.0, 0.0)
         autoClavicleBones[0].parent = inClavicle
-        self.genBones.extend(autoClavicleBones)
+        genBones.extend(autoClavicleBones)
         
         # LookAt 설정
         ikGoal = self.helper.create_point(autoClavicleName, boxToggle=False, crossToggle=True)
         ikGoal.transform = autoClavicleBones[1].transform
-        ikGoal.name = self.name.replace_name_part("Type", autoClavicleName, "T")
+        ikGoal.name = self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target"))
         autClavicleLookAtConst = self.const.assign_lookat(autoClavicleBones[0], ikGoal)
         autClavicleLookAtConst.upnode_world = False
         autClavicleLookAtConst.pickUpNode = inClavicle
         autClavicleLookAtConst.lookat_vector_length = 0.0
-        self.genHelpers.append(ikGoal)
+        genHelpers.append(ikGoal)
         
         # 회전 헬퍼 포인트 생성
-        autoClavicleRotHelper = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, "Rot"))
+        autoClavicleRotHelper = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Rotation")))
         autoClavicleRotHelper.transform = autoClavicleBones[0].transform
         autoClavicleRotHelper.parent = inClavicle
-        self.genHelpers.append(autoClavicleRotHelper)
+        genHelpers.append(autoClavicleRotHelper)
         
         # 타겟 헬퍼 포인트 생성 (쇄골과 상완용)
-        rotTargetClavicle = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, "T"))
+        rotTargetClavicle = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
         rotTargetClavicle.transform = inClavicle.transform
         self.anim.move_local(rotTargetClavicle, clavicleLength, 0.0, 0.0)
-        self.genHelpers.append(rotTargetClavicle)
+        genHelpers.append(rotTargetClavicle)
         
-        rotTargetUpperArm = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, "T"))
-        rotTargetUpperArm.name = self.name.add_suffix_to_real_name(rotTargetUpperArm.name, "UArm")
+        rotTargetUpperArm = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
+        rotTargetUpperArm.name = self.name.add_suffix_to_real_name(rotTargetUpperArm.name, self.name._get_filtering_char(inClavicle.name) + "upper")
         rotTargetUpperArm.transform = inUpperArm.transform
         self.anim.move_local(rotTargetUpperArm, (clavicleLength/2.0)*liftScale, 0.0, 0.0)
-        self.genHelpers.append(rotTargetUpperArm)
+        genHelpers.append(rotTargetUpperArm)
         
         # 부모 설정
         rotTargetClavicle.parent = inClavicle
         rotTargetUpperArm.parent = inUpperArm
         
         # LookAt 제약 설정
-        # self.const.assign_lookat_multi(autoClavicleRotHelper, [rotTargetClavicle, rotTargetUpperArm])
-        lookAtConst = self.const.assign_scripted_lookat(autoClavicleRotHelper, [rotTargetClavicle, rotTargetUpperArm])["lookAt"]
+        lookAtConst = self.const.assign_lookat_multi(autoClavicleRotHelper, [rotTargetClavicle, rotTargetUpperArm])
         
         lookAtConst.upnode_world = False
         lookAtConst.pickUpNode = inClavicle
@@ -140,80 +135,22 @@ class AutoClavicle:
         
         ikGoal.parent = autoClavicleRotHelper
         
-        return autoClavicleBones
-    
-    def get_bones(self):
-        """
-        자동 쇄골 뼈를 가져옵니다.
+        # 결과를 멤버 변수에 저장
+        self.genBones = genBones
         
-        Args:
-            inClavicle: 쇄골 뼈 객체
-            inUpperArm: 상완 뼈 객체
-            
-        Returns:
-            자동 쇄골 뼈대 배열
-        """
-        if len(self.genBones) == 0:
-            return []
+        # AutoClavicleChain에 전달할 수 있는 딕셔너리 형태로 결과 반환
+        result = {
+            "Bones": genBones,
+            "Helpers": self.helpers,
+            "Clavicle": inClavicle,
+            "UpperArm": inUpperArm,
+            "LiftScale": liftScale
+        }
         
-        validResults = []
-        for item in self.genBones:
-            validResults.append(rt.isValidNode(item))
-        if not all(validResults):
-            return []
+        result["Bones"] = genBones
+        result["Helpers"] = genHelpers
+        result["Clavicle"] = inClavicle
+        result["UpperArm"] = inUpperArm
+        result["LiftScale"] = liftScale
         
-        return self.genBones
-    
-    def get_helpers(self):
-        """
-        자동 쇄골 헬퍼를 가져옵니다.
-        
-        Args:
-            inClavicle: 쇄골 뼈 객체
-            inUpperArm: 상완 뼈 객체
-            
-        Returns:
-            자동 쇄골 헬퍼 배열
-        """
-        if len(self.genHelpers) == 0:
-            return []
-        
-        validResults = []
-        for item in self.genHelpers:
-            validResults.append(rt.isValidNode(item))
-        if not all(validResults):
-            return []
-        
-        return self.genHelpers
-    
-    def delete(self):
-        """
-        자동 쇄골 뼈와 헬퍼를 삭제합니다.
-        
-        Args:
-            None
-            
-        Returns:
-            None
-        """
-        rt.delete(self.genBones)
-        rt.delete(self.genHelpers)
-        
-        self.genBones = []
-        self.genHelpers = []
-        
-    def update_liftScale(self, liftScale=0.8):
-        """
-        자동 쇄골 뼈의 들어올림 스케일을 업데이트합니다.
-        
-        Args:
-            liftScale: 들어올림 스케일 (기본값: 0.8)
-            
-        Returns:
-            None
-        """
-        if len(self.genBones) == 0:
-            return False
-        
-        self.delete()
-        self.create_bones(self.clavicle, self.upperArm, liftScale=liftScale)
+        return result
