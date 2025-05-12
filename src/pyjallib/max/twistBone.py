@@ -40,391 +40,213 @@ class TwistBone:
         self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         
-        # 표현식 초기화
-        self._init_expressions()
-    
-    def _init_expressions(self):
-        """표현식 초기화"""
-        # 허벅지(Thigh) 표현식
-        self.thighExpression = (
-            "try(\n"
-            "TM=Limb.transform*inverse Limb.parent.transform\n"
-            "vector=normalize (cross -TM.row1 [1,0,0])\n"
-            "angle=acos -(normalize TM.row1).x\n"
-            "(quat 0 1 0 0)*(quat angle vector)*inverse TM.rotation)\n"
-            "catch((quat 0 0 0 1))"
+        self.upperTwistBoneExpression = (
+            "localTm = limb.transform * (inverse limbParent.transform)\n"
+            "tm = localTm * inverse(localRefTm)\n"
+            "\n"
+            "q = tm.rotation\n"
+            "\n"
+            "axis = [1,0,0]\n"
+            "proj = (dot q.axis axis) * axis\n"
+            "twist = quat q.angle proj\n"
+            "twist = normalize twist\n"
+            "--swing = tm.rotation * (inverse twist)\n"
+            "\n"
+            "inverse twist\n"
         )
         
-        # 허벅지 추가 표현식
-        self.thighExtraExpression = (
-            "try(\n"
-            "(Limb.transform*inverse LimbParent.transform).rotation\n"
-            ")catch((quat 0 0 0 1))"
+        self.lowerTwistBoneExpression = (
+            "localTm = limb.transform * (inverse limbParent.transform)\n"
+            "tm = localTm * inverse(localRefTm)\n"
+            "\n"
+            "q = tm.rotation\n"
+            "\n"
+            "axis = [1,0,0]\n"
+            "proj = (dot q.axis axis) * axis\n"
+            "twist = quat q.angle proj\n"
+            "twist = normalize twist\n"
+            "--swing = tm.rotation * (inverse twist)\n"
+            "\n"
+            "twist\n"
         )
-        
-        # 종아리(Calf) 표현식
-        self.calfExpression = (
-            "try(\n"
-            "TM=Limb.transform*inverse Limb.parent.transform\n"
-            "vector=normalize (cross TM.row1 [1,0,0])\n"
-            "angle=acos (normalize TM.row1).x\n"
-            "TM.rotation*(quat -angle vector))\n"
-            "catch((quat 0 0 0 1))"
-        )
-        
-        # 종아리 추가 표현식
-        self.calfExtraExpression = (
-            "try(dependson TB\n"
-            "TB.rotation.controller[1].value\n"
-            ")catch((quat 0 0 0 1))"
-        )
-        
-        # 상완(Upper Arm) 표현식
-        self.upperArmExpression = (
-            "try(\n"
-            "TM=Limb.transform*inverse Limb.parent.transform\n"
-            "vector=normalize (cross TM.row1 [1,0,0])\n"
-            "angle=acos (normalize TM.row1).x\n"
-            "(quat angle vector)*inverse TM.rotation)\n"
-            "catch((quat 0 0 0 1))"
-        )
-        
-        # 상완 추가 표현식
-        self.upperArmExtraExpression = (
-            "try(\n"
-            "(Limb.transform*inverse LimbParent.transform).rotation\n"
-            ")catch((quat 0 0 0 1))"
-        )
-        
-        # 오른쪽 전완(Forearm) 표현식
-        self.rForeArmExpression = (
-            "try(\n"
-            "TM=(matrix3 [1,0,0] [0,0,-1] [0,1,0] [0,0,0])*Limb.transform*inverse Limb.parent.transform\n"
-            "vector=normalize (cross TM.row1 [1,0,0])\n"
-            "angle=acos (normalize TM.row1).x\n"
-            "TM.rotation*(quat -angle vector))\n"
-            "catch((quat 0 0 0 1))"
-        )
-        
-        # 왼쪽 전완(Forearm) 표현식
-        self.lForeArmExpression = (
-            "try(\n"
-            "TM=(matrix3 [1,0,0] [0,0,1] [0,-1,0] [0,0,0])*Limb.transform*inverse Limb.parent.transform\n"
-            "vector=normalize (cross TM.row1 [1,0,0])\n"
-            "angle=acos (normalize TM.row1).x\n"
-            "TM.rotation*(quat -angle vector))\n"
-            "catch((quat 0 0 0 1))"
-        )
-        
-        # 전완 추가 표현식
-        self.foreArmExtraExpression = (
-            "try(dependson TB\n"
-            "TB.rotation.controller[1].value\n"
-            ")catch((quat 0 0 0 1))"
-        )
-    
-    def create_bones(self, inObj, inChild, inTwistNum, inExpression, inExtraExpression, inControllerLimb, inWeightVar):
+            
+    def create_upper_limb_bones(self, inObj, inChild, twistNum=4):
         """
-        트위스트 뼈대 체인 생성
+        트위스트 뼈대 생성 메소드.
         
         Args:
-            inObj: 시작 객체
-            inChild: 끝 객체
-            inTwistNum: 트위스트 뼈대 개수
-            inExpression: 기본 회전 표현식
-            inExtraExpression: 추가 회전 표현식
-            inControllerLimb: 컨트롤러 대상 팔다리
-            inWeightVar: 가중치
-            
+            inObj: 트위스트 뼈대의 부모 객체
+            inChild: 자식 객체 배열
+            twistNum: 트위스트 뼈대 개수 (기본값: 4)
+        
         Returns:
-            생성된 트위스트 뼈대 체인 배열
+            dict: 생성된 트위스트 뼈대 정보
         """
-        Limb = inObj
-        distanceVar = rt.distance(Limb, inChild)
+        limb = inObj
+        distance = rt.distance(limb, inChild)
         facingDirVec = inChild.transform.position - inObj.transform.position
         inObjXAxisVec = inObj.objectTransform.row1
         distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
-        
-        TBExpression = inExpression
-        ControllerLimb = inControllerLimb
-        weightVar = inWeightVar
+        offssetAmount = (distance / twistNum) * distanceDir
+        weightVal = 100.0 / (twistNum-1)
         
         boneChainArray = []
         
         # 첫 번째 트위스트 뼈대 생성
-        boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "twist")
-        TwistBone = self.bone.create_nub_bone(boneName, 2)
-        TwistBone.name = self.name.replace_name_part("Index", boneName, "0")
-        TwistBone.name = self.name.remove_name_part("Nub", TwistBone.name)
-        TwistBone.transform = Limb.transform
-        TwistBone.parent = Limb
+        boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "Twist")
+        if inObj.name[0].islower():
+            boneName = boneName.lower()
+        twistBone = self.bone.create_nub_bone(boneName, 2)
+        twistBone.name = self.name.replace_name_part("Index", boneName, "1")
+        twistBone.name = self.name.remove_name_part("Nub", twistBone.name)
+        twistBone.transform = limb.transform
+        twistBone.parent = limb
+        twistBoneLocalRefTM = limb.transform * rt.inverse(limb.parent.transform)
         
-        # 회전 컨트롤러 설정
-        TBRotListController = self.const.assign_rot_list(TwistBone)
-        TBController = rt.Rotation_Script()
-        TBController.addNode("Limb", ControllerLimb)
-        TBController.setExpression(TBExpression)
+        twistBoneRotListController = self.const.assign_rot_list(twistBone)
+        twistBoneController = rt.Rotation_Script()
+        twistBoneController.addConstant("localRefTm", twistBoneLocalRefTM)
+        twistBoneController.addNode("limb", limb)
+        twistBoneController.addNode("limbParent", limb.parent)
+        twistBoneController.setExpression(self.upperTwistBoneExpression)
+        twistBoneController.update()
         
-        rt.setPropertyController(TBRotListController, "Available", TBController)
-        TBRotListController.delete(1)
-        TBRotListController.setActive(TBRotListController.count)
-        TBRotListController.weight[0] = weightVar
+        rt.setPropertyController(twistBoneRotListController, "Available", twistBoneController)
+        twistBoneRotListController.delete(1)
+        twistBoneRotListController.setActive(twistBoneRotListController.count)
+        twistBoneRotListController.weight[0] = 100.0
         
-        boneChainArray.append(TwistBone)
+        boneChainArray.append(twistBone)
         
-        # 추가 회전 컨트롤러 설정
-        TBExtraController = rt.Rotation_Script()
-        if rt.matchPattern(inExtraExpression, pattern="*\nTB.*"):
-            TBExtraController.addNode("TB", TwistBone)
-        else:
-            TBExtraController.addNode("Limb", Limb)
-            TBExtraController.addNode("LimbParent", TwistBone)
-        TBExtraController.setExpression(inExtraExpression)
-        
-        PrevTBE = TwistBone
-        
-        # 추가 트위스트 뼈대 생성 (2개 이상인 경우)
-        if inTwistNum > 1:
-            for j in range(2, inTwistNum):
-                TwistBoneExtra = self.bone.create_nub_bone(boneName, 2)
-                TwistBoneExtra.name = self.name.remove_name_part("Nub", TwistBoneExtra.name)
-                matAux = rt.matrix3(1)
-                matAux.position = rt.Point3(distanceVar/inTwistNum*distanceDir, 0, 0)
-                TwistBoneExtra.transform = matAux * PrevTBE.transform
-                TwistBoneExtra.name = self.name.replace_name_part("Index", boneName, str(j-1))
-                TwistBoneExtra.parent = PrevTBE
-                
-                # 회전 컨트롤러 설정
-                TBExtraRotListController = self.const.assign_rot_list(TwistBoneExtra)
-                rt.setPropertyController(TBExtraRotListController, "Available", TBExtraController)
-                TBExtraRotListController.delete(1)
-                TBExtraRotListController.setActive(TBExtraRotListController.count)
-                TBExtraRotListController.weight[0] = 100 / (inTwistNum - 1)
-                
-                PrevTBE = TwistBoneExtra
-                boneChainArray.append(TwistBoneExtra)
+        if twistNum > 1:
+            lastBone = self.bone.create_nub_bone(boneName, 2)
+            lastBone.name = self.name.replace_name_part("Index", boneName, str(twistNum))
+            lastBone.name = self.name.remove_name_part("Nub", lastBone.name)
+            lastBone.transform = limb.transform
+            lastBone.parent = limb
+            self.anim.move_local(lastBone, offssetAmount*(twistNum-1), 0, 0)
             
-            # 마지막 트위스트 뼈대 생성
-            TwistBoneEnd = self.bone.create_nub_bone(boneName, 2)
-            TwistBoneEnd.name = self.name.remove_name_part("Nub", TwistBoneEnd.name)
-            matAux = rt.matrix3(1)
-            matAux.position = rt.Point3(distanceVar/inTwistNum*distanceDir, 0, 0)
-            TwistBoneEnd.transform = matAux * PrevTBE.transform
-            TwistBoneEnd.name = self.name.replace_name_part("Index", boneName, str(inTwistNum-1))
-            TwistBoneEnd.parent = inObj
+            if twistNum > 2:
+                for i in range(1, twistNum-1):
+                    twistExtraBone = self.bone.create_nub_bone(boneName, 2)
+                    twistExtraBone.name = self.name.replace_name_part("Index", boneName, str(i+1))
+                    twistExtraBone.name = self.name.remove_name_part("Nub", twistExtraBone.name)
+                    twistExtraBone.transform = limb.transform
+                    twistExtraBone.parent = limb
+                    self.anim.move_local(twistExtraBone, offssetAmount*i, 0, 0)
+                    
+                    twistExtraBoneRotListController = self.const.assign_rot_list(twistExtraBone)
+                    twistExtraBoneController = rt.Rotation_Script()
+                    twistExtraBoneController.addConstant("localRefTm", twistBoneLocalRefTM)
+                    twistExtraBoneController.addNode("limb", limb)
+                    twistExtraBoneController.addNode("limbParent", limb.parent)
+                    twistExtraBoneController.setExpression(self.upperTwistBoneExpression)
+                    
+                    rt.setPropertyController(twistExtraBoneRotListController, "Available", twistExtraBoneController)
+                    twistExtraBoneRotListController.delete(1)
+                    twistExtraBoneRotListController.setActive(twistExtraBoneRotListController.count)
+                    twistExtraBoneRotListController.weight[0] = weightVal
+                    
+                    boneChainArray.append(twistExtraBone)
             
-            boneChainArray.append(TwistBoneEnd)
+            boneChainArray.append(lastBone)
         
-        return boneChainArray
-    
-    def reorder_bones(self, inBoneChainArray, inObj, inChild):
+        returnVal = {
+            "Bones": boneChainArray,
+            "Type": "Upper",
+            "Limb": inObj,
+            "Child": inChild,
+            "TwistNum": twistNum
+        }
+        
+        return returnVal
+
+    def create_lower_limb_bones(self, inObj, inChild, twistNum=4):
         """
-        뼈대 체인의 순서 재배치
+        트위스트 뼈대 생성 메소드.
         
         Args:
-            inBoneChainArray: 재배치할 뼈대 체인 배열
-            
+            inObj: 트위스트 뼈대의 부모 객체
+            inChild: 자식 객체 배열
+            twistNum: 트위스트 뼈대 개수 (기본값: 4)
+        
         Returns:
-            재배치된 뼈대 체인 배열
+            dict: 생성된 트위스트 뼈대 정보
         """
-        boneChainArray = rt.deepcopy(inBoneChainArray)
-        returnBoneArray = []
-        
-        # 첫 번째와 마지막 뼈대 가져오기
-        firstBone = boneChainArray[0]
-        lastBone = boneChainArray[-1]
-        returnBoneArray.append(lastBone)
-        
-        distanceVar = rt.distance(inObj, inChild)/(len(boneChainArray))
+        limb = inChild
+        distance = rt.distance(inObj, inChild)
         facingDirVec = inChild.transform.position - inObj.transform.position
         inObjXAxisVec = inObj.objectTransform.row1
         distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
+        offssetAmount = (distance / twistNum) * distanceDir
+        weightVal = 100.0 / (twistNum-1)
         
-            
-        if len(boneChainArray) > 1:
-            self.anim.move_local(firstBone, distanceVar*distanceDir, 0, 0)
-            self.anim.move_local(lastBone, -distanceVar*distanceDir*(len(boneChainArray)-1), 0, 0)
+        boneChainArray = []
+        
+        # 첫 번째 트위스트 뼈대 생성
+        boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "Twist")
+        if inObj.name[0].islower():
+            boneName = boneName.lower()
+        twistBone = self.bone.create_nub_bone(boneName, 2)
+        twistBone.name = self.name.replace_name_part("Index", boneName, "1")
+        twistBone.name = self.name.remove_name_part("Nub", twistBone.name)
+        twistBone.transform = inObj.transform
+        twistBone.parent = inObj
+        self.anim.move_local(twistBone, offssetAmount*(twistNum-1), 0, 0)
+        twistBoneLocalRefTM = limb.transform * rt.inverse(limb.parent.transform)
+        
+        twistBoneRotListController = self.const.assign_rot_list(twistBone)
+        twistBoneController = rt.Rotation_Script()
+        twistBoneController.addConstant("localRefTm", twistBoneLocalRefTM)
+        twistBoneController.addNode("limb", limb)
+        twistBoneController.addNode("limbParent", limb.parent)
+        twistBoneController.setExpression(self.lowerTwistBoneExpression)
+        twistBoneController.update()
+        
+        rt.setPropertyController(twistBoneRotListController, "Available", twistBoneController)
+        twistBoneRotListController.delete(1)
+        twistBoneRotListController.setActive(twistBoneRotListController.count)
+        twistBoneRotListController.weight[0] = 100.0
+        
+        if twistNum > 1:
+            lastBone = self.bone.create_nub_bone(boneName, 2)
+            lastBone.name = self.name.replace_name_part("Index", boneName, str(twistNum))
+            lastBone.name = self.name.remove_name_part("Nub", lastBone.name)
             lastBone.transform = inObj.transform
-        
-        for i in range(0, len(boneChainArray)-1):
-            returnBoneArray.append(boneChainArray[i])
-        
-        # 새로운 순서대로 이름 재설정
-        for i in range(len(returnBoneArray)):
-            returnBoneArray[i].name = self.name.replace_Index(returnBoneArray[i].name, str(i+1))
-        
-        return returnBoneArray
-    
-    def create_upperArm_type(self, inObj, inChild, inTwistNum):
-        """
-        상완(Upper Arm) 타입의 트위스트 뼈대 생성
-        
-        Args:
-            inObj: 상완 뼈대 객체
-            inTwistNum: 트위스트 뼈대 개수
+            lastBone.parent = inObj
+            self.anim.move_local(lastBone, 0, 0, 0)
             
-        Returns:
-            생성된 트위스트 뼈대 체인 또는 False(실패 시)
-        """
-        if inObj.parent is None or inObj.children.count == 0:
-            return False
-        
-        weightVal = 100.0
-        controllerLimb = inChild
-        
-        genBones = self.create_bones(
-            inObj,
-            controllerLimb,
-            inTwistNum,
-            self.upperArmExpression,
-            self.upperArmExtraExpression,
-            inObj,
-            weightVal
-        )
+            if twistNum > 2:
+                for i in range(1, twistNum-1):
+                    twistExtraBone = self.bone.create_nub_bone(boneName, 2)
+                    twistExtraBone.name = self.name.replace_name_part("Index", boneName, str(i+1))
+                    twistExtraBone.name = self.name.remove_name_part("Nub", twistExtraBone.name)
+                    twistExtraBone.transform = inObj.transform
+                    twistExtraBone.parent = inObj
+                    self.anim.move_local(twistExtraBone, offssetAmount*(twistNum-1-i), 0, 0)
+                    
+                    twistExtraBoneRotListController = self.const.assign_rot_list(twistExtraBone)
+                    twistExtraBoneController = rt.Rotation_Script()
+                    twistExtraBoneController.addConstant("localRefTm", twistBoneLocalRefTM)
+                    twistExtraBoneController.addNode("limb", limb)
+                    twistExtraBoneController.addNode("limbParent", limb.parent)
+                    twistExtraBoneController.setExpression(self.lowerTwistBoneExpression)
+                    
+                    rt.setPropertyController(twistExtraBoneRotListController, "Available", twistExtraBoneController)
+                    twistExtraBoneRotListController.delete(1)
+                    twistExtraBoneRotListController.setActive(twistExtraBoneRotListController.count)
+                    twistExtraBoneRotListController.weight[0] = weightVal
+                    
+                    boneChainArray.append(twistExtraBone)
+            
+            boneChainArray.append(lastBone)
         
         returnVal = {
-            "Bones": genBones,
-            "Type": "upperArm",
-            "Parent": inObj,
-            "Limb": controllerLimb,
-            "TwistNum": inTwistNum,
-            "Weight": weightVal
+            "Bones": boneChainArray,
+            "Type": "Lower",
+            "Limb": inObj,
+            "Child": inChild,
+            "TwistNum": twistNum
         }
         
         return returnVal
-    
-    def create_foreArm_type(self, inObj, inChild, inTwistNum, reorder=True, side="Left"):
-        """
-        전완(Forearm) 타입의 트위스트 뼈대 생성
-        
-        Args:
-            inObj: 전완 뼈대 객체
-            inTwistNum: 트위스트 뼈대 개수
-            side: 좌/우측 ("left" 또는 "right", 기본값: "left")
-            
-        Returns:
-            생성된 트위스트 뼈대 체인 또는 False(실패 시)
-        """
-        if inObj.parent is None or inObj.children.count == 0:
-            return False
-        
-        controllerLimb = inChild
-        weightVal = 100.0
-        
-        # 좌/우측에 따른 표현식 선택
-        TBExpression = self.lForeArmExpression if side == "Left" else self.rForeArmExpression
-        
-        if inTwistNum > 1:
-            weightVal = 100 / (inTwistNum - 1)
-            
-        createdBones = self.create_bones(
-            inObj,
-            controllerLimb,
-            inTwistNum,
-            TBExpression,
-            self.foreArmExtraExpression,
-            controllerLimb,
-            weightVal
-        )
-        
-        genBones = self.reorder_bones(createdBones, inObj, inChild) if reorder else createdBones
-        
-        returnVal = {
-            "Bones": genBones,
-            "Type": "foreArm",
-            "Parent": inObj,
-            "Limb": controllerLimb,
-            "TwistNum": inTwistNum,
-            "Weight": weightVal
-        }
-        
-        return returnVal
-    
-    def create_thigh_type(self, inObj, inChild, inTwistNum):
-        """
-        허벅지(Thigh) 타입의 트위스트 뼈대 생성
-        
-        Args:
-            inObj: 허벅지 뼈대 객체
-            inTwistNum: 트위스트 뼈대 개수
-            
-        Returns:
-            생성된 트위스트 뼈대 체인 또는 False(실패 시)
-        """
-        if inObj.parent is None or inObj.children.count == 0:
-            return False
-        
-        controllerLimb = inChild
-        weightVal = 100
-        
-        genBones = self.create_bones(
-            inObj,
-            controllerLimb,
-            inTwistNum,
-            self.thighExpression,
-            self.thighExtraExpression,
-            inObj,
-            weightVal
-        )
-        
-        returnVal = {
-            "Bones": genBones,
-            "Type": "thigh",
-            "Parent": inObj,
-            "Limb": controllerLimb,
-            "TwistNum": inTwistNum,
-            "Weight": weightVal
-        }
-        
-        return returnVal
-    
-    def create_calf_type(self, inObj, inChild, inTwistNum, reorder=True, side="Left"):
-        """
-        종아리(Calf) 타입의 트위스트 뼈대 생성
-        
-        Args:
-            inObj: 종아리 뼈대 객체
-            inTwistNum: 트위스트 뼈대 개수
-            side: 좌/우측 ("left" 또는 "right", 기본값: "left")
-            
-        Returns:
-            생성된 트위스트 뼈대 체인 또는 False(실패 시)
-        """
-        if inObj.parent is None or inObj.children.count == 0:
-            return False
-        
-        controllerLimb = inChild
-        weightVal = 100
-        
-        # 복수 뼈대인 경우 가중치 조정
-        if inTwistNum > 1:
-            weightVal = 100 / (inTwistNum - 1)
-            
-        createdBones = self.create_bones(
-            inObj,
-            controllerLimb,
-            inTwistNum,
-            self.calfExpression,
-            self.calfExtraExpression,
-            controllerLimb,
-            weightVal
-        )
-        genBones = self.reorder_bones(createdBones, inObj, inChild) if reorder else createdBones
-        
-        returnVal = {
-            "Bones": genBones,
-            "Type": "calf",
-            "Parent": inObj,
-            "Limb": controllerLimb,
-            "TwistNum": inTwistNum,
-            "Weight": weightVal
-        }
-        
-        return returnVal
-    
-    def create_bend_type(self):
-        """
-        굽힘(Bend) 타입의 트위스트 뼈대 생성
-        (아직 구현되지 않음)
-        """
-        pass

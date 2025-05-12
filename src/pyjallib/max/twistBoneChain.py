@@ -51,11 +51,9 @@ class TwistBoneChain:
         """
         self.bones = inResult["Bones"]
         self.type = inResult["Type"]
-        self.parent = inResult["Parent"]
         self.limb = inResult["Limb"]
+        self.child = inResult["Child"]
         self.twistNum = inResult["TwistNum"]
-        self.weight = inResult["Weight"]
-        
     
     def get_bone_at_index(self, index):
         """
