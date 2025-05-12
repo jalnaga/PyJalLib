@@ -45,50 +45,50 @@ class Hip:
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, helperService=self.helper, constraintService=self.const)
         
         # 기본 속성 초기화
-        self.bone_size = 2.0
-        self.bone_array = []
-        self.pelvis_weight = 60.0
-        self.thigh_weight = 40.0
-        self.x_axis_offset = 0.1
+        self.boneSize = 2.0
+        self.boneArray = []
+        self.pelvisWeight = 60.0
+        self.thighWeight = 40.0
+        self.xAxisOffset = 0.1
         
         # 객체 참조 초기화
-        self.spine_dummy = None
-        self.l_hip_dummy = None
-        self.l_hip_target_dummy = None
-        self.l_hip_exp = None
-        self.r_hip_dummy = None
-        self.r_hip_target_dummy = None
-        self.r_hip_exp = None
+        self.spineDummy = None
+        self.lHipDummy = None
+        self.lHipTargetDummy = None
+        self.lHipExp = None
+        self.rHipDummy = None
+        self.rHipTargetDummy = None
+        self.rHipExp = None
         
         self.pelvis = None
         self.spine = None
-        self.l_thigh = None
-        self.l_thigh_twist = None
-        self.r_thigh = None
-        self.r_thigh_twist = None
+        self.lThigh = None
+        self.lThighTwist = None
+        self.rThigh = None
+        self.rThighTwist = None
         
-        self.helper_array = []
+        self.helperArray = []
     
     def init(self, in_pelvis, in_spine, in_l_thigh, in_r_thigh, in_l_thigh_twist, in_r_thigh_twist, 
              in_x_axis_offset=0.1,
              in_pelvis_weight=60.0, in_thigh_weight=40.0,
              in_bone_size=2.0):
         
-        self.bone_size = in_bone_size
-        self.x_axis_offset = in_x_axis_offset
+        self.boneSize = in_bone_size
+        self.xAxisOffset = in_x_axis_offset
         
-        self.pelvis_weight = in_pelvis_weight
-        self.thigh_weight = in_thigh_weight
+        self.pelvisWeight = in_pelvis_weight
+        self.thighWeight = in_thigh_weight
         
         self.pelvis = in_pelvis
         self.spine = in_spine
-        self.l_thigh = in_l_thigh
-        self.r_thigh = in_r_thigh
-        self.l_thigh_twist = in_l_thigh_twist
-        self.r_thigh_twist = in_r_thigh_twist
+        self.lThigh = in_l_thigh
+        self.rThigh = in_r_thigh
+        self.lThighTwist = in_l_thigh_twist
+        self.rThighTwist = in_r_thigh_twist
         
-        self.bone_array = []
-        self.helper_array = []
+        self.boneArray = []
+        self.helperArray = []
     
     def assign_position_script(self, in_obj, in_exp, in_scale="0.1"):
         """
@@ -154,7 +154,7 @@ class Hip:
         Returns:
             생성된 헬퍼 객체 배열
         """
-        self.spine_dummy = self.helper.create_point(
+        self.spineDummy = self.helper.create_point(
             self.name.combine(in_base=self.base_name, 
                              in_type=self.name.get_dummyStr(), 
                              in_real_name="HipSpine", 
@@ -163,7 +163,7 @@ class Hip:
             box_toggle=True, cross_toggle=False, axis_toggle=False
         )
         
-        self.l_hip_dummy = self.helper.create_point(
+        self.lHipDummy = self.helper.create_point(
             self.name.combine(in_base=self.base_name, 
                              in_type=self.name.get_dummyStr(), 
                              in_side=self.name.get_leftStr(), 
@@ -173,7 +173,7 @@ class Hip:
             box_toggle=True, cross_toggle=False, axis_toggle=False
         )
         
-        self.l_hip_target_dummy = self.helper.create_point(
+        self.lHipTargetDummy = self.helper.create_point(
             self.name.combine(in_base=self.base_name, 
                              in_type=self.name.get_dummyStr(), 
                              in_side=self.name.get_leftStr(), 
@@ -184,7 +184,7 @@ class Hip:
         )
         
         # ExposeTm 객체 생성
-        self.l_hip_exp = rt.ExposeTm(
+        self.lHipExp = rt.ExposeTm(
             name=self.name.combine(in_base=self.base_name, 
                                   in_type=self.name.get_exposeTMStr(), 
                                   in_side=self.name.get_leftStr(), 
@@ -197,7 +197,7 @@ class Hip:
             wirecolor=rt.color(14, 255, 2)
         )
         
-        self.r_hip_dummy = self.helper.create_point(
+        self.rHipDummy = self.helper.create_point(
             self.name.combine(in_base=self.base_name, 
                              in_type=self.name.get_dummyStr(), 
                              in_side=self.name.get_rightStr(), 
@@ -207,7 +207,7 @@ class Hip:
             box_toggle=True, cross_toggle=False, axis_toggle=False
         )
         
-        self.r_hip_target_dummy = self.helper.create_point(
+        self.rHipTargetDummy = self.helper.create_point(
             self.name.combine(in_base=self.base_name, 
                              in_type=self.name.get_dummyStr(), 
                              in_side=self.name.get_rightStr(), 
@@ -218,7 +218,7 @@ class Hip:
         )
         
         # ExposeTm 객체 생성
-        self.r_hip_exp = rt.ExposeTm(
+        self.rHipExp = rt.ExposeTm(
             name=self.name.combine(in_base=self.base_name, 
                                   in_type=self.name.get_exposeTMStr(), 
                                   in_side=self.name.get_rightStr(), 
@@ -231,16 +231,16 @@ class Hip:
             wirecolor=rt.color(14, 255, 2)
         )
         
-        self.helper_array = []
-        self.helper_array.append(self.spine_dummy)
-        self.helper_array.append(self.l_hip_dummy)
-        self.helper_array.append(self.l_hip_target_dummy)
-        self.helper_array.append(self.l_hip_exp)
-        self.helper_array.append(self.r_hip_dummy)
-        self.helper_array.append(self.r_hip_target_dummy)
-        self.helper_array.append(self.r_hip_exp)
+        self.helperArray = []
+        self.helperArray.append(self.spineDummy)
+        self.helperArray.append(self.lHipDummy)
+        self.helperArray.append(self.lHipTargetDummy)
+        self.helperArray.append(self.lHipExp)
+        self.helperArray.append(self.rHipDummy)
+        self.helperArray.append(self.rHipTargetDummy)
+        self.helperArray.append(self.rHipExp)
         
-        return self.helper_array
+        return self.helperArray
     
     def create(self):
         """
@@ -248,116 +248,116 @@ class Hip:
         """
         self.gen_helpers()
         
-        self.l_hip_dummy.transform = self.l_thigh_twist.transform
-        self.r_hip_dummy.transform = self.r_thigh_twist.transform
+        self.lHipDummy.transform = self.lThighTwist.transform
+        self.rHipDummy.transform = self.rThighTwist.transform
         
-        self.const.assign_pos_const(self.spine_dummy, self.spine)
-        self.const.assign_rot_const_multi(self.spine_dummy, [self.l_thigh_twist, self.r_thigh_twist])
-        self.const.collapse(self.spine_dummy)
+        self.const.assign_pos_const(self.spineDummy, self.spine)
+        self.const.assign_rot_const_multi(self.spineDummy, [self.lThighTwist, self.rThighTwist])
+        self.const.collapse(self.spineDummy)
         
-        self.l_hip_dummy.parent = self.pelvis
-        self.l_hip_target_dummy.parent = self.pelvis
-        self.l_hip_exp.parent = self.pelvis
-        self.r_hip_dummy.parent = self.pelvis
-        self.r_hip_target_dummy.parent = self.pelvis
-        self.r_hip_exp.parent = self.pelvis
-        self.spine_dummy.parent = self.pelvis
+        self.lHipDummy.parent = self.pelvis
+        self.lHipTargetDummy.parent = self.pelvis
+        self.lHipExp.parent = self.pelvis
+        self.rHipDummy.parent = self.pelvis
+        self.rHipTargetDummy.parent = self.pelvis
+        self.rHipExp.parent = self.pelvis
+        self.spineDummy.parent = self.pelvis
         
         # 왼쪽 hip dummy의 rotation constraint 설정
-        self.const.assign_rot_list(self.l_hip_dummy)
+        self.const.assign_rot_list(self.lHipDummy)
         rot_const = rt.Orientation_Constraint()
-        rot_list = self.const.get_rot_list_controller(self.l_hip_dummy)
+        rot_list = self.const.get_rot_list_controller(self.lHipDummy)
         rt.setPropertyController(rot_list, "Available", rot_const)
         rot_list.setActive(rot_list.count)
         
         # Constraint 타겟 추가
-        rot_const.appendTarget(self.spine_dummy, self.pelvis_weight)
-        rot_const.appendTarget(self.l_thigh_twist, self.thigh_weight)
+        rot_const.appendTarget(self.spineDummy, self.pelvisWeight)
+        rot_const.appendTarget(self.lThighTwist, self.thighWeight)
         rot_const.relative = True
         
         # 오른쪽 hip dummy의 rotation constraint 설정
-        self.const.assign_rot_list(self.r_hip_dummy)
+        self.const.assign_rot_list(self.rHipDummy)
         rot_const = rt.Orientation_Constraint()
-        rot_list = self.const.get_rot_list_controller(self.r_hip_dummy)
+        rot_list = self.const.get_rot_list_controller(self.rHipDummy)
         rt.setPropertyController(rot_list, "Available", rot_const)
         rot_list.setActive(rot_list.count)
         
         # Constraint 타겟 추가
-        rot_const.appendTarget(self.spine_dummy, self.pelvis_weight)
-        rot_const.appendTarget(self.r_thigh_twist, self.thigh_weight)
+        rot_const.appendTarget(self.spineDummy, self.pelvisWeight)
+        rot_const.appendTarget(self.rThighTwist, self.thighWeight)
         rot_const.relative = True
         
-        self.l_hip_target_dummy.transform = self.l_hip_dummy.transform
-        self.l_hip_exp.transform = self.l_hip_dummy.transform
-        self.r_hip_target_dummy.transform = self.r_hip_dummy.transform
-        self.r_hip_exp.transform = self.r_hip_dummy.transform
+        self.lHipTargetDummy.transform = self.lHipDummy.transform
+        self.lHipExp.transform = self.lHipDummy.transform
+        self.rHipTargetDummy.transform = self.rHipDummy.transform
+        self.rHipExp.transform = self.rHipDummy.transform
         
-        self.l_hip_exp.exposeNode = self.l_hip_dummy
-        self.l_hip_exp.localReferenceNode = self.l_hip_target_dummy
-        self.l_hip_exp.useParent = False
+        self.lHipExp.exposeNode = self.lHipDummy
+        self.lHipExp.localReferenceNode = self.lHipTargetDummy
+        self.lHipExp.useParent = False
         
-        self.r_hip_exp.exposeNode = self.r_hip_dummy
-        self.r_hip_exp.localReferenceNode = self.r_hip_target_dummy
-        self.r_hip_exp.useParent = False
+        self.rHipExp.exposeNode = self.rHipDummy
+        self.rHipExp.localReferenceNode = self.rHipTargetDummy
+        self.rHipExp.useParent = False
         
-        self.bone_array = []
+        self.boneArray = []
         
         # 왼쪽 Hip 본 생성
         l_hip_bone = self.bone.create_simple_bone(
-            (self.bone_size * 2),
+            (self.boneSize * 2),
             self.name.combine(
                 in_base=self.base_name,
                 in_side=self.name.get_leftStr(),
                 in_real_name="Hip",
                 in_fil_char=self.filtering_char
             ),
-            size=self.bone_size
+            size=self.boneSize
         )
         
-        l_hip_bone[0].transform = self.l_thigh.transform
+        l_hip_bone[0].transform = self.lThigh.transform
         self.anim.rotate_local(
             l_hip_bone[0], 
             (self.rot_dir[0] * 0), 
             (self.rot_dir[1] * 0), 
             (self.rot_dir[2] * 90)
         )
-        l_hip_bone[0].parent = self.l_hip_dummy
-        self.bone_array.append(l_hip_bone[0])
-        self.bone_array.append(l_hip_bone[1])
+        l_hip_bone[0].parent = self.lHipDummy
+        self.boneArray.append(l_hip_bone[0])
+        self.boneArray.append(l_hip_bone[1])
         
         # 오른쪽 Hip 본 생성
         r_hip_bone = self.bone.create_simple_bone(
-            (self.bone_size * 2),
+            (self.boneSize * 2),
             self.name.combine(
                 in_base=self.base_name,
                 in_side=self.name.get_rightStr(),
                 in_real_name="Hip",
                 in_fil_char=self.filtering_char
             ),
-            size=self.bone_size
+            size=self.boneSize
         )
         
-        r_hip_bone[0].transform = self.r_thigh.transform
+        r_hip_bone[0].transform = self.rThigh.transform
         self.anim.rotate_local(
             r_hip_bone[0], 
             (self.rot_dir[0] * 0), 
             (self.rot_dir[1] * 0), 
             (self.rot_dir[2] * 90)
         )
-        r_hip_bone[0].parent = self.r_hip_dummy
-        self.bone_array.append(r_hip_bone[0])
-        self.bone_array.append(r_hip_bone[1])
+        r_hip_bone[0].parent = self.rHipDummy
+        self.boneArray.append(r_hip_bone[0])
+        self.boneArray.append(r_hip_bone[1])
         
         # 위치 스크립트 설정
-        self.assign_position_script(l_hip_bone[0], self.l_hip_exp, in_scale=str(self.x_axis_offset))
-        self.assign_position_script(r_hip_bone[0], self.r_hip_exp, in_scale=str(self.x_axis_offset))
+        self.assign_position_script(l_hip_bone[0], self.lHipExp, in_scale=str(self.xAxisOffset))
+        self.assign_position_script(r_hip_bone[0], self.rHipExp, in_scale=str(self.xAxisOffset))
     
     def del_all(self):
         """
         모든 생성된 본과 헬퍼 객체 삭제
         """
-        self.bone.delete_bones_safely(self.bone_array)
-        self.bone.delete_bones_safely(self.helper_array)
+        self.bone.delete_bones_safely(self.boneArray)
+        self.bone.delete_bones_safely(self.helperArray)
     
     def set_weight(self, in_pelvis_weight, in_thigh_weight):
         """
@@ -368,7 +368,7 @@ class Hip:
             in_thigh_weight: 허벅지 가중치
         """
         self.del_all()
-        self.pelvis_weight = in_pelvis_weight
-        self.thigh_weight = in_thigh_weight
+        self.pelvisWeight = in_pelvis_weight
+        self.thighWeight = in_thigh_weight
         
         self.create()
