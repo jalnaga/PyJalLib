@@ -2,33 +2,54 @@
 # -*- coding: utf-8 -*-
 
 """
-볼륨 뼈대 체인(Volume Bone Chain) 관련 기능을 제공하는 클래스.
-VolumeBone 클래스가 생성한 볼륨 뼈대들을 관리하고 접근하는 인터페이스를 제공합니다.
+볼륨 뼈대 체인(Volume Bone Chain) 모듈 - 3ds Max 캐릭터 리깅을 위한 볼륨 본 시스템
+
+이 모듈은 VolumeBone 클래스가 생성한 볼륨 본 세트를 관리하고 제어하는 기능을 제공합니다.
+관절 회전 시 부피 감소를 방지하기 위한 보조 본 시스템으로, 특히 캐릭터 팔다리나 
+관절 부위의 자연스러운 움직임을 구현하는 데 유용합니다.
 
 Examples:
-    # 볼륨 체인 생성 예시
+    # 기본 볼륨 체인 생성 예시
     from pyjallib.max import VolumeBone, VolumeBoneChain
     from pymxs import runtime as rt
     
-    # 캐릭터에서 선택된 객체 가져오기
-    sel_obj = rt.selection[0]
+    # 캐릭터에서 팔꿈치 뼈대와 상위 부모 가져오기
+    elbow_bone = rt.getNodeByName("L_Elbow_Bone")
+    upper_arm = rt.getNodeByName("L_UpperArm_Bone")
     
     # VolumeBone 클래스 인스턴스 생성
     volume_bone = VolumeBone()
     
-    # 볼륨 뼈대 생성
-    volume_result = volume_bone.create_volume(sel_obj, 4, 30.0)
+    # 다양한 옵션으로 볼륨 뼈대 생성
+    volume_result = volume_bone.create_bones(
+        elbow_bone,                   # 관절 본
+        upper_arm,                    # 관절 부모
+        inRotScale=0.7,               # 회전 영향도 (0.0 ~ 1.0)
+        inVolumeSize=10.0,            # 볼륨 크기
+        inRotAxises=["X", "Z"],       # 회전 감지 축 (여러 축 지정 가능)
+        inTransAxises=["PosY", "PosZ"], # 이동 방향 축
+        inTransScales=[1.0, 0.8]      # 각 방향별 이동 스케일
+    )
     
     # 생성된 뼈대로 VolumeBoneChain 인스턴스 생성
     chain = VolumeBoneChain.from_volume_bone_result(volume_result)
     
-    # 체인 관리 기능 사용
-    first_bone = chain.get_first_bone()
-    last_bone = chain.get_last_bone()
-    middle_bone = chain.get_bone_at_index(2)
+    # 체인 속성 및 관리 기능 사용
+    print(f"볼륨 크기: {chain.get_volume_size()}")
+    print(f"볼륨 본 개수: {len(chain.bones)}")
     
-    # 체인의 모든 뼈대 이름 변경
-    chain.rename_bones(prefix="custom_", suffix="_volume")
+    # 볼륨 속성 동적 업데이트
+    chain.update_volume_size(15.0)    # 볼륨 크기 변경
+    chain.update_rot_scale(0.5)       # 회전 영향도 변경
+    
+    # 회전 축 업데이트
+    chain.update_rot_axises(["Y", "Z"])
+    
+    # 이동 축 업데이트
+    chain.update_trans_axises(["PosX", "PosZ"])
+    
+    # 이동 스케일 업데이트
+    chain.update_trans_scales([0.7, 1.2])
     
     # 필요 없어지면 체인의 모든 뼈대 삭제
     # chain.delete_all()
@@ -40,12 +61,25 @@ from pymxs import runtime as rt
 from .header import jal
 
 class VolumeBoneChain:
+    """
+    볼륨 본 체인 관리 클래스
+    
+    VolumeBone 클래스로 생성된 볼륨 본들의 집합을 관리하는 클래스입니다.
+    볼륨 본의 크기 조절, 회전 및 이동 축 변경, 스케일 조정 등의 기능을 제공하며,
+    여러 개의 볼륨 본을 하나의 논리적 체인으로 관리합니다.
+    생성된 볼륨 본 체인은 캐릭터 관절의 자연스러운 변형을 위해 사용됩니다.
+    """
+    
     def __init__(self, inResult):
         """
-        클래스 초기화.
+        볼륨 본 체인 클래스 초기화
+        
+        VolumeBone 클래스의 create_bones 메서드로부터 생성된 결과 딕셔너리를 
+        받아 볼륨 본 체인을 구성합니다.
         
         Args:
-            inResult: VolumeBone 클래스의 결과 딕셔너리
+            inResult: VolumeBone 클래스의 create_bones 메서드가 반환한 결과 딕셔너리
+                      (루트 본, 회전 헬퍼, 회전 축, 이동 축, 볼륨 크기 등의 정보 포함)
         """
         self.rootBone = inResult.get("RootBone", None)
         self.rotHelper = inResult.get("RotHelper", None)
@@ -62,8 +96,11 @@ class VolumeBoneChain:
         """
         볼륨 뼈대의 크기 가져오기
         
+        볼륨 본 생성 시 설정된 크기 값을 반환합니다. 이 값은 관절의 볼륨감 정도를
+        결정합니다.
+        
         Returns:
-            볼륨 크기 값
+            float: 현재 설정된 볼륨 크기 값
         """
         return self.volumeSize
     
@@ -71,8 +108,10 @@ class VolumeBoneChain:
         """
         체인이 비어있는지 확인
         
+        볼륨 본 체인에 본이 하나라도 존재하는지 확인합니다.
+        
         Returns:
-            체인이 비어있으면 True, 아니면 False
+            bool: 체인이 비어있으면 True, 하나 이상의 본이 있으면 False
         """
         return len(self.bones) == 0
     

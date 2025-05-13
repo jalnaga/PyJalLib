@@ -3,6 +3,10 @@
 
 """
 관절 부피 유지 본(Volume preserve Bone) 모듈 - 3ds Max용 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 모듈
+
+이 모듈은 3ds Max에서 캐릭터 애니메이션 과정에서 관절 변형 시 발생하는 부피 감소 문제를 해결하기 위한
+부피 유지 본 시스템을 제공합니다. 관절이 회전할 때 볼륨감을 자동으로 유지하는 보조 본을 생성하여
+더 자연스러운 캐릭터 애니메이션을 구현할 수 있습니다.
 """
 
 from pymxs import runtime as rt
@@ -18,16 +22,24 @@ from .constraint import Constraint
 class VolumeBone:  # Updated class name to match the new file name
     """
     관절 부피 유지 본(Volume preserve Bone) 클래스
-    3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스
+    
+    3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스입니다.
+    이 클래스는 관절이 회전할 때 자동으로 부피감을 유지하도록 하는 보조 본 시스템을 생성하고
+    관리합니다. 부모 관절과 자식 관절 사이에 부피 유지 본을 배치하여 관절 변형 시 부피 감소를
+    방지하고 더 자연스러운 움직임을 구현합니다.
     """
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
         """
         클래스 초기화.
         
+        필요한 서비스 객체들을 초기화하거나 외부에서 제공받습니다. 
+        각 서비스 객체들은 본 생성, 이름 관리, 애니메이션 제어, 제약 조건 적용 등의 
+        기능을 담당합니다.
+        
         Args:
             nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
             animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constService: 제약 서비스 (제공되지 않으면 새로 생성)
+            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
             boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
             helperService: 헬퍼 서비스 (제공되지 않으면 새로 생성)
         """
