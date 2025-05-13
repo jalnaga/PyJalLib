@@ -51,10 +51,9 @@ class VolumeBone:  # Updated class name to match the new file name
             "\n"
             "q = localDeltaTm.rotation\n"
             "\n"
-            "proj = (dot q.axis axis) * axis\n"
-            "twist = quat q.angle proj\n"
-            "twist = normalize twist\n"
-            "saturatedTwist = amin (twist.angle/180.0) 1.0\n"
+            "eulerRot = (quatToEuler q order:5)\n"
+            "swizzledRot = (eulerAngles eulerRot.y eulerRot.z eulerRot.x)\n"
+            "saturatedTwist = abs ((swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0)\n"
             "\n"
             "trAxis * saturatedTwist * volumeSize * transScale\n"
         )
@@ -145,10 +144,12 @@ class VolumeBone:  # Updated class name to match the new file name
         elif inRotAxis == "Z":
             rotAxis = rt.Point3(0.0, 0.0, 1.0)
         
-        localRotRefTm = self.limb.transform * rt.inverse(self.limbParent.transform)
+        # localRotRefTm = self.limb.transform * rt.inverse(self.limbParent.transform)
+        localRotRefTm = self.limb.transform * rt.inverse(self.rotHelper.transform)
         volBonePosConst = self.const.assign_pos_script_controller(volBone)
         volBonePosConst.addNode("limb", self.limb)
-        volBonePosConst.addNode("limbParent", self.limbParent)
+        # volBonePosConst.addNode("limbParent", self.limbParent)
+        volBonePosConst.addNode("limbParent", self.rotHelper)
         volBonePosConst.addConstant("axis", rotAxis)
         volBonePosConst.addConstant("transScale", rt.Float(inTransScale))
         volBonePosConst.addConstant("volumeSize", rt.Float(inVolumeSize))

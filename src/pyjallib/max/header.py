@@ -28,6 +28,7 @@ from .twistBone import TwistBone
 from .autoClavicle import AutoClavicle
 from .groinBone import GroinBone
 from .volumeBone import VolumeBone
+from .kneeBone import KneeBone
 from .hip import Hip
 
 from .morph import Morph
@@ -73,6 +74,7 @@ class Header:
         self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
         self.volumeBone = VolumeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
+        self.kneeBone = KneeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper, volumeBoneService=self.volumeBone)
         self.hip = Hip(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint)
         
         self.morph = Morph()
