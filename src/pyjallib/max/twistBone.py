@@ -168,7 +168,7 @@ class TwistBone:
                     rt.setPropertyController(twistExtraBoneRotListController, "Available", twistExtraBoneController)
                     twistExtraBoneRotListController.delete(1)
                     twistExtraBoneRotListController.setActive(twistExtraBoneRotListController.count)
-                    twistExtraBoneRotListController.weight[0] = weightVal
+                    twistExtraBoneRotListController.weight[0] = weightVal * (twistNum-1-i)
                     
                     boneChainArray.append(twistExtraBone)
             
@@ -267,7 +267,7 @@ class TwistBone:
                     rt.setPropertyController(twistExtraBoneRotListController, "Available", twistExtraBoneController)
                     twistExtraBoneRotListController.delete(1)
                     twistExtraBoneRotListController.setActive(twistExtraBoneRotListController.count)
-                    twistExtraBoneRotListController.weight[0] = weightVal
+                    twistExtraBoneRotListController.weight[0] = weightVal * (twistNum-1-i)
                     
                     boneChainArray.append(twistExtraBone)
             
