@@ -65,7 +65,7 @@ class KneeBone:
         
         self.middleBones = []
         
-        self.liftScale = 0.1
+        self.liftScale = 0.05
         
         self.thighRotScriptExpression = (
             "localLimbTm = limb.transform * inverse limbParent.transform\n"
@@ -97,7 +97,7 @@ class KneeBone:
         )
             
     
-    def create_lookat_helper(self, inThigh, inCalf):
+    def create_lookat_helper(self, inThigh, inFoot):
         """
         무릎 시스템을 위한 LookAt 헬퍼 객체를 생성합니다.
         
@@ -247,7 +247,7 @@ class KneeBone:
         rotScriptConst.addNode("limbParent", self.thighRotRootHelper)
         rotScriptConst.setExpression(self.thighRotScriptExpression)
         
-        self.const.set_rot_controllers_weight_in_list(self.calfRotHelper, 1, self.liftScale * 100.0)
+        self.const.set_rot_controllers_weight_in_list(self.thighRotHelper, 1, self.liftScale * 100.0)
         
     def assign_calf_rot_constraint(self, inLiftScale=0.1):
         """
@@ -399,7 +399,7 @@ class KneeBone:
             self.calfTwistBones.append(liftTwistBone)
             self.calfTwistHelpers.append(liftTwistHelper)
             
-    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale, inKneePopScale=1.0, inKneeBackScale=1.0):
+    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneePopScale=1.0, inKneeBackScale=1.0):
         """
         자동 무릎 본 시스템의 모든 요소를 생성하는 주요 메서드입니다.
         
