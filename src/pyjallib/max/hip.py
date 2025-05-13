@@ -47,7 +47,7 @@ class Hip:
         # 기본 속성 초기화
         self.pelvisWeight = 0.6
         self.thighWeight = 0.4
-        self.pushAmount = 5.0
+        self.pushAmount = 10
         
         self.pelvis = None
         self.thigh = None
