@@ -14,6 +14,7 @@ from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
 
+
 class VolumeBone:  # Updated class name to match the new file name
     """
     관절 부피 유지 본(Volume preserve Bone) 클래스
@@ -172,18 +173,47 @@ class VolumeBone:  # Updated class name to match the new file name
             inTransScales: 변환 비율 리스트
         
         Returns:
-            bool: 성공 여부
+            dict: VolumeBoneChain 생성을 위한 결과 딕셔너리
         """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
-            return False
+            return None
         
         if len(inRotAxises) != len(inTransAxises) or len(inRotAxises) != len(inTransScales):
-            return False
+            return None
         
         rootBone = self.create_root_bone(inObj, inParent, inRotScale=inRotScale)
         
+        # 볼륨 본들 생성
+        bones = []
         for i in range(len(inRotAxises)):
             self.create_bone(inObj, inParent, inRotScale, inVolumeSize, inRotAxises[i], inTransAxises[i], inTransScales[i], useRootBone=True, inRootBone=rootBone)
+            
+            # 생성된 본의 이름 패턴으로 찾기
+            volBoneName = inObj.name
+            filteringChar = self.name._get_filtering_char(volBoneName)
+            volBoneName = self.name.add_suffix_to_real_name(volBoneName, 
+                          filteringChar + "Vol" + filteringChar + inRotAxises[i] + 
+                          filteringChar + inTransAxises[i])
+            
+            if volBoneName[0].islower():
+                volBoneName = volBoneName.lower()
+                
+            volBone = rt.getNodeByName(self.name.remove_name_part("Nub", volBoneName))
+            if rt.isValidNode(volBone):
+                bones.append(volBone)
         
-        return True
+        # VolumeBoneChain이 필요로 하는 형태의 결과 딕셔너리 생성
+        result = {
+            "RootBone": rootBone,
+            "RotHelper": self.rotHelper,
+            "RotScale": inRotScale,
+            "Limb": inObj,
+            "LimbParent": inParent,
+            "Bones": bones,
+            "RotAxises": inRotAxises,
+            "TransAxises": inTransAxises,
+            "TransScales": inTransScales,
+            "VolumeSize": inVolumeSize
+        }
         
+        return result
