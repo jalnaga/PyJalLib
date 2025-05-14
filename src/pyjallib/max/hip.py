@@ -78,6 +78,34 @@ class Hip:
             "[0, pushAmount * pushScale, 0]\n"
         )
         
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.pelvisWeight = 0.6
+        self.thighWeight = 0.4
+        self.pushAmount = 10
+        
+        self.pelvis = None
+        self.thigh = None
+        self.thighTwist = None
+        
+        self.pelvisHelper = None
+        self.thighHelper = None
+        self.thighTwistHelper = None
+        self.thighRotHelper = None
+        self.thighPosHelper = None
+        self.thighRotRootHelper = None
+        
+        self.helpers = []
+        self.bones = []
+        
+        return self
+    
     def create_helper(self, inPelvis, inThigh, inThighTwist):
         if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
             return False
@@ -152,7 +180,7 @@ class Hip:
         posConst.addNode("limb", self.thighRotHelper)
         posConst.addNode("limbParent", self.thighRotRootHelper)
         posConst.addConstant("localRotRefTm", localRotRefTm)
-        posConst.addConstant("pushAmount", self.xAxisOffset)
+        posConst.addConstant("pushAmount", self.pushAmount)
         posConst.setExpression(self.posScriptExpression)
         posConst.update()
         
@@ -178,4 +206,20 @@ class Hip:
         
         self.bones.append(hipBone)
         
+        # 결과를 딕셔너리 형태로 준비
+        result = {
+            "Pelvis": inPelvis,
+            "Thigh": inThigh,
+            "ThighTwist": inThighTwist,
+            "Bones": self.bones,
+            "Helpers": self.helpers,
+            "PelvisWeight": inPelvisWeight,
+            "ThighWeight": inThighWeight,
+            "PushAmount": pushAmount
+        }
         
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
+        
+        return result
+

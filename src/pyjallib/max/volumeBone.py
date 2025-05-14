@@ -56,6 +56,12 @@ class VolumeBone:  # Updated class name to match the new file name
         self.rotHelper = None
         self.limb = None
         self.limbParent = None
+        self.bones = []
+        self.rotAxises = []
+        self.transAxises = []
+        self.transScales = []
+        self.volumeSize = 5.0
+        self.rotScale = 0.5
         
         self.posScriptExpression = (
             "localLimbTm = limb.transform * inverse limbParent.transform\n"
@@ -69,6 +75,27 @@ class VolumeBone:  # Updated class name to match the new file name
             "\n"
             "trAxis * saturatedTwist * volumeSize * transScale\n"
         )
+    
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.rootBone = None
+        self.rotHelper = None
+        self.limb = None
+        self.limbParent = None
+        self.bones = []
+        self.rotAxises = []
+        self.transAxises = []
+        self.transScales = []
+        self.volumeSize = 5.0
+        self.rotScale = 0.5
+        
+        return self
     
     def create_root_bone(self, inObj, inParent, inRotScale=0.5):
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
@@ -215,6 +242,17 @@ class VolumeBone:  # Updated class name to match the new file name
             if rt.isValidNode(volBone):
                 bones.append(volBone)
         
+        # 클래스 변수에 결과 저장
+        self.rootBone = rootBone
+        self.limb = inObj
+        self.limbParent = inParent
+        self.bones = bones
+        self.rotAxises = inRotAxises.copy()
+        self.transAxises = inTransAxises.copy()
+        self.transScales = inTransScales.copy()
+        self.volumeSize = inVolumeSize
+        self.rotScale = inRotScale
+        
         # VolumeBoneChain이 필요로 하는 형태의 결과 딕셔너리 생성
         result = {
             "RootBone": rootBone,
@@ -228,5 +266,8 @@ class VolumeBone:  # Updated class name to match the new file name
             "TransScales": inTransScales,
             "VolumeSize": inVolumeSize
         }
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
         
         return result

@@ -679,18 +679,17 @@ class Bone:
             inOriBone: 원본 뼈대
         """
         self.anim.save_xform(inSkinBone)
-        self.anim.set_xform(inSkinBone)
         
         self.anim.save_xform(inOriBone)
-        self.anim.set_xform(inOriBone)
         
         rt.setPropertyController(inSkinBone.controller, "Scale", rt.scaleXYZ())
         
         linkConst = rt.link_constraint()
+        linkConst.addTarget(inOriBone, 0)
+        
         inSkinBone.controller = linkConst
         
-        self.anim.set_xform([inSkinBone], space="world")
-        linkConst.addTarget(inOriBone, 0)
+        self.anim.set_xform(inSkinBone, space="World")
     
     def link_skin_bones(self, inSkinBoneArray, inOriBoneArray):
         """
@@ -705,10 +704,14 @@ class Bone:
             False: 실패
         """
         if len(inSkinBoneArray) != len(inOriBoneArray):
+            print("Error: Skin bone array and original bone array must have the same length.")
             return False
         
-        for i in range(len(inSkinBoneArray)):
-            self.link_skin_bone(inSkinBoneArray[i], inOriBoneArray[i])
+        sortedSkinBoneArray = self.sort_bones_as_hierarchy(inSkinBoneArray)
+        sortedOriBoneArray = self.sort_bones_as_hierarchy(inOriBoneArray)
+        
+        for i in range(len(sortedSkinBoneArray)):
+            self.link_skin_bone(sortedSkinBoneArray[i], sortedOriBoneArray[i])
         
         return True
     
@@ -732,17 +735,12 @@ class Bone:
         returnBones = []
         
         definedSkinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
-        if skinBoneBaseName == "":
-            if definedSkinBoneBaseName == "":
-                skinBoneBaseName = "b"
-            else:
-                skinBoneBaseName = definedSkinBoneBaseName
         
         for i in range(len(inBoneArray)):
-            skinBoneName = self.name.replace_name_part("Base", inBoneArray[i].name, skinBoneBaseName)
+            skinBoneName = self.name.replace_name_part("Base", inBoneArray[i].name, definedSkinBoneBaseName)
             skinBoneName = self.name.replace_filtering_char(skinBoneName, skinBoneFilteringChar)
             
-            skinBone = self.create_nub_bone(f"{skinBoneBaseName}_TempSkin", 2)
+            skinBone = self.create_nub_bone(f"{definedSkinBoneBaseName}_TempSkin", 2)
             skinBone.name = skinBoneName
             skinBone.wireColor = rt.Color(255, 88, 199)
             skinBone.transform = inBoneArray[i].transform
@@ -767,11 +765,18 @@ class Bone:
         for i in range(len(inBoneArray)):
             oriParentObj = inBoneArray[i].parent
             if oriParentObj is not None:
-                skinBoneParentObjName = self.name.replace_base(oriParentObj.name, skinBoneBaseName)
+                skinBoneParentObjName = self.name.replace_name_part("Base", oriParentObj.name, definedSkinBoneBaseName)
                 skinBoneParentObjName = self.name.replace_filtering_char(skinBoneParentObjName, skinBoneFilteringChar)
                 bones[i].parent = rt.getNodeByName(skinBoneParentObjName)
             else:
                 bones[i].parent = None
+        
+        for item in bones:
+            item.showLinks = True
+            item.showLinksOnly = True
+        
+        for item in bones:
+            item.name = self.name.replace_name_part("Base", item.name, skinBoneBaseName)
         
         if link:
             self.link_skin_bones(bones, inBoneArray)
@@ -798,7 +803,7 @@ class Bone:
             skipNub: Nub 뼈대 건너뛰기 (기본값: True)
             mesh: 메시 스냅샷 사용 (기본값: False)
             link: 원본 뼈대에 연결 (기본값: True)
-            skinBoneBaseName: 스킨 뼈대 기본 이름 (기본값: "b")
+            skinBoneBaseName: 스킨 뼈대 기본 이름 (기본값: "")
             
         Returns:
             생성된 스킨 뼈대 배열
@@ -842,6 +847,104 @@ class Bone:
             if rt.matchPattern(item.name, pattern="*Head*"):
                 self.anim.rotate_local(item, 180, 0, 0)
         
+        return genBones
+    
+    def create_skin_bone_from_bip_for_ue5manny(self, inBoneArray, skipNub=True, mesh=False, link=True, isHuman=False, skinBoneBaseName=""):
+        targetBones = [item for item in inBoneArray 
+                      if (rt.classOf(item) == rt.Biped_Object) 
+                      and (not rt.matchPattern(item.name, pattern="*Twist*")) 
+                      and (item != item.controller.rootNode)]
+        
+        if isHuman:
+            spine3 = None
+            neck = None
+            clavicleL = None
+            clavicleR = None
+            
+            for item in inBoneArray:
+                if rt.matchPattern(item.name, pattern="*spine 03"):
+                    spine3 = item
+                if rt.matchPattern(item.name, pattern="*neck 01"):
+                    neck = item
+                if rt.matchPattern(item.name, pattern="*clavicle*l"):
+                    clavicleL = item
+                if rt.matchPattern(item.name, pattern="*clavicle*r"):
+                    clavicleR = item
+            
+            if not rt.isValidNode(spine3) or not rt.isValidNode(neck) or not rt.isValidNode(clavicleL) or not rt.isValidNode(clavicleR):
+                return False
+            
+            filteringChar = self.name._get_filtering_char(inBoneArray[-1].name)
+            isLower = inBoneArray[-1].name[0].islower()
+            spineName = self.name.get_name_part_value_by_description("Base", "Biped") + filteringChar + "Spine"
+            
+            spine4 = self.helper.create_point(spineName, boxToggle=True, crossToggle=False)
+            spine5 = self.helper.create_point(spineName, boxToggle=True, crossToggle=False)
+            
+            spine4.name = self.name.replace_name_part("Index", spine4.name, "4")
+            spine5.name = self.name.replace_name_part("Index", spine5.name, "5")
+            if isLower:
+                spine4.name = spine4.name.lower()
+                spine5.name = spine5.name.lower()
+            
+            spineDistance = rt.distance(spine3, neck)/3.0
+            rt.setProperty(spine4, "transform", spine3.transform)
+            rt.setProperty(spine5, "transform", spine3.transform)
+            self.anim.move_local(spine4, spineDistance, 0, 0)
+            self.anim.move_local(spine5, spineDistance * 2, 0, 0)
+            spine4.parent = spine3
+            spine5.parent = spine4
+            neck.parent = spine5
+            clavicleL.parent = spine5
+            clavicleR.parent = spine5
+            
+            targetBones.append(spine4)
+            targetBones.append(spine5)
+            
+        sortedBoneArray = self.sort_bones_as_hierarchy(targetBones)
+        
+        genBones = self.create_skin_bone(sortedBoneArray, skipNub=skipNub, mesh=mesh, link=link, skinBoneBaseName=skinBoneBaseName)
+        if len(genBones) == 0:
+            return False
+        
+        for item in genBones:
+            if rt.matchPattern(item.name, pattern="*pelvis*"):
+                self.anim.rotate_local(item, 180, 0, 0)
+            if rt.matchPattern(item.name, pattern="*spine*"):
+                self.anim.rotate_local(item, 180, 0, 0)
+            if rt.matchPattern(item.name, pattern="*neck*"):
+                self.anim.rotate_local(item, 180, 0, 0)
+            if rt.matchPattern(item.name, pattern="*head*"):
+                self.anim.rotate_local(item, 180, 0, 0)
+                
+            if rt.matchPattern(item.name, pattern="*thigh*L"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*calf*L"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*foot*L"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*ball*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+                
+            if rt.matchPattern(item.name, pattern="*clavicle*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*upperarm*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*forearm*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*hand*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*thumb*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*index*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*middle*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*ring*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*pinky*R"):
+                self.anim.rotate_local(item, 0, 0, 180)
+            
         return genBones
     
     def set_bone_on(self, inBone):

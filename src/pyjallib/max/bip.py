@@ -578,109 +578,114 @@ class Bip:
         else:
             indices = list(range(0, 15, 3))
             
+        fingerNum = bipObj.controller.fingers
+        fingerLinkNum = bipObj.controller.fingerLinks
+            
         lFingersList = []
         rFingersList = []
-        for i in indices:
-            lFingerNode = rt.biped.getNode(bipObj.controller, rt.name("lFingers"), link=i+1)
-            if lFingerNode:
-                lFingersList.append(lFingerNode)
-            rFingerNode = rt.biped.getNode(bipObj.controller, rt.name("rFingers"), link=i+1)
-            if rFingerNode:
-                lFingersList.append(rFingerNode)
+        
+        for i in range(1, fingerNum+1):
+            fingers = []
+            for j in range(1, fingerLinkNum+1):
+                linkIndex = (i-1)*fingerLinkNum + j
+                fingerNode = rt.biped.getNode(bipObj.controller, rt.name("lFingers"), link=linkIndex)
+                fingers.append(fingerNode)
+            lFingersList.append(fingers)
+        for i in range(1, fingerNum+1):
+            fingers = []
+            for j in range(1, fingerLinkNum+1):
+                linkIndex = (i-1)*fingerLinkNum + j
+                fingerNode = rt.biped.getNode(bipObj.controller, rt.name("rFingers"), link=linkIndex)
+                fingers.append(fingerNode)
+            rFingersList.append(fingers)
             
         fingerName = ["thumb", "index", "middle", "ring", "pinky"]
         
-        for i, item in enumerate(lFingersList):
-            item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
-            item.name = self.name.replace_name_part("Index", item.name, str(1))
-            fingerChildren = self.bone.get_every_children(item)
+        for i, fingers in enumerate(lFingersList):
+            for j, item in enumerate(fingers):
+                item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
+                item.name = self.name.replace_name_part("Index", item.name, str(j+1))
             
-            for j, child in enumerate(fingerChildren):
-                child.name = self.name.replace_name_part("RealName", child.name, fingerName[i])
-                child.name = self.name.replace_name_part("Index", child.name, str(j+2))
-            
-            fingerNub = fingerChildren[-1]
+            fingerNub = self.bone.get_every_children(fingers[-1])[0]
             fingerNub.name = self.name.replace_name_part("RealName", fingerNub.name, fingerName[i])
             fingerNub.name = self.name.remove_name_part("Index", fingerNub.name)
             fingerNub.name = self.name.replace_name_part("Nub", fingerNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
         
-        for i, item in enumerate(rFingersList):
-            item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
-            item.name = self.name.replace_name_part("Index", item.name, str(1))
-            fingerChildren = self.bone.get_every_children(item)
-                
-            for j, child in enumerate(fingerChildren):
-                child.name = self.name.replace_name_part("RealName", child.name, fingerName[i])
-                child.name = self.name.replace_name_part("Index", child.name, str(j+2))
+        for i, fingers in enumerate(rFingersList):
+            for j, item in enumerate(fingers):
+                item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
+                item.name = self.name.replace_name_part("Index", item.name, str(j+1))
             
-            fingerNub = fingerChildren[-1]
+            fingerNub = self.bone.get_every_children(fingers[-1])[0]
             fingerNub.name = self.name.replace_name_part("RealName", fingerNub.name, fingerName[i])
             fingerNub.name = self.name.remove_name_part("Index", fingerNub.name)
             fingerNub.name = self.name.replace_name_part("Nub", fingerNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
         
         # Toe 이름 바꾸는 부분
-        indices = list(range(0, 15, 3))
         lToesList = []
         rToesList = []
-        for i in indices:
-            lToesNode = rt.biped.getNode(bipObj.controller, rt.name("lToes"), link=i+1)
-            if lToesNode:
-                lToesList.append(lToesNode)
-            rToesNode = rt.biped.getNode(bipObj.controller, rt.name("rToes"), link=i+1)
-            if rToesNode:
-                rToesList.append(rToesNode)
         
-        if len(lToesList) == 1:
-            lToesList[0].name = self.name.replace_name_part("RealName", lToesList[0].name, "ball")
-            lToesChildren = self.bone.get_every_children(lToesList[0])
-            for j, child in enumerate(lToesChildren):
-                child.name = self.name.replace_name_part("RealName", child.name, "ball")
-                child.name = self.name.replace_name_part("Index", child.name, str(j+1))
-            
-            lToeNub = lToesChildren[-1]
-            lToeNub.name = self.name.replace_name_part("RealName", lToeNub.name, "ball")
-            lToeNub.name = self.name.remove_name_part("Index", lToeNub.name)
-            lToeNub.name = self.name.replace_name_part("Nub", lToeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
-        if len(rToesList) == 1:
-            rToesList[0].name = self.name.replace_name_part("RealName", rToesList[0].name, "ball")
-            rToesChildren = self.bone.get_every_children(rToesList[0])
-            for j, child in enumerate(rToesChildren):
-                child.name = self.name.replace_name_part("RealName", child.name, "ball")
-                child.name = self.name.replace_name_part("Index", child.name, str(j+1))
-            
-            rToesNub = rToesChildren[-1]
-            rToesNub.name = self.name.replace_name_part("RealName", rToesNub.name, "ball")
-            rToesNub.name = self.name.remove_name_part("Index", rToesNub.name)
-            rToesNub.name = self.name.replace_name_part("Nub", rToesNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        toeNum = bipObj.controller.toes
+        toeLinkNum = bipObj.controller.toeLinks
         
-        if len(lToesList) > 1:
-            for i, item in enumerate(lToesList):
+        # Use the same sequential indexing pattern as fingers
+        for i in range(1, toeNum+1):
+            toes = []
+            for j in range(1, toeLinkNum+1):
+                linkIndex = (i-1)*toeLinkNum + j
+                toeNode = rt.biped.getNode(bipObj.controller, rt.name("lToes"), link=linkIndex)
+                if toeNode:
+                    toes.append(toeNode)
+            if toes:
+                lToesList.append(toes)
+
+        for i in range(1, toeNum+1):
+            toes = []
+            for j in range(1, toeLinkNum+1):
+                linkIndex = (i-1)*toeLinkNum + j
+                toeNode = rt.biped.getNode(bipObj.controller, rt.name("rToes"), link=linkIndex)
+                if toeNode:
+                    toes.append(toeNode)
+            if toes:
+                rToesList.append(toes)
+                
+        for i, toes in enumerate(lToesList):
+            for j, item in enumerate(toes):
                 item.name = self.name.replace_name_part("RealName", item.name, "ball"+str(i+1))
-                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
-                
-                toeChildren = self.bone.get_every_children(item)
-                for j, child in enumerate(toeChildren):
-                    child.name = self.name.replace_name_part("RealName", child.name, "ball"+str(i+1))
-                    child.name = self.name.replace_name_part("Index", child.name, str(j+2))
-                
-                toeNub = toeChildren[-1]
-                toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
-                toeNub.name = self.name.remove_name_part("Index", toeNub.name)
-                toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
-        
-        if len(rToesList) > 1:
-            for i, item in enumerate(rToesList):
+                item.name = self.name.replace_name_part("Index", item.name, str(j+1))
+            
+            toeNub = self.bone.get_every_children(toes[-1])[0]
+            toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
+            toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+            toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+            
+        for i, toes in enumerate(rToesList):
+            for j, item in enumerate(toes):
                 item.name = self.name.replace_name_part("RealName", item.name, "ball"+str(i+1))
+                item.name = self.name.replace_name_part("Index", item.name, str(j+1))
+            
+            toeNub = self.bone.get_every_children(toes[-1])[0]
+            toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
+            toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+            toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        
+        if toeNum == 1:
+            for i, item in enumerate(lToesList[0]):
+                item.name = self.name.replace_name_part("RealName", item.name, "ball")
                 item.name = self.name.replace_name_part("Index", item.name, str(i+1))
-                
-                toeChildren = self.bone.get_every_children(item)
-                for j, child in enumerate(toeChildren):
-                    child.name = self.name.replace_name_part("RealName", child.name, "ball"+str(i+1))
-                    child.name = self.name.replace_name_part("Index", child.name, str(j+2))
-                
-                toeNub = toeChildren[-1]
-                toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball"+str(i+1))
-                toeNub.name = self.name.remove_name_part("Index", toeNub.name)
-                toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+            
+            toeNub = self.bone.get_every_children(lToesList[0][-1])[0]
+            toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball")
+            toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+            toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+            
+            for i, item in enumerate(rToesList[0]):
+                item.name = self.name.replace_name_part("RealName", item.name, "ball")
+                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+            
+            toeNub = self.bone.get_every_children(rToesList[0][-1])[0]
+            toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball")
+            toeNub.name = self.name.remove_name_part("Index", toeNub.name)
+            toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
         
         return True

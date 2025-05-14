@@ -53,6 +53,13 @@ class TwistBone:
         self.bip = bipService if bipService else Bip(animService=self.anim, nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         
+        # 객체 속성 초기화
+        self.limb = None
+        self.child = None
+        self.twistNum = 0
+        self.bones = []
+        self.twistType = ""
+        
         self.upperTwistBoneExpression = (
             "localTm = limb.transform * (inverse limbParent.transform)\n"
             "tm = localTm * inverse(localRefTm)\n"
@@ -82,6 +89,22 @@ class TwistBone:
             "\n"
             "twist\n"
         )
+            
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.limb = None
+        self.child = None
+        self.twistNum = 0
+        self.bones = []
+        self.twistType = ""
+        
+        return self
             
     def create_upper_limb_bones(self, inObj, inChild, twistNum=4):
         """
@@ -174,6 +197,13 @@ class TwistBone:
             
             boneChainArray.append(lastBone)
         
+        # 결과를 멤버 변수에 저장
+        self.limb = inObj
+        self.child = inChild
+        self.twistNum = twistNum
+        self.bones = boneChainArray
+        self.twistType = "Upper"
+        
         returnVal = {
             "Bones": boneChainArray,
             "Type": "Upper",
@@ -181,6 +211,9 @@ class TwistBone:
             "Child": inChild,
             "TwistNum": twistNum
         }
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
         
         return returnVal
 
@@ -273,6 +306,13 @@ class TwistBone:
             
             boneChainArray.append(lastBone)
         
+        # 결과를 멤버 변수에 저장
+        self.limb = inObj
+        self.child = inChild
+        self.twistNum = twistNum
+        self.bones = boneChainArray
+        self.twistType = "Lower"
+        
         returnVal = {
             "Bones": boneChainArray,
             "Type": "Lower",
@@ -280,5 +320,8 @@ class TwistBone:
             "Child": inChild,
             "TwistNum": twistNum
         }
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
         
         return returnVal

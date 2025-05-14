@@ -46,6 +46,29 @@ class AutoClavicle:
         self.bip = bipService if bipService else Bip(nameService=self.name, animService=self.anim)
         
         self.boneSize = 2.0
+        
+        # 초기화된 결과를 저장할 변수들
+        self.genBones = []
+        self.genHelpers = []
+        self.clavicle = None
+        self.upperArm = None
+        self.liftScale = 0.8
+        
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.genBones = []
+        self.genHelpers = []
+        self.clavicle = None
+        self.upperArm = None
+        self.liftScale = 0.8
+        
+        return self
     
     def create_bones(self, inClavicle, inUpperArm, liftScale=0.8):
         """
@@ -134,6 +157,10 @@ class AutoClavicle:
         
         # 결과를 멤버 변수에 저장
         self.genBones = genBones
+        self.genHelpers = genHelpers
+        self.clavicle = inClavicle
+        self.upperArm = inUpperArm
+        self.liftScale = liftScale
         
         # AutoClavicleChain에 전달할 수 있는 딕셔너리 형태로 결과 반환
         result = {
@@ -143,5 +170,8 @@ class AutoClavicle:
             "UpperArm": inUpperArm,
             "LiftScale": liftScale
         }
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
         
         return result

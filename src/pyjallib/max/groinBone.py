@@ -41,6 +41,33 @@ class GroinBone:
         self.const = constraintService if constraintService else Constraint(nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.helper = helperService if helperService else Helper(nameService=self.name)
+        
+        # 초기화된 결과를 저장할 변수들
+        self.pelvis = None
+        self.lThighTwist = None
+        self.rThighTwist = None
+        self.bones = []
+        self.helpers = []
+        self.pelvisWeight = 40.0
+        self.thighWeight = 60.0
+    
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.pelvis = None
+        self.lThighTwist = None
+        self.rThighTwist = None
+        self.bones = []
+        self.helpers = []
+        self.pelvisWeight = 40.0
+        self.thighWeight = 60.0
+        
+        return self
     
     def create_bone(self, inPelvis, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
         """
@@ -110,6 +137,15 @@ class GroinBone:
         rotConst.setWeight(2, inThighWeight/2.0)
         rotConst.setWeight(3, inThighWeight/2.0)
         
+        # 결과를 멤버 변수에 저장
+        self.pelvis = inPelvis
+        self.lThighTwist = inLThighTwist
+        self.rThighTwist = inRThighTwist
+        self.bones = groinBones
+        self.helpers = [pelvisHelper, lThighTwistHelper, rThighTwistHelper]
+        self.pelvisWeight = inPelvisWeight
+        self.thighWeight = inThighWeight
+        
         returnVal["Pelvis"] = inPelvis
         returnVal["LThighTwist"] = inLThighTwist
         returnVal["RThighTwist"] = inRThighTwist
@@ -117,5 +153,8 @@ class GroinBone:
         returnVal["Helpers"] = [pelvisHelper, lThighTwistHelper, rThighTwistHelper]
         returnVal["PelvisWeight"] = inPelvisWeight
         returnVal["ThighWeight"] = inThighWeight
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
         
         return returnVal

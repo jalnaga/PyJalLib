@@ -307,7 +307,13 @@ class KneeBone:
             transScales.append(inKneeBackScale)
             transScales.append(inKneePopScale)
         
-        result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["NegZ", "NegZ"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
+        result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
+        
+        # 결과 저장
+        if result and "Bones" in result:
+            self.middleBones.extend(result["Bones"])
+        
+        return result
     
     def create_twist_bones(self, inThigh, inCalf):
         """
@@ -433,7 +439,60 @@ class KneeBone:
         self.create_middle_bone(inThigh, inCalf, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
         self.create_twist_bones(inThigh, inCalf)
         
-        return True
+        # 결과를 딕셔너리 형태로 준비
+        result = {
+            "Thigh": inThigh,
+            "Calf": inCalf, 
+            "Foot": inFoot,
+            "LookAtHelper": self.lookAtHleper,
+            "ThighRotHelper": self.thighRotHelper,
+            "CalfRotHelper": self.calfRotHelper,
+            "ThighRotRootHelper": self.thighRotRootHelper,
+            "CalfRotRootHelper": self.calfRotRootHelper,
+            "ThighTwistBones": self.thighTwistBones,
+            "CalfTwistBones": self.calfTwistBones,
+            "ThighTwistHelpers": self.thighTwistHelpers,
+            "CalfTwistHelpers": self.calfTwistHelpers,
+            "MiddleBones": self.middleBones,
+            "LiftScale": inLiftScale,
+            "KneePopScale": inKneePopScale,
+            "KneeBackScale": inKneeBackScale
+        }
+        
+        # 메소드 호출 후 데이터 초기화
+        self.reset()
+        
+        return result
+    
+    def reset(self):
+        """
+        클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
+        """
+        self.thigh = None
+        self.calf = None
+        self.foot = None
+        
+        self.lookAtHleper = None
+        self.thighRotHelper = None
+        self.calfRotHelper = None
+        
+        self.thighRotRootHelper = None
+        self.calfRotRootHelper = None
+        
+        self.thighTwistBones = []
+        self.calfTwistBones = []
+        self.thighTwistHelpers = []
+        self.calfTwistHelpers = []
+        
+        self.middleBones = []
+        
+        self.liftScale = 0.05
+        
+        return self
 
 
 

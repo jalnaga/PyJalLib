@@ -549,22 +549,18 @@ class Anim:
         매개변수:
             inObj : 변환 값을 저장할 객체
         """
-        try:
-            # 월드 스페이스 행렬 저장
-            transformString = str(inObj.transform)
-            rt.setUserProp(inObj, rt.Name("WorldSpaceMatrix"), transformString)
-            
-            # 부모가 존재하면 부모 스페이스 행렬도 저장
-            parent = inObj.parent
-            if parent is not None:
-                parentTransform = parent.transform
-                inverseParent = rt.inverse(parentTransform)
-                objTransform = inObj.transform
-                parentSpaceMatrix = objTransform * inverseParent
-                rt.setUserProp(inObj, rt.Name("ParentSpaceMatrix"), str(parentSpaceMatrix))
-        except:
-            # 오류 발생 시 예외 무시
-            pass
+        # 월드 스페이스 행렬 저장
+        transformString = str(inObj.transform)
+        rt.setUserProp(inObj, rt.Name("WorldSpaceMatrix"), transformString)
+        
+        # 부모가 존재하면 부모 스페이스 행렬도 저장
+        parent = inObj.parent
+        if parent is not None:
+            parentTransform = parent.transform
+            inverseParent = rt.inverse(parentTransform)
+            objTransform = inObj.transform
+            parentSpaceMatrix = objTransform * inverseParent
+            rt.setUserProp(inObj, rt.Name("ParentSpaceMatrix"), str(parentSpaceMatrix))
     
     def set_xform(self, inObj, space="World"):
         """
@@ -574,21 +570,17 @@ class Anim:
             inObj : 변환 값을 적용할 객체
             space : "World" 또는 "Parent" (적용할 변환 공간)
         """
-        try:
-            if space == "World":
-                # 월드 스페이스 행렬 적용
-                matrixString = rt.getUserProp(inObj, rt.Name("WorldSpaceMatrix"))
-                transformMatrix = rt.execute(matrixString)
+        if space == "World":
+            # 월드 스페이스 행렬 적용
+            matrixString = rt.getUserProp(inObj, rt.Name("WorldSpaceMatrix"))
+            transformMatrix = rt.execute(matrixString)
+            rt.setProperty(inObj, "transform", transformMatrix)
+        elif space == "Parent":
+            # 부모 스페이스 행렬 적용
+            parent = inObj.parent
+            matrixString = rt.getUserProp(inObj, rt.Name("ParentSpaceMatrix"))
+            parentSpaceMatrix = rt.execute(matrixString)
+            if parent is not None:
+                parentTransform = parent.transform
+                transformMatrix = parentSpaceMatrix * parentTransform
                 rt.setProperty(inObj, "transform", transformMatrix)
-            elif space == "Parent":
-                # 부모 스페이스 행렬 적용
-                parent = inObj.parent
-                matrixString = rt.getUserProp(inObj, rt.Name("ParentSpaceMatrix"))
-                parentSpaceMatrix = rt.execute(matrixString)
-                if parent is not None:
-                    parentTransform = parent.transform
-                    transformMatrix = parentSpaceMatrix * parentTransform
-                    rt.setProperty(inObj, "transform", transformMatrix)
-        except:
-            # 오류 발생 시 예외 무시
-            pass
