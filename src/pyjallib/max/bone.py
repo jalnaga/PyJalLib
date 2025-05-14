@@ -850,65 +850,239 @@ class Bone:
         
         return genBones
     
+    def gen_missing_bip_bones_for_ue5manny(self, inBoneArray):
+        returnBones = []
+        spine3 = None
+        neck = None
+        
+        handL = None
+        handR = None
+        
+        fingerNames = ["index", "middle", "ring", "pinky"]
+        knuckleName = "metacarpal"
+        lKnuckleDistance = []
+        rKnuckleDistance = []
+        
+        lFingers = []
+        rFingers = []
+        
+        for item in inBoneArray:
+            if rt.matchPattern(item.name, pattern="*spine 03"):
+                spine3 = item
+            if rt.matchPattern(item.name, pattern="*neck 01"):
+                neck = item
+            if rt.matchPattern(item.name, pattern="*hand*l"):
+                handL = item
+            if rt.matchPattern(item.name, pattern="*hand*r"):
+                handR = item
+            
+            for fingerName in fingerNames:
+                if rt.matchPattern(item.name, pattern="*"+fingerName+"*01*l"):
+                    lFingers.append(item)
+                if rt.matchPattern(item.name, pattern="*"+fingerName+"*01*r"):
+                    rFingers.append(item)
+            for finger in lFingers:
+                fingerDistance = rt.distance(finger, handL)
+                lKnuckleDistance.append(fingerDistance)
+            for finger in rFingers:
+                fingerDistance = rt.distance(finger, handR)
+                rKnuckleDistance.append(fingerDistance)
+        
+        filteringChar = self.name._get_filtering_char(inBoneArray[-1].name)
+        isLower = inBoneArray[-1].name[0].islower()
+        spineName = self.name.get_name_part_value_by_description("Base", "Biped") + filteringChar + "Spine"
+        
+        spine4 = self.create_nub_bone(spineName, 2)
+        spine5 = self.create_nub_bone(spineName, 2)
+        
+        spine4.name = self.name.replace_name_part("Index", spine4.name, "4")
+        spine4.name = self.name.remove_name_part("Nub", spine4.name)
+        spine5.name = self.name.replace_name_part("Index", spine5.name, "5")
+        spine5.name = self.name.remove_name_part("Nub", spine5.name)
+        if isLower:
+            spine4.name = spine4.name.lower()
+            spine5.name = spine5.name.lower()
+        
+        spineDistance = rt.distance(spine3, neck)/3.0
+        rt.setProperty(spine4, "transform", spine3.transform)
+        rt.setProperty(spine5, "transform", spine3.transform)
+        self.anim.move_local(spine4, spineDistance, 0, 0)
+        self.anim.move_local(spine5, spineDistance * 2, 0, 0)
+        
+        returnBones.append(spine4)
+        returnBones.append(spine5)
+        
+        for i, finger in enumerate(lFingers):
+            knuckleBoneName = self.name.add_suffix_to_real_name(finger.name, filteringChar+knuckleName)
+            knuckleBoneName = self.name.remove_name_part("Index", knuckleBoneName)
+            
+            knuckleBone = self.create_nub_bone(knuckleBoneName, 2)
+            knuckleBone.name = self.name.remove_name_part("Nub", knuckleBone.name)
+            if isLower:
+                knuckleBone.name = knuckleBone.name.lower()
+                
+            knuckleBone.transform = finger.transform
+            lookAtConst = self.const.assign_lookat(knuckleBone, handL)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = handL
+            lookAtConst.lookat_vector_length = 0.0
+            lookAtConst.target_axisFlip = True
+            self.const.collapse(knuckleBone)
+            self.anim.move_local(knuckleBone, -lKnuckleDistance[i]*0.8, 0, 0)
+            
+            returnBones.append(knuckleBone)
+        
+        for i, finger in enumerate(rFingers):
+            knuckleBoneName = self.name.add_suffix_to_real_name(finger.name, filteringChar+knuckleName)
+            knuckleBoneName = self.name.remove_name_part("Index", knuckleBoneName)
+            
+            knuckleBone = self.create_nub_bone(knuckleBoneName, 2)
+            knuckleBone.name = self.name.remove_name_part("Nub", knuckleBone.name)
+            if isLower:
+                knuckleBone.name = knuckleBone.name.lower()
+                
+            knuckleBone.transform = finger.transform
+            lookAtConst = self.const.assign_lookat(knuckleBone, handR)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = handR
+            lookAtConst.lookat_vector_length = 0.0
+            lookAtConst.target_axisFlip = True
+            self.const.collapse(knuckleBone)
+            self.anim.move_local(knuckleBone, -rKnuckleDistance[i]*0.8, 0, 0)
+            
+            returnBones.append(knuckleBone)
+        
+        return returnBones
+    
+    def relink_missing_bip_bones_for_ue5manny(self, inBipArray, inMissingBoneArray):
+        returnBones = []
+        
+        spine3 = None
+        
+        handL = None
+        handR = None
+        
+        knuckleName = "metacarpal"
+        
+        for item in inBipArray:
+            if rt.matchPattern(item.name, pattern="*spine 03"):
+                spine3 = item
+            if rt.matchPattern(item.name, pattern="*hand*l"):
+                handL = item
+            if rt.matchPattern(item.name, pattern="*hand*r"):
+                handR = item
+        
+        for item in inMissingBoneArray:
+            if rt.matchPattern(item.name, pattern="*spine*"):
+                item.parent = spine3
+            if rt.matchPattern(item.name, pattern=f"*{knuckleName}*l"):
+                item.parent = handL
+            if rt.matchPattern(item.name, pattern=f"*{knuckleName}*r"):
+                item.parent = handR
+        
+        returnBones.append(inBipArray)
+        returnBones.append(inMissingBoneArray)
+        return returnBones
+    
+    def relink_missing_skin_bones_for_ue5manny(self, inSkinArray):
+        returnBones = []
+        spine3 = None
+        spine4 = None
+        spine5 = None
+        
+        neck = None
+        clavicleL = None
+        clavicleR = None
+        
+        handL = None
+        handR = None
+        
+        fingerNames = ["index", "middle", "ring", "pinky"]
+        knuckleName = "metacarpal"
+        
+        lFingers = []
+        rFingers = []
+        
+        for item in inSkinArray:
+            if rt.matchPattern(item.name, pattern="*spine*03"):
+                spine3 = item
+            if rt.matchPattern(item.name, pattern="*neck*01"):
+                neck = item
+            if rt.matchPattern(item.name, pattern="*clavicle*l"):
+                clavicleL = item
+            if rt.matchPattern(item.name, pattern="*clavicle*r"):
+                clavicleR = item
+            
+            if rt.matchPattern(item.name, pattern="*hand*l"):
+                handL = item
+            if rt.matchPattern(item.name, pattern="*hand*r"):
+                handR = item
+            
+            for fingerName in fingerNames:
+                if rt.matchPattern(item.name, pattern="*"+fingerName+"*01*l"):
+                    lFingers.append(item)
+                if rt.matchPattern(item.name, pattern="*"+fingerName+"*01*r"):
+                    rFingers.append(item)
+        
+        for item in inSkinArray:
+            if rt.matchPattern(item.name, pattern="*spine*04"):
+                spine4 = item
+                item.parent = spine3
+            
+            if rt.matchPattern(item.name, pattern="*spine*05"):
+                spine5 = item
+                item.parent = spine4
+                neck.parent = spine5
+                clavicleL.parent = spine5
+                clavicleR.parent = spine5
+            
+            if rt.matchPattern(item.name, pattern=f"*{knuckleName}*l"):
+                item.parent = handL
+            if rt.matchPattern(item.name, pattern=f"*{knuckleName}*r"):
+                item.parent = handR
+                
+        filteringChar = self.name._get_filtering_char(inSkinArray[-1].name)
+        
+        for item in lFingers:
+            fingerNamePattern = self.name.add_suffix_to_real_name(item.name, filteringChar+knuckleName)
+            fingerNamePattern = self.name.remove_name_part("Index", fingerNamePattern)
+            for knuckle in inSkinArray:
+                if rt.matchPattern(knuckle.name, pattern=fingerNamePattern):
+                    item.parent = knuckle
+                    break
+        
+        for item in rFingers:
+            fingerNamePattern = self.name.add_suffix_to_real_name(item.name, filteringChar+knuckleName)
+            fingerNamePattern = self.name.remove_name_part("Index", fingerNamePattern)
+            for knuckle in inSkinArray:
+                if rt.matchPattern(knuckle.name, pattern=fingerNamePattern):
+                    item.parent = knuckle
+                    break
+        
+        return returnBones
+    
     def create_skin_bone_from_bip_for_ue5manny(self, inBoneArray, skipNub=True, mesh=False, link=True, isHuman=False, skinBoneBaseName=""):
         targetBones = [item for item in inBoneArray 
                       if (rt.classOf(item) == rt.Biped_Object) 
                       and (not rt.matchPattern(item.name, pattern="*Twist*")) 
                       and (item != item.controller.rootNode)]
         
-        if isHuman:
-            spine3 = None
-            neck = None
-            clavicleL = None
-            clavicleR = None
-            
-            for item in inBoneArray:
-                if rt.matchPattern(item.name, pattern="*spine 03"):
-                    spine3 = item
-                if rt.matchPattern(item.name, pattern="*neck 01"):
-                    neck = item
-                if rt.matchPattern(item.name, pattern="*clavicle*l"):
-                    clavicleL = item
-                if rt.matchPattern(item.name, pattern="*clavicle*r"):
-                    clavicleR = item
-            
-            if not rt.isValidNode(spine3) or not rt.isValidNode(neck) or not rt.isValidNode(clavicleL) or not rt.isValidNode(clavicleR):
-                return False
-            
-            filteringChar = self.name._get_filtering_char(inBoneArray[-1].name)
-            isLower = inBoneArray[-1].name[0].islower()
-            spineName = self.name.get_name_part_value_by_description("Base", "Biped") + filteringChar + "Spine"
-            
-            spine4 = self.helper.create_point(spineName, boxToggle=True, crossToggle=False)
-            spine5 = self.helper.create_point(spineName, boxToggle=True, crossToggle=False)
-            
-            spine4.name = self.name.replace_name_part("Index", spine4.name, "4")
-            spine5.name = self.name.replace_name_part("Index", spine5.name, "5")
-            if isLower:
-                spine4.name = spine4.name.lower()
-                spine5.name = spine5.name.lower()
-            
-            spineDistance = rt.distance(spine3, neck)/3.0
-            rt.setProperty(spine4, "transform", spine3.transform)
-            rt.setProperty(spine5, "transform", spine3.transform)
-            self.anim.move_local(spine4, spineDistance, 0, 0)
-            self.anim.move_local(spine5, spineDistance * 2, 0, 0)
-            spine4.parent = spine3
-            spine5.parent = spine4
-            neck.parent = spine5
-            clavicleL.parent = spine5
-            clavicleR.parent = spine5
-            
-            targetBones.append(spine4)
-            targetBones.append(spine5)
-            
-        sortedBoneArray = self.sort_bones_as_hierarchy(targetBones)
+        missingBipBones = []
         
-        genBones = self.create_skin_bone(sortedBoneArray, skipNub=skipNub, mesh=mesh, link=False, skinBoneBaseName=skinBoneBaseName)
-        if len(genBones) == 0:
+        if isHuman:
+            missingBipBones = self.gen_missing_bip_bones_for_ue5manny(targetBones)
+            self.relink_missing_bip_bones_for_ue5manny(targetBones, missingBipBones)
+        
+        for item in missingBipBones:
+            targetBones.append(item)
+        
+        sortedBipBones = self.sort_bones_as_hierarchy(targetBones)
+        
+        skinBones = self.create_skin_bone(sortedBipBones, skipNub=skipNub, mesh=mesh, link=False, skinBoneBaseName=skinBoneBaseName)
+        if len(skinBones) == 0:
             return False
         
-        for item in genBones:
+        for item in skinBones:
             if rt.matchPattern(item.name, pattern="*pelvis*"):
                 self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*spine*"):
@@ -946,11 +1120,18 @@ class Bone:
             if rt.matchPattern(item.name, pattern="*pinky*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
             
-            self.anim.save_xform(item)
+            if rt.matchPattern(item.name, pattern="*metacarpal*"):
+                tempArray = self.name._split_to_array(item.name)
+                item.name = self.name._combine(tempArray, inFilChar="_")
+                item.name = self.name.remove_name_part("Base", item.name)
             
-        self.link_skin_bones(genBones, sortedBoneArray)
+        self.relink_missing_skin_bones_for_ue5manny(skinBones)
         
-        return genBones
+        self.link_skin_bones(skinBones, sortedBipBones)
+        for item in skinBones:
+            self.anim.save_xform(item)
+        
+        return skinBones
     
     def set_bone_on(self, inBone):
         """
