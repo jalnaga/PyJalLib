@@ -22,7 +22,7 @@ class Anim:
         """클래스 초기화 (현재 특별한 초기화 동작은 없음)"""
         pass
     
-    def rotate_local(self, inObj, rx, ry, rz):
+    def rotate_local(self, inObj, rx, ry, rz, dontAffectChildren=False):
         """
         객체를 로컬 좌표계에서 회전시킴.
         
@@ -32,6 +32,16 @@ class Anim:
             ry    : Y축 회전 각도 (도 단위)
             rz    : Z축 회전 각도 (도 단위)
         """
+        tempParent = None
+        tempChildren = []
+        if dontAffectChildren:
+            # 자식 객체에 영향을 주지 않도록 설정
+            tempParent = inObj.parent
+            for item in inObj.children:
+                tempChildren.append(item)
+            for item in tempChildren:
+                item.parent = None
+                
         # 현재 객체의 변환 행렬을 가져옴
         currentMatrix = rt.getProperty(inObj, "transform")
         # 오일러 각도를 통해 회전 행렬(쿼터니언) 생성
@@ -41,8 +51,14 @@ class Anim:
         rt.preRotate(currentMatrix, quatRotation)
         # 변경된 행렬을 객체에 설정
         rt.setProperty(inObj, "transform", currentMatrix)
+        
+        if dontAffectChildren:
+            # 자식 객체의 부모를 원래대로 복원
+            for item in tempChildren:
+                item.parent = inObj
+            inObj.parent = tempParent
     
-    def move_local(self, inObj, mx, my, mz):
+    def move_local(self, inObj, mx, my, mz, dontAffectChildren=False):
         """
         객체를 로컬 좌표계에서 이동시킴.
         
@@ -52,14 +68,30 @@ class Anim:
             my    : Y축 이동 거리
             mz    : Z축 이동 거리
         """
+        tempParent = None
+        tempChildren = []
+        if dontAffectChildren:
+            # 자식 객체에 영향을 주지 않도록 설정
+            tempParent = inObj.parent
+            for item in inObj.children:
+                tempChildren.append(item)
+            for item in tempChildren:
+                item.parent = None
+        
         # 현재 변환 행렬 가져오기
-        currentMatrix = rt.getProperty(inObj, "transform")
+        currentMatrix = rt.getProperty(inObj, "transform", dontAffectChildren=False)
         # 이동량을 Point3 형태로 생성
         translation = rt.Point3(mx, my, mz)
         # preTranslate를 이용해 행렬에 이동 적용
         rt.preTranslate(currentMatrix, translation)
         # 적용된 이동 변환 행렬을 객체에 설정
         rt.setProperty(inObj, "transform", currentMatrix)
+        
+        if dontAffectChildren:
+            # 자식 객체의 부모를 원래대로 복원
+            for item in tempChildren:
+                item.parent = inObj
+            inObj.parent = tempParent
     
     def reset_transform_controller(self, inObj):
         """

@@ -219,7 +219,7 @@ class KneeBone:
         
         calfRotHelper = self.helper.create_point(calfRotHelperName)
         calfRotHelper.transform = inCalf.transform
-        calfRotHelper.position = inFoot.position
+        calfRotHelper.position = inFoot.transform.position
         calfRotHelper.parent = inCalf
         
         self.thighRotHelper = thighRotHelper

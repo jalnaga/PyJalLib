@@ -455,11 +455,11 @@ class Bip:
             if rt.isValidObj(baseSkelObj):
                 baseSkel[i] = baseSkelObj
         
-        self.anim.save_xform(bipSkel)
-        self.anim.set_xform(bipSkel)
-        
-        self.anim.save_xform(baseSkel)
-        self.anim.set_xform(baseSkel)
+            self.anim.save_xform(bipSkel[i])
+            self.anim.set_xform(bipSkel[i])
+            
+            self.anim.save_xform(baseSkel[i])
+            self.anim.set_xform(baseSkel[i])
         
         for i in range(len(baseSkel)):
             if baseSkel[i] is not None:
@@ -481,21 +481,25 @@ class Bip:
         """
         rt.setWaitCursor()
         
-        bipSkel = self.get_bips()
+        bipComs = self.get_coms()
+        allBips = self.get_nodes(bipComs[0])
+        bipSkel = [item for item in allBips if item != bipComs[0]]
         baseSkel = [None] * len(bipSkel)
         
         for i in range(len(bipSkel)):
-            baseSkeletonName = self.name.replace_base(bipSkel[i].name, skinBoneBaseName)
-            baseSkeletonName = self.name.replace_filteringChar(baseSkeletonName, "_")
+            baseSkeletonName = self.name.replace_name_part("Base", bipSkel[i].name, skinBoneBaseName)
+            baseSkeletonName = self.name.replace_filtering_char(baseSkeletonName, "_")
+            print("baseSkeletonName", baseSkeletonName)
             baseSkelObj = rt.getNodeByName(baseSkeletonName)
+            print("baseSkelObj", baseSkelObj)
             if rt.isValidObj(baseSkelObj):
                 baseSkel[i] = baseSkelObj
         
-        self.anim.save_xform(bipSkel)
-        self.anim.set_xform(bipSkel)
-        
-        self.anim.save_xform(baseSkel)
-        self.anim.set_xform(baseSkel)
+            self.anim.save_xform(bipSkel[i])
+            self.anim.set_xform(bipSkel[i])
+            
+            self.anim.save_xform(baseSkel[i])
+            self.anim.set_xform(baseSkel[i])
         
         for i in range(len(baseSkel)):
             if baseSkel[i] is not None:

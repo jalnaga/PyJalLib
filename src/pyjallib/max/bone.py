@@ -679,6 +679,7 @@ class Bone:
             inOriBone: 원본 뼈대
         """
         self.anim.save_xform(inSkinBone)
+        self.anim.set_xform(inSkinBone, space="World")
         
         self.anim.save_xform(inOriBone)
         
@@ -903,48 +904,52 @@ class Bone:
             
         sortedBoneArray = self.sort_bones_as_hierarchy(targetBones)
         
-        genBones = self.create_skin_bone(sortedBoneArray, skipNub=skipNub, mesh=mesh, link=link, skinBoneBaseName=skinBoneBaseName)
+        genBones = self.create_skin_bone(sortedBoneArray, skipNub=skipNub, mesh=mesh, link=False, skinBoneBaseName=skinBoneBaseName)
         if len(genBones) == 0:
             return False
         
         for item in genBones:
             if rt.matchPattern(item.name, pattern="*pelvis*"):
-                self.anim.rotate_local(item, 180, 0, 0)
+                self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*spine*"):
-                self.anim.rotate_local(item, 180, 0, 0)
+                self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*neck*"):
-                self.anim.rotate_local(item, 180, 0, 0)
+                self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*head*"):
-                self.anim.rotate_local(item, 180, 0, 0)
+                self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*thigh*l"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*calf*l"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*foot*l"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*ball*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
                 
-            if rt.matchPattern(item.name, pattern="*thigh*L"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*calf*L"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*foot*L"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*ball*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-                
-            if rt.matchPattern(item.name, pattern="*clavicle*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*upperarm*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*forearm*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*hand*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*thumb*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*index*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*middle*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*ring*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
-            if rt.matchPattern(item.name, pattern="*pinky*R"):
-                self.anim.rotate_local(item, 0, 0, 180)
+            if rt.matchPattern(item.name, pattern="*clavicle*r"):
+                self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*upperarm*r"):
+                self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*forearm*r"):
+                self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*hand*r"):
+                self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
             
+            if rt.matchPattern(item.name, pattern="*thumb*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*index*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*middle*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*ring*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*pinky*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            
+            self.anim.save_xform(item)
+            
+        self.link_skin_bones(genBones, sortedBoneArray)
+        
         return genBones
     
     def set_bone_on(self, inBone):
