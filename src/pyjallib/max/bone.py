@@ -708,9 +708,43 @@ class Bone:
             print("Error: Skin bone array and original bone array must have the same length.")
             return False
         
-        sortedSkinBoneArray = self.sort_bones_as_hierarchy(inSkinBoneArray)
-        sortedOriBoneArray = self.sort_bones_as_hierarchy(inOriBoneArray)
+        skinBoneDict = {}
+        oriBoneDict = {}
         
+        # 스킨 뼈대 딕셔너리 생성 (이름과 패턴화된 이름을 함께 저장)
+        for item in inSkinBoneArray:
+            # 아이템 저장
+            skinBoneDict[item.name] = item
+            # 언더스코어를 별표로 변환한 패턴 생성
+            namePattern = self.name.remove_name_part("Base", item.name)
+            namePattern = namePattern.replace("_", "*")
+            skinBoneDict[item.name + "_Pattern"] = namePattern
+        
+        # 원본 뼈대 딕셔너리 생성 (이름과 패턴화된 이름을 함께 저장)
+        for item in inOriBoneArray:
+            # 아이템 저장
+            oriBoneDict[item.name] = item
+            # 공백을 별표로 변환한 패턴 생성
+            namePattern = self.name.remove_name_part("Base", item.name)
+            namePattern = namePattern.replace(" ", "*")
+            oriBoneDict[item.name + "_Pattern"] = namePattern
+        
+        # 정렬된 배열 생성
+        sortedSkinBoneArray = []
+        sortedOriBoneArray = []
+        
+        # 같은 패턴을 가진 뼈대들을 찾아 매칭
+        for skinName, skinBone in [(k, v) for k, v in skinBoneDict.items() if not k.endswith("_Pattern")]:
+            skinPattern = skinBoneDict[skinName + "_Pattern"]
+            
+            for oriName, oriBone in [(k, v) for k, v in oriBoneDict.items() if not k.endswith("_Pattern")]:
+                oriPattern = oriBoneDict[oriName + "_Pattern"]
+                
+                if rt.matchPattern(skinName, pattern=oriPattern):
+                    sortedSkinBoneArray.append(skinBone)
+                    sortedOriBoneArray.append(oriBone)
+                    break
+        # 링크 연결 수행
         for i in range(len(sortedSkinBoneArray)):
             self.link_skin_bone(sortedSkinBoneArray[i], sortedOriBoneArray[i])
         
@@ -1104,7 +1138,7 @@ class Bone:
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*upperarm*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*forearm*r"):
+            if rt.matchPattern(item.name, pattern="*lowerarm*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*hand*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
@@ -1124,6 +1158,8 @@ class Bone:
                 tempArray = self.name._split_to_array(item.name)
                 item.name = self.name._combine(tempArray, inFilChar="_")
                 item.name = self.name.remove_name_part("Base", item.name)
+            
+            self.anim.save_xform(item)
             
         self.relink_missing_skin_bones_for_ue5manny(skinBones)
         

@@ -52,6 +52,7 @@ class Hip:
         self.pelvis = None
         self.thigh = None
         self.thighTwist = None
+        self.calf = None
         
         self.pelvisHelper = None
         self.thighHelper = None
@@ -93,6 +94,7 @@ class Hip:
         self.pelvis = None
         self.thigh = None
         self.thighTwist = None
+        self.calf = None
         
         self.pelvisHelper = None
         self.thighHelper = None
@@ -166,10 +168,15 @@ class Hip:
         self.helpers.append(thighPosHelper)
         self.helpers.append(thighRotRootHelper)
     
-    def assing_constraint(self, inPelvisWeight=0.6, inThighWeight=0.4, inPushAmount=5.0):
+    def assing_constraint(self, inCalf, inPelvisWeight=0.6, inThighWeight=0.4, inPushAmount=5.0):
+        self.calf = inCalf
         self.pelvisWeight = inPelvisWeight
         self.thighWeight = inThighWeight
         self.pushAmount = rt.Float(inPushAmount)
+        
+        facingDirVec = self.calf.transform.position - self.thigh.transform.position
+        inObjXAxisVec = self.thigh.objectTransform.row1
+        distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
         
         rotConst = self.const.assign_rot_const_multi(self.thighRotHelper, [self.pelvisHelper, self.thighTwistHelper])
         rotConst.setWeight(1, self.pelvisWeight * 100.0)
@@ -180,16 +187,16 @@ class Hip:
         posConst.addNode("limb", self.thighRotHelper)
         posConst.addNode("limbParent", self.thighRotRootHelper)
         posConst.addConstant("localRotRefTm", localRotRefTm)
-        posConst.addConstant("pushAmount", self.pushAmount)
+        posConst.addConstant("pushAmount", self.pushAmount*distanceDir)
         posConst.setExpression(self.posScriptExpression)
         posConst.update()
         
-    def create_bone(self, inPelvis, inThigh, inThighTwist, pushAmount=5.0, inPelvisWeight=0.6, inThighWeight=0.4):
+    def create_bone(self, inPelvis, inThigh, inThighTwist, inCalf, pushAmount=5.0, inPelvisWeight=0.6, inThighWeight=0.4):
         if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
             return False
         
         self.create_helper(inPelvis, inThigh, inThighTwist)
-        self.assing_constraint(inPelvisWeight, inThighWeight, inPushAmount=pushAmount)
+        self.assing_constraint(inCalf, inPelvisWeight, inThighWeight, inPushAmount=pushAmount)
         
         isLower = inThigh.name[0].islower()
         hipBoneName = self.name.replace_name_part("RealName", inThigh.name, "Hip")
