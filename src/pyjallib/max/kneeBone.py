@@ -65,7 +65,7 @@ class KneeBone:
         
         self.middleBones = []
         
-        self.liftScale = 0.05
+        self.liftScale = 0.025
         
         self.thighRotScriptExpression = (
             "localLimbTm = limb.transform * inverse limbParent.transform\n"
@@ -309,6 +309,18 @@ class KneeBone:
         
         result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
+        calfName = self.name.get_name_part("RealName", inCalf.name)
+        isLower = calfName[0].islower()
+        replaceName = "Knee"
+        if isLower:
+            replaceName = replaceName.lower()
+        
+        for item in result["Bones"]:
+            item.name.replace(calfName, replaceName)
+        
+        result["rootBone"].name.replace(calfName, replaceName)
+        result["RotHelper"].name.replace(calfName, replaceName)
+        
         # 결과 저장
         if result and "Bones" in result:
             self.middleBones.extend(result["Bones"])
@@ -492,7 +504,7 @@ class KneeBone:
         
         self.middleBones = []
         
-        self.liftScale = 0.05
+        self.liftScale = 0.025
         
         return self
 

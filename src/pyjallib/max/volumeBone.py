@@ -106,7 +106,7 @@ class VolumeBone:  # Updated class name to match the new file name
         
         rootBoneName = inObj.name
         filteringChar = self.name._get_filtering_char(rootBoneName)
-        rootBoneName = self.name.add_suffix_to_real_name(rootBoneName, filteringChar+"Root")
+        rootBoneName = self.name.add_suffix_to_real_name(rootBoneName, filteringChar+"Vol"+filteringChar+"Root")
         
         rootBone = self.bone.create_nub_bone(rootBoneName, 2)
         rootBone.name = self.name.remove_name_part("Nub", rootBone.name)
