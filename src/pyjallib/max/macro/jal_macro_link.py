@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
-import __main__
-jal = __main__.jal
+from pyjallib.max.header import get_header
+jal = get_header()
 
 def jal_link_to_last():
     jal.link.link_to_last_sel()

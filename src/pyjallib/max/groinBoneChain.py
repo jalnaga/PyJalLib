@@ -33,7 +33,8 @@ chain.delete_all()
 """
 
 from pymxs import runtime as rt
-from .header import jal
+from .header import get_header
+jal = get_header()
 
 class GroinBoneChain:
     """

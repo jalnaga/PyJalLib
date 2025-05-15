@@ -152,4 +152,15 @@ class Header:
         self.tools.append(tool)
 
 # 모듈 레벨에서 전역 인스턴스 생성
-jal = Header.get_instance()
+PyJalLibMax = Header.get_instance()
+
+# 다른 모듈에서 jal 객체에 접근하기 위한 함수
+def get_header():
+    """
+    전역 PyJalLibMax 인스턴스를 반환합니다.
+    모든 PyJalLib 모듈과 스크립트에서 이 함수를 통해 동일한 jal 객체에 접근할 수 있습니다.
+
+    ## Returns
+    - **Header**: 싱글톤 Header 인스턴스
+    """
+    return PyJalLibMax
