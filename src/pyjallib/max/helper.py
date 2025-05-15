@@ -18,7 +18,7 @@
 """
 
 from pymxs import runtime as rt
-from .name import Name # Import Name service
+from pyjallib.max.name import Name # Import Name service
 
 class Helper:
     """
