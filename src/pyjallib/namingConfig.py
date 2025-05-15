@@ -2,8 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-namingConfig 모듈 - Naming 클래스의 설정을 관리하는 기능 제공
-NamePart 객체를 기반으로 네이밍 설정을 저장하고 불러오는 기능 구현
+# namingConfig 모듈
+
+Naming 클래스의 설정을 관리하고 저장하는 기능을 제공하는 모듈입니다.
+
+## 주요 기능
+- NamePart 객체 기반 네이밍 설정 관리
+- 설정의 저장 및 로드 (JSON 형식)
+- 이름 부분의 순서, 타입, 값 관리
+- CSV 파일을 통한 사전 정의 값 설정 지원
+
+## 클래스
+- NamingConfig: Naming 클래스의 설정을 관리하고 JSON으로 저장/로드하는 클래스
 """
 
 import json
@@ -19,22 +29,47 @@ from pyjallib.namePart import NamePart, NamePartType
 
 class NamingConfig:
     """
-    Naming 클래스의 설정을 관리하는 클래스.
-    NamePart 객체 리스트를 관리하고 JSON 파일로 저장/불러오기 기능 제공.
+    # NamingConfig 클래스
+    
+    Naming 클래스의 설정을 관리하고 저장/로드하는 기능을 제공합니다.
+    
+    ## 주요 기능
+    - NamePart 객체 리스트 관리 (생성, 삭제, 순서 변경)
+    - 설정의 JSON 파일 저장 및 로드
+    - 사전 정의된 값과 설명 관리
+    - Naming 인스턴스에 설정 적용
+    - 타입 자동 업데이트 (RealName 위치 기준)
+    
+    ## 사용 예시
+    ```python
+    # 기본 설정으로 초기화
+    config = NamingConfig()
+    
+    # 새 NamePart 추가
+    config.add_part("Side", NamePartType.PREFIX, ["L", "R"], ["Left", "Right"], ["왼쪽", "오른쪽"])
+    
+    # 설정 저장 및 로드
+    config.save("my_naming_config.json")
+    config.load("my_naming_config.json")
+    
+    # Naming 인스턴스에 적용
+    naming = Naming()
+    config.apply_to_naming(naming)
+    ```
     """
     
     def __init__(self, padding_num: int = 2, name_parts: Optional[List[NamePart]] = None, 
                  config_file_path: str = "", default_file_name: str = "namingConfig.json", 
                  required_parts: Optional[List[str]] = None):
         """
-        클래스 초기화 및 기본 설정값 정의
+        NamingConfig 클래스 초기화
         
-        Args:
-            padding_num: 인덱스 패딩 자릿수 (기본값: 2)
-            name_parts: 초기 NamePart 객체 리스트 (기본값: None, 기본 파트로 초기화)
-            config_file_path: 설정 파일 경로 (기본값: 빈 문자열)
-            default_file_name: 기본 파일명 (기본값: "namingConfig.json")
-            required_parts: 필수 namePart 목록 (기본값: ["RealName"])
+        ## Parameters
+        - padding_num (int): 인덱스 패딩 자릿수 (기본값: 2)
+        - name_parts (List[NamePart], optional): 초기 NamePart 객체 리스트 (기본값: None, 기본 파트로 초기화)
+        - config_file_path (str): 설정 파일 경로 (기본값: 빈 문자열)
+        - default_file_name (str): 기본 파일명 (기본값: "namingConfig.json")
+        - required_parts (List[str], optional): 필수 namePart 목록 (기본값: ["RealName"])
         """
         # NamePart 객체 리스트
         self.name_parts = name_parts or []
@@ -66,7 +101,9 @@ class NamingConfig:
             self._update_part_types_based_on_order()
     
     def _initialize_default_parts(self):
-        """기본 NamePart 객체들 초기화"""
+        """
+        기본 NamePart 객체들을 초기화합니다.
+        """
         # 기본 순서 정의 (명시적으로 순서를 저장)
         self.part_order = []
         
@@ -92,7 +129,9 @@ class NamingConfig:
     
     def _update_part_order(self):
         """
-        NamePart 순서 업데이트 - 기본적으로 NamePart 객체의 순서에 따라 업데이트
+        NamePart 순서를 업데이트합니다.
+        
+        기본적으로 NamePart 객체의 순서에 따라 part_order 리스트를 업데이트합니다.
         """
         self.part_order = [part.get_name() for part in self.name_parts]
     
@@ -100,8 +139,8 @@ class NamingConfig:
         """
         RealName 파트의 인덱스를 반환합니다.
         
-        Returns:
-            RealName 파트의 인덱스, 없으면 -1
+        ## Returns
+        - int: RealName 파트의 인덱스, 없으면 -1
         """
         for i, part in enumerate(self.name_parts):
             if part.get_type() == NamePartType.REALNAME:
@@ -111,11 +150,12 @@ class NamingConfig:
     def _update_part_types_based_on_order(self) -> bool:
         """
         NamePart 순서에 따라 파트의 타입을 자동으로 업데이트합니다.
-        RealName을 기준으로 앞에 있는 파트는 PREFIX, 뒤에 있는 파트는 SUFFIX로 설정합니다.
-        (RealName과 Index 파트는 예외)
         
-        Returns:
-            업데이트 성공 여부 (True/False)
+        RealName을 기준으로 앞에 있는 파트는 PREFIX, 뒤에 있는 파트는 SUFFIX로 설정합니다.
+        RealName과 Index 파트는 항상 각각 REALNAME과 INDEX 타입으로 유지됩니다.
+        
+        ## Returns
+        - bool: 업데이트 성공 여부 (True/False)
         """
         # RealName 파트 인덱스 찾기
         real_name_index = self._get_real_name_index()
@@ -147,31 +187,31 @@ class NamingConfig:
     
     def get_part_names(self) -> List[str]:
         """
-        모든 NamePart 이름 목록 반환
+        모든 NamePart 이름 목록을 반환합니다.
         
-        Returns:
-            NamePart 이름 목록
+        ## Returns
+        - List[str]: NamePart 이름 목록
         """
         return [part.get_name() for part in self.name_parts]
     
     def get_part_order(self) -> List[str]:
         """
-        NamePart 순서 목록 반환
+        NamePart 순서 목록을 반환합니다.
         
-        Returns:
-            NamePart 이름 순서 목록
+        ## Returns
+        - List[str]: NamePart 이름 순서 목록
         """
         return self.part_order.copy()
     
     def get_part(self, name: str) -> Optional[NamePart]:
         """
-        이름으로 NamePart 객체 가져오기
+        이름으로 NamePart 객체를 가져옵니다.
         
-        Args:
-            name: NamePart 이름
+        ## Parameters
+        - name (str): NamePart 이름
             
-        Returns:
-            NamePart 객체, 없으면 None
+        ## Returns
+        - Optional[NamePart]: NamePart 객체, 없으면 None
         """
         for part in self.name_parts:
             if part.get_name() == name:
@@ -180,19 +220,19 @@ class NamingConfig:
     
     def add_part(self, name: str, part_type: NamePartType = NamePartType.UNDEFINED, 
                  values: Optional[List[str]] = None, descriptions: Optional[List[str]] = None,
-                 korean_descriptions: Optional[List[str]] = None) -> bool: # Add korean_descriptions parameter
+                 korean_descriptions: Optional[List[str]] = None) -> bool:
         """
-        새 NamePart 객체 추가
+        새 NamePart 객체를 추가합니다.
         
-        Args:
-            name: 추가할 NamePart 이름
-            part_type: NamePart 타입 (기본값: UNDEFINED)
-            values: 사전 정의된 값 목록 (기본값: None)
-            descriptions: 값에 대한 설명 목록 (기본값: None, 값과 동일하게 설정됨)
-            korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None, 값과 동일하게 설정됨) # Add korean_descriptions doc
+        ## Parameters
+        - name (str): 추가할 NamePart 이름
+        - part_type (NamePartType): NamePart 타입 (기본값: UNDEFINED)
+        - values (Optional[List[str]]): 사전 정의된 값 목록 (기본값: None)
+        - descriptions (Optional[List[str]]): 값에 대한 설명 목록 (기본값: None)
+        - korean_descriptions (Optional[List[str]]): 값에 대한 한국어 설명 목록 (기본값: None)
             
-        Returns:
-            추가 성공 여부 (True/False)
+        ## Returns
+        - bool: 추가 성공 여부 (True/False)
         """
         if not name:
             print("오류: 유효한 NamePart 이름을 입력하세요.")
@@ -219,13 +259,13 @@ class NamingConfig:
     
     def remove_part(self, name: str) -> bool:
         """
-        NamePart 객체 제거 (필수 부분은 제거 불가)
+        NamePart 객체를 제거합니다. 필수 부분은 제거할 수 없습니다.
         
-        Args:
-            name: 제거할 NamePart 이름
+        ## Parameters
+        - name (str): 제거할 NamePart 이름
             
-        Returns:
-            제거 성공 여부 (True/False)
+        ## Returns
+        - bool: 제거 성공 여부 (True/False)
         """
         # 필수 부분은 제거 불가능
         if name in self.required_parts:
@@ -250,13 +290,13 @@ class NamingConfig:
     
     def reorder_parts(self, new_order: List[str]) -> bool:
         """
-        NamePart 순서 변경
+        NamePart 순서를 변경합니다.
         
-        Args:
-            new_order: 새로운 NamePart 이름 순서 배열
+        ## Parameters
+        - new_order (List[str]): 새로운 NamePart 이름 순서 배열
             
-        Returns:
-            변경 성공 여부 (True/False)
+        ## Returns
+        - bool: 변경 성공 여부 (True/False)
         """
         # 배열 길이 확인
         if len(new_order) != len(self.name_parts):
@@ -293,13 +333,13 @@ class NamingConfig:
     
     def set_padding_num(self, padding_num: int) -> bool:
         """
-        인덱스 자릿수 설정
+        인덱스 자릿수를 설정합니다.
         
-        Args:
-            padding_num: 설정할 패딩 자릿수
+        ## Parameters
+        - padding_num (int): 설정할 패딩 자릿수
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         if not isinstance(padding_num, int) or padding_num < 1:
             print("오류: 패딩 자릿수는 1 이상의 정수여야 합니다.")
@@ -310,14 +350,14 @@ class NamingConfig:
         
     def set_part_type(self, part_name: str, part_type: NamePartType) -> bool:
         """
-        특정 NamePart의 타입 설정
+        특정 NamePart의 타입을 설정합니다.
         
-        Args:
-            part_name: NamePart 이름
-            part_type: 설정할 타입 (NamePartType 열거형 값)
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - part_type (NamePartType): 설정할 타입 (NamePartType 열거형 값)
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -339,13 +379,13 @@ class NamingConfig:
     
     def get_part_type(self, part_name: str) -> Optional[NamePartType]:
         """
-        특정 NamePart의 타입 가져오기
+        특정 NamePart의 타입을 가져옵니다.
         
-        Args:
-            part_name: NamePart 이름
+        ## Parameters
+        - part_name (str): NamePart 이름
             
-        Returns:
-            NamePart 타입, 없으면 None
+        ## Returns
+        - Optional[NamePartType]: NamePart 타입, 없으면 None
         """
         part = self.get_part(part_name)
         if not part:
@@ -356,18 +396,18 @@ class NamingConfig:
     
     def set_part_values(self, part_name: str, values: List[str], 
                         descriptions: Optional[List[str]] = None, 
-                        korean_descriptions: Optional[List[str]] = None) -> bool: # Add korean_descriptions parameter
+                        korean_descriptions: Optional[List[str]] = None) -> bool:
         """
-        특정 NamePart의 사전 정의 값 설정
+        특정 NamePart의 사전 정의 값을 설정합니다.
         
-        Args:
-            part_name: NamePart 이름
-            values: 설정할 사전 정의 값 리스트
-            descriptions: 설정할 설명 목록 (기본값: None, 값과 같은 설명 사용)
-            korean_descriptions: 설정할 한국어 설명 목록 (기본값: None, 값과 같은 설명 사용) # Add korean_descriptions doc
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - values (List[str]): 설정할 사전 정의 값 리스트
+        - descriptions (Optional[List[str]]): 설정할 설명 목록 (기본값: None, 값과 같은 설명 사용)
+        - korean_descriptions (Optional[List[str]]): 설정할 한국어 설명 목록 (기본값: None, 값과 같은 설명 사용)
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -390,15 +430,16 @@ class NamingConfig:
     
     def set_part_value_by_csv(self, part_name: str, csv_file_path: str) -> bool:
         """
-        특정 NamePart의 사전 정의 값을 CSV 파일로 설정
-        CSV 파일 형식: value,description,koreanDescription (각 줄당)
+        특정 NamePart의 사전 정의 값을 CSV 파일로 설정합니다.
         
-        Args:
-            part_name: NamePart 이름
-            csv_file_path: CSV 파일 경로
+        CSV 파일은 각 행마다 value,description,koreanDescription 형식으로 구성되어야 합니다.
+        
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - csv_file_path (str): CSV 파일 경로
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -455,18 +496,18 @@ class NamingConfig:
     
     def add_part_value(self, part_name: str, value: str, 
                        description: Optional[str] = None, 
-                       korean_description: Optional[str] = None) -> bool: # Add korean_description parameter
+                       korean_description: Optional[str] = None) -> bool:
         """
-        특정 NamePart에 사전 정의 값 추가
+        특정 NamePart에 사전 정의 값을 추가합니다.
         
-        Args:
-            part_name: NamePart 이름
-            value: 추가할 사전 정의 값
-            description: 추가할 값의 설명 (기본값: None, 값과 같은 설명 사용)
-            korean_description: 추가할 값의 한국어 설명 (기본값: None, 값과 같은 설명 사용) # Add korean_description doc
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - value (str): 추가할 사전 정의 값
+        - description (Optional[str]): 추가할 값의 설명 (기본값: None, 값과 같은 설명 사용)
+        - korean_description (Optional[str]): 추가할 값의 한국어 설명 (기본값: None, 값과 같은 설명 사용)
             
-        Returns:
-            추가 성공 여부 (True/False)
+        ## Returns
+        - bool: 추가 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -496,14 +537,14 @@ class NamingConfig:
     
     def remove_part_value(self, part_name: str, value: str) -> bool:
         """
-        특정 NamePart에서 사전 정의 값과 해당 설명 제거
+        특정 NamePart에서 사전 정의 값과 해당 설명을 제거합니다.
         
-        Args:
-            part_name: NamePart 이름
-            value: 제거할 사전 정의 값
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - value (str): 제거할 사전 정의 값
             
-        Returns:
-            제거 성공 여부 (True/False)
+        ## Returns
+        - bool: 제거 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -530,14 +571,14 @@ class NamingConfig:
     
     def set_part_descriptions(self, part_name: str, descriptions: List[str]) -> bool:
         """
-        특정 NamePart의 설명 목록 설정
+        특정 NamePart의 설명 목록을 설정합니다.
         
-        Args:
-            part_name: NamePart 이름
-            descriptions: 설정할 설명 목록
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - descriptions (List[str]): 설정할 설명 목록
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -568,13 +609,13 @@ class NamingConfig:
 
     def get_part_descriptions(self, part_name: str) -> List[str]:
         """
-        특정 NamePart의 설명 목록 가져오기
+        특정 NamePart의 설명 목록을 가져옵니다.
         
-        Args:
-            part_name: NamePart 이름
+        ## Parameters
+        - part_name (str): NamePart 이름
             
-        Returns:
-            설명 목록
+        ## Returns
+        - List[str]: 설명 목록
         """
         part = self.get_part(part_name)
         if not part:
@@ -585,14 +626,14 @@ class NamingConfig:
 
     def set_part_korean_descriptions(self, part_name: str, korean_descriptions: List[str]) -> bool:
         """
-        특정 NamePart의 한국어 설명 목록 설정
+        특정 NamePart의 한국어 설명 목록을 설정합니다.
         
-        Args:
-            part_name: NamePart 이름
-            korean_descriptions: 설정할 한국어 설명 목록
+        ## Parameters
+        - part_name (str): NamePart 이름
+        - korean_descriptions (List[str]): 설정할 한국어 설명 목록
             
-        Returns:
-            설정 성공 여부 (True/False)
+        ## Returns
+        - bool: 설정 성공 여부 (True/False)
         """
         part = self.get_part(part_name)
         if not part:
@@ -623,13 +664,13 @@ class NamingConfig:
 
     def get_part_korean_descriptions(self, part_name: str) -> List[str]:
         """
-        특정 NamePart의 한국어 설명 목록 가져오기
+        특정 NamePart의 한국어 설명 목록을 가져옵니다.
         
-        Args:
-            part_name: NamePart 이름
+        ## Parameters
+        - part_name (str): NamePart 이름
             
-        Returns:
-            한국어 설명 목록
+        ## Returns
+        - List[str]: 한국어 설명 목록
         """
         part = self.get_part(part_name)
         if not part:
@@ -640,28 +681,28 @@ class NamingConfig:
     
     def get_prefix_parts(self) -> List[NamePart]:
         """
-        모든 PREFIX 타입 NamePart 가져오기
+        모든 PREFIX 타입 NamePart 객체를 가져옵니다.
         
-        Returns:
-            PREFIX 타입의 NamePart 객체 리스트
+        ## Returns
+        - List[NamePart]: PREFIX 타입의 NamePart 객체 리스트
         """
         return [part for part in self.name_parts if part.is_prefix()]
     
     def get_suffix_parts(self) -> List[NamePart]:
         """
-        모든 SUFFIX 타입 NamePart 가져오기
+        모든 SUFFIX 타입 NamePart 객체를 가져옵니다.
         
-        Returns:
-            SUFFIX 타입의 NamePart 객체 리스트
+        ## Returns
+        - List[NamePart]: SUFFIX 타입의 NamePart 객체 리스트
         """
         return [part for part in self.name_parts if part.is_suffix()]
     
     def get_realname_part(self) -> Optional[NamePart]:
         """
-        REALNAME 타입 NamePart 가져오기
+        REALNAME 타입 NamePart 객체를 가져옵니다.
         
-        Returns:
-            REALNAME 타입의 NamePart 객체, 없으면 None
+        ## Returns
+        - Optional[NamePart]: REALNAME 타입의 NamePart 객체, 없으면 None
         """
         for part in self.name_parts:
             if part.is_realname():
@@ -670,10 +711,10 @@ class NamingConfig:
     
     def get_index_part(self) -> Optional[NamePart]:
         """
-        INDEX 타입 NamePart 가져오기
+        INDEX 타입 NamePart 객체를 가져옵니다.
         
-        Returns:
-            INDEX 타입의 NamePart 객체, 없으면 None
+        ## Returns
+        - Optional[NamePart]: INDEX 타입의 NamePart 객체, 없으면 None
         """
         for part in self.name_parts:
             if part.is_index():
@@ -682,13 +723,13 @@ class NamingConfig:
     
     def save(self, file_path: Optional[str] = None) -> bool:
         """
-        현재 설정을 JSON 파일로 저장
+        현재 설정을 JSON 파일로 저장합니다.
         
-        Args:
-            file_path: 저장할 파일 경로 (기본값: self.default_file_path)
+        ## Parameters
+        - file_path (Optional[str]): 저장할 파일 경로 (기본값: self.default_file_path)
             
-        Returns:
-            저장 성공 여부 (True/False)
+        ## Returns
+        - bool: 저장 성공 여부 (True/False)
         """
         save_path = file_path or self.default_file_path
         
@@ -716,13 +757,13 @@ class NamingConfig:
     
     def load(self, file_path: Optional[str] = None) -> bool:
         """
-        JSON 파일에서 설정 불러오기
+        JSON 파일에서 설정을 불러옵니다.
         
-        Args:
-            file_path: 불러올 파일 경로 (기본값: self.default_file_path)
+        ## Parameters
+        - file_path (Optional[str]): 불러올 파일 경로 (기본값: self.default_file_path)
             
-        Returns:
-            로드 성공 여부 (True/False)
+        ## Returns
+        - bool: 로드 성공 여부 (True/False)
         """
         load_path = file_path or self.default_file_path
         
@@ -777,13 +818,13 @@ class NamingConfig:
     
     def apply_to_naming(self, naming_instance) -> bool:
         """
-        설정을 Naming 인스턴스에 적용
+        설정을 Naming 인스턴스에 적용합니다.
         
-        Args:
-            naming_instance: 설정을 적용할 Naming 클래스 인스턴스
+        ## Parameters
+        - naming_instance: 설정을 적용할 Naming 클래스 인스턴스
             
-        Returns:
-            적용 성공 여부 (True/False)
+        ## Returns
+        - bool: 적용 성공 여부 (True/False)
         """
         try:
             # NamePart 객체 리스트 복사하여 적용
@@ -800,20 +841,20 @@ class NamingConfig:
     def insert_part(self, name: str, part_type: NamePartType, position: int,
                     values: Optional[List[str]] = None, 
                     descriptions: Optional[List[str]] = None,
-                    korean_descriptions: Optional[List[str]] = None) -> bool: # Add value/description parameters
+                    korean_descriptions: Optional[List[str]] = None) -> bool:
         """
-        특정 위치에 새 NamePart 삽입
+        특정 위치에 새 NamePart를 삽입합니다.
         
-        Args:
-            name: 삽입할 NamePart 이름
-            part_type: NamePart 타입
-            position: 삽입할 위치 (인덱스)
-            values: 사전 정의된 값 목록 (기본값: None) # Add doc
-            descriptions: 값에 대한 설명 목록 (기본값: None) # Add doc
-            korean_descriptions: 값에 대한 한국어 설명 목록 (기본값: None) # Add doc
+        ## Parameters
+        - name (str): 삽입할 NamePart 이름
+        - part_type (NamePartType): NamePart 타입
+        - position (int): 삽입할 위치 (인덱스)
+        - values (Optional[List[str]]): 사전 정의된 값 목록 (기본값: None)
+        - descriptions (Optional[List[str]]): 값에 대한 설명 목록 (기본값: None)
+        - korean_descriptions (Optional[List[str]]): 값에 대한 한국어 설명 목록 (기본값: None)
             
-        Returns:
-            삽입 성공 여부 (True/False)
+        ## Returns
+        - bool: 삽입 성공 여부 (True/False)
         """
         if not name:
             print("오류: 유효한 NamePart 이름을 입력하세요.")
