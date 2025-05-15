@@ -2,8 +2,19 @@
 # -*- coding: utf-8 -*-
 
 """
-자동 쇄골(AutoClavicle) 모듈 - 3ds Max용 자동화된 쇄골 기능 제공
-원본 MAXScript의 autoclavicle.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
+# 자동 쇄골(AutoClavicle) 모듈
+
+3ds Max에서 쇄골 뼈의 자동화된 움직임을 생성하는 기능을 제공하는 모듈입니다.
+
+## 주요 기능
+- 쇄골 링크 시스템 자동 생성
+- 쇄골과 상완 관절 연결 자동화
+- 뼈대 및 제약 조건 설정
+- Look-At 제약을 이용한 IK 시스템 구현
+
+## 구현 정보
+- 원본 MAXScript의 autoclavicle.ms를 Python으로 변환
+- pymxs 모듈을 통해 3ds Max API 접근
 """
 
 from pymxs import runtime as rt
@@ -19,22 +30,48 @@ from .bip import Bip
 
 class AutoClavicle:
     """
-    자동 쇄골(AutoClavicle) 관련 기능을 제공하는 클래스.
-    MAXScript의 _AutoClavicleBone 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
+    # AutoClavicle 클래스
+    
+    3ds Max에서 자동 쇄골 움직임을 생성하는 시스템을 제공하는 클래스입니다.
+    
+    ## 주요 기능
+    - 쇄골 뼈와 상완 뼈 사이의 자동 움직임 구현
+    - 보조 뼈와 헬퍼 포인트를 통한 제어
+    - Look-At 제약 기반의 제어 시스템 구축
+    - 중간 결과를 반환하고 초기화할 수 있는 재사용 가능한 디자인
+    
+    ## 구현 정보
+    - MAXScript의 _AutoClavicleBone 구조체를 Python 클래스로 재구현
+    - 다양한 서비스 클래스를 의존성 주입으로 활용
+    
+    ## 사용 예시
+    ```python
+    # AutoClavicle 객체 생성
+    autoClavicle = AutoClavicle()
+    
+    # 자동 쇄골 시스템 생성
+    result = autoClavicle.create_bones(clavicle_bone, upper_arm_bone)
+    
+    # 생성된 자동 쇄골 객체들에 접근
+    autoClav = result["Bones"][0]
+    ```
     """
     
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, bipService=None):
         """
-        클래스 초기화
+        AutoClavicle 클래스를 초기화합니다.
         
-        Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            bipService: Biped 서비스 (제공되지 않으면 새로 생성)
+        ## Parameters
+        - nameService (Name, optional): 이름 처리 서비스 (기본값: None, 새로 생성)
+        - animService (Anim, optional): 애니메이션 서비스 (기본값: None, 새로 생성)
+        - helperService (Helper, optional): 헬퍼 객체 서비스 (기본값: None, 새로 생성)
+        - boneService (Bone, optional): 뼈대 서비스 (기본값: None, 새로 생성)
+        - constraintService (Constraint, optional): 제약 서비스 (기본값: None, 새로 생성)
+        - bipService (Bip, optional): Biped 서비스 (기본값: None, 새로 생성)
+        
+        ## 참고
+        - 서비스 인스턴스가 제공되지 않으면 자동으로 생성됩니다.
+        - 종속성이 있는 서비스들은 이미 생성된 서비스를 활용합니다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -56,11 +93,12 @@ class AutoClavicle:
         
     def reset(self):
         """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        클래스의 작업 데이터를 초기화합니다.
         
-        Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+        생성된 뼈, 헬퍼, 참조 등의 내부 상태를 초기화하여 재사용 가능한 상태로 만듭니다.
+        
+        ## Returns
+        - self: 메소드 체이닝을 위한 자기 자신 반환
         """
         self.genBones = []
         self.genHelpers = []
@@ -72,15 +110,29 @@ class AutoClavicle:
     
     def create_bones(self, inClavicle, inUpperArm, liftScale=0.8):
         """
-        자동 쇄골 뼈를 생성하고 설정합니다.
+        자동 쇄골 시스템을 생성하고 설정합니다.
         
-        Args:
-            inClavicle: 쇄골 뼈 객체
-            inUpperArm: 상완 뼈 객체
-            liftScale: 들어올림 스케일 (기본값: 0.8)
+        쇄골 뼈와 상완 뼈 사이의 관계를 분석하여 자동으로 움직이는
+        쇄골 시스템을 생성합니다.
+        
+        ## Parameters
+        - inClavicle (MaxObject): 쇄골 뼈 객체
+        - inUpperArm (MaxObject): 상완 뼈 객체
+        - liftScale (float): 들어올림 스케일 (기본값: 0.8)
             
-        Returns:
-            생성된 자동 쇄골 뼈대 배열 또는 AutoClavicleChain 클래스에 전달할 수 있는 딕셔너리
+        ## Returns
+        - dict: 생성된 자동 쇄골 시스템 정보를 담은 딕셔너리
+            - "Bones": 생성된 뼈 객체 배열
+            - "Helpers": 생성된 헬퍼 객체 배열
+            - "Clavicle": 원본 쇄골 뼈 참조
+            - "UpperArm": 원본 상완 뼈 참조
+            - "LiftScale": 적용된 들어올림 스케일 값
+            
+        ## 동작 방식
+        1. 쇄골과 상완 뼈 사이의 거리와 방향 계산
+        2. 자동 쇄골 뼈 생성 및 초기 변환 설정
+        3. 제어를 위한 헬퍼 포인트 생성
+        4. Look-At 제약 설정을 통한 자동 움직임 구현
         """
         if not rt.isValidNode(inClavicle) or not rt.isValidNode(inUpperArm):
             return False

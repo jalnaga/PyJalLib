@@ -2,55 +2,84 @@
 # -*- coding: utf-8 -*-
 
 """
-고간 부 본 체인(Groin Bone Chain) 관련 기능을 제공하는 클래스.
-GroinBone 클래스가 생성한 고간 부 본들과 헬퍼들을 관리하고 접근하는 인터페이스를 제공합니다.
+# 고간 부 본 체인(Groin Bone Chain) 모듈
 
-Examples:
-    # GroinBone 클래스로 고간 본 생성 후 체인으로 관리하기
-    groin_bone = GroinBone()
-    biped_obj = rt.selection[0]  # 선택된 바이패드 객체
-    
-    # 고간 본 생성
-    success = groin_bone.create_bone(biped_obj, 40.0, 60.0)
-    if success:
-        # 생성된 본과 헬퍼로 체인 생성
-        chain = GroinBoneChain.from_groin_bone_result(
-            groin_bone.genBones, 
-            groin_bone.genHelpers,
-            biped_obj,
-            40.0,
-            60.0
-        )
-        
-        # 체인 가중치 업데이트
-        chain.update_weights(35.0, 65.0)
-        
-        # 본과 헬퍼 이름 변경
-        chain.rename_bones(prefix="Character_", suffix="_Groin")
-        chain.rename_helpers(prefix="Character_", suffix="_Helper")
-        
-        # 현재 가중치 값 확인
-        pelvis_w, thigh_w = chain.get_weights()
-        print(f"Current weights: Pelvis={pelvis_w}, Thigh={thigh_w}")
-        
-        # 체인 삭제
-        # chain.delete_all()
+GroinBone 클래스가 생성한 고간 부 본들과 헬퍼들을 관리하는 기능을 제공하는 모듈입니다.
+
+## 주요 기능
+- 고간 부 본 구성요소 통합 관리
+- 고간 부 본과 연결된 헬퍼 객체 접근
+- 가중치 업데이트 및 수정
+- 체인 구성요소 삭제 및 초기화
+
+## 사용 예시
+```python
+# GroinBone 클래스로 고간 본 생성
+groin_bone = GroinBone()
+result = groin_bone.create_bone(pelvis, lThighTwist, rThighTwist)
+
+# 생성된 결과로 체인 생성
+chain = GroinBoneChain.from_groin_bone_result(result)
+
+# 체인 가중치 업데이트
+chain.update_weights(35.0, 65.0)
+
+# 현재 가중치 값 확인
+pelvis_w, thigh_w = chain.get_weights()
+
+# 체인 삭제
+chain.delete_all()
+```
 """
 
 from pymxs import runtime as rt
 from .header import jal
 
 class GroinBoneChain:
+    """
+    # GroinBoneChain 클래스
+    
+    고간 부 본과 관련 헬퍼 객체들을 관리하는 래퍼 클래스입니다.
+    
+    ## 주요 기능
+    - 고간 부 본 구성요소(뼈대, 헬퍼, 참조 객체) 통합 관리
+    - 골반 및 허벅지 트위스트 가중치 업데이트
+    - 체인 구성요소 제거 및 초기화
+    - 체인 상태 확인 및 가중치 정보 접근
+    
+    ## 구현 정보
+    - GroinBone 클래스의 생성 결과를 활용하여 체인 객체 구성
+    - 가중치 변경 시 구성요소 재생성을 통한 업데이트
+    
+    ## 사용 예시
+    GroinBone 클래스로 생성한 고간 본 결과를 래핑하여 관리합니다:
+    ```python
+    # 체인 생성
+    chain = GroinBoneChain.from_groin_bone_result(result)
+    
+    # 가중치 업데이트
+    chain.update_weights(35.0, 65.0)
+    
+    # 필요 없어지면 체인 삭제
+    chain.delete_all()
+    ```
+    """
+    
     def __init__(self, inResult):
         """
-        클래스 초기화.
+        GroinBoneChain 클래스를 초기화합니다.
         
-        Args:
-            bones: 고간 부 본 체인을 구성하는 뼈대 배열 (기본값: None)
-            helpers: 고간 부 본과 연관된 헬퍼 객체 배열 (기본값: None)
-            biped_obj: 연관된 Biped 객체 (기본값: None)
+        ## Parameters
+        - inResult (dict): GroinBone.create_bone() 메소드의 결과 딕셔너리
+            - "Pelvis": 골반 객체
+            - "LThighTwist": 왼쪽 허벅지 트위스트 객체
+            - "RThighTwist": 오른쪽 허벅지 트위스트 객체
+            - "Bones": 생성된 뼈대 배열
+            - "Helpers": 생성된 헬퍼 객체 배열
+            - "PelvisWeight": 골반 가중치
+            - "ThighWeight": 허벅지 가중치
         """
-        self.pelvis =inResult["Pelvis"]
+        self.pelvis = inResult["Pelvis"]
         self.lThighTwist = inResult["LThighTwist"]
         self.rThighTwist = inResult["RThighTwist"]
         self.bones = inResult["Bones"]
@@ -60,15 +89,19 @@ class GroinBoneChain:
     
     def is_empty(self):
         """
-        체인이 비어있는지 확인
+        체인이 비어있는지 확인합니다.
         
-        Returns:
-            본과 헬퍼가 모두 비어있으면 True, 아니면 False
+        ## Returns
+        - bool: 본과 헬퍼가 모두 비어있으면 True, 아니면 False
         """
         return len(self.bones) == 0 and len(self.helpers) == 0
     
     def clear(self):
-        """체인의 모든 본과 헬퍼 참조 제거"""
+        """
+        체인의 모든 본과 헬퍼 참조를 제거합니다.
+        
+        3ds Max 씬에서 객체를 삭제하지 않고 메모리상의 참조만 초기화합니다.
+        """
         self.bones = []
         self.helpers = []
         self.pelvis = None
@@ -79,10 +112,11 @@ class GroinBoneChain:
         
     def delete(self):
         """
-        체인의 모든 본과 헬퍼를 3ds Max 씬에서 삭제
+        체인의 모든 본과 헬퍼를 3ds Max 씬에서 삭제합니다.
         
-        Returns:
-            삭제 성공 여부 (boolean)
+        ## Returns
+        - bool: 삭제 성공 여부
+            - 체인이 비어있거나 삭제 중 오류 발생 시 False 반환
         """
         if self.is_empty():
             return False
@@ -96,10 +130,11 @@ class GroinBoneChain:
     
     def delete_all(self):
         """
-        체인의 모든 본과 헬퍼를 3ds Max 씬에서 삭제
+        체인의 모든 본과 헬퍼를 3ds Max 씬에서 삭제하고 참조를 초기화합니다.
         
-        Returns:
-            삭제 성공 여부 (boolean)
+        ## Returns
+        - bool: 삭제 성공 여부
+            - 체인이 비어있거나 삭제 중 오류 발생 시 False 반환
         """
         if self.is_empty():
             return False
@@ -114,14 +149,20 @@ class GroinBoneChain:
     
     def update_weights(self, pelvisWeight=None, thighWeight=None):
         """
-        고간 부 본의 가중치 업데이트
+        고간 부 본의 가중치를 업데이트합니다.
         
-        Args:
-            pelvisWeight: 골반 가중치 (None인 경우 현재 값 유지)
-            thighWeight: 허벅지 가중치 (None인 경우 현재 값 유지)
+        ## Parameters
+        - pelvisWeight (float, optional): 골반 가중치 (None인 경우 현재 값 유지)
+        - thighWeight (float, optional): 허벅지 가중치 (None인 경우 현재 값 유지)
             
-        Returns:
-            업데이트 성공 여부 (boolean)
+        ## Returns
+        - bool: 업데이트 성공 여부
+            - 체인이 비어있거나 업데이트 중 오류 발생 시 False 반환
+        
+        ## 동작 방식
+        1. 현재 본과 헬퍼 삭제
+        2. 새 가중치로 고간 부 본 재생성
+        3. 새 본과 헬퍼 참조 업데이트
         """
         if self.is_empty():
             return False
@@ -145,27 +186,30 @@ class GroinBoneChain:
             
     def get_weights(self):
         """
-        현재 설정된 가중치 값 가져오기
+        현재 설정된 가중치 값을 가져옵니다.
         
-        Returns:
-            (pelvis_weight, thigh_weight) 형태의 튜플
+        ## Returns
+        - tuple: (pelvis_weight, thigh_weight) 형태의 튜플
+            - 골반 가중치와 허벅지 가중치 값 반환
         """
         return (self.pelvis_weight, self.thigh_weight)
     
     @classmethod
     def from_groin_bone_result(cls, inResult):
         """
-        GroinBone 클래스의 결과로부터 GroinBoneChain 인스턴스 생성
+        GroinBone 클래스의 결과로부터 GroinBoneChain 인스턴스를 생성합니다.
         
-        Args:
-            bones: GroinBone 클래스가 생성한 뼈대 배열
-            helpers: GroinBone 클래스가 생성한 헬퍼 배열
-            biped_obj: 연관된 Biped 객체 (기본값: None)
-            pelvisWeight: 골반 가중치 (기본값: 40.0)
-            thighWeight: 허벅지 가중치 (기본값: 60.0)
+        ## Parameters
+        - inResult (dict): GroinBone.create_bone() 메소드의 결과 딕셔너리
             
-        Returns:
-            GroinBoneChain 인스턴스
+        ## Returns
+        - GroinBoneChain: 생성된 GroinBoneChain 인스턴스
+        
+        ## 사용 예시
+        ```python
+        result = groin_bone.create_bone(pelvis, lThighTwist, rThighTwist)
+        chain = GroinBoneChain.from_groin_bone_result(result)
+        ```
         """
         chain = cls(inResult)
         

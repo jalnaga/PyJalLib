@@ -2,11 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-관절 부피 유지 본(Volume preserve Bone) 모듈 - 3ds Max용 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 모듈
+# 관절 부피 유지 본(VolumeBone) 모듈
 
-이 모듈은 3ds Max에서 캐릭터 애니메이션 과정에서 관절 변형 시 발생하는 부피 감소 문제를 해결하기 위한
-부피 유지 본 시스템을 제공합니다. 관절이 회전할 때 볼륨감을 자동으로 유지하는 보조 본을 생성하여
-더 자연스러운 캐릭터 애니메이션을 구현할 수 있습니다.
+3ds Max에서 관절 변형 시 발생하는 부피 감소 문제를 해결하는 기능을 제공하는 모듈입니다.
+
+## 주요 기능
+- 관절 회전 시 유지되는 부피감 있는 보조 본 생성
+- 자동 회전 및 위치 제약 설정
+- 다양한 회전 및 이동 축 지원
+- 스크립트 기반 자동 볼륨 계산
+
+## 구현 정보
+- 원본 MAXScript를 Python으로 변환
+- pymxs 모듈을 통해 3ds Max API 접근
+- 스크립트 컨트롤러를 통한 동적 볼륨 조절
 """
 
 from pymxs import runtime as rt
@@ -21,27 +30,46 @@ from .constraint import Constraint
 
 class VolumeBone:  # Updated class name to match the new file name
     """
-    관절 부피 유지 본(Volume preserve Bone) 클래스
+    # VolumeBone 클래스
     
-    3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스입니다.
-    이 클래스는 관절이 회전할 때 자동으로 부피감을 유지하도록 하는 보조 본 시스템을 생성하고
-    관리합니다. 부모 관절과 자식 관절 사이에 부피 유지 본을 배치하여 관절 변형 시 부피 감소를
-    방지하고 더 자연스러운 움직임을 구현합니다.
+    3ds Max에서 관절의 부피를 유지하기 위한 보조 본 시스템을 제공하는 클래스입니다.
+    
+    ## 주요 기능
+    - 관절 회전 시 자동으로 부피감을 유지하는 보조 본 생성
+    - 다양한 축을 기준으로 한 부피 유지 본 배치
+    - 회전 양에 따른 자동 위치 조정
+    - 루트 본과 자식 본의 계층 구조 설정
+    
+    ## 구현 정보
+    - 스크립트 컨트롤러를 통한 자동화된 위치 제약
+    - 다양한 서비스 클래스와 연동된 통합 기능
+    - 회전 계산을 위한 쿼터니언 기반 수식 사용
+    
+    ## 사용 예시
+    ```python
+    # VolumeBone 객체 생성
+    vol_bone = VolumeBone()
+    
+    # 무릎 관절에 볼륨 본 생성
+    result = vol_bone.create_bones(calf, thigh, inVolumeSize=5.0, 
+                                  inRotAxises=["Z", "Z"], 
+                                  inTransAxises=["PosY", "NegY"])
+    ```
     """
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
         """
-        클래스 초기화.
+        VolumeBone 클래스를 초기화합니다.
         
-        필요한 서비스 객체들을 초기화하거나 외부에서 제공받습니다. 
-        각 서비스 객체들은 본 생성, 이름 관리, 애니메이션 제어, 제약 조건 적용 등의 
-        기능을 담당합니다.
+        ## Parameters
+        - nameService (Name, optional): 이름 처리 서비스 (기본값: None, 새로 생성)
+        - animService (Anim, optional): 애니메이션 서비스 (기본값: None, 새로 생성)
+        - constraintService (Constraint, optional): 제약 서비스 (기본값: None, 새로 생성)
+        - boneService (Bone, optional): 뼈대 서비스 (기본값: None, 새로 생성)
+        - helperService (Helper, optional): 헬퍼 서비스 (기본값: None, 새로 생성)
         
-        Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 서비스 (제공되지 않으면 새로 생성)
+        ## 참고
+        - 서비스 인스턴스가 제공되지 않으면 자동으로 생성됩니다.
+        - 종속성 있는 서비스들은 적절히 연결됩니다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -78,11 +106,12 @@ class VolumeBone:  # Updated class name to match the new file name
     
     def reset(self):
         """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        클래스의 작업 데이터를 초기화합니다.
         
-        Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+        서비스 객체는 유지하면서 클래스의 작업 상태만 초기화합니다.
+        
+        ## Returns
+        - self: 메소드 체이닝을 위한 자기 자신 반환
         """
         self.rootBone = None
         self.rotHelper = None
@@ -98,6 +127,22 @@ class VolumeBone:  # Updated class name to match the new file name
         return self
     
     def create_root_bone(self, inObj, inParent, inRotScale=0.5):
+        """
+        부피 유지 본 시스템의 루트 본을 생성합니다.
+        
+        ## Parameters
+        - inObj (MaxObject): 본을 생성할 객체 (일반적으로 자식 객체)
+        - inParent (MaxObject): 부모 객체 (일반적으로 부모 관절)
+        - inRotScale (float): 회전 가중치 (0.0~1.0, 기본값: 0.5)
+            
+        ## Returns
+        - MaxObject: 생성된 루트 본 또는 False (실패 시)
+        
+        ## 동작 방식
+        1. 이름 규칙에 따른 루트 본 이름 생성
+        2. 루트 본 및 회전 헬퍼 생성
+        3. 다중 회전 제약 설정 (객체와 헬퍼 사이)
+        """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return False
         
@@ -134,6 +179,29 @@ class VolumeBone:  # Updated class name to match the new file name
         return self.rootBone
     
     def create_bone(self, inObj, inParent, inRotScale=0.5, inVolumeSize=5.0, inRotAxis="Z", inTransAxis="PosY", inTransScale=1.0, useRootBone=True, inRootBone=None):
+        """
+        부피 유지 본을 생성합니다.
+        
+        ## Parameters
+        - inObj (MaxObject): 본을 생성할 객체
+        - inParent (MaxObject): 부모 객체
+        - inRotScale (float): 회전 가중치 (0.0~1.0, 기본값: 0.5)
+        - inVolumeSize (float): 부피 크기 (기본값: 5.0)
+        - inRotAxis (str): 회전 축 ("X", "Y", "Z", 기본값: "Z")
+        - inTransAxis (str): 이동 축 ("PosX", "NegX", "PosY", "NegY", "PosZ", "NegZ", 기본값: "PosY")
+        - inTransScale (float): 이동 비율 (기본값: 1.0)
+        - useRootBone (bool): 기존 루트 본 사용 여부 (기본값: True)
+        - inRootBone (MaxObject): 사용할 루트 본 (기본값: None)
+            
+        ## Returns
+        - bool: 성공 여부
+        
+        ## 동작 방식
+        1. 루트 본 생성 또는 가져오기
+        2. 이름 규칙에 따른 부피 본 이름 생성
+        3. 이동 방향 설정 및 적용
+        4. 스크립트 컨트롤러 생성 및 설정
+        """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return False
         
@@ -183,11 +251,9 @@ class VolumeBone:  # Updated class name to match the new file name
         elif inRotAxis == "Z":
             rotAxis = rt.Point3(0.0, 0.0, 1.0)
         
-        # localRotRefTm = self.limb.transform * rt.inverse(self.limbParent.transform)
         localRotRefTm = self.limb.transform * rt.inverse(self.rotHelper.transform)
         volBonePosConst = self.const.assign_pos_script_controller(volBone)
         volBonePosConst.addNode("limb", self.limb)
-        # volBonePosConst.addNode("limbParent", self.limbParent)
         volBonePosConst.addNode("limbParent", self.rotHelper)
         volBonePosConst.addConstant("axis", rotAxis)
         volBonePosConst.addConstant("transScale", rt.Float(inTransScale))
@@ -203,17 +269,33 @@ class VolumeBone:  # Updated class name to match the new file name
         """
         여러 개의 부피 유지 본을 생성합니다.
         
-        Args:
-            inObj: 본을 생성할 객체
-            inParent: 부모 객체
-            inRotScale: 회전 비율
-            inVolumeSize: 부피 크기
-            inRotAxises: 회전 축 리스트
-            inTransAxises: 변환 축 리스트
-            inTransScales: 변환 비율 리스트
+        ## Parameters
+        - inObj (MaxObject): 본을 생성할 객체
+        - inParent (MaxObject): 부모 객체
+        - inRotScale (float): 회전 가중치 (0.0~1.0, 기본값: 0.5)
+        - inVolumeSize (float): 부피 크기 (기본값: 5.0)
+        - inRotAxises (list): 회전 축 리스트 (기본값: ["Z"])
+        - inTransAxises (list): 이동 축 리스트 (기본값: ["PosY"])
+        - inTransScales (list): 이동 비율 리스트 (기본값: [1.0])
         
-        Returns:
-            dict: VolumeBoneChain 생성을 위한 결과 딕셔너리
+        ## Returns
+        - dict: 생성 결과 정보를 담은 딕셔너리 또는 None (실패 시)
+            - "RootBone": 루트 본 객체
+            - "RotHelper": 회전 헬퍼 객체
+            - "RotScale": 회전 가중치
+            - "Limb": 대상 객체
+            - "LimbParent": 부모 객체
+            - "Bones": 생성된 본 배열
+            - "RotAxises": 사용된 회전 축 배열
+            - "TransAxises": 사용된 이동 축 배열
+            - "TransScales": 사용된 이동 비율 배열
+            - "VolumeSize": 설정된 부피 크기
+        
+        ## 동작 방식
+        1. 루트 본 생성
+        2. 축 리스트 길이 확인 및 각 축 조합으로 본 생성
+        3. 생성된 본 수집 및 결과 구성
+        4. 클래스 상태 초기화 및 결과 반환
         """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return None

@@ -2,8 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-애니메이션 모듈 - 3ds Max용 애니메이션 관련 기능 제공
-원본 MAXScript의 anim.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
+# 애니메이션 모듈
+
+3ds Max의 애니메이션 관련 기능을 제공하는 모듈입니다.
+
+## 주요 기능
+- 객체 로컬 좌표계 변환 (이동, 회전)
+- 트랜스폼 컨트롤러 관리 (재설정, 고정)
+- 애니메이션 편집 (병합, 일치시키기, 키프레임 관리)
+- 평균 위치/회전 계산
+- 변환 값 저장 및 복원
+
+## 구현 정보
+- 원본 MAXScript의 anim.ms를 Python으로 변환
+- pymxs 모듈을 통해 3ds Max API 접근
 """
 
 import math
@@ -14,23 +26,59 @@ from pymxs import runtime as rt
 
 class Anim:
     """
-    애니메이션 관련 기능을 제공하는 클래스.
-    MAXScript의 _Anim 구조체 개념을 Python으로 재구현한 클래스이며, 3ds Max의 기능들을 pymxs API를 통해 제어합니다.
+    # Anim 클래스
+    
+    3ds Max에서 애니메이션 및 변환 관련 기능을 제공하는 클래스입니다.
+    
+    ## 주요 기능
+    - 객체의 로컬 좌표계 기준 이동 및 회전
+    - 트랜스폼 컨트롤러 관리 및 애니메이션 제어
+    - 객체 간 애니메이션 복사 및 변형
+    - 다중 객체의 평균 위치/회전 계산
+    - 키프레임 관리 및 검색
+    
+    ## 구현 정보
+    - MAXScript의 _Anim 구조체를 Python 클래스로 재구현
+    - pymxs API와 컨트롤러 시스템을 활용한 애니메이션 제어
+    
+    ## 사용 예시
+    ```python
+    # 애니메이션 객체 생성
+    anim = Anim()
+    
+    # 선택된 객체를 로컬 좌표계에서 회전
+    selected_obj = rt.selection[0]
+    anim.rotate_local(selected_obj, 0, 90, 0)
+    
+    # 애니메이션 프레임 범위 내에서 변환 병합
+    anim.collape_anim_transform(selected_obj)
+    ```
     """
     
     def __init__(self):
-        """클래스 초기화 (현재 특별한 초기화 동작은 없음)"""
+        """
+        Anim 클래스를 초기화합니다.
+        
+        현재는 특별한 초기화 작업이 필요하지 않습니다.
+        """
         pass
     
     def rotate_local(self, inObj, rx, ry, rz, dontAffectChildren=False):
         """
-        객체를 로컬 좌표계에서 회전시킴.
+        객체를 로컬 좌표계에서 회전시킵니다.
         
-        매개변수:
-            inObj : 회전할 객체
-            rx    : X축 회전 각도 (도 단위)
-            ry    : Y축 회전 각도 (도 단위)
-            rz    : Z축 회전 각도 (도 단위)
+        ## Parameters
+        - inObj (MaxObject): 회전할 객체
+        - rx (float): X축 회전 각도 (도 단위)
+        - ry (float): Y축 회전 각도 (도 단위)
+        - rz (float): Z축 회전 각도 (도 단위)
+        - dontAffectChildren (bool): 자식 객체에 영향을 주지 않을지 여부 (기본값: False)
+        
+        ## 동작 방식
+        1. 자식 객체 영향 방지가 활성화된 경우 임시로 자식 연결 해제
+        2. 객체의 현재 변환 행렬에 회전 적용 (preRotate 사용)
+        3. 회전된 행렬을 객체에 적용
+        4. 필요시 자식 객체 연결 복원
         """
         tempParent = None
         tempChildren = []
@@ -60,13 +108,20 @@ class Anim:
     
     def move_local(self, inObj, mx, my, mz, dontAffectChildren=False):
         """
-        객체를 로컬 좌표계에서 이동시킴.
+        객체를 로컬 좌표계에서 이동시킵니다.
         
-        매개변수:
-            inObj : 이동할 객체
-            mx    : X축 이동 거리
-            my    : Y축 이동 거리
-            mz    : Z축 이동 거리
+        ## Parameters
+        - inObj (MaxObject): 이동할 객체
+        - mx (float): X축 이동 거리
+        - my (float): Y축 이동 거리
+        - mz (float): Z축 이동 거리
+        - dontAffectChildren (bool): 자식 객체에 영향을 주지 않을지 여부 (기본값: False)
+        
+        ## 동작 방식
+        1. 자식 객체 영향 방지가 활성화된 경우 임시로 자식 연결 해제
+        2. 객체의 현재 변환 행렬에 이동 적용 (preTranslate 사용)
+        3. 이동된 행렬을 객체에 적용
+        4. 필요시 자식 객체 연결 복원
         """
         tempParent = None
         tempChildren = []
@@ -95,10 +150,19 @@ class Anim:
     
     def reset_transform_controller(self, inObj):
         """
-        객체의 트랜스폼 컨트롤러를 기본 상태로 재설정함.
+        객체의 트랜스폼 컨트롤러를 기본 상태로 재설정합니다.
         
-        매개변수:
-            inObj : 초기화할 객체
+        ## Parameters
+        - inObj (MaxObject): 초기화할 객체
+        
+        ## 동작 방식
+        1. 객체가 Biped_Object가 아닌지 확인
+        2. 현재 변환 행렬 백업
+        3. 위치(Position), 회전(Rotation), 스케일(Scale) 컨트롤러를 기본값으로 재설정
+        4. 백업한 변환 행렬 복원
+        
+        ## 주의사항
+        - Biped_Object 타입의 객체에는 적용되지 않습니다.
         """
         # Biped_Object가 아닐 경우에만 실행
         if rt.classOf(inObj) != rt.Biped_Object:
@@ -113,10 +177,20 @@ class Anim:
     
     def freeze_transform(self, inObj):
         """
-        객체의 변환(회전, 위치)을 키프레임에 의한 애니메이션 영향 없이 고정함.
+        객체의 변환(회전, 위치)을 키프레임에 의한 애니메이션 영향 없이 고정합니다.
         
-        매개변수:
-            inObj : 변환을 고정할 객체
+        ## Parameters
+        - inObj (MaxObject): 변환을 고정할 객체
+        
+        ## 동작 방식
+        1. Rotation_list와 Position_list 컨트롤러를 생성하여 객체에 할당
+        2. 각 리스트 컨트롤러에 고정된 변환값과 제로 컨트롤러 설정
+        3. 활성 컨트롤러를 제로 컨트롤러로 설정하여 애니메이션 영향 차단
+        4. 위치 컨트롤러의 값을 0으로 초기화
+        
+        ## 효과
+        - 객체의 현재 위치/회전이 유지되면서 애니메이션 키의 영향을 받지 않게 됩니다.
+        - 기존 키프레임은 유지되지만 비활성화됩니다.
         """
         curObj = inObj
         
@@ -158,12 +232,22 @@ class Anim:
 
     def collape_anim_transform(self, inObj, startFrame=None, endFrame=None):
         """
-        객체의 애니메이션 변환을 병합하여 단일 트랜스폼으로 통합함.
+        객체의 애니메이션 변환을 병합하여 단일 트랜스폼으로 통합합니다.
         
-        매개변수:
-            inObj      : 변환 병합 대상 객체
-            startFrame : 시작 프레임 (기본값: 애니메이션 범위의 시작)
-            endFrame   : 끝 프레임 (기본값: 애니메이션 범위의 끝)
+        ## Parameters
+        - inObj (MaxObject): 변환 병합 대상 객체
+        - startFrame (int, optional): 시작 프레임 (기본값: 애니메이션 범위의 시작)
+        - endFrame (int, optional): 끝 프레임 (기본값: 애니메이션 범위의 끝)
+        
+        ## 동작 방식
+        1. 임시 포인트 객체를 생성하여 각 프레임의 변환 정보 저장
+        2. 객체의 트랜스폼 컨트롤러를 스크립트 및 PRS 컨트롤러로 재설정
+        3. 각 프레임마다 임시 포인트와의 차이를 계산하여 최종 변환 적용
+        4. 진행 상태를 표시하며 처리
+        
+        ## 효과
+        - 다양한 컨트롤러에 의한 복잡한 애니메이션이 단순화됩니다.
+        - 계층 구조나 제약에 의한 간접 애니메이션이 직접 키프레임으로 변환됩니다.
         """
         # 시작과 끝 프레임이 지정되지 않은 경우 기본값 할당
         if startFrame is None:
@@ -212,13 +296,23 @@ class Anim:
     
     def match_anim_transform(self, inObj, inTarget, startFrame=None, endFrame=None):
         """
-        한 객체의 애니메이션 변환을 다른 객체의 변환과 일치시킴.
+        한 객체의 애니메이션 변환을 다른 객체의 변환과 일치시킵니다.
         
-        매개변수:
-            inObj      : 변환을 적용할 객체
-            inTarget   : 기준이 될 대상 객체
-            startFrame : 시작 프레임 (기본값: 애니메이션 범위의 시작)
-            endFrame   : 끝 프레임 (기본값: 애니메이션 범위의 끝)
+        ## Parameters
+        - inObj (MaxObject): 변환을 적용할 객체
+        - inTarget (MaxObject): 기준이 될 대상 객체
+        - startFrame (int, optional): 시작 프레임 (기본값: 애니메이션 범위의 시작)
+        - endFrame (int, optional): 끝 프레임 (기본값: 애니메이션 범위의 끝)
+        
+        ## 동작 방식
+        1. 임시 포인트 객체에 타겟 객체의 각 프레임 변환 정보 저장
+        2. 대상 객체의 기존 키프레임 삭제
+        3. 타겟 객체의 키프레임 위치에 맞춰 변환 정보 적용
+        4. 진행 상태 표시와 함께 처리
+        
+        ## 효과
+        - 대상 객체가 기준 객체의 모션을 정확히 따라가게 됩니다.
+        - 기준 객체의 키프레임 타이밍과 간격이 유지됩니다.
         """
         # 시작/끝 프레임 기본값 설정
         if startFrame is None:
@@ -343,13 +437,19 @@ class Anim:
     
     def create_average_pos_transform(self, inTargetArray):
         """
-        여러 객체들의 평균 위치를 계산하여 단일 변환 행렬을 생성함.
+        여러 객체들의 평균 위치를 계산하여 단일 변환 행렬을 생성합니다.
         
-        매개변수:
-            inTargetArray : 평균 위치 계산 대상 객체 배열
+        ## Parameters
+        - inTargetArray (list): 평균 위치 계산 대상 객체 배열
             
-        반환:
-            계산된 평균 위치를 적용한 변환 행렬
+        ## Returns
+        - Matrix3: 계산된 평균 위치를 적용한 변환 행렬
+        
+        ## 동작 방식
+        1. 임시 포인트 객체와 포지션 제약 컨트롤러 생성
+        2. 배열 내 모든 객체를 동일 가중치로 제약에 추가
+        3. 제약이 적용된 포인트의 변환 행렬 복사
+        4. 임시 객체 정리 후 결과 반환
         """
         # 임시 포인트 객체 생성
         posConstDum = rt.Point()
@@ -377,13 +477,19 @@ class Anim:
     
     def create_average_rot_transform(self, inTargetArray):
         """
-        여러 객체들의 평균 회전을 계산하여 단일 변환 행렬을 생성함.
+        여러 객체들의 평균 회전을 계산하여 단일 변환 행렬을 생성합니다.
         
-        매개변수:
-            inTargetArray : 평균 회전 계산 대상 객체 배열
+        ## Parameters
+        - inTargetArray (list): 평균 회전 계산 대상 객체 배열
             
-        반환:
-            계산된 평균 회전을 적용한 변환 행렬
+        ## Returns
+        - Matrix3: 계산된 평균 회전을 적용한 변환 행렬
+        
+        ## 동작 방식
+        1. 임시 포인트 객체와 방향 제약 컨트롤러 생성
+        2. 배열 내 모든 객체를 동일 가중치로 제약에 추가
+        3. 제약이 적용된 포인트의 변환 행렬 복사
+        4. 임시 객체 정리 후 결과 반환
         """
         # 임시 포인트 객체 생성
         rotConstDum = rt.Point()
@@ -411,11 +517,16 @@ class Anim:
     
     def get_all_keys_in_controller(self, inController, keys_list):
         """
-        주어진 컨트롤러와 그 하위 컨트롤러에서 모든 키프레임을 재귀적으로 수집함.
+        주어진 컨트롤러와 그 하위 컨트롤러에서 모든 키프레임을 재귀적으로 수집합니다.
         
-        매개변수:
-            inController : 키프레임 검색 대상 컨트롤러 객체
-            keys_list    : 수집된 키프레임들을 저장할 리스트 (참조로 전달)
+        ## Parameters
+        - inController (Controller): 키프레임 검색 대상 컨트롤러 객체
+        - keys_list (list): 수집된 키프레임들을 저장할 리스트 (참조로 전달)
+        
+        ## 동작 방식
+        1. 현재 컨트롤러에 키프레임이 있으면 리스트에 추가
+        2. 하위 컨트롤러에 대해 재귀적으로 동일 과정 반복
+        3. undo 컨텍스트 관리자를 사용하여 실행 취소 스택에 영향 없도록 처리
         """
         with undo(False):
             # 현재 컨트롤러에 키프레임이 있으면 리스트에 추가
@@ -431,13 +542,17 @@ class Anim:
                     
     def get_all_keys(self, inObj):
         """
-        객체에 적용된 모든 키프레임을 가져옴.
+        객체에 적용된 모든 키프레임을 가져옵니다.
         
-        매개변수:
-            inObj : 키프레임을 검색할 객체
+        ## Parameters
+        - inObj (MaxObject): 키프레임을 검색할 객체
             
-        반환:
-            객체에 적용된 키프레임들의 리스트
+        ## Returns
+        - list: 객체에 적용된 키프레임들의 리스트
+        
+        ## 동작 방식
+        - 객체의 메인 컨트롤러에서 시작하여 get_all_keys_in_controller를 호출
+        - 객체의 모든 컨트롤러 계층 구조를 탐색하여 키프레임 수집
         """
         with undo(False):
             keys_list = []
@@ -447,13 +562,18 @@ class Anim:
     
     def get_start_end_keys(self, inObj):
         """
-        객체의 키프레임 중 가장 먼저와 마지막 키프레임을 찾음.
+        객체의 키프레임 중 가장 먼저와 마지막 키프레임을 찾습니다.
         
-        매개변수:
-            inObj : 키프레임을 검색할 객체
+        ## Parameters
+        - inObj (MaxObject): 키프레임을 검색할 객체
             
-        반환:
-            [시작 키프레임, 끝 키프레임] (키가 없으면 빈 리스트 반환)
+        ## Returns
+        - list: [시작 키프레임, 끝 키프레임] (키가 없으면 빈 리스트 반환)
+        
+        ## 동작 방식
+        1. get_all_keys를 사용하여 모든 키프레임 수집
+        2. 각 키프레임의 시간값을 추출
+        3. 최소/최대 시간값을 가진 키프레임의 인덱스 반환
         """
         with undo(False):
             keys = self.get_all_keys(inObj)
@@ -470,23 +590,30 @@ class Anim:
     
     def delete_all_keys(self, inObj):
         """
-        객체에 적용된 모든 키프레임을 삭제함.
+        객체에 적용된 모든 키프레임을 삭제합니다.
         
-        매개변수:
-            inObj : 삭제 대상 객체
+        ## Parameters
+        - inObj (MaxObject): 삭제 대상 객체
+        
+        ## 동작 방식
+        - 3ds Max의 deleteKeys 명령을 사용하여 모든 키 삭제
         """
         rt.deleteKeys(inObj, rt.Name('allKeys'))
     
     def is_node_animated(self, node):
         """
-        객체 및 그 하위 요소(애니메이션, 커스텀 속성 등)가 애니메이션 되었는지 재귀적으로 확인함.
+        객체 및 그 하위 요소가 애니메이션 되었는지 재귀적으로 확인합니다.
         
-        매개변수:
-            node : 애니메이션 여부를 확인할 객체 또는 서브 애니메이션
+        ## Parameters
+        - node (MaxNode/SubAnim): 애니메이션 여부를 확인할 객체 또는 서브 애니메이션
             
-        반환:
-            True  : 애니메이션이 적용된 경우
-            False : 애니메이션이 없는 경우
+        ## Returns
+        - bool: 애니메이션이 적용된 경우 True, 없는 경우 False
+        
+        ## 동작 방식
+        1. SubAnim인 경우 직접 키프레임 여부 확인
+        2. MaxWrapper인 경우 커스텀 속성 검사
+        3. 모든 하위 애니메이션에 대해 재귀적으로 검사
         """
         animated = False
         obj = node
@@ -514,13 +641,16 @@ class Anim:
     
     def find_animated_nodes(self, nodes=None):
         """
-        애니메이션이 적용된 객체들을 모두 찾음.
+        애니메이션이 적용된 객체들을 모두 찾습니다.
         
-        매개변수:
-            nodes : 검색 대상 객체 리스트 (None이면 전체 객체)
+        ## Parameters
+        - nodes (list, optional): 검색 대상 객체 리스트 (None이면 전체 객체)
             
-        반환:
-            애니메이션이 적용된 객체들의 리스트
+        ## Returns
+        - list: 애니메이션이 적용된 객체들의 리스트
+        
+        ## 동작 방식
+        - 입력 객체 목록(또는 전체 씬 객체)에서 is_node_animated가 True인 객체만 수집
         """
         if nodes is None:
             nodes = rt.objects
@@ -534,13 +664,16 @@ class Anim:
     
     def find_animated_material_nodes(self, nodes=None):
         """
-        애니메이션이 적용된 재질을 가진 객체들을 모두 찾음.
+        애니메이션이 적용된 재질을 가진 객체들을 모두 찾습니다.
         
-        매개변수:
-            nodes : 검색 대상 객체 리스트 (None이면 전체 객체)
+        ## Parameters
+        - nodes (list, optional): 검색 대상 객체 리스트 (None이면 전체 객체)
             
-        반환:
-            애니메이션이 적용된 재질을 가진 객체들의 리스트
+        ## Returns
+        - list: 애니메이션이 적용된 재질을 가진 객체들의 리스트
+        
+        ## 동작 방식
+        - 입력 객체 목록(또는 전체 씬 객체)에서 재질이 애니메이션된 객체만 수집
         """
         if nodes is None:
             nodes = rt.objects
@@ -555,13 +688,16 @@ class Anim:
     
     def find_animated_transform_nodes(self, nodes=None):
         """
-        애니메이션이 적용된 변환 정보를 가진 객체들을 모두 찾음.
+        애니메이션이 적용된 변환 정보를 가진 객체들을 모두 찾습니다.
         
-        매개변수:
-            nodes : 검색 대상 객체 리스트 (None이면 전체 객체)
+        ## Parameters
+        - nodes (list, optional): 검색 대상 객체 리스트 (None이면 전체 객체)
             
-        반환:
-            애니메이션이 적용된 변환 데이터를 가진 객체들의 리스트
+        ## Returns
+        - list: 애니메이션이 적용된 변환 데이터를 가진 객체들의 리스트
+        
+        ## 동작 방식
+        - 입력 객체 목록(또는 전체 씬 객체)에서 트랜스폼 컨트롤러가 애니메이션된 객체만 수집
         """
         if nodes is None:
             nodes = rt.objects
@@ -576,10 +712,17 @@ class Anim:
     
     def save_xform(self, inObj):
         """
-        객체의 현재 변환 행렬(월드, 부모 스페이스)을 저장하여 복원을 가능하게 함.
+        객체의 현재 변환 행렬(월드, 부모 스페이스)을 저장하여 복원을 가능하게 합니다.
         
-        매개변수:
-            inObj : 변환 값을 저장할 객체
+        ## Parameters
+        - inObj (MaxObject): 변환 값을 저장할 객체
+        
+        ## 동작 방식
+        1. 객체의 월드 스페이스 변환 행렬을 문자열로 변환하여 사용자 속성에 저장
+        2. 부모가 있는 경우 부모 스페이스 행렬도 계산하여 별도로 저장
+        
+        ## 사용 방법
+        - 나중에 set_xform 메서드를 사용하여 저장된 변환을 복원할 수 있습니다.
         """
         # 월드 스페이스 행렬 저장
         transformString = str(inObj.transform)
@@ -596,11 +739,18 @@ class Anim:
     
     def set_xform(self, inObj, space="World"):
         """
-        저장된 변환 행렬을 객체에 적용함.
+        저장된 변환 행렬을 객체에 적용합니다.
         
-        매개변수:
-            inObj : 변환 값을 적용할 객체
-            space : "World" 또는 "Parent" (적용할 변환 공간)
+        ## Parameters
+        - inObj (MaxObject): 변환 값을 적용할 객체
+        - space (str): "World" 또는 "Parent" (적용할 변환 공간)
+        
+        ## 동작 방식
+        - "World": 월드 스페이스 행렬을 객체에 직접 적용
+        - "Parent": 부모 객체가 있는 경우 부모 스페이스 행렬을 부모의 현재 변환과 결합하여 적용
+        
+        ## 주의사항
+        - save_xform 메서드로 미리 변환 행렬이 저장되어 있어야 합니다.
         """
         if space == "World":
             # 월드 스페이스 행렬 적용
