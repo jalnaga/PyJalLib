@@ -18,3 +18,4 @@ build-backend = "hatchling.build"
 [tool.pdoc]
 modules = ["pyjallib"]
 output_directory = "docs"
+docformat = "markdown"
