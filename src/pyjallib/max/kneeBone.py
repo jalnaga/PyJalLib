@@ -366,6 +366,7 @@ class KneeBone:
             
             liftTwistBone = self.bone.create_nub_bone(liftTwistBoneName, 2)
             liftTwistBone.name = self.name.remove_name_part("Nub", liftTwistBone.name)
+            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", oriThighTwistBones.name))
             
             rt.setProperty(liftTwistBone, "transform", item.transform)
             liftTwistBone.parent = item
@@ -390,6 +391,7 @@ class KneeBone:
             
             liftTwistBone = self.bone.create_nub_bone(liftTwistBoneName, 2)
             liftTwistBone.name = self.name.remove_name_part("Nub", liftTwistBone.name)
+            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", oriClafTwistBones.name))
             
             rt.setProperty(liftTwistBone, "transform", item.transform)
             liftTwistBone.parent = item

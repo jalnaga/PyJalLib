@@ -176,7 +176,7 @@ class Hip:
         
         facingDirVec = self.calf.transform.position - self.thigh.transform.position
         inObjXAxisVec = self.thigh.objectTransform.row1
-        distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
+        distanceDir = -1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else 1.0
         
         rotConst = self.const.assign_rot_const_multi(self.thighRotHelper, [self.pelvisHelper, self.thighTwistHelper])
         rotConst.setWeight(1, self.pelvisWeight * 100.0)

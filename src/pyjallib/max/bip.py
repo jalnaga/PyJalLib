@@ -674,18 +674,26 @@ class Bip:
             toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
         
         if toeNum == 1:
-            for i, item in enumerate(lToesList[0]):
-                item.name = self.name.replace_name_part("RealName", item.name, "ball")
-                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+            if toeLinkNum == 1:
+                lToesList[0][0].name = self.name.replace_name_part("RealName", lToesList[0][0].name, "ball")
+                lToesList[0][0].name = self.name.remove_name_part("Index", lToesList[0][0].name)
+            else:
+                for i, item in enumerate(lToesList[0]):
+                    item.name = self.name.replace_name_part("RealName", item.name, "ball")
+                    item.name = self.name.replace_name_part("Index", item.name, str(i+1))
             
             toeNub = self.bone.get_every_children(lToesList[0][-1])[0]
             toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball")
             toeNub.name = self.name.remove_name_part("Index", toeNub.name)
             toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
             
-            for i, item in enumerate(rToesList[0]):
-                item.name = self.name.replace_name_part("RealName", item.name, "ball")
-                item.name = self.name.replace_name_part("Index", item.name, str(i+1))
+            if toeLinkNum == 1:
+                rToesList[0][0].name = self.name.replace_name_part("RealName", lToesList[0][0].name, "ball")
+                rToesList[0][0].name = self.name.remove_name_part("Index", lToesList[0][0].name)
+            else:
+                for i, item in enumerate(rToesList[0]):
+                    item.name = self.name.replace_name_part("RealName", item.name, "ball")
+                    item.name = self.name.replace_name_part("Index", item.name, str(i+1))
             
             toeNub = self.bone.get_every_children(rToesList[0][-1])[0]
             toeNub.name = self.name.replace_name_part("RealName", toeNub.name, "ball")
