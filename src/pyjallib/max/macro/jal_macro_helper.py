@@ -5,8 +5,8 @@ from pymxs import runtime as rt
 from PySide2 import QtWidgets, QtCore, QtGui
 import gc  # Import garbage collector
 
-from pyjallib.max.header import get_header
-jal = get_header()
+import __main__
+jal = __main__.jal
 
 class HelperTypeSelDialog(QtWidgets.QDialog):
     def __init__(self, parent=QtWidgets.QWidget.find(rt.windows.getMAXHWND())):

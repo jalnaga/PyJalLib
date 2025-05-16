@@ -21,8 +21,7 @@
 import copy
 
 from pymxs import runtime as rt
-from .header import get_header
-jal = get_header()
+from .header import jal
 
 class VolumeBoneChain:
     """

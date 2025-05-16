@@ -40,8 +40,7 @@ chain.update_lift_scale(0.9)
 """
 
 from pymxs import runtime as rt
-from .header import get_header
-jal = get_header()
+from .header import jal
 
 
 class AutoClavicleChain:

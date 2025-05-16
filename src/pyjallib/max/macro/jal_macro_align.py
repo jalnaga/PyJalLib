@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
-from pyjallib.max.header import get_header
-jal = get_header()
+import __main__
+jal = __main__.jal
 
 def jal_align_to_last():
     jal.align.align_to_last_sel()
