@@ -69,13 +69,13 @@ class NamePart:
     
     def _initialize_type_defaults(self):
         """타입에 따른 기본 설정을 초기화합니다."""
-        if self._type == NamePartType.INDEX:
+        if self._type.value == NamePartType.INDEX.value:
             # Index 타입은 숫자만 처리하므로 predefined values는 사용하지 않음
             self._predefinedValues = []
             self._descriptions = []
             self._koreanDescriptions = [] # Clear korean descriptions
             self._weights = []
-        elif self._type == NamePartType.REALNAME:
+        elif self._type.value == NamePartType.REALNAME.value:
             # RealName 타입은 predefined values를 사용하지 않음
             self._predefinedValues = []
             self._descriptions = []
@@ -88,7 +88,7 @@ class NamePart:
         값들은 5부터 시작해서 5씩 증가하는 가중치를 갖습니다.
         """
         # REALNAME이나 INDEX 타입인 경우 weights를 사용하지 않음
-        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        if self._type.value == NamePartType.REALNAME.value or self._type.value == NamePartType.INDEX.value:
             self._weights = []
             return
             
@@ -144,8 +144,8 @@ class NamePart:
         Returns:
             PREFIX 타입이면 True, 아니면 False
         """
-        return self._type == NamePartType.PREFIX
-    
+        return self._type.value == NamePartType.PREFIX.value
+
     def is_suffix(self):
         """
         이름 부분이 SUFFIX 타입인지 확인합니다.
@@ -153,8 +153,8 @@ class NamePart:
         Returns:
             SUFFIX 타입이면 True, 아니면 False
         """
-        return self._type == NamePartType.SUFFIX
-    
+        return self._type.value == NamePartType.SUFFIX.value
+
     def is_realname(self):
         """
         이름 부분이 REALNAME 타입인지 확인합니다.
@@ -162,8 +162,8 @@ class NamePart:
         Returns:
             REALNAME 타입이면 True, 아니면 False
         """
-        return self._type == NamePartType.REALNAME
-    
+        return self._type.value == NamePartType.REALNAME.value
+
     def is_index(self):
         """
         이름 부분이 INDEX 타입인지 확인합니다.
@@ -171,7 +171,7 @@ class NamePart:
         Returns:
             INDEX 타입이면 True, 아니면 False
         """
-        return self._type == NamePartType.INDEX
+        return self._type.value == NamePartType.INDEX.value
     
     def add_predefined_value(self, inValue, inDescription="", inKoreanDescription=""):
         """
@@ -186,7 +186,7 @@ class NamePart:
             추가 성공 여부 (이미 존재하는 경우 False)
         """
         # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
-        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        if self._type.value == NamePartType.REALNAME.value or self._type.value == NamePartType.INDEX.value:
             return False
             
         if inValue not in self._predefinedValues:
@@ -228,9 +228,9 @@ class NamePart:
             inKoreanDescriptions: 설정할 값들의 한국어 설명 목록 (기본값: None, 빈 문자열로 초기화)
         """
         # REALNAME이나 INDEX 타입인 경우 predefined values를 사용하지 않음
-        if self._type == NamePartType.REALNAME or self._type == NamePartType.INDEX:
+        if self._type.value == NamePartType.REALNAME.value or self._type.value == NamePartType.INDEX.value:
             return
-            
+        
         self._predefinedValues = inValues.copy() if inValues else []
         
         # 설명 세팅
@@ -399,15 +399,15 @@ class NamePart:
             유효하면 True, 아니면 False
         """
         # INDEX 타입은 숫자 문자열만 유효
-        if self._type == NamePartType.INDEX:
+        if self._type.value == NamePartType.INDEX.value:
             return isinstance(inValue, str) and inValue.isdigit()
             
         # PREFIX와 SUFFIX 타입은 predefined values 중 하나여야 함
-        if (self._type == NamePartType.PREFIX or self._type == NamePartType.SUFFIX) and self._predefinedValues:
+        if (self._type.value == NamePartType.PREFIX.value or self._type.value == NamePartType.SUFFIX.value) and self._predefinedValues:
             return inValue in self._predefinedValues
             
         # REALNAME 타입은 모든 문자열 유효
-        if self._type == NamePartType.REALNAME:
+        if self._type.value == NamePartType.REALNAME.value:
             return isinstance(inValue, str)
             
         # 정의되지 않은 타입이면 기존 동작대로 처리

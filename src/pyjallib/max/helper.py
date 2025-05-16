@@ -93,30 +93,12 @@ class Helper:
             찾은 Type namePart 값
         """
         typePart = self.name.get_name_part("Type")
-        predefinedValues = typePart.get_predefined_values()
         firstTypeValue = typePart.get_value_by_min_weight()
         
+        helperTypeName = self.name.get_name_part_value_by_description("Type", helperType)
+        if helperTypeName != "":
+            return helperTypeName
         
-        # 헬퍼 타입 패턴 정의
-        helperNamePatterns = {
-            "Dummy": ["dum", "Dum", "Dummy", "Helper", "Hpr", "Dmy"],
-            "IK": ["ik", "IK", "Ik"],
-            "Target": ["Tgt", "Target", "TG", "Tg", "T"],
-            "Parent": ["Prn", "PRN", "Parent", "P"],
-            "ExposeTm": ["Exp", "Etm", "EXP", "ETM"]
-        }
-        
-        # 타입 패턴 가져오기
-        patterns = helperNamePatterns.get(helperType, [])
-        if not patterns:
-            return firstTypeValue
-        
-        # 패턴과 일치하는 값 찾기
-        for value in predefinedValues:
-            if value in patterns:
-                return value
-        
-        # 일치하는 값이 없으면 기본값 반환
         return firstTypeValue
     
     def gen_helper_name_from_obj(self, inObj, make_two=False, is_exp=False):

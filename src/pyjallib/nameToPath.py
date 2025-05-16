@@ -101,7 +101,7 @@ class NameToPath(Naming):
         for key, value in nameDict.items():
             namePart = self.sourceNaming.get_name_part(key)
             if self.get_name_part(namePart.get_name()):
-                if namePart.get_type() == NamePartType.REALNAME:
+                if namePart.get_type().value == NamePartType.REALNAME.value:
                     # 실제 이름인 경우, 해당 이름을 사용
                     pathDict[key] = value
                 else:

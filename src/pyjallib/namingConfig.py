@@ -104,7 +104,7 @@ class NamingConfig:
             RealName 파트의 인덱스, 없으면 -1
         """
         for i, part in enumerate(self.name_parts):
-            if part.get_type() == NamePartType.REALNAME:
+            if part.get_type().value == NamePartType.REALNAME.value:
                 return i
         return -1
     
@@ -325,12 +325,12 @@ class NamingConfig:
             return False
         
         # 필수 RealName 부분은 항상 REALNAME 타입이어야 함
-        if part_name == "RealName" and part_type != NamePartType.REALNAME:
+        if part_name == "RealName" and part_type.value != NamePartType.REALNAME.value:
             print("오류: RealName 부분은 반드시 REALNAME 타입이어야 합니다.")
             return False
         
         # Index 부분은 항상 INDEX 타입이어야 함
-        if part_name == "Index" and part_type != NamePartType.INDEX:
+        if part_name == "Index" and part_type.value != NamePartType.INDEX.value:
             print("오류: Index 부분은 반드시 INDEX 타입이어야 합니다.")
             return False
         

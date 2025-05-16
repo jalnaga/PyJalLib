@@ -297,7 +297,7 @@ class Mirror:
             
             # 이름 생성 (좌우/앞뒤 방향이 있는 경우 미러링된 이름 생성)
             if self.name.has_Side(original.name) or self.name.has_FrontBack(original.name):
-                reflection.name = self.name.gen_mirroring_name(original.name, axis=mAxis)
+                reflection.name = self.name.gen_mirroring_name(original.name)
             else:
                 reflection.name = self.name.add_suffix_to_real_name(original.name, "Mirrored")
                 

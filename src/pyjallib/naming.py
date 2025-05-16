@@ -325,7 +325,7 @@ class Naming:
             
         partValues = partObj.get_predefined_values()
         
-        if partType == NamePartType.PREFIX or partType == NamePartType.SUFFIX:
+        if partType.value == NamePartType.PREFIX.value or partType.value == NamePartType.SUFFIX.value:
             return any(item in inStr for item in partValues)
         
         return False
@@ -351,7 +351,7 @@ class Naming:
             
         partValues = partObj.get_predefined_values()
         
-        if partType == NamePartType.PREFIX or partType == NamePartType.SUFFIX:
+        if partType.value == NamePartType.PREFIX.value or partType.value == NamePartType.SUFFIX.value:
             try:
                 foundIndex = partObj._descriptions.index(inDescription)
                 return partValues[foundIndex]
@@ -371,24 +371,24 @@ class Naming:
         partType = partObj.get_type()
         if not partType:
             return returnStr
-            
+        
         partValues = partObj.get_predefined_values()
-        if partType != NamePartType.INDEX and partType != NamePartType.REALNAME and not partValues:
+        if partType.value != NamePartType.INDEX.value and partType.value != NamePartType.REALNAME.value and not partValues:
             return returnStr
         
-        if partType == NamePartType.PREFIX:
+        if partType.value == NamePartType.PREFIX.value:
             for item in nameArray:
                 if item in partValues:
                     returnStr = item
                     break
         
-        if partType == NamePartType.SUFFIX:
+        if partType.value == NamePartType.SUFFIX.value:
             for i in range(len(nameArray) - 1, -1, -1):
                 if nameArray[i] in partValues:
                     returnStr = nameArray[i]
                     break
-                
-        if partType == NamePartType.INDEX:
+        
+        if partType.value == NamePartType.INDEX.value:
             if self.get_name_part_index("Index") > self.get_name_part_index("RealName"):
                 for i in range(len(nameArray) - 1, -1, -1):
                     if nameArray[i].isdigit():
@@ -399,7 +399,6 @@ class Naming:
                     if item.isdigit():
                         returnStr = item
                         break
-        
         return returnStr
         
     def get_name(self, inNamePartName, inStr):
@@ -424,7 +423,7 @@ class Naming:
         partIndex = self.get_name_part_index(inNamePartName)
         foundIndex = nameArray.index(foundName)
         
-        if partType == NamePartType.PREFIX:
+        if partType.value == NamePartType.PREFIX.value:
             if foundIndex >= 0:
                 prevNameParts = self._nameParts[:partIndex]
                 prevNames = [self.pick_name(part.get_name(), inStr) for part in prevNameParts]
@@ -434,8 +433,8 @@ class Naming:
                         prevNamesInNameArray.remove(prevName)
                 if len(prevNamesInNameArray) == 0 :
                     returnStr = foundName
-        
-        if partType == NamePartType.SUFFIX:
+    
+        if partType.value == NamePartType.SUFFIX.value:
             if foundIndex >= 0:
                 nextNameParts = self._nameParts[partIndex + 1:]
                 nextNames = [self.pick_name(part.get_name(), inStr) for part in nextNameParts]
@@ -445,8 +444,8 @@ class Naming:
                         nextNamesInNameArray.remove(nextName)
                 if len(nextNamesInNameArray) == 0 :
                     returnStr = foundName
-        
-        if partType == NamePartType.INDEX:
+    
+        if partType.value == NamePartType.INDEX.value:
             returnStr = self.pick_name(inNamePartName, inStr)
                 
         return returnStr
@@ -946,13 +945,17 @@ class Naming:
         for part in self._nameParts:
             partName = part.get_name()
             partType = part.get_type()
-            if (partType != NamePartType.REALNAME or partType != NamePartType.INDEX) and part.is_direction():
+            if (partType.value != NamePartType.REALNAME.value and partType.value != NamePartType.INDEX.value) and part.is_direction():
                 partIndex = self.get_name_part_index(partName)
                 foundName = self.get_name(partName, inStr)
                 opositeName = part.get_most_different_weight_value(foundName)
+                print(f"partName: {partName}")
+                print(f"partindex: {partIndex}")
+                print(f"foundName: {foundName}")
+                print(f"opositeName: {opositeName}")
                 if opositeName and foundName != opositeName:
                     nameArray[partIndex] = opositeName
-        
+    
         returnName = self._combine(nameArray, self._get_filtering_char(inStr))
         
         return returnName

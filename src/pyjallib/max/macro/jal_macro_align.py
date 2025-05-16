@@ -43,12 +43,12 @@ def jal_align_mirror_x():
             helperArray.append(item)
         else:
             nonBoneArray.append(item)
-    
-    if boneArray.count != 0:
+            
+    if len(boneArray) != 0:
         mirroredBoneArray = jal.mirror.mirror_bone(boneArray, mAxis=defMirrorAxis)
-    if helperArray.count != 0:
+    if len(helperArray) != 0:
         mirroredHelperArray = jal.mirror.mirror_geo(helperArray, mAxis=defMirrorAxis, pivotObj=pObj, cloneStatus=2)
-    if nonBoneArray.count != 0:
+    if len(nonBoneArray) != 0:
         mirroredNonBoneArray = jal.mirror.mirror_geo(nonBoneArray, mAxis=defMirrorAxis, pivotObj=pObj, cloneStatus=2)
     
     mirroredObjArray.extend(mirroredBoneArray)
@@ -85,11 +85,11 @@ def jal_align_mirror_y():
         else:
             nonBoneArray.append(item)
     
-    if boneArray.count != 0:
+    if len(boneArray) != 0:
         mirroredBoneArray = jal.mirror.mirror_bone(boneArray, mAxis=defMirrorAxis)
-    if helperArray.count != 0:
+    if len(helperArray) != 0:
         mirroredHelperArray = jal.mirror.mirror_geo(helperArray, mAxis=defMirrorAxis, pivotObj=pObj, cloneStatus=2)
-    if nonBoneArray.count != 0:
+    if len(nonBoneArray) != 0:
         mirroredNonBoneArray = jal.mirror.mirror_geo(nonBoneArray, mAxis=defMirrorAxis, pivotObj=pObj, cloneStatus=2)
     
     mirroredObjArray.extend(mirroredBoneArray)
