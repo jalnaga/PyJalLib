@@ -2,18 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-# 고간 부 본(GroinBone) 모듈
-
-3ds Max에서 고간 부분의 뼈대를 생성하고 관리하는 기능을 제공하는 모듈입니다.
-
-## 주요 기능
-- 골반과 허벅지 트위스트 본 사이의 제약 기반 고간 본 생성
-- 가중치 기반 자동 회전 제어
-- 골반과 허벅지 사이의 중간 위치 보간
-
-## 구현 정보
-- pymxs 모듈을 통한 3ds Max API 접근
-- 제약 컨트롤러를 활용한 자동 회전 처리
+고간 부 본 모듈 - 3ds Max용 트위스트 뼈대 생성 관련 기능 제공
 """
 
 from pymxs import runtime as rt
@@ -27,43 +16,22 @@ from .constraint import Constraint
 
 class GroinBone:
     """
-    # GroinBone 클래스
-    
-    3DS Max에서 고간 부 본(groin bone)을 생성하고 관리하는 기능을 제공합니다.
-    
-    ## 주요 기능
-    - 골반과 좌우 허벅지 트위스트 본 사이에 중간 회전을 적용한 고간 본 생성
-    - 골반과 허벅지 트위스트 본에 가중치 기반 회전 제약 설정
-    - 이름 규칙에 따른 자동 명명 및 계층 구조 설정
-    
-    ## 구현 정보
-    - 회전 제약 컨트롤러를 활용한 자동 회전 계산
-    - 헬퍼 객체를 사용한 제약 적용 지점 설정
-    - 가중치 조절을 통한 골반/허벅지 회전 영향도 조정
-    
-    ## 사용 예시
-    ```python
-    # GroinBone 객체 생성
-    groin_bone = GroinBone()
-    
-    # 골반과 좌우 허벅지 트위스트 본으로 고간 본 생성
-    result = groin_bone.create_bone(pelvis, lThighTwist, rThighTwist)
-    
-    # 생성된 뼈대 객체에 접근
-    groin_bone = result["Bones"][0]
-    ```
+    고간 부 본 관련 기능을 위한 클래스
+    3DS Max에서 고간 부 본을 생성하고 관리하는 기능을 제공합니다.
     """
     
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
         """
-        GroinBone 클래스를 초기화합니다.
+        클래스 초기화.
         
-        ## Parameters
-        - nameService (Name, optional): 이름 처리 서비스 (기본값: None, 새로 생성)
-        - animService (Anim, optional): 애니메이션 서비스 (기본값: None, 새로 생성)
-        - constraintService (Constraint, optional): 제약 서비스 (기본값: None, 새로 생성)
-        - boneService (Bone, optional): 뼈대 서비스 (기본값: None, 새로 생성)
-        - helperService (Helper, optional): 헬퍼 객체 서비스 (기본값: None, 새로 생성)
+        Args:
+            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
+            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
+            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
+            bipService: Biped 서비스 (제공되지 않으면 새로 생성)
+            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
+            twistBoneService: 트위스트 본 서비스 (제공되지 않으면 새로 생성)
+            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -86,12 +54,10 @@ class GroinBone:
     def reset(self):
         """
         클래스의 주요 컴포넌트들을 초기화합니다.
+        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
         
-        작업 결과를 저장하는 멤버 변수들을 초기 상태로 되돌립니다.
-        서비스 객체(name, anim 등)는 유지합니다.
-        
-        ## Returns
-        - self: 메소드 체이닝을 위한 자기 자신 반환
+        Returns:
+            self: 메소드 체이닝을 위한 자기 자신 반환
         """
         self.pelvis = None
         self.lThighTwist = None
@@ -105,31 +71,15 @@ class GroinBone:
     
     def create_bone(self, inPelvis, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
         """
-        골반과 허벅지 트위스트 본 사이에 고간 부 본을 생성합니다.
+        고간 부 본을 생성하는 메소드.
         
-        ## Parameters
-        - inPelvis (MaxObject): 골반 뼈대 객체
-        - inLThighTwist (MaxObject): 왼쪽 허벅지 트위스트 본 객체
-        - inRThighTwist (MaxObject): 오른쪽 허벅지 트위스트 본 객체
-        - inPelvisWeight (float): 골반 가중치 (기본값: 40.0)
-        - inThighWeight (float): 허벅지 가중치 (기본값: 60.0)
+        Args:
+            inPelvis: Biped 객체
+            inPelvisWeight: 골반 가중치 (기본값: 40.0)
+            inThighWeight: 허벅지 가중치 (기본값: 60.0)
         
-        ## Returns
-        - dict: 생성된 고간 부 본 시스템 정보를 담은 딕셔너리
-            - "Pelvis": 골반 객체 참조
-            - "LThighTwist": 왼쪽 허벅지 트위스트 본 참조
-            - "RThighTwist": 오른쪽 허벅지 트위스트 본 참조
-            - "Bones": 생성된 뼈대 객체 배열
-            - "Helpers": 생성된 헬퍼 객체 배열
-            - "PelvisWeight": 적용된 골반 가중치
-            - "ThighWeight": 적용된 허벅지 가중치
-        
-        ## 동작 방식
-        1. 골반, 허벅지 트위스트 본의 유효성 검사
-        2. 헬퍼 객체 생성 및 배치
-        3. 고간 부 본 생성 및 위치 조정
-        4. 회전 제약 설정 및 가중치 조정
-        5. 결과 저장 및 반환
+        Returns:
+            성공 여부 (Boolean)
         """
         returnVal = {
             "Pelvis": None,

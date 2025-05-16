@@ -2,19 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-# 미러(Mirror) 모듈
-
-3ds Max에서 객체 미러링 관련 기능을 제공하는 모듈입니다.
-
-## 주요 기능
-- 다양한 미러링 방식 지원 (행렬 기반, 축 기반, 객체 기반)
-- 뼈대, 지오메트리 객체 전용 미러링 기능
-- 미러링된 이름 자동 생성
-- 피벗 기반 미러링 지원
-
-## 구현 정보
-- 원본 MAXScript의 mirror.ms를 Python으로 변환
-- pymxs 모듈을 통해 3ds Max API 접근
+미러 모듈 - 3ds Max용 객체 미러링 관련 기능 제공
+원본 MAXScript의 mirror.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
 from pymxs import runtime as rt
@@ -26,86 +15,44 @@ from .bone import Bone
 
 class Mirror:
     """
-    # Mirror 클래스
-    
-    3ds Max에서 객체 미러링 기능을 제공하는 클래스입니다.
-    
-    ## 주요 기능
-    - 행렬 기반 객체 미러링
-    - 다양한 좌표계와 축을 기준으로 미러링
-    - 뼈대 객체 전용 미러링 (형태 및 속성 보존)
-    - 지오메트리 객체의 미러링 및 노멀 방향 조정
-    - 피벗 기준 미러링 및 계층 구조 유지
-    
-    ## 구현 정보
-    - MAXScript의 _Mirror 구조체를 Python 클래스로 재구현
-    - 축 기반 행렬 연산을 통한 정확한 미러링 처리
-    - Name 및 Bone 서비스와 연동하여 이름 및 구조 관리
-    
-    ## 사용 예시
-    ```python
-    # Mirror 객체 생성
-    mirror = Mirror()
-    
-    # X축 기준 객체 미러링
-    mirrored_obj = mirror.apply_mirror(obj, axis=1)
-    
-    # 뼈대 객체 체인 미러링
-    mirrored_bones = mirror.mirror_bone(bone_array)
-    
-    # 지오메트리 객체 미러링 (노멀 방향 조정 포함)
-    mirrored_geo = mirror.mirror_geo(geo_array)
-    ```
+    객체 미러링 관련 기능을 제공하는 클래스.
+    MAXScript의 _Mirror 구조체 개념을 Python으로 재구현한 클래스이며,
+    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
     def __init__(self, nameService=None, boneService=None):
         """
-        Mirror 클래스를 초기화합니다.
+        클래스 초기화
         
-        ## Parameters
-        - nameService (Name, optional): 이름 처리 서비스 (기본값: None, 새로 생성)
-        - boneService (Bone, optional): 뼈대 서비스 (기본값: None, 새로 생성)
-        
-        ## 참고
-        - 서비스 인스턴스가 제공되지 않으면 자동으로 생성됩니다.
-        - 의존성 있는 서비스들은 적절히 연결됩니다.
+        Args:
+            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
         """
         self.name = nameService if nameService else Name()
         self.bone = boneService if boneService else Bone(nameService=self.name) # Pass the potentially newly created nameService
     
     def mirror_matrix(self, mAxis="x", mFlip="x", tm=None, pivotTM=None):
         """
-        지정된 축과 뒤집기 방향에 따라 미러링 행렬을 생성합니다.
+        미러링 행렬 생성
         
-        ## Parameters
-        - mAxis (str): 미러링 축 (기본값: "x")
-            - "x": YZ 평면에 대한 반사
-            - "y": ZX 평면에 대한 반사
-            - "z": XY 평면에 대한 반사
-        - mFlip (str): 뒤집는 축 (기본값: "x")
-            - 미러링 후 추가로 뒤집을 축 설정
-        - tm (Matrix3): 변환 행렬 (기본값: 단위 행렬)
-            - 미러링할 객체의 변환 행렬
-        - pivotTM (Matrix3): 피벗 변환 행렬 (기본값: 단위 행렬)
-            - 미러링의 중심점이 되는 피벗 행렬
+        Args:
+            mAxis: 미러링 축 (기본값: "x")
+            mFlip: 뒤집는 축 (기본값: "x")
+            tm: 변환 행렬 (기본값: 단위 행렬)
+            pivotTM: 피벗 변환 행렬 (기본값: 단위 행렬)
             
-        ## Returns
-        - Matrix3: 미러링된 변환 행렬
-        
-        ## 동작 방식
-        1. 반사 벡터를 각 축에 대해 정의
-        2. 반사 행렬 생성
-        3. 미러링된 변환 계산: fReflection * tm * aReflection * pivotTm
+        Returns:
+            미러링된 변환 행렬
         """
         def fetch_reflection(a):
             """
             반사 벡터 값 반환
             
-            ## Parameters
-            - a (str): 축 식별자 ("x", "y", "z")
+            Args:
+                a: 축 식별자 ("x", "y", "z")
                 
-            ## Returns
-            - list: 해당 축에 대한 반사 벡터
+            Returns:
+                해당 축에 대한 반사 벡터
             """
             if a == "x":
                 return [-1, 1, 1]  # YZ 평면에 대한 반사
@@ -131,36 +78,18 @@ class Mirror:
     
     def apply_mirror(self, inObj, axis=1, flip=2, pivotObj=None, cloneStatus=2, negative=False):
         """
-        객체에 미러링을 적용합니다.
+        객체에 미러링 적용
         
-        ## Parameters
-        - inObj (MaxObject): 미러링할 객체
-        - axis (int): 미러링 축 인덱스 (기본값: 1)
-            - 1: x축
-            - 2: y축
-            - 3: z축
-        - flip (int): 뒤집기 축 인덱스 (기본값: 2)
-            - 1: x축
-            - 2: y축
-            - 3: z축
-            - 4: 뒤집기 없음
-        - pivotObj (MaxObject): 피벗 객체 (기본값: None)
-            - 지정 시 해당 객체의 위치가 미러링 중심
-        - cloneStatus (int): 복제 상태 (기본값: 2)
-            - 1: 원본 변경
-            - 2: 복제본 생성
-            - 3: 스냅샷
-        - negative (bool): 음수 좌표계 사용 여부 (기본값: False)
-            - True: 뒤집기 없음으로 설정
+        Args:
+            inObj: 미러링할 객체
+            axis: 미러링 축 인덱스 (1=x, 2=y, 3=z, 기본값: 1)
+            flip: 뒤집기 축 인덱스 (1=x, 2=y, 3=z, 4=none, 기본값: 2)
+            pivotObj: 피벗 객체 (기본값: None)
+            cloneStatus: 복제 상태 (1=원본 변경, 2=복제본 생성, 3=스냅샷, 기본값: 2)
+            negative: 음수 좌표계 사용 여부 (기본값: False)
             
-        ## Returns
-        - MaxObject: 미러링된 객체 (복제본 또는 원본)
-        
-        ## 동작 방식
-        1. 미러링할 축과 뒤집기 축 설정
-        2. 복제 상태에 따라 원본 변경, 복제본 생성 또는 스냅샷 생성
-        3. mirror_matrix 메서드를 사용하여 변환 행렬 계산 및 적용
-        4. 이름 규칙에 따라 미러링된 객체의 이름 설정
+        Returns:
+            미러링된 객체 (복제본 또는 원본)
         """
         axisArray = ["x", "y", "z", "none"]
         copyObj = rt.copy(inObj)
@@ -216,26 +145,16 @@ class Mirror:
     
     def mirror_object(self, inObjArray, mAxis=1, pivotObj=None, cloneStatus=2):
         """
-        객체 배열을 음수 좌표계를 사용하여 미러링합니다.
+        객체 배열을 음수 좌표계를 사용하여 미러링
         
-        ## Parameters
-        - inObjArray (list): 미러링할 객체 배열
-        - mAxis (int): 미러링 축 (기본값: 1)
-            - 1: x축
-            - 2: y축
-            - 3: z축
-        - pivotObj (MaxObject): 피벗 객체 (기본값: None)
-            - 지정 시 해당 객체의 위치가 미러링 중심
-        - cloneStatus (int): 복제 상태 (기본값: 2)
-            - 1: 원본 변경
-            - 2: 복제본 생성
-            - 3: 스냅샷
+        Args:
+            inObjArray: 미러링할 객체 배열
+            mAxis: 미러링 축 (기본값: 1)
+            pivotObj: 피벗 객체 (기본값: None)
+            cloneStatus: 복제 상태 (기본값: 2)
             
-        ## Returns
-        - list: 미러링된 객체 배열
-        
-        ## 동작 방식
-        각 객체에 대해 apply_mirror 메서드를 호출하여 negative=True로 미러링
+        Returns:
+            미러링된 객체 배열
         """
         returnArray = []
         
@@ -253,31 +172,19 @@ class Mirror:
     
     def mirror_without_negative(self, inMirrorObjArray, mAxis=1, pivotObj=None, cloneStatus=2):
         """
-        객체 배열을 양수 좌표계를 사용하여 미러링합니다.
+        객체 배열을 양수 좌표계를 사용하여 미러링
         
-        ## Parameters
-        - inMirrorObjArray (list): 미러링할 객체 배열
-        - mAxis (int): 미러링 축 인덱스 (기본값: 1)
-            - 1: XY (X축 미러링, Y축 뒤집기)
-            - 2: XZ (X축 미러링, Z축 뒤집기)
-            - 3: YX (Y축 미러링, X축 뒤집기)
-            - 4: YZ (Y축 미러링, Z축 뒤집기)
-            - 5: ZX (Z축 미러링, X축 뒤집기)
-            - 6: ZY (Z축 미러링, Y축 뒤집기)
-        - pivotObj (MaxObject): 피벗 객체 (기본값: None)
-            - 지정 시 해당 객체의 위치가 미러링 중심
-        - cloneStatus (int): 복제 상태 (기본값: 2)
-            - 1: 원본 변경
-            - 2: 복제본 생성
-            - 3: 스냅샷
+        Args:
+            inMirrorObjArray: 미러링할 객체 배열
+            mAxis: 미러링 축 인덱스 (1-6, 기본값: 1)
+            pivotObj: 피벗 객체 (기본값: None)
+            cloneStatus: 복제 상태 (기본값: 2)
             
-        ## Returns
-        - list: 미러링된 객체 배열
-        
-        ## 동작 방식
-        1. 미러링 축과 뒤집기 축을 mAxis 값에 따라 매핑
-        2. 각 객체에 대해 apply_mirror 메서드를 호출하여 negative=False로 미러링
+        Returns:
+            미러링된 객체 배열
         """
+        # 미러링 축과 뒤집기 축 매핑
+        # 1=XY, 2=XZ, 3=YX, 4=YZ, 5=ZX, 6=ZY
         axisIndex = 1
         flipIndex = 1
         
@@ -321,31 +228,18 @@ class Mirror:
     
     def mirror_bone(self, inBoneArray, mAxis=1, flipZ=False, offset=0.0):
         """
-        뼈대 객체 배열을 미러링합니다.
+        뼈대 객체를 미러링
         
-        ## Parameters
-        - inBoneArray (list): 미러링할 뼈대 배열
-        - mAxis (int): 미러링 축 (기본값: 1)
-            - 1: x축
-            - 2: y축
-            - 3: z축
-        - flipZ (bool): Z축 뒤집기 여부 (기본값: False)
-            - True: 미러링 시 방향 벡터의 Z축 반전
-        - offset (float): 미러링 오프셋 (기본값: 0.0)
-            - 미러링 시 적용할 추가 위치 오프셋
+        Args:
+            inBoneArray: 미러링할 뼈대 배열
+            mAxis: 미러링 축 (1=x, 2=y, 3=z, 기본값: 1)
+            flipZ: Z축 뒤집기 여부 (기본값: False)
+            offset: 미러링 오프셋 (기본값: 0.0)
             
-        ## Returns
-        - list: 미러링된 뼈대 배열
-        
-        ## 동작 방식
-        1. 계층 구조에 따라 뼈대 정렬
-        2. 미러링 축 팩터 설정 ([-1,1,1], [1,-1,1], 또는 [1,1,-1])
-        3. 각 뼈대에 대해:
-           - 시작점, 끝점, Z축 방향 미러링
-           - 속성(fins, 크기, 테이퍼 등) 복사
-           - 이름 미러링 (좌우/앞뒤 방향이 있는 경우)
-        4. 계층 구조 재구성 (자식부터 상위로)
+        Returns:
+            미러링된 뼈대 배열
         """
+        # 계층 구조에 따라 뼈대 정렬
         bones = self.bone.sort_bones_as_hierarchy(inBoneArray)
         
         # 미러링 축 팩터 설정
@@ -440,32 +334,18 @@ class Mirror:
     
     def mirror_geo(self, inMirrorObjArray, mAxis=1, pivotObj=None, cloneStatus=2):
         """
-        지오메트리 객체를 미러링하고 폴리곤 노멀 방향을 조정합니다.
+        지오메트리 객체 미러링 (폴리곤 노멀 방향 조정 포함)
         
-        ## Parameters
-        - inMirrorObjArray (list): 미러링할 객체 배열
-        - mAxis (int): 미러링 축 (기본값: 1)
-            - 1: x축
-            - 2: y축
-            - 3: z축
-        - pivotObj (MaxObject): 피벗 객체 (기본값: None)
-            - 지정 시 해당 객체의 위치가 미러링 중심
-        - cloneStatus (int): 복제 상태 (기본값: 2)
-            - 1: 원본 변경
-            - 2: 복제본 생성
-            - 3: 스냅샷
+        Args:
+            inMirrorObjArray: 미러링할 객체 배열
+            mAxis: 미러링 축 (기본값: 1)
+            pivotObj: 피벗 객체 (기본값: None)
+            cloneStatus: 복제 상태 (기본값: 2)
             
-        ## Returns
-        - list: 미러링 및 노멀 조정된 객체 배열
-        
-        ## 동작 방식
-        1. mirror_object 메서드를 사용하여 객체 미러링
-        2. 각 객체 유형에 따라 분류 (리셋 대상, 비리셋 대상)
-        3. 리셋 대상 객체(Editable_Poly, Editable_mesh, 모디파이어 있는 객체)에:
-           - XForm 리셋
-           - Normal 모디파이어로 노멀 방향 반전
-           - 스택 콜랩스
+        Returns:
+            미러링된 객체 배열
         """
+        # 객체 미러링
         mirroredArray = self.mirror_object(
             inMirrorObjArray,
             mAxis=mAxis,

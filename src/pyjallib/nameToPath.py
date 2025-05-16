@@ -2,17 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-# nameToPath 모듈
-
-이름 규칙에 따라 파일 경로를 생성하거나 경로에서 이름을 추출하는 기능을 제공하는 모듈입니다.
-
-## 주요 기능
-- 이름 형식 기반 경로 생성
-- 이름 구성 요소에 기반한 디렉토리 구조 생성
-- 경로 정규화 및 유효성 검증
-
-## 클래스
-- NameToPath: Naming 클래스를 상속받아 이름 기반 경로 생성 기능을 제공
+nameToPath 모듈 - 이름과 경로 변환 관련 기능
+이름 규칙에 따라 경로를 생성하거나 경로에서 이름을 추출하는 기능 제공
 """
 
 import os
@@ -24,33 +15,14 @@ from pyjallib.namePart import NamePartType
 
 class NameToPath(Naming):
     """
-    # NameToPath 클래스
-    
-    Naming 클래스를 상속받아 이름을 기반으로 경로를 생성하는 기능을 제공합니다.
-    
-    ## 주요 기능
-    - 이름 규칙에 따른 디렉토리 경로 생성
-    - 루트 경로 설정 및 관리
-    - 이름 구성요소를 경로 구성요소로 변환
-    
-    ## 사용 예시
-    ```python
-    # 설정 파일과 루트 경로로 초기화
-    n2p = NameToPath("naming_config.json", "D:/Projects")
-    
-    # 이름으로부터 경로 생성
-    path = n2p.gen_path("Side_L_Type_Arm_Name_Robot")
-    # 결과: D:/Projects/Left/Arm/Robot
-    ```
+    NameToPath 클래스는 Naming 클래스를 상속받아 이름을 기반으로 경로를 생성하는 기능을 제공합니다.
     """
     def __init__(self, configPath: str, rootPath: str = None, sourceNaming: Naming = None):
         """
-        NameToPath 클래스 초기화
-        
-        ## Parameters
-        - configPath (str): 설정 파일의 경로
-        - rootPath (str): 루트 경로 (기본값: None)
-        - sourceNaming (Naming): 소스 이름을 처리하기 위한 Naming 객체 (기본값: None)
+        생성자 메서드입니다.
+        :param configPath: 설정 파일의 경로
+        :param rootPath: 루트 경로 (기본값: None)
+        :param sourceNaming: 소스 이름을 처리하기 위한 Naming 객체 (기본값: None)
         """
         # 부모 클래스(Naming) 생성자 호출
         super().__init__(configPath)
@@ -63,17 +35,11 @@ class NameToPath(Naming):
     def set_root_path(self, inRootPath: str):
         """
         루트 경로를 설정합니다.
-        
         입력된 경로를 정규화하고 유효성을 검증합니다.
         
-        ## Parameters
-        - inRootPath (str): 설정할 루트 경로
-            
-        ## Returns
-        - str or None: 정규화된 경로, 입력이 없으면 None
-            
-        ## Raises
-        - ValueError: 경로가 존재하지 않는 경우
+        :param inRootPath: 루트 경로 (문자열)
+        :return: 정규화된 경로
+        :raises ValueError: 경로가 존재하지 않는 경우
         """
         if inRootPath:
             # 경로 정규화 (상대 경로를 절대 경로로 변환, '/' 대신 '\' 사용 등)
@@ -91,14 +57,11 @@ class NameToPath(Naming):
     
     def combine(self, inPartsDict={}, inFilChar=os.sep) -> str:
         """
-        딕셔너리의 값들을 설정된 순서에 따라 문자열로 결합합니다.
-        
-        ## Parameters
-        - inPartsDict (dict): 결합할 키-값 쌍을 포함하는 딕셔너리
-        - inFilChar (str): 값들을 구분할 구분자 (기본값: OS 경로 구분자)
-            
-        ## Returns
-        - str: 결합된 문자열 (경로)
+        딕셔너리의 값들을 설정된 순서에 따라 문자열로 결합합니다. (인덱스 제외)
+
+        :param inPartsDict: 결합할 키-값 쌍을 포함하는 딕셔너리
+        :param inFilChar: 값들을 구분할 구분자 (기본값: "_")
+        :return: 결합된 문자열
         """
         # 결과 배열 초기화 (빈 문자열로)
         combinedNameArray = [""] * len(self._nameParts)
@@ -117,19 +80,11 @@ class NameToPath(Naming):
     
     def gen_path(self, inStr):
         """
-        입력된 문자열(이름)을 기반으로 경로를 생성합니다.
+        입력된 문자열을 기반으로 경로를 생성합니다.
         
-        소스 네이밍 객체를 사용하여 이름을 딕셔너리로 변환한 후,
-        이를 기반으로 경로를 생성합니다.
-        
-        ## Parameters
-        - inStr (str): 경로를 생성할 문자열 (이름)
-            
-        ## Returns
-        - str: 생성된 전체 경로
-            
-        ## Raises
-        - ValueError: 루트 경로가 설정되지 않았거나 이름을 변환할 수 없는 경우
+        :param inStr: 경로를 생성할 문자열 (이름)
+        :return: 생성된 경로 (문자열)
+        :raises ValueError: 루트 경로가 설정되지 않았거나 이름을 변환할 수 없는 경우
         """
         if not self.rootPath:
             raise ValueError("루트 경로가 설정되지 않았습니다.")

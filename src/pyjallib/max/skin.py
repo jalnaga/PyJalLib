@@ -2,21 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-# 스킨(Skin) 모듈
-
-3ds Max에서 고급 스킨 관련 기능을 제공하는 모듈입니다.
-
-## 주요 기능
-- 스킨 모디파이어 관리 및 조작
-- 스킨 바인딩 및 최적화
-- 스킨 데이터 저장 및 로드
-- 가중치 조작 및 스무딩
-- 본 의존성 관리
-
-## 구현 정보
-- 원본 MAXScript의 skin2.ms를 Python으로 변환
-- pymxs 모듈을 통해 3ds Max API 접근
-- 복잡한 스크립트 로직을 Python으로 재구현
+스킨 모듈 - 3ds Max용 고급 스킨 관련 기능 제공
+원본 MAXScript의 skin2.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
 import os
@@ -26,15 +13,7 @@ from pymxs import runtime as rt
 
 class VertexMode(IntEnum):
     """
-    # VertexMode 열거형
-    
-    스킨 스무딩 작업에 사용되는 버텍스 모드를 정의합니다.
-    
-    ## 열거값
-    - Edges (1): 인접한 에지 기반 스무딩
-    - Attach (2): 연결된 버텍스 기반 스무딩
-    - All (3): 모든 버텍스 대상 스무딩
-    - Stiff (4): 강성 유지 스무딩
+    버텍스 모드 열거형
     """
     Edges = 1
     Attach = 2
@@ -43,58 +22,27 @@ class VertexMode(IntEnum):
 
 class Skin:
     """
-    # Skin 클래스
-    
-    3ds Max에서 고급 스킨 관련 기능을 제공하는 클래스입니다.
-    
-    ## 주요 기능
-    - 스킨 모디파이어 검색 및 접근
-    - 스킨 바인딩 및 최적화
-    - 스킨 데이터 저장 및 로드
-    - 버텍스 가중치 조작 및 관리
-    - 버텍스 선택 및 필터링
-    - 스킨 스무딩 및 리지드화
-    
-    ## 구현 정보
-    - MAXScript의 ODC_Char_Skin 구조체를 Python 클래스로 재구현
-    - MAXScript 코드를 필요에 따라 직접 실행하는 하이브리드 방식 사용
-    - 복잡한 스킨 스무딩 로직을 위해 문자열 기반 MAXScript 코드 활용
-    
-    ## 사용 예시
-    ```python
-    # Skin 객체 생성
-    skin_mgr = Skin()
-    
-    # 스킨 바인딩
-    skin_mgr.bind_skin(mesh_obj, bone_array)
-    
-    # 스킨 최적화
-    skin_mgr.optimize_skin_process()
-    
-    # 스킨 데이터 저장
-    skin_mgr.save_skin(mesh_obj)
-    ```
+    고급 스킨 관련 기능을 제공하는 클래스.
+    MAXScript의 ODC_Char_Skin 구조체 개념을 Python으로 재구현한 클래스이며,
+    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
     def __init__(self):
         """
-        Skin 클래스를 초기화합니다.
+        클래스 초기화
         """
         self.skin_match_list = []
     
     def has_skin(self, obj=None):
         """
-        객체에 스킨 모디파이어가 있는지 확인합니다.
+        객체에 스킨 모디파이어가 있는지 확인
         
-        ## Parameters
-        - obj (MaxObject, optional): 확인할 객체 (기본값: 현재 선택된 객체)
+        Args:
+            obj: 확인할 객체 (기본값: 현재 선택된 객체)
             
-        ## Returns
-        - bool: 스킨 모디파이어가 있으면 True, 없으면 False
-        
-        ## 동작 방식
-        1. 객체가 제공되지 않으면 현재 선택된 객체 사용
-        2. 객체의 모든 모디파이어를 순회하며 Skin 타입 확인
+        Returns:
+            True: 스킨 모디파이어가 있는 경우
+            False: 없는 경우
         """
         if obj is None:
             if len(rt.selection) > 0:
@@ -110,16 +58,14 @@ class Skin:
     
     def is_valid_bone(self, inNode):
         """
-        노드가 유효한 스킨 본인지 확인합니다.
+        노드가 유효한 스킨 본인지 확인
         
-        ## Parameters
-        - inNode (MaxObject): 확인할 노드
+        Args:
+            inNode: 확인할 노드
             
-        ## Returns
-        - bool: 유효한 본이면 True, 아니면 False
-        
-        ## 동작 방식
-        GeometryClass, BoneGeometry 또는 Helper 상위 클래스인 경우 본으로 간주합니다.
+        Returns:
+            True: 유효한 본인 경우
+            False: 아닌 경우
         """
         return (rt.superClassOf(inNode) == rt.GeometryClass or 
                 rt.classOf(inNode) == rt.BoneGeometry or 
@@ -127,17 +73,13 @@ class Skin:
     
     def get_skin_mod(self, obj=None):
         """
-        객체의 스킨 모디파이어 배열을 반환합니다.
+        객체의 스킨 모디파이어 배열 반환
         
-        ## Parameters
-        - obj (MaxObject, optional): 모디파이어를 가져올 객체 (기본값: 현재 선택된 객체)
+        Args:
+            obj: 모디파이어를 가져올 객체 (기본값: 현재 선택된 객체)
             
-        ## Returns
-        - list: 스킨 모디파이어 배열
-        
-        ## 동작 방식
-        1. 객체가 제공되지 않으면 현재 선택된 객체 사용
-        2. 객체의 모든 모디파이어 중 Skin 타입만 필터링하여 반환
+        Returns:
+            스킨 모디파이어 배열
         """
         if obj is None:
             if len(rt.selection) > 0:
@@ -149,21 +91,15 @@ class Skin:
     
     def bind_skin(self, obj, bone_array):
         """
-        객체에 스킨 모디파이어를 바인딩합니다.
+        객체에 스킨 모디파이어 바인딩
         
-        ## Parameters
-        - obj (MaxObject): 바인딩할 객체
-        - bone_array (list): 바인딩할 본 배열
+        Args:
+            obj: 바인딩할 객체
+            bone_array: 바인딩할 본 배열
             
-        ## Returns
-        - bool: 성공하면 True, 실패하면 False
-        
-        ## 동작 방식
-        1. 객체와 본 배열 유효성 검사
-        2. 객체가 지오메트리 클래스인지 확인
-        3. 스킨 모디파이어 생성 및 객체에 추가
-        4. 각 본을 스킨 모디파이어에 추가
-        5. 스킨 모디파이어 옵션 설정(필터, 본 제한 등)
+        Returns:
+            True: 성공한 경우
+            False: 실패한 경우
         """
         if obj is None or len(bone_array) < 1:
             print("Select at least 1 influence and an object.")
@@ -200,18 +136,12 @@ class Skin:
     
     def optimize_skin(self, skin_mod, bone_limit=8, skin_tolerance=0.01):
         """
-        스킨 모디파이어를 최적화합니다.
+        스킨 모디파이어 최적화
         
-        ## Parameters
-        - skin_mod (Modifier): 스킨 모디파이어
-        - bone_limit (int): 버텍스당 영향 받는 본 제한 수 (기본값: 8)
-        - skin_tolerance (float): 스킨 가중치 허용 오차 (기본값: 0.01)
-        
-        ## 동작 방식
-        1. 스킨 모디파이어 기본 설정 구성
-        2. 영향력이 없는 본 가중치 제거
-        3. 사용되지 않는 본 제거
-        4. 필터 및 표시 옵션 설정
+        Args:
+            skin_mod: 스킨 모디파이어
+            bone_limit: 본 제한 수 (기본값: 8)
+            skin_tolerance: 스킨 가중치 허용 오차 (기본값: 0.01)
         """
         # 스킨 모디파이어 설정
         skin_mod.enableDQ = False
@@ -250,18 +180,13 @@ class Skin:
     
     def optimize_skin_process(self, objs=None, optim_all_skin_mod=False, bone_limit=8, skin_tolerance=0.01):
         """
-        여러 객체의 스킨을 최적화하는 프로세스를 실행합니다.
+        여러 객체의 스킨 최적화 프로세스
         
-        ## Parameters
-        - objs (list, optional): 최적화할 객체 배열 (기본값: 현재 선택된 객체들)
-        - optim_all_skin_mod (bool): 모든 스킨 모디파이어 최적화 여부 (기본값: False)
-        - bone_limit (int): 버텍스당 영향 받는 본 제한 수 (기본값: 8)
-        - skin_tolerance (float): 스킨 가중치 허용 오차 (기본값: 0.01)
-        
-        ## 동작 방식
-        1. 객체 배열 또는 선택된 객체들 처리
-        2. 각 객체의 스킨 모디파이어 찾기
-        3. 옵션에 따라 첫 번째 또는 모든 스킨 모디파이어 최적화
+        Args:
+            objs: 최적화할 객체 배열 (기본값: 현재 선택된 객체들)
+            optim_all_skin_mod: 모든 스킨 모디파이어 최적화 여부 (기본값: False)
+            bone_limit: 본 제한 수 (기본값: 8)
+            skin_tolerance: 스킨 가중치 허용 오차 (기본값: 0.01)
         """
         if objs is None:
             objs = rt.selection
@@ -286,25 +211,16 @@ class Skin:
     
     def load_skin(self, obj, file_path, load_bind_pose=False, keep_skin=False):
         """
-        스킨 데이터를 파일에서 로드합니다.
+        스킨 데이터 로드
         
-        ## Parameters
-        - obj (MaxObject): 스킨을 로드할 객체
-        - file_path (str): 스킨 데이터 파일 경로
-        - load_bind_pose (bool): 바인드 포즈도 함께 로드할지 여부 (기본값: False)
-        - keep_skin (bool): 기존 스킨을 유지할지 여부 (기본값: False)
+        Args:
+            obj: 로드할 객체
+            file_path: 스킨 파일 경로
+            load_bind_pose: 바인드 포즈 로드 여부
+            keep_skin: 기존 스킨 유지 여부
             
-        ## Returns
-        - list: 누락된 본 배열 (없는 본은 더미로 생성됨)
-        
-        ## 동작 방식
-        1. 파일에서 본 데이터와 가중치 읽기
-        2. 객체 버텍스 수 확인
-        3. 기존 스킨 모디파이어 처리(유지 또는 삭제)
-        4. 새 스킨 모디파이어 생성 및 설정
-        5. 본 데이터 처리 및 계층 구조 확인
-        6. 각 버텍스에 가중치 적용
-        7. 필요시 바인드 포즈 로드
+        Returns:
+            누락된 본 배열
         """
         # 기본값 설정
         if keep_skin != True:
@@ -445,22 +361,15 @@ class Skin:
     
     def save_skin(self, obj=None, file_path=None, save_bind_pose=False):
         """
-        스킨 데이터를 파일로 저장합니다.
+        스킨 데이터 저장
+        MAXScript의 saveskin.ms 를 Python으로 변환한 함수
         
-        ## Parameters
-        - obj (MaxObject, optional): 저장할 객체 (기본값: 현재 선택된 객체)
-        - file_path (str, optional): 저장할 파일 경로 (기본값: 자동 생성)
-        - save_bind_pose (bool): 바인드 포즈도 함께 저장할지 여부 (기본값: False)
+        Args:
+            obj: 저장할 객체 (기본값: 현재 선택된 객체)
+            file_path: 저장할 파일 경로 (기본값: None, 자동 생성)
             
-        ## Returns
-        - str: 저장된 파일 경로 또는 None (실패시)
-        
-        ## 동작 방식
-        1. 현재 스킨 모디파이어 및 본 정보 가져오기
-        2. 본 리스트 및 버텍스별 가중치 데이터 수집
-        3. 파일 경로 지정 또는 자동 생성
-        4. 스킨 데이터 파일 저장
-        5. 바인드 포즈 데이터 저장 (선택적)
+        Returns:
+            저장된 파일 경로
         """
         # 현재 선택된 객체가 없는 경우 선택된 객체 사용
         if obj is None:
@@ -545,21 +454,16 @@ class Skin:
     
     def get_bone_id(self, skin_mod, b_array, type=1, refresh=True):
         """
-        스킨 모디파이어에서 본 ID를 가져옵니다.
+        스킨 모디파이어에서 본 ID 가져오기
         
-        ## Parameters
-        - skin_mod (Modifier): 스킨 모디파이어
-        - b_array (list): 본 배열
-        - type (int): 0=객체, 1=객체 이름 (기본값: 1) 
-        - refresh (bool): 인터페이스 업데이트 여부 (기본값: True)
+        Args:
+            skin_mod: 스킨 모디파이어
+            b_array: 본 배열
+            type: 0=객체, 1=객체 이름
+            refresh: 인터페이스 업데이트 여부
             
-        ## Returns
-        - list: 본 ID 배열
-        
-        ## 동작 방식
-        1. 현재 스킨 모디파이어로 설정
-        2. 모든 본 순회하며 b_array에 있는지 확인
-        3. 타입에 따라 이름 또는 객체로 비교
+        Returns:
+            본 ID 배열
         """
         bone_id = []
         
@@ -581,17 +485,14 @@ class Skin:
     
     def get_bone_id_from_name(self, in_skin_mod, bone_name):
         """
-        본 이름으로 본 ID를 가져옵니다.
+        본 이름으로 본 ID 가져오기
         
-        ## Parameters
-        - in_skin_mod (Modifier): 스킨 모디파이어
-        - bone_name (str): 본 이름
+        Args:
+            in_skin_mod: 스킨 모디파이어를 가진 객체
+            bone_name: 본 이름
             
-        ## Returns
-        - int: 본 ID 또는 None (찾지 못한 경우)
-        
-        ## 동작 방식
-        스킨 모디파이어의 모든 본을 순회하며 이름이 일치하는 본의 ID 반환
+        Returns:
+            본 ID
         """
         for i in range(1, rt.skinOps.GetNumberBones(in_skin_mod) + 1):
             if rt.skinOps.GetBoneName(in_skin_mod, i, 1) == bone_name:
@@ -600,18 +501,14 @@ class Skin:
     
     def get_bones_from_skin(self, objs, skin_mod_index):
         """
-        스킨 모디파이어에서 사용된 본 배열을 가져옵니다.
+        스킨 모디파이어에서 사용된 본 배열 가져오기
         
-        ## Parameters
-        - objs (list): 객체 배열
-        - skin_mod_index (int): 스킨 모디파이어 인덱스
+        Args:
+            objs: 객체 배열
+            skin_mod_index: 스킨 모디파이어 인덱스
             
-        ## Returns
-        - list: 본 배열
-        
-        ## 동작 방식
-        1. 객체의 스킨 모디파이어 의존성 찾기
-        2. 유효한 본 객체만 필터링하여 반환
+        Returns:
+            본 배열
         """
         inf_list = []
         
@@ -627,34 +524,26 @@ class Skin:
     
     def find_skin_mod_id(self, obj):
         """
-        객체에서 스킨 모디파이어 인덱스를 찾습니다.
+        객체에서 스킨 모디파이어 인덱스 찾기
         
-        ## Parameters
-        - obj (MaxObject): 대상 객체
+        Args:
+            obj: 대상 객체
             
-        ## Returns
-        - list: 스킨 모디파이어 인덱스 배열 (1부터 시작)
-        
-        ## 동작 방식
-        객체의 모든 모디파이어를 순회하며 Skin 타입의 모디파이어 인덱스 수집
+        Returns:
+            스킨 모디파이어 인덱스 배열
         """
         return [i+1 for i in range(len(obj.modifiers)) if rt.classOf(obj.modifiers[i]) == rt.Skin]
     
     def sel_vert_from_bones(self, skin_mod, threshold=0.01):
         """
-        선택된 본에 영향 받는 버텍스를 선택합니다.
+        선택된 본에 영향 받는 버텍스 선택
         
-        ## Parameters
-        - skin_mod (Modifier): 스킨 모디파이어
-        - threshold (float): 가중치 임계값 (기본값: 0.01)
+        Args:
+            skin_mod: 스킨 모디파이어
+            threshold: 가중치 임계값 (기본값: 0.01)
             
-        ## Returns
-        - list: 선택된 버텍스 배열
-        
-        ## 동작 방식
-        1. 현재 선택된 본 ID 가져오기
-        2. 모든 버텍스 순회하며 해당 본에 영향 받는지 확인
-        3. 임계값 이상의 가중치를 가진 버텍스 선택
+        Returns:
+            선택된 버텍스 배열
         """
         verts_to_sel = []
         
@@ -680,16 +569,13 @@ class Skin:
     
     def sel_all_verts(self, skin_mod):
         """
-        스킨 모디파이어의 모든 버텍스를 선택합니다.
+        스킨 모디파이어의 모든 버텍스 선택
         
-        ## Parameters
-        - skin_mod (Modifier): 스킨 모디파이어
+        Args:
+            skin_mod: 스킨 모디파이어
             
-        ## Returns
-        - list: 선택된 버텍스 배열
-        
-        ## 동작 방식
-        모든 버텍스 인덱스를 배열에 추가하고 skinOps.SelectVertices로 선택
+        Returns:
+            선택된 버텍스 배열
         """
         verts_to_sel = []
         
@@ -705,19 +591,14 @@ class Skin:
     
     def make_rigid_skin(self, skin_mod, vert_list):
         """
-        버텍스 가중치를 경직화(rigid) 처리합니다.
+        버텍스 가중치를 경직화(rigid) 처리
         
-        ## Parameters
-        - skin_mod (Modifier): 스킨 모디파이어
-        - vert_list (list): 버텍스 리스트
+        Args:
+            skin_mod: 스킨 모디파이어
+            vert_list: 버텍스 리스트
             
-        ## Returns
-        - list: [본 ID 배열, 가중치 배열]
-        
-        ## 동작 방식
-        1. 선택된 버텍스들의 모든 가중치 수집
-        2. 본별 가중치 합산 및 정규화
-        3. 최소 임계값(0.01) 이상의 가중치만 유지
+        Returns:
+            [본 ID 배열, 가중치 배열]
         """
         weight_array = {}
         vert_count = 0
@@ -748,19 +629,13 @@ class Skin:
     
     def transfert_skin_data(self, obj, source_bones, target_bones, vtx_list):
         """
-        스킨 가중치 데이터를 한 본에서 다른 본으로 이전합니다.
+        스킨 가중치 데이터 이전
         
-        ## Parameters
-        - obj (MaxObject): 대상 객체
-        - source_bones (list): 원본 본 배열
-        - target_bones (MaxObject): 대상 본
-        - vtx_list (list): 버텍스 리스트
-        
-        ## 동작 방식
-        1. 본 ID 매핑 생성
-        2. 각 버텍스의 스킨 데이터 수집
-        3. 원본 본의 가중치를 추출하여 대상 본에 전달
-        4. 새 가중치 적용
+        Args:
+            obj: 대상 객체
+            source_bones: 원본 본 배열
+            target_bones: 대상 본
+            vtx_list: 버텍스 리스트
         """
         skin_data = []
         new_skin_data = []
@@ -825,21 +700,17 @@ class Skin:
             
     def smooth_skin(self, inObj, inVertMode=VertexMode.Edges, inRadius=5.0, inIterNum=3, inKeepMax=False):
         """
-        스킨 가중치를 부드럽게 스무딩합니다.
+        스킨 가중치 부드럽게 하기
         
-        ## Parameters
-        - inObj (MaxObject): 대상 객체
-        - inVertMode (VertexMode): 버텍스 모드 (기본값: VertexMode.Edges)
-            - Edges(1): 에지 연결 기반 스무딩
-            - Attach(2): 연결된 버텍스 기반 스무딩
-            - All(3): 모든 버텍스 대상 스무딩
-            - Stiff(4): 강성 유지 스무딩
-        - inRadius (float): 스무딩 반경 (기본값: 5.0)
-        - inIterNum (int): 반복 횟수 (기본값: 3)
-        - inKeepMax (bool): 최대 가중치 유지 여부 (기본값: False)
-        
-        ## 동작 방식
-        MAXScript 코드를 문자열로 정의하고 실행하여 복잡한 스무딩 로직 처리
+        Args:
+            inObj: 대상 객체
+            inVertMode: 버텍스 모드 (기본값: 1)
+            inRadius: 반경 (기본값: 5.0)
+            inIterNum: 반복 횟수 (기본값: 3)
+            inKeepMax: 최대 가중치 유지 여부 (기본값: False)
+            
+        Returns:
+            None
         """
         maxScriptCode = textwrap.dedent(r'''
             struct _SmoothSkin (
