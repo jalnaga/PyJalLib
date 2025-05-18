@@ -45,9 +45,9 @@ class Hip:
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, helperService=self.helper, constraintService=self.const)
         
         # 기본 속성 초기화
-        self.pelvisWeight = 0.6
-        self.thighWeight = 0.4
-        self.pushAmount = 10
+        self.pelvisWeight = 0.4
+        self.thighWeight = 0.6
+        self.pushAmount = 20
         
         self.pelvis = None
         self.thigh = None
@@ -76,7 +76,7 @@ class Hip:
             "axis = [0,0,1]\n"
             "\n"
             "saturatedTwistZ = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"
-            "pushScaleY = amax 0.0 saturatedTwistZ\n"
+            "pushScaleY = (amax 0.0 saturatedTwistZ) * 0.5\n"
             "\n"
             "axis = [0,1,0]\n"
             "saturatedTwistY = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"
@@ -94,9 +94,9 @@ class Hip:
         Returns:
             self: 메소드 체이닝을 위한 자기 자신 반환
         """
-        self.pelvisWeight = 0.6
-        self.thighWeight = 0.4
-        self.pushAmount = 10
+        self.pelvisWeight = 0.4
+        self.thighWeight = 0.6
+        self.pushAmount = 20
         
         self.pelvis = None
         self.thigh = None

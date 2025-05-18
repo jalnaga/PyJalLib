@@ -65,7 +65,7 @@ class KneeBone:
         
         self.middleBones = []
         
-        self.liftScale = 0.025
+        self.liftScale = 0.05
         
         self.thighRotScriptExpression = (
             "localLimbTm = limb.transform * inverse limbParent.transform\n"
@@ -273,7 +273,7 @@ class KneeBone:
         
         self.const.set_rot_controllers_weight_in_list(self.calfRotHelper, 1, self.liftScale * 100.0)
         
-    def create_middle_bone(self, inThigh, inCalf, inKneePopScale=1.0, inKneeBackScale=1.0):
+    def create_middle_bone(self, inThigh, inCalf, inKneePopScale=0.1, inKneeBackScale=1.5):
         """
         무릎 중간 본을 생성합니다.
         
@@ -309,7 +309,8 @@ class KneeBone:
         
         result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
-        calfName = self.name.get_name_part("RealName", inCalf.name)
+        filteringChar = self.name._get_filtering_char(inCalf.name)
+        calfName = self.name.get_name_part("RealName", inCalf.name+ filteringChar + "Vol")
         isLower = calfName[0].islower()
         replaceName = "Knee"
         if isLower:
@@ -504,7 +505,7 @@ class KneeBone:
         
         self.middleBones = []
         
-        self.liftScale = 0.025
+        self.liftScale = 0.05
         
         return self
 

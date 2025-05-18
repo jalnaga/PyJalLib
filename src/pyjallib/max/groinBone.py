@@ -98,7 +98,7 @@ class GroinBone:
         if inPelvis.name[0].islower():
             groinName = groinName.lower()
         
-        groinBaseName = self.name.add_suffix_to_real_name(inPelvis.name, self.name._get_filtering_char(inLThighTwist.name) + groinName)
+        groinBaseName = self.name.replace_name_part("RealName", inPelvis.name, groinBaseName)
         
         pelvisHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "00")
