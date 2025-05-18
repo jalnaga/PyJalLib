@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
-import __main__
-jal = __main__.jal
+from pyjallib.max.header import get_pyjallibmaxheader
+jal = get_pyjallibmaxheader()
 
 def jal_selFilter_all():
     jal.sel.set_selectionSet_to_all()

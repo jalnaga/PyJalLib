@@ -103,13 +103,13 @@ class Header:
         self.tools.append(tool)
 
 # 모듈 레벨에서 전역 인스턴스 생성
-jal = Header.get_instance()
+_pyjallibmaxheader = Header.get_instance()
 
-def get_jal():
+def get_pyjallibmaxheader():
     """
     jal 인스턴스를 반환합니다.
     
     Returns:
         Header 인스턴스
     """
-    return jal
+    return _pyjallibmaxheader

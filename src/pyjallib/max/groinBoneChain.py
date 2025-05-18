@@ -38,7 +38,8 @@ Examples:
 """
 
 from pymxs import runtime as rt
-from .header import jal
+from pyjallib.max.header import get_pyjallibmaxheader
+jal = get_pyjallibmaxheader()
 
 class GroinBoneChain:
     def __init__(self, inResult):
