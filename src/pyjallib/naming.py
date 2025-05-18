@@ -949,10 +949,6 @@ class Naming:
                 partIndex = self.get_name_part_index(partName)
                 foundName = self.get_name(partName, inStr)
                 opositeName = part.get_most_different_weight_value(foundName)
-                print(f"partName: {partName}")
-                print(f"partindex: {partIndex}")
-                print(f"foundName: {foundName}")
-                print(f"opositeName: {opositeName}")
                 if opositeName and foundName != opositeName:
                     nameArray[partIndex] = opositeName
     
