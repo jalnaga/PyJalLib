@@ -420,7 +420,7 @@ class KneeBone:
             self.calfTwistBones.append(liftTwistBone)
             self.calfTwistHelpers.append(liftTwistHelper)
             
-    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneePopScale=1.0, inKneeBackScale=1.0):
+    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneePopScale=0.1, inKneeBackScale=1.5):
         """
         자동 무릎 본 시스템의 모든 요소를 생성하는 주요 메서드입니다.
         
