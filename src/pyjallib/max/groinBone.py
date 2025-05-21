@@ -129,7 +129,7 @@ class GroinBone:
         
         groinBoneName = self.name.replace_name_part("Index", groinBaseName, "0")
         groinBoneName = self.name.remove_name_part("Side", groinBoneName)
-        groinBone = self.bone.create_nub_bone(groinBoneName, size=2)
+        groinBone = self.bone.create_nub_bone(groinBoneName, 2)
         groinBone.name = groinBoneName
         groinBone.transform = pelvisHelper.transform
         groinBone.parent = inPelvis
