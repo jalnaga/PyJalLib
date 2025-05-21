@@ -316,12 +316,13 @@ class KneeBone:
         replaceName = "Knee"
         if isLower:
             replaceName = replaceName.lower()
+            calfName = calfName.lower()
         
         for item in result["Bones"]:
-            item.name.replace(calfName, replaceName)
+            item.name = item.name.replace(calfName, replaceName)
         
-        result["rootBone"].name.replace(calfName, replaceName)
-        result["RotHelper"].name.replace(calfName, replaceName)
+        result["RootBone"].name = result["RootBone"].name.replace(calfName, replaceName)
+        result["RotHelper"].name = result["RotHelper"].name.replace(calfName, replaceName)
         
         # 결과 저장
         if result and "Bones" in result:
@@ -363,13 +364,11 @@ class KneeBone:
         
         for item in thighChildren:
             testName = item.name.lower()
-            print(testName)
             if testName.find("twist") != -1:
                 oriThighTwistBones.append(item)
     
         for item in calfChildren:
             testName = item.name.lower()
-            print(testName)
             if testName.find("twist") != -1:
                 oriClafTwistBones.append(item)
         
@@ -382,7 +381,7 @@ class KneeBone:
             
             liftTwistBone = self.bone.create_nub_bone(liftTwistBoneName, 2)
             liftTwistBone.name = self.name.remove_name_part("Nub", liftTwistBone.name)
-            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", oriThighTwistBones.name))
+            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", item.name))
             
             rt.setProperty(liftTwistBone, "transform", item.transform)
             liftTwistBone.parent = item
@@ -407,7 +406,7 @@ class KneeBone:
             
             liftTwistBone = self.bone.create_nub_bone(liftTwistBoneName, 2)
             liftTwistBone.name = self.name.remove_name_part("Nub", liftTwistBone.name)
-            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", oriClafTwistBones.name))
+            liftTwistBone.name = self.name.replace_name_part("Index", liftTwistBone.name, self.name.get_name("Index", item.name))
             
             rt.setProperty(liftTwistBone, "transform", item.transform)
             liftTwistBone.parent = item
