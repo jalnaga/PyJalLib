@@ -134,7 +134,6 @@ class TwistBone:
         inObjXAxisVec = inObj.objectTransform.row1
         distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
         offssetAmount = (distance / twistNum) * distanceDir
-        weightVal = 100.0 / (twistNum-1)
         
         boneChainArray = []
         
@@ -171,6 +170,8 @@ class TwistBone:
             lastBone.transform = limb.transform
             lastBone.parent = limb
             self.anim.move_local(lastBone, offssetAmount*(twistNum-1), 0, 0)
+            
+            weightVal = 100.0 / (twistNum-1)
             
             if twistNum > 2:
                 for i in range(1, twistNum-1):
@@ -244,7 +245,6 @@ class TwistBone:
         inObjXAxisVec = inObj.objectTransform.row1
         distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
         offssetAmount = (distance / twistNum) * distanceDir
-        weightVal = 100.0 / (twistNum-1)
         
         boneChainArray = []
         
@@ -280,6 +280,8 @@ class TwistBone:
             lastBone.transform = inObj.transform
             lastBone.parent = inObj
             self.anim.move_local(lastBone, 0, 0, 0)
+            
+            weightVal = 100.0 / (twistNum-1)
             
             if twistNum > 2:
                 for i in range(1, twistNum-1):
