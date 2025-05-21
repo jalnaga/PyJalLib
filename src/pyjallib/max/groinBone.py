@@ -98,10 +98,11 @@ class GroinBone:
         if inPelvis.name[0].islower():
             groinName = groinName.lower()
         
-        groinBaseName = self.name.replace_name_part("RealName", inPelvis.name, groinName)
+        groinBaseName = self.name.replace_name_part("RealName", inLThighTwist.name, groinName)
         
         pelvisHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "00")
+        pelvisHelperName = self.name.remove_name_part("Side", pelvisHelperName)
         pelvisHelper = self.helper.create_point(pelvisHelperName)
         pelvisHelper.transform = inPelvis.transform
         self.anim.rotate_local(pelvisHelper, 0.0, 0.0, -180.0)
