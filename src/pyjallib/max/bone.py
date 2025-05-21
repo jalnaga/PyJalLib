@@ -239,6 +239,7 @@ class Bone:
         nubBone.backfin = False
         nubBone.sidefins = False
         nubBone.name = self.name.remove_name_part("Index", inName)
+        nubBone.name = self.name.remove_name_part("Nub", nubBone.name)
         nubBone.name = self.name.replace_name_part("Nub", nubBone.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
         
         # 화면 갱신 재개
@@ -888,6 +889,7 @@ class Bone:
         returnBones = []
         spine3 = None
         neck = None
+        head = None
         
         handL = None
         handR = None
@@ -905,6 +907,8 @@ class Bone:
                 spine3 = item
             if rt.matchPattern(item.name, pattern="*neck 01"):
                 neck = item
+            if rt.matchPattern(item.name, pattern="*head"):
+                head = item
             if rt.matchPattern(item.name, pattern="*hand*l"):
                 handL = item
             if rt.matchPattern(item.name, pattern="*hand*r"):
@@ -924,6 +928,8 @@ class Bone:
         
         filteringChar = self.name._get_filtering_char(inBoneArray[-1].name)
         isLower = inBoneArray[-1].name[0].islower()
+        
+        # Spine 4,5 생성
         spineName = self.name.get_name_part_value_by_description("Base", "Biped") + filteringChar + "Spine"
         
         spine4 = self.create_nub_bone(spineName, 2)
@@ -946,6 +952,23 @@ class Bone:
         returnBones.append(spine4)
         returnBones.append(spine5)
         
+        # 목 생성
+        neckName = self.name.get_name_part_value_by_description("Base", "Biped") + filteringChar + "Neck"
+        
+        nekc2 = self.create_nub_bone(neckName, 2)
+        
+        nekc2.name = self.name.replace_name_part("Index", nekc2.name, "2")
+        nekc2.name = self.name.remove_name_part("Nub", nekc2.name)
+        if isLower:
+            nekc2.name = nekc2.name.lower()
+        
+        neckDistance = rt.distance(neck, head)/2.0
+        rt.setProperty(nekc2, "transform", neck.transform)
+        self.anim.move_local(nekc2, neckDistance, 0, 0)
+        
+        returnBones.append(nekc2)
+        
+        # 손가락용 메타카팔 생성
         for i, finger in enumerate(lFingers):
             knuckleBoneName = self.name.add_suffix_to_real_name(finger.name, filteringChar+knuckleName)
             knuckleBoneName = self.name.remove_name_part("Index", knuckleBoneName)
@@ -992,6 +1015,7 @@ class Bone:
         returnBones = []
         
         spine3 = None
+        neck = None
         
         handL = None
         handR = None
@@ -1001,6 +1025,8 @@ class Bone:
         for item in inBipArray:
             if rt.matchPattern(item.name, pattern="*spine 03"):
                 spine3 = item
+            if rt.matchPattern(item.name, pattern="*neck 01"):
+                neck = item
             if rt.matchPattern(item.name, pattern="*hand*l"):
                 handL = item
             if rt.matchPattern(item.name, pattern="*hand*r"):
@@ -1009,6 +1035,8 @@ class Bone:
         for item in inMissingBoneArray:
             if rt.matchPattern(item.name, pattern="*spine*"):
                 item.parent = spine3
+            if rt.matchPattern(item.name, pattern="*neck*"):
+                item.parent = neck
             if rt.matchPattern(item.name, pattern=f"*{knuckleName}*l"):
                 item.parent = handL
             if rt.matchPattern(item.name, pattern=f"*{knuckleName}*r"):
@@ -1025,6 +1053,8 @@ class Bone:
         spine5 = None
         
         neck = None
+        neck2 = None
+        head = None
         clavicleL = None
         clavicleR = None
         
@@ -1042,6 +1072,8 @@ class Bone:
                 spine3 = item
             if rt.matchPattern(item.name, pattern="*neck*01"):
                 neck = item
+            if rt.matchPattern(item.name, pattern="*head*"):
+                head = item
             if rt.matchPattern(item.name, pattern="*clavicle*l"):
                 clavicleL = item
             if rt.matchPattern(item.name, pattern="*clavicle*r"):
@@ -1069,6 +1101,11 @@ class Bone:
                 neck.parent = spine5
                 clavicleL.parent = spine5
                 clavicleR.parent = spine5
+                
+            if rt.matchPattern(item.name, pattern="*neck*02"):
+                neck2 = item
+                item.parent = neck
+                head.parent = neck2
             
             if rt.matchPattern(item.name, pattern=f"*{knuckleName}*l"):
                 item.parent = handL

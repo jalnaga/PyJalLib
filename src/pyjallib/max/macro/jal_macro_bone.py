@@ -273,7 +273,7 @@ def jal_bone_nub_create():
         for item in non_bone_array:
             jal.bone.create_nub_bone_on_obj(item)
     else:
-        jal.bone.create_nub_bone("Temp Nub", 2)
+        jal.bone.create_nub_bone("Temp", 2)
 
 # Register macroscripts
 macroScript_Category = "jalTools"
