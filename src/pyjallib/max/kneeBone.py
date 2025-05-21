@@ -310,7 +310,7 @@ class KneeBone:
         result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
         filteringChar = self.name._get_filtering_char(inCalf.name)
-        calfName = self.name.get_name_part("RealName", inCalf.name+ filteringChar + "Vol")
+        calfName = self.name.get_name("RealName", inCalf.name+ filteringChar + "Vol")
         isLower = calfName[0].islower()
         replaceName = "Knee"
         if isLower:
@@ -362,11 +362,13 @@ class KneeBone:
         
         for item in thighChildren:
             testName = item.name.lower()
+            print(testName)
             if testName.find("twist") != -1:
                 oriThighTwistBones.append(item)
     
         for item in calfChildren:
             testName = item.name.lower()
+            print(testName)
             if testName.find("twist") != -1:
                 oriClafTwistBones.append(item)
         
