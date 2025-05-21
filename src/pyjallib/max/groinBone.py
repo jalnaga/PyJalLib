@@ -101,7 +101,7 @@ class GroinBone:
         groinBaseName = self.name.replace_name_part("RealName", inLThighTwist.name, groinName)
         
         pelvisHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
-        pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "00")
+        pelvisHelperName = self.name.replace_name_part("Index", pelvisHelperName, "0")
         pelvisHelperName = self.name.remove_name_part("Side", pelvisHelperName)
         pelvisHelper = self.helper.create_point(pelvisHelperName)
         pelvisHelper.transform = inPelvis.transform
@@ -111,7 +111,7 @@ class GroinBone:
         
         lThighTwistHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         lThighTwistHelperName = self.name.replace_name_part("Side", lThighTwistHelperName, self.name.get_name_part_value_by_description("Side", "Left"))
-        lThighTwistHelperName = self.name.replace_name_part("Index", lThighTwistHelperName, "00")
+        lThighTwistHelperName = self.name.replace_name_part("Index", lThighTwistHelperName, "0")
         lThighTwistHelper = self.helper.create_point(lThighTwistHelperName)
         lThighTwistHelper.transform = pelvisHelper.transform
         lThighTwistHelper.position = inLThighTwist.position
@@ -120,20 +120,22 @@ class GroinBone:
         
         rThighTwistHelperName = self.name.replace_name_part("Type", groinBaseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         rThighTwistHelperName = self.name.replace_name_part("Side", rThighTwistHelperName, self.name.get_name_part_value_by_description("Side", "Right"))
-        rThighTwistHelperName = self.name.replace_name_part("Index", rThighTwistHelperName, "00")
+        rThighTwistHelperName = self.name.replace_name_part("Index", rThighTwistHelperName, "0")
         rThighTwistHelper = self.helper.create_point(rThighTwistHelperName)
         rThighTwistHelper.transform = pelvisHelper.transform
         rThighTwistHelper.position = inRThighTwist.position
         rThighTwistHelper.parent = inRThighTwist
         self.helper.set_shape_to_box(rThighTwistHelper)
         
-        groinBoneName = self.name.replace_name_part("Index", groinBaseName, "00")
-        groinBones = self.bone.create_simple_bone(3.0, groinBoneName, size=2)
-        groinBones[0].transform = pelvisHelper.transform
-        groinBones[0].parent = inPelvis
+        groinBoneName = self.name.replace_name_part("Index", groinBaseName, "0")
+        groinBoneName = self.name.remove_name_part("Side", groinBoneName)
+        groinBone = self.bone.create_nub_bone(groinBoneName, size=2)
+        groinBone.name = groinBoneName
+        groinBone.transform = pelvisHelper.transform
+        groinBone.parent = inPelvis
         
-        self.const.assign_rot_const_multi(groinBones[0], [pelvisHelper, lThighTwistHelper, rThighTwistHelper])
-        rotConst = self.const.get_rot_list_controller(groinBones[0])[1]
+        self.const.assign_rot_const_multi(groinBone, [pelvisHelper, lThighTwistHelper, rThighTwistHelper])
+        rotConst = self.const.get_rot_list_controller(groinBone)[1]
         rotConst.setWeight(1, inPelvisWeight)
         rotConst.setWeight(2, inThighWeight/2.0)
         rotConst.setWeight(3, inThighWeight/2.0)
@@ -142,7 +144,7 @@ class GroinBone:
         self.pelvis = inPelvis
         self.lThighTwist = inLThighTwist
         self.rThighTwist = inRThighTwist
-        self.bones = groinBones
+        self.bones = [groinBone]
         self.helpers = [pelvisHelper, lThighTwistHelper, rThighTwistHelper]
         self.pelvisWeight = inPelvisWeight
         self.thighWeight = inThighWeight
@@ -150,7 +152,7 @@ class GroinBone:
         returnVal["Pelvis"] = inPelvis
         returnVal["LThighTwist"] = inLThighTwist
         returnVal["RThighTwist"] = inRThighTwist
-        returnVal["Bones"] = groinBones
+        returnVal["Bones"] = [groinBone]
         returnVal["Helpers"] = [pelvisHelper, lThighTwistHelper, rThighTwistHelper]
         returnVal["PelvisWeight"] = inPelvisWeight
         returnVal["ThighWeight"] = inThighWeight
