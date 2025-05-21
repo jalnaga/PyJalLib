@@ -608,7 +608,7 @@ class Bip:
         for i, fingers in enumerate(lFingersList):
             for j, item in enumerate(fingers):
                 item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
-                item.name = self.name.remove_name_part("Side", item.name, self.name.get_name_part_value_by_description("Side", "Left"))
+                item.name = self.name.replace_name_part("Side", item.name, self.name.get_name_part_value_by_description("Side", "Left"))
                 item.name = self.name.replace_name_part("Index", item.name, str(j+1))
             
             fingerNub = self.bone.get_every_children(fingers[-1])[0]
@@ -619,7 +619,7 @@ class Bip:
         for i, fingers in enumerate(rFingersList):
             for j, item in enumerate(fingers):
                 item.name = self.name.replace_name_part("RealName", item.name, fingerName[i])
-                item.name = self.name.remove_name_part("Side", item.name, self.name.get_name_part_value_by_description("Side", "Right"))
+                item.name = self.name.replace_name_part("Side", item.name, self.name.get_name_part_value_by_description("Side", "Right"))
                 item.name = self.name.replace_name_part("Index", item.name, str(j+1))
             
             fingerNub = self.bone.get_every_children(fingers[-1])[0]
