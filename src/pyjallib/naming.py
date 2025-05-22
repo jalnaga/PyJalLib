@@ -494,7 +494,7 @@ class Naming:
         for part in self._nameParts:
             partName = part.get_name()
             partType = part.get_type()
-            if partType != NamePartType.REALNAME:
+            if partType.value != NamePartType.REALNAME.value:
                 foundName = self.get_name(partName, inStr)
                 nonRealNameArray.append(foundName)
         
