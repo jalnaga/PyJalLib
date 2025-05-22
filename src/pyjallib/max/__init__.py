@@ -7,35 +7,35 @@ JalTools 3DS 패키지
 """
 
 # 모듈 임포트
-from .header import Header
+from pyjallib.max.header import Header
 
-from .name import Name
-from .anim import Anim
+from pyjallib.max.name import Name
+from pyjallib.max.anim import Anim
 
-from .helper import Helper
-from .constraint import Constraint
-from .bone import Bone
+from pyjallib.max.helper import Helper
+from pyjallib.max.constraint import Constraint
+from pyjallib.max.bone import Bone
 
-from .mirror import Mirror
-from .layer import Layer
-from .align import Align
-from .select import Select
-from .link import Link
+from pyjallib.max.mirror import Mirror
+from pyjallib.max.layer import Layer
+from pyjallib.max.align import Align
+from pyjallib.max.select import Select
+from pyjallib.max.link import Link
 
-from .bip import Bip
-from .skin import Skin
-from .morph import Morph
+from pyjallib.max.bip import Bip
+from pyjallib.max.skin import Skin
+from pyjallib.max.morph import Morph
 
-from .boneChain import BoneChain
+from pyjallib.max.boneChain import BoneChain
 
-from .twistBone import TwistBone
-from .groinBone import GroinBone
-from .autoClavicle import AutoClavicle
-from .volumeBone import VolumeBone
-from .kneeBone import KneeBone
-from .hip import Hip
+from pyjallib.max.twistBone import TwistBone
+from pyjallib.max.groinBone import GroinBone
+from pyjallib.max.autoClavicle import AutoClavicle
+from pyjallib.max.volumeBone import VolumeBone
+from pyjallib.max.kneeBone import KneeBone
+from pyjallib.max.hip import Hip
 
-from .ui.Container import Container
+from pyjallib.max.ui.Container import Container
 
 # 모듈 내보내기
 __all__ = [
