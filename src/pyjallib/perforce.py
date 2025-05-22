@@ -283,6 +283,36 @@ class Perforce:
             bool: 체크아웃 성공 시 True, 실패 시 False
         """
         return self._file_op("edit", file_path, change_list_number, "체크아웃")
+        
+    def checkout_files(self, file_paths: list, change_list_number: int) -> bool:
+        """여러 파일을 한 번에 체크아웃합니다.
+        
+        Args:
+            file_paths (list): 체크아웃할 파일 경로 리스트
+            change_list_number (int): 체인지 리스트 번호
+            
+        Returns:
+            bool: 모든 파일 체크아웃 성공 시 True, 하나라도 실패 시 False
+        """
+        if not file_paths:
+            logger.debug("체크아웃할 파일 목록이 비어있습니다.")
+            return True
+            
+        logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 체크아웃 시도...")
+        
+        all_success = True
+        for file_path in file_paths:
+            success = self.checkout_file(file_path, change_list_number)
+            if not success:
+                all_success = False
+                logger.warning(f"파일 '{file_path}' 체크아웃 실패")
+                
+        if all_success:
+            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에 성공적으로 체크아웃했습니다.")
+        else:
+            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에 체크아웃하지 못했습니다.")
+            
+        return all_success
 
     def add_file(self, file_path: str, change_list_number: int) -> bool:
         """파일을 추가합니다.
@@ -295,6 +325,36 @@ class Perforce:
             bool: 추가 성공 시 True, 실패 시 False
         """
         return self._file_op("add", file_path, change_list_number, "추가")
+        
+    def add_files(self, file_paths: list, change_list_number: int) -> bool:
+        """여러 파일을 한 번에 추가합니다.
+        
+        Args:
+            file_paths (list): 추가할 파일 경로 리스트
+            change_list_number (int): 체인지 리스트 번호
+            
+        Returns:
+            bool: 모든 파일 추가 성공 시 True, 하나라도 실패 시 False
+        """
+        if not file_paths:
+            logger.debug("추가할 파일 목록이 비어있습니다.")
+            return True
+            
+        logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 추가 시도...")
+        
+        all_success = True
+        for file_path in file_paths:
+            success = self.add_file(file_path, change_list_number)
+            if not success:
+                all_success = False
+                logger.warning(f"파일 '{file_path}' 추가 실패")
+                
+        if all_success:
+            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에 성공적으로 추가했습니다.")
+        else:
+            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에 추가하지 못했습니다.")
+            
+        return all_success
 
     def delete_file(self, file_path: str, change_list_number: int) -> bool:
         """파일을 삭제합니다.
@@ -307,6 +367,36 @@ class Perforce:
             bool: 삭제 성공 시 True, 실패 시 False
         """
         return self._file_op("delete", file_path, change_list_number, "삭제")
+        
+    def delete_files(self, file_paths: list, change_list_number: int) -> bool:
+        """여러 파일을 한 번에 삭제합니다.
+        
+        Args:
+            file_paths (list): 삭제할 파일 경로 리스트
+            change_list_number (int): 체인지 리스트 번호
+            
+        Returns:
+            bool: 모든 파일 삭제 성공 시 True, 하나라도 실패 시 False
+        """
+        if not file_paths:
+            logger.debug("삭제할 파일 목록이 비어있습니다.")
+            return True
+            
+        logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 삭제 시도...")
+        
+        all_success = True
+        for file_path in file_paths:
+            success = self.delete_file(file_path, change_list_number)
+            if not success:
+                all_success = False
+                logger.warning(f"파일 '{file_path}' 삭제 실패")
+                
+        if all_success:
+            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에서 성공적으로 삭제했습니다.")
+        else:
+            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에서 삭제하지 못했습니다.")
+            
+        return all_success
 
     def submit_change_list(self, change_list_number: int) -> bool:
         """체인지 리스트를 제출합니다.
@@ -393,6 +483,28 @@ class Perforce:
             self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 삭제")
             return False
 
+    def revert_file(self, file_path: str, change_list_number: int) -> bool:
+        """체인지 리스트에서 특정 파일을 되돌립니다.
+
+        Args:
+            file_path (str): 되돌릴 파일 경로
+            change_list_number (int): 체인지 리스트 번호
+
+        Returns:
+            bool: 되돌리기 성공 시 True, 실패 시 False
+        """
+        if not self._is_connected():
+            return False
+            
+        logger.info(f"파일 '{file_path}'을 체인지 리스트 {change_list_number}에서 되돌리기 시도...")
+        try:
+            self.p4.run_revert("-c", change_list_number, file_path)
+            logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기 성공.")
+            return True
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기")
+            return False
+
     def revert_files(self, change_list_number: int, file_paths: list) -> bool:
         """체인지 리스트 내의 특정 파일들을 되돌립니다.
 
@@ -401,7 +513,7 @@ class Perforce:
             file_paths (list): 되돌릴 파일 경로 리스트
 
         Returns:
-            bool: 되돌리기 성공 시 True, 실패 시 False
+            bool: 모든 파일 되돌리기 성공 시 True, 하나라도 실패 시 False
         """
         if not self._is_connected():
             return False
@@ -410,14 +522,20 @@ class Perforce:
             return True
             
         logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 되돌리기 시도...")
-        try:
-            for file_path in file_paths:
-                self.p4.run_revert("-c", change_list_number, file_path)
-                logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기 성공.")
-            return True
-        except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number}에서 파일 되돌리기")
-            return False
+        
+        all_success = True
+        for file_path in file_paths:
+            success = self.revert_file(file_path, change_list_number)
+            if not success:
+                all_success = False
+                logger.warning(f"파일 '{file_path}' 되돌리기 실패")
+                
+        if all_success:
+            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에서 성공적으로 되돌렸습니다.")
+        else:
+            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에서 되돌리지 못했습니다.")
+            
+        return all_success
 
     def check_update_required(self, file_paths: list) -> bool:
         """파일이나 폴더의 업데이트 필요 여부를 확인합니다.
