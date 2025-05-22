@@ -16,6 +16,8 @@ from .bone import Bone
 from .constraint import Constraint
 from .bip import Bip
 
+from .boneChain import BoneChain
+
 
 class AutoClavicle:
     """
@@ -166,12 +168,45 @@ class AutoClavicle:
         result = {
             "Bones": genBones,
             "Helpers": genHelpers,
-            "Clavicle": inClavicle,
-            "UpperArm": inUpperArm,
-            "LiftScale": liftScale
+            "SourceBones": [inClavicle, inUpperArm],
+            "Parameters": [liftScale]
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return result
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 자동 쇄골 뼈를 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 쇄골 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): 자동 쇄골 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+        
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인
+        if len(sourceBones) < 2 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]):
+            return None
+            
+        # 파라미터 가져오기 (또는 기본값 사용)
+        liftScale = parameters[0] if len(parameters) > 0 else 0.8
+        
+        # 쇄골 생성
+        inClavicle = sourceBones[0]
+        inUpperArm = sourceBones[1]
+        
+        # 새로운 쇄골 생성
+        return self.create_bones(inClavicle, inUpperArm, liftScale)

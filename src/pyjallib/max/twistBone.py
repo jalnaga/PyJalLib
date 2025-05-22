@@ -19,6 +19,8 @@ from .constraint import Constraint
 from .bip import Bip
 from .bone import Bone
 
+from .boneChain import BoneChain
+
 
 class TwistBone:
     """
@@ -121,12 +123,7 @@ class TwistBone:
             twistNum (int, optional): 생성할 트위스트 뼈대의 개수. 기본값은 4입니다.
         
         Returns:
-            dict: 생성된 트위스트 뼈대 정보를 담고 있는 사전 객체입니다.
-                 "Bones": 생성된 뼈대 객체들의 배열
-                 "Type": "Upper" (상체 타입)
-                 "Limb": 부모 객체 참조
-                 "Child": 자식 객체 참조
-                 "TwistNum": 생성된 트위스트 뼈대 개수
+            BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
         """
         limb = inObj
         distance = rt.distance(limb, inChild)
@@ -198,25 +195,18 @@ class TwistBone:
             
             boneChainArray.append(lastBone)
         
-        # 결과를 멤버 변수에 저장
-        self.limb = inObj
-        self.child = inChild
-        self.twistNum = twistNum
-        self.bones = boneChainArray
-        self.twistType = "Upper"
-        
-        returnVal = {
+        # 결과를 BoneChain 형태로 준비
+        result = {
             "Bones": boneChainArray,
-            "Type": "Upper",
-            "Limb": inObj,
-            "Child": inChild,
-            "TwistNum": twistNum
+            "Helpers": [],
+            "SourceBones": [inObj, inChild],
+            "Parameters": [twistNum, "Upper"]
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return returnVal
+        return BoneChain.from_result(result)
 
     def create_lower_limb_bones(self, inObj, inChild, twistNum=4):
         """
@@ -232,12 +222,7 @@ class TwistBone:
             twistNum (int, optional): 생성할 트위스트 뼈대의 개수. 기본값은 4입니다.
         
         Returns:
-            dict: 생성된 트위스트 뼈대 정보를 담고 있는 사전 객체입니다.
-                 "Bones": 생성된 뼈대 객체들의 배열
-                 "Type": "Lower" (하체 타입)
-                 "Limb": 부모 객체 참조
-                 "Child": 자식 객체 참조
-                 "TwistNum": 생성된 트위스트 뼈대 개수
+            BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
         """
         limb = inChild
         distance = rt.distance(inObj, inChild)
@@ -308,22 +293,54 @@ class TwistBone:
             
             boneChainArray.append(lastBone)
         
-        # 결과를 멤버 변수에 저장
-        self.limb = inObj
-        self.child = inChild
-        self.twistNum = twistNum
-        self.bones = boneChainArray
-        self.twistType = "Lower"
-        
-        returnVal = {
+        # 결과를 BoneChain 형태로 준비
+        result = {
             "Bones": boneChainArray,
-            "Type": "Lower",
-            "Limb": inObj,
-            "Child": inChild,
-            "TwistNum": twistNum
+            "Helpers": [],
+            "SourceBones": [inObj, inChild],
+            "Parameters": [twistNum, "Lower"]
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return returnVal
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 트위스트 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 트위스트 본 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): 트위스트 본 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+            
+        # 기존 객체 삭제
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인
+        if len(sourceBones) < 2 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]):
+            return None
+            
+        # 파라미터 가져오기 (또는 기본값 사용)
+        twistNum = parameters[0] if len(parameters) > 0 else 4
+        twistType = parameters[1] if len(parameters) > 1 else "Upper"
+        
+        # 본 생성
+        inObj = sourceBones[0]
+        inChild = sourceBones[1]
+        
+        # 타입에 따라 적절한 방식으로 트위스트 본 생성
+        if twistType == "Upper":
+            return self.create_upper_limb_bones(inObj, inChild, twistNum)
+        else:
+            return self.create_lower_limb_bones(inObj, inChild, twistNum)

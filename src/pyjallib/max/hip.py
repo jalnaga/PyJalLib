@@ -15,6 +15,8 @@ from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
 
+from .boneChain import BoneChain
+
 
 class Hip:
     """
@@ -222,18 +224,53 @@ class Hip:
         
         # 결과를 딕셔너리 형태로 준비
         result = {
-            "Pelvis": inPelvis,
-            "Thigh": inThigh,
-            "ThighTwist": inThighTwist,
             "Bones": self.bones,
             "Helpers": self.helpers,
-            "PelvisWeight": inPelvisWeight,
-            "ThighWeight": inThighWeight,
-            "PushAmount": pushAmount
+            "SourceBones": [inPelvis, inThigh, inThighTwist, inCalf],
+            "Parameters": [pushAmount, inPelvisWeight, inThighWeight]
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return result
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 Hip 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 Hip 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): Hip 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+            
+        # 기존 객체 삭제
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인
+        if len(sourceBones) < 4 or not all(rt.isValidNode(bone) for bone in sourceBones[:4]):
+            return None
+            
+        # 파라미터 가져오기 (또는 기본값 사용)
+        pushAmount = parameters[0] if len(parameters) > 0 else 5.0
+        pelvisWeight = parameters[1] if len(parameters) > 1 else 0.6
+        thighWeight = parameters[2] if len(parameters) > 2 else 0.4
+        
+        # Hip 생성
+        inPelvis = sourceBones[0]
+        inThigh = sourceBones[1]
+        inThighTwist = sourceBones[2]
+        inCalf = sourceBones[3]
+        
+        # 새로운 Hip 생성
+        return self.create_bone(inPelvis, inThigh, inThighTwist, inCalf, pushAmount, pelvisWeight, thighWeight)
 

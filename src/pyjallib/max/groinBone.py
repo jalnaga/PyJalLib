@@ -14,6 +14,8 @@ from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
 
+from .boneChain import BoneChain
+
 class GroinBone:
     """
     고간 부 본 관련 기능을 위한 클래스
@@ -75,21 +77,15 @@ class GroinBone:
         
         Args:
             inPelvis: Biped 객체
+            inLThighTwist: 왼쪽 허벅지 트위스트 본
+            inRThighTwist: 오른쪽 허벅지 트위스트 본
             inPelvisWeight: 골반 가중치 (기본값: 40.0)
             inThighWeight: 허벅지 가중치 (기본값: 60.0)
         
         Returns:
-            성공 여부 (Boolean)
+            BoneChain: 생성된 고간 부 본 체인 객체 또는 실패 시 False
         """
-        returnVal = {
-            "Pelvis": None,
-            "LThighTwist": None,
-            "RThighTwist": None,
-            "Bones": [],
-            "Helpers": [],
-            "PelvisWeight": inPelvisWeight,
-            "ThighWeight": inThighWeight
-        }
+        
         if rt.isValidNode(inPelvis) == False or rt.isValidNode(inLThighTwist) == False or rt.isValidNode(inRThighTwist) == False:
             rt.messageBox("There is no valid node.")
             return False
@@ -149,15 +145,52 @@ class GroinBone:
         self.pelvisWeight = inPelvisWeight
         self.thighWeight = inThighWeight
         
-        returnVal["Pelvis"] = inPelvis
-        returnVal["LThighTwist"] = inLThighTwist
-        returnVal["RThighTwist"] = inRThighTwist
-        returnVal["Bones"] = [groinBone]
-        returnVal["Helpers"] = [pelvisHelper, lThighTwistHelper, rThighTwistHelper]
-        returnVal["PelvisWeight"] = inPelvisWeight
-        returnVal["ThighWeight"] = inThighWeight
+        # BoneChain 구조에 맞는 결과 딕셔너리 생성
+        result = {
+            "Bones": [groinBone],
+            "Helpers": [pelvisHelper, lThighTwistHelper, rThighTwistHelper],
+            "SourceBones": [inPelvis, inLThighTwist, inRThighTwist],
+            "Parameters": [inPelvisWeight, inThighWeight]
+        }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return returnVal
+        # BoneChain 객체 반환
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 고간 부 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 고간 부 본 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): 고간 부 본 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+        
+        # 기존 객체 삭제
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인 (최소 3개: 골반, 좌허벅지트위스트, 우허벅지트위스트)
+        if len(sourceBones) < 3 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]) or not rt.isValidNode(sourceBones[2]):
+            return None
+            
+        # 파라미터 가져오기 (또는 기본값 사용)
+        pelvisWeight = parameters[0] if len(parameters) > 0 else 40.0
+        thighWeight = parameters[1] if len(parameters) > 1 else 60.0
+        
+        # 새로운 고간 부 본 생성
+        inPelvis = sourceBones[0]
+        inLThighTwist = sourceBones[1]
+        inRThighTwist = sourceBones[2]
+        
+        return self.create_bone(inPelvis, inLThighTwist, inRThighTwist, pelvisWeight, thighWeight)

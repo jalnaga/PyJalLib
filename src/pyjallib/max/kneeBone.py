@@ -16,6 +16,8 @@ from .bone import Bone
 from .constraint import Constraint
 from .volumeBone import VolumeBone
 
+from .boneChain import BoneChain
+
 class KneeBone:
     """
     자동 무릎 본(AutoKnee) 관련 기능을 제공하는 클래스.
@@ -443,7 +445,7 @@ class KneeBone:
             inKneeBackScale: 무릎 뒤쪽 돌출 스케일 (1.0이 기본값)
             
         Returns:
-            bool: 자동 무릎 본 시스템 생성 성공 여부
+            BoneChain: 생성된 자동 무릎 본 체인 객체
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf) or not rt.isValidNode(inFoot):
             return False
@@ -456,30 +458,61 @@ class KneeBone:
         self.create_middle_bone(inThigh, inCalf, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
         self.create_twist_bones(inThigh, inCalf)
         
-        # 결과를 딕셔너리 형태로 준비
+        # 모든 생성된 본들 수집
+        all_bones = self.thighTwistBones + self.calfTwistBones + self.middleBones
+        all_helpers = [self.lookAtHleper, self.thighRotHelper, self.calfRotHelper, 
+                      self.thighRotRootHelper, self.calfRotRootHelper] + self.thighTwistHelpers + self.calfTwistHelpers
+        
+        # 결과를 BoneChain 형태로 준비
         result = {
-            "Thigh": inThigh,
-            "Calf": inCalf, 
-            "Foot": inFoot,
-            "LookAtHelper": self.lookAtHleper,
-            "ThighRotHelper": self.thighRotHelper,
-            "CalfRotHelper": self.calfRotHelper,
-            "ThighRotRootHelper": self.thighRotRootHelper,
-            "CalfRotRootHelper": self.calfRotRootHelper,
-            "ThighTwistBones": self.thighTwistBones,
-            "CalfTwistBones": self.calfTwistBones,
-            "ThighTwistHelpers": self.thighTwistHelpers,
-            "CalfTwistHelpers": self.calfTwistHelpers,
-            "MiddleBones": self.middleBones,
-            "LiftScale": inLiftScale,
-            "KneePopScale": inKneePopScale,
-            "KneeBackScale": inKneeBackScale
+            "Bones": all_bones,
+            "Helpers": all_helpers,
+            "SourceBones": [inThigh, inCalf, inFoot],
+            "Parameters": [inLiftScale, inKneePopScale, inKneeBackScale]
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return result
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 자동 무릎 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 무릎 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): 자동 무릎 본 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+            
+        # 기존 객체 삭제
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인
+        if len(sourceBones) < 3 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]) or not rt.isValidNode(sourceBones[2]):
+            return None
+            
+        # 파라미터 가져오기 (또는 기본값 사용)
+        liftScale = parameters[0] if len(parameters) > 0 else 0.05
+        kneePopScale = parameters[1] if len(parameters) > 1 else 0.1
+        kneeBackScale = parameters[2] if len(parameters) > 2 else 1.5
+        
+        # 무릎 본 생성
+        inThigh = sourceBones[0]
+        inCalf = sourceBones[1]
+        inFoot = sourceBones[2]
+        
+        # 새로운 자동 무릎 본 생성
+        return self.create_bone(inThigh, inCalf, inFoot, liftScale, kneePopScale, kneeBackScale)
     
     def reset(self):
         """

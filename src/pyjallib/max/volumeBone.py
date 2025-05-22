@@ -18,6 +18,8 @@ from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
 
+from .boneChain import BoneChain
+
 
 class VolumeBone:  # Updated class name to match the new file name
     """
@@ -213,7 +215,7 @@ class VolumeBone:  # Updated class name to match the new file name
             inTransScales: 변환 비율 리스트
         
         Returns:
-            dict: VolumeBoneChain 생성을 위한 결과 딕셔너리
+            BoneChain: 생성된 볼륨 본 체인 객체
         """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return None
@@ -242,32 +244,81 @@ class VolumeBone:  # Updated class name to match the new file name
             if rt.isValidNode(volBone):
                 bones.append(volBone)
         
-        # 클래스 변수에 결과 저장
-        self.rootBone = rootBone
-        self.limb = inObj
-        self.limbParent = inParent
-        self.bones = bones
-        self.rotAxises = inRotAxises.copy()
-        self.transAxises = inTransAxises.copy()
-        self.transScales = inTransScales.copy()
-        self.volumeSize = inVolumeSize
-        self.rotScale = inRotScale
+        # 모든 생성된 본들 모음
+        all_bones = [rootBone] + bones
+        rotHelper = self.rotHelper
         
-        # VolumeBoneChain이 필요로 하는 형태의 결과 딕셔너리 생성
+        # BoneChain에 필요한 형태의 결과 딕셔너리 생성
         result = {
-            "RootBone": rootBone,
-            "RotHelper": self.rotHelper,
-            "RotScale": inRotScale,
-            "Limb": inObj,
-            "LimbParent": inParent,
-            "Bones": bones,
-            "RotAxises": inRotAxises,
-            "TransAxises": inTransAxises,
-            "TransScales": inTransScales,
-            "VolumeSize": inVolumeSize
+            "Bones": all_bones,
+            "Helpers": [rotHelper],
+            "SourceBones": [inObj, inParent],
+            "Parameters": [inRotScale, inVolumeSize] + inRotAxises + inTransAxises + inTransScales
         }
         
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
-        return result
+        return BoneChain.from_result(result)
+    
+    def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 볼륨 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 볼륨 본 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): 볼륨 본 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
+        if not inBoneChain or inBoneChain.is_empty():
+            return None
+            
+        # 기존 객체 삭제
+        inBoneChain.delete()
+            
+        # BoneChain에서 필요한 정보 추출
+        sourceBones = inBoneChain.sourceBones
+        parameters = inBoneChain.parameters
+        
+        # 필수 소스 본 확인
+        if len(sourceBones) < 2 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]):
+            return None
+        
+        # 최소 필요 파라미터 확인
+        if len(parameters) < 2:
+            return None
+            
+        # 파라미터 가져오기
+        inRotScale = parameters[0]
+        inVolumeSize = parameters[1]
+        
+        # 회전축, 변환축, 변환비율을 파라미터에서 추출
+        # 최소한 하나의 축 세트는 필요
+        param_count = len(parameters)
+        if param_count <= 2:
+            # 기본 값 사용
+            inRotAxises = ["Z"]
+            inTransAxises = ["PosY"]
+            inTransScales = [1.0]
+        else:
+            # 파라미터 중간을 3등분하여 각 목록 추출
+            axis_count = (param_count - 2) // 3
+            
+            inRotAxises = parameters[2:2+axis_count]
+            inTransAxises = parameters[2+axis_count:2+axis_count*2]
+            inTransScales = parameters[2+axis_count*2:2+axis_count*3]
+            
+            # 리스트 길이가 일치하지 않으면 기본값으로 보완
+            if len(inRotAxises) != len(inTransAxises) or len(inRotAxises) != len(inTransScales):
+                min_len = min(len(inRotAxises), len(inTransAxises), len(inTransScales))
+                inRotAxises = inRotAxises[:min_len] if min_len > 0 else ["Z"]
+                inTransAxises = inTransAxises[:min_len] if min_len > 0 else ["PosY"]
+                inTransScales = inTransScales[:min_len] if min_len > 0 else [1.0]
+            
+        # 새로운 볼륨 본 생성
+        inObj = sourceBones[0]
+        inParent = sourceBones[1]
+        
+        return self.create_bones(inObj, inParent, inRotScale, inVolumeSize, inRotAxises, inTransAxises, inTransScales)
