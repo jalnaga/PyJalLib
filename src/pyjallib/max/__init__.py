@@ -26,14 +26,12 @@ from .bip import Bip
 from .skin import Skin
 from .morph import Morph
 
+from .boneChain import BoneChain
+
 from .twistBone import TwistBone
-from .twistBoneChain import TwistBoneChain
 from .groinBone import GroinBone
-from .groinBoneChain import GroinBoneChain
 from .autoClavicle import AutoClavicle
-from .autoClavicleChain import AutoClavicleChain
 from .volumeBone import VolumeBone
-from .volumeBoneChain import VolumeBoneChain
 from .kneeBone import KneeBone
 from .hip import Hip
 
@@ -55,6 +53,7 @@ __all__ = [
     'Bip',
     'Skin',
     'Morph',
+    'BoneChain',
     'TwistBone',
     'TwistBoneChain',
     'GroinBone',
