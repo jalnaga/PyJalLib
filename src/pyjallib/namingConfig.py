@@ -388,7 +388,7 @@ class NamingConfig:
         
         return True
     
-    def set_part_value_by_csv(self, part_name: str, csv_file_path: str) -> bool:
+    def set_part_value_by_csv(self, part_name: str, csv_file_path: str, encoding: str = "utf-8") -> bool:
         """
         특정 NamePart의 사전 정의 값을 CSV 파일로 설정
         CSV 파일 형식: value,description,koreanDescription (각 줄당)
@@ -396,6 +396,7 @@ class NamingConfig:
         Args:
             part_name: NamePart 이름
             csv_file_path: CSV 파일 경로
+            encoding: CSV 파일 인코딩 (기본값: "utf-8", "utf-8-sig" 등 사용 가능)
             
         Returns:
             설정 성공 여부 (True/False)
@@ -415,7 +416,7 @@ class NamingConfig:
         descriptions = []
         korean_descriptions = []
         try:
-            with open(csv_file_path, 'r', encoding='utf-8', newline='') as f:
+            with open(csv_file_path, 'r', encoding=encoding, newline='') as f:
                 reader = csv.reader(f)
                 for row in reader:
                     if len(row) >= 3: # Ensure row has at least 3 columns
