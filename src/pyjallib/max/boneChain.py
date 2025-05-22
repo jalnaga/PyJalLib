@@ -15,9 +15,7 @@ AutoClavicleChain, GroinBoneChain, VolumeBoneChain, TwistBoneChain 등의
 """
 
 from pymxs import runtime as rt
-from pyjallib.max.header import get_pyjallibmaxheader
 
-jal = get_pyjallibmaxheader()
 
 class BoneChain:
     """
