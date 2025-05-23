@@ -494,7 +494,11 @@ class Naming:
                 
         # 배열을 문자열로 결합
         newName = self._combine(combinedNameArray, inFilChar)
-        newName = self.set_index_padding_num(newName)
+        
+        # "Index"키가 있을 때만 패딩 적용
+        if "Index" in inPartsDict:
+            newName = self.set_index_padding_num(newName)
+        
         return newName
     
     def get_RealName(self, inStr):
