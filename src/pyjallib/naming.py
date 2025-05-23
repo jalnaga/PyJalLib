@@ -273,6 +273,15 @@ class Naming:
             if part.get_name() == inNamePartName:
                 return part
         return None
+    
+    def get_name_parts(self):
+        """
+        모든 namePart 객체 가져오기
+        
+        Returns:
+            namePart 객체 리스트
+        """
+        return self._nameParts
      
     def get_name_part_index(self, inNamePartName):
         """
