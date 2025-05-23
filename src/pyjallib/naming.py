@@ -258,6 +258,18 @@ class Naming:
             패딩 숫자
         """
         return self._paddingNum
+    
+    def get_filtering_char(self, inStr):
+        """
+        문자열에서 구분자 문자 가져오기
+        
+        Args:
+            inStr: 확인할 문자열
+            
+        Returns:
+            구분자 문자 (' ' 또는 '_' 또는 '')
+        """
+        return self._get_filtering_char(inStr)
 
     def get_name_part(self, inNamePartName):
         """
