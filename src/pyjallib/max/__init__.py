@@ -35,6 +35,8 @@ from pyjallib.max.volumeBone import VolumeBone
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
 
+from pyjallib.max.fbxHandler import FBXHandler
+
 from pyjallib.max.ui.Container import Container
 
 # 모듈 내보내기
@@ -64,5 +66,6 @@ __all__ = [
     'VolumeBoneChain',
     'KneeBone',
     'Hip',
+    'FBXHandler',
     'Container'
 ]

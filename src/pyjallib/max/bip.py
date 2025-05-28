@@ -500,15 +500,41 @@ class Bip:
                         rt.biped.addNewKey(item.controller, frame)
                 if progress_callback:
                     progress_callback(frame - startFrame + 1, totalFrame)
+                    
+        minFrame = 0.0
+        maxFrame = 0.0
+        allTargetBipedObjs = self.get_nodes(inBipRoot)
+        for item in allTargetBipedObjs:
+            if item == item.controller.rootNode:
+                horizontalController = rt.getPropertyController(item.controller, "horizontal")
+                verticalController = rt.getPropertyController(item.controller, "vertical")
+                turningController = rt.getPropertyController(item.controller, "turning")
+                
+                minFrame = min(float(horizontalController.keys[0].time), minFrame)
+                minFrame = min(float(verticalController.keys[0].time), minFrame)
+                minFrame = min(float(turningController.keys[0].time), minFrame)
+                
+                maxFrame = max(float(horizontalController.keys[-1].time), maxFrame)
+                maxFrame = max(float(verticalController.keys[-1].time), maxFrame)
+                maxFrame = max(float(turningController.keys[-1].time), maxFrame)
+            else:
+                minFrame = min(float(item.controller.keys[0].time), minFrame)
+                maxFrame = max(float(item.controller.keys[-1].time), maxFrame)
+        
+        bakeStartFrame = minFrame
+        bakeEndFrame = maxFrame
         
         if inUseAnimationRangeOnly:
             allTargetBipedObjs = self.get_nodes(inBipRoot)
             startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
             endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
-            
-            rt.biped.saveBipFileSegment(inBipRoot.controller, inFile, startFrame, endFrame)
+            bakeStartFrame = startFrame
+            bakeEndFrame = endFrame
+        
+        if inBakeAllKeys:
+            rt.biped.saveBipFileSegment(inBipRoot.controller, inFile, bakeStartFrame, bakeEndFrame, rt.name("keyPerFrame"))
         else:
-            rt.biped.saveBipFile(inBipRoot.controller, inFile)
+            rt.biped.saveBipFileSegment(inBipRoot.controller, inFile, bakeStartFrame, bakeEndFrame)
         
         return True
     
