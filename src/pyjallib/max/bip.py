@@ -439,6 +439,67 @@ class Bip:
             if colNum > 0:
                 rt.biped.deleteAllCopyCollections(inBipRoot.controller)
     
+    def collapse_layers(self, inBipRoot):
+        """
+        Biped 레이어 병합
+        
+        Args:
+            inBipRoot: 대상 Biped 객체
+        """
+        if not self.is_biped_object(inBipRoot):
+            return False
+        
+        layerNum = rt.biped.numLayers(inBipRoot.controller)
+        while layerNum > 0:
+            rt.biped.collapseAtLayer(inBipRoot.controller, 0)
+            layerNum = rt.biped.numLayers(inBipRoot.controller)
+    
+    def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True):
+        """
+        Biped BIP 파일 저장
+        
+        Args:
+            inBipRoot: 저장 대상 Biped 루트 노드
+            inFile: 저장할 BIP 파일 경로
+            inBakeAllKeys: 모든 키를 베이크할지 여부 (기본값: True)
+            inCollapseLayers: 레이어를 병합할지 여부 (기본값: True)
+            
+        Returns:
+            bool: 저장 성공 시 True, 실패 시 False
+        """
+        if not self.is_biped_object(inBipRoot):
+            return False
+        
+        directory = os.path.dirname(inFile)
+        if directory and not os.path.exists(directory):
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as e:
+                return False
+        
+        if inCollapseLayers:
+            self.collapse_layers(inBipRoot)
+        
+        if inBakeAllKeys:
+            allTargetBipedObjs = self.get_nodes(inBipRoot)
+            startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
+            endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
+            for frame in range(startFrame, endFrame + 1):
+                for item in allTargetBipedObjs:
+                    if item == item.controller.rootNode:
+                        horizontalController = rt.getPropertyController(item.controller, "horizontal")
+                        verticalController = rt.getPropertyController(item.controller, "vertical")
+                        turningController = rt.getPropertyController(item.controller, "turning")
+                        
+                        rt.biped.addNewKey(horizontalController, frame)
+                        rt.biped.addNewKey(verticalController, frame)
+                        rt.biped.addNewKey(turningController, frame)
+                    else:
+                        rt.biped.addNewKey(item.controller, frame)
+        
+        rt.biped.saveBipFile(inBipRoot.controller, inFile)
+        return True
+    
     def link_base_skeleton(self, skinBoneBaseName="b"):
         """
         기본 스켈레톤 링크 (Biped와 일반 뼈대 연결)
