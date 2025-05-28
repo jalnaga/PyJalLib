@@ -690,8 +690,8 @@ class Bip:
             toeNub.name = self.name.replace_name_part("Nub", toeNub.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
             
             if toeLinkNum == 1:
-                rToesList[0][0].name = self.name.replace_name_part("RealName", lToesList[0][0].name, "ball")
-                rToesList[0][0].name = self.name.remove_name_part("Index", lToesList[0][0].name)
+                rToesList[0][0].name = self.name.replace_name_part("RealName", rToesList[0][0].name, "ball")
+                rToesList[0][0].name = self.name.remove_name_part("Index", rToesList[0][0].name)
             else:
                 for i, item in enumerate(rToesList[0]):
                     item.name = self.name.replace_name_part("RealName", item.name, "ball")
