@@ -195,6 +195,180 @@ class Perforce:
             self._handle_p4_exception(e, f"설명으로 체인지 리스트 조회 ('{description}')")
             return {}
 
+    def get_change_list_by_description_pattern(self, description_pattern: str, exact_match: bool = False) -> list:
+        """설명 패턴과 일치하는 Pending 체인지 리스트들을 가져옵니다.
+
+        Args:
+            description_pattern (str): 검색할 설명 패턴
+            exact_match (bool, optional): True면 정확히 일치하는 설명만, 
+                                        False면 패턴이 포함된 설명도 포함. 기본값 False
+
+        Returns:
+            list: 패턴과 일치하는 체인지 리스트 정보들의 리스트
+        """
+        if not self._is_connected():
+            return []
+        
+        search_type = "정확히 일치" if exact_match else "패턴 포함"
+        logger.debug(f"설명 패턴으로 체인지 리스트 조회 중 ({search_type}): '{description_pattern}'")
+        
+        try:
+            pending_changes = self.p4.run_changes("-l", "-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
+            matching_changes = []
+            
+            for cl in pending_changes:
+                cl_desc = cl.get('Description', b'').decode('utf-8', 'replace').strip()
+                
+                # 패턴 매칭 로직
+                is_match = False
+                if exact_match:
+                    # 정확한 일치
+                    is_match = (cl_desc == description_pattern.strip())
+                else:
+                    # 패턴이 포함되어 있는지 확인 (대소문자 구분 없음)
+                    is_match = (description_pattern.lower().strip() in cl_desc.lower())
+                
+                if is_match:
+                    change_number = int(cl['change'])
+                    change_info = self.get_change_list_by_number(change_number)
+                    if change_info:
+                        matching_changes.append(change_info)
+                        logger.info(f"패턴 '{description_pattern}'에 매칭되는 체인지 리스트 {change_number} 발견: '{cl_desc}'")
+            
+            if matching_changes:
+                logger.info(f"패턴 '{description_pattern}'에 매칭되는 체인지 리스트 {len(matching_changes)}개 조회 완료.")
+            else:
+                logger.info(f"패턴 '{description_pattern}'에 매칭되는 Pending 체인지 리스트를 찾을 수 없습니다.")
+            
+            return matching_changes
+            
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"설명 패턴으로 체인지 리스트 조회 ('{description_pattern}')")
+            return {}
+
+    def check_files_checked_out(self, file_paths: list) -> dict:
+        """파일들의 체크아웃 상태를 확인합니다.
+
+        Args:
+            file_paths (list): 확인할 파일 경로 리스트
+
+        Returns:
+            dict: 파일별 체크아웃 상태 정보
+                 {
+                     'file_path': {
+                         'is_checked_out': bool,
+                         'change_list': int or None,
+                         'action': str or None,
+                         'user': str or None
+                     }
+                 }
+        """
+        if not self._is_connected():
+            return {}
+        if not file_paths:
+            logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
+            return {}
+        
+        logger.debug(f"파일 체크아웃 상태 확인 중 (파일 {len(file_paths)}개)")
+        
+        result = {}
+        try:
+            # 각 파일의 상태 확인
+            for file_path in file_paths:
+                file_status = {
+                    'is_checked_out': False,
+                    'change_list': None,
+                    'action': None,
+                    'user': None
+                }
+                
+                try:
+                    # p4 opened 명령으로 파일이 열려있는지 확인
+                    opened_files = self.p4.run_opened(file_path)
+                    
+                    if opened_files:
+                        # 파일이 체크아웃되어 있음
+                        file_info = opened_files[0]
+                        file_status['is_checked_out'] = True
+                        file_status['change_list'] = int(file_info.get('change', 0))
+                        file_status['action'] = file_info.get('action', '')
+                        file_status['user'] = file_info.get('user', '')
+                        
+                        logger.debug(f"파일 '{file_path}' 체크아웃됨: CL {file_status['change_list']}, "
+                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}")
+                    else:
+                        # 파일이 체크아웃되지 않음
+                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음")
+                        
+                except P4Exception as e:
+                    # 파일이 perforce에 없거나 접근할 수 없는 경우
+                    if any("not opened" in err.lower() or "no such file" in err.lower() 
+                           for err in self.p4.errors):
+                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (perforce에 없거나 접근 불가)")
+                    else:
+                        self._handle_p4_exception(e, f"파일 '{file_path}' 체크아웃 상태 확인")
+                
+                result[file_path] = file_status
+            
+            checked_out_count = sum(1 for status in result.values() if status['is_checked_out'])
+            logger.info(f"파일 체크아웃 상태 확인 완료: 전체 {len(file_paths)}개 중 {checked_out_count}개 체크아웃됨")
+            
+            return result
+            
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"파일들 체크아웃 상태 확인 ({file_paths})")
+            return {}
+
+    def is_file_checked_out(self, file_path: str) -> bool:
+        """단일 파일의 체크아웃 상태를 간단히 확인합니다.
+
+        Args:
+            file_path (str): 확인할 파일 경로
+
+        Returns:
+            bool: 체크아웃되어 있으면 True, 아니면 False
+        """
+        result = self.check_files_checked_out([file_path])
+        return result.get(file_path, {}).get('is_checked_out', False)
+
+    def is_file_in_pending_changelist(self, file_path: str, change_list_number: int) -> bool:
+        """특정 파일이 지정된 pending 체인지 리스트에 있는지 확인합니다.
+
+        Args:
+            file_path (str): 확인할 파일 경로
+            change_list_number (int): 확인할 체인지 리스트 번호
+
+        Returns:
+            bool: 파일이 해당 체인지 리스트에 있으면 True, 아니면 False
+        """
+        if not self._is_connected():
+            return False
+        
+        logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에 있는지 확인 중...")
+        
+        try:
+            # 해당 체인지 리스트의 파일들 가져오기
+            opened_files = self.p4.run_opened("-c", change_list_number)
+            
+            # 파일 경로 정규화
+            normalized_file_path = os.path.normpath(file_path)
+            
+            for file_info in opened_files:
+                client_file = file_info.get('clientFile', '')
+                normalized_client_file = os.path.normpath(client_file)
+                
+                if normalized_client_file == normalized_file_path:
+                    logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에서 발견됨 "
+                               f"(액션: {file_info.get('action', '')})")
+                    return True
+            
+            logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에 없음")
+            return False
+            
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"파일 '{file_path}' 체인지 리스트 {change_list_number} 포함 여부 확인")
+            return False
+
     def edit_change_list(self, change_list_number: int, description: str = None, add_file_paths: list = None, remove_file_paths: list = None) -> dict:
         """체인지 리스트를 편집합니다.
 
