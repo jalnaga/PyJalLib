@@ -33,6 +33,8 @@ from .hip import Hip
 
 from .morph import Morph
 
+from .fbxHandler import FBXHandler
+
 class Header:
     """
     JalLib.max 패키지의 헤더 모듈
@@ -78,6 +80,8 @@ class Header:
         self.hip = Hip(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint)
         
         self.morph = Morph()
+        
+        self.fbx = FBXHandler()
         
         self.tools = []
     
