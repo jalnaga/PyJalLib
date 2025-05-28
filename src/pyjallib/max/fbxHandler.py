@@ -129,7 +129,7 @@ class FBXHandler:
         exporterPlugin = rt.exporterPlugin
         result = rt.exportFile(
             str(filePath),
-            rt.noPrompt,
+            rt.name("noPrompt"),
             using=exporterPlugin.classes[exportClassIndex - 1],  # 0-based index로 변환
             selectedOnly=True
         )
