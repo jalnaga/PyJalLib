@@ -454,7 +454,7 @@ class Bip:
             rt.biped.collapseAtLayer(inBipRoot.controller, 0)
             layerNum = rt.biped.numLayers(inBipRoot.controller)
     
-    def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True):
+    def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True, progress_callback=None):
         """
         Biped BIP 파일 저장
         
@@ -484,6 +484,8 @@ class Bip:
             allTargetBipedObjs = self.get_nodes(inBipRoot)
             startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
             endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
+            totalFrame = endFrame - startFrame + 1
+            
             for frame in range(startFrame, endFrame + 1):
                 for item in allTargetBipedObjs:
                     if item == item.controller.rootNode:
@@ -496,6 +498,8 @@ class Bip:
                         rt.biped.addNewKey(turningController, frame)
                     else:
                         rt.biped.addNewKey(item.controller, frame)
+                if progress_callback:
+                    progress_callback(frame - startFrame + 1, totalFrame)
         
         rt.biped.saveBipFile(inBipRoot.controller, inFile)
         return True
