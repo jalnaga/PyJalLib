@@ -241,10 +241,9 @@ class Perforce:
                 logger.info(f"패턴 '{description_pattern}'에 매칭되는 Pending 체인지 리스트를 찾을 수 없습니다.")
             
             return matching_changes
-            
         except P4Exception as e:
             self._handle_p4_exception(e, f"설명 패턴으로 체인지 리스트 조회 ('{description_pattern}')")
-            return {}
+            return []
 
     def check_files_checked_out(self, file_paths: list) -> dict:
         """파일들의 체크아웃 상태를 확인합니다.
@@ -259,7 +258,8 @@ class Perforce:
                          'is_checked_out': bool,
                          'change_list': int or None,
                          'action': str or None,
-                         'user': str or None
+                         'user': str or None,
+                         'workspace': str or None
                      }
                  }
         """
@@ -279,7 +279,8 @@ class Perforce:
                     'is_checked_out': False,
                     'change_list': None,
                     'action': None,
-                    'user': None
+                    'user': None,
+                    'workspace': None
                 }
                 
                 try:
@@ -293,9 +294,11 @@ class Perforce:
                         file_status['change_list'] = int(file_info.get('change', 0))
                         file_status['action'] = file_info.get('action', '')
                         file_status['user'] = file_info.get('user', '')
+                        file_status['workspace'] = file_info.get('client', '')
                         
                         logger.debug(f"파일 '{file_path}' 체크아웃됨: CL {file_status['change_list']}, "
-                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}")
+                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}, "
+                                   f"워크스페이스: {file_status['workspace']}")
                     else:
                         # 파일이 체크아웃되지 않음
                         logger.debug(f"파일 '{file_path}' 체크아웃되지 않음")
