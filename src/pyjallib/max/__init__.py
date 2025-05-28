@@ -35,6 +35,8 @@ from pyjallib.max.volumeBone import VolumeBone
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
 
+from pyjallib.max.rootMotion import RootMotion
+
 from pyjallib.max.fbxHandler import FBXHandler
 
 from pyjallib.max.ui.Container import Container
@@ -57,15 +59,12 @@ __all__ = [
     'Morph',
     'BoneChain',
     'TwistBone',
-    'TwistBoneChain',
     'GroinBone',
-    'GroinBoneChain',
     'AutoClavicle',
-    'AutoClavicleChain',
     'VolumeBone',
-    'VolumeBoneChain',
     'KneeBone',
     'Hip',
+    'RootMotion',
     'FBXHandler',
     'Container'
 ]

@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+FBXHandler 모듈
+3ds Max에서 FBX 파일을 익스포트/임포트하는 기능을 제공
+이 모듈은 pymxs를 사용하여 3ds Max와 통신하며, FBX 익스포트 및 임포트 옵션을 설정하고 파일을 처리합니다.
+"""
+
 from pymxs import runtime as rt
 import os
 from pathlib import Path

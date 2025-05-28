@@ -33,6 +33,8 @@ from .hip import Hip
 
 from .morph import Morph
 
+from .rootMotion import RootMotion
+
 from .fbxHandler import FBXHandler
 
 class Header:
@@ -80,6 +82,8 @@ class Header:
         self.hip = Hip(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint)
         
         self.morph = Morph()
+        
+        self.rootMotion = RootMotion(nameService=self.name, animService=self.anim, constraintService=self.constraint, helperService=self.helper, bipService=self.bip)
         
         self.fbx = FBXHandler()
         
