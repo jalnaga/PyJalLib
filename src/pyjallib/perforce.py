@@ -818,3 +818,188 @@ class Perforce:
     def __del__(self):
         """객체가 소멸될 때 자동으로 연결을 해제합니다."""
         self.disconnect()
+
+    def check_files_checked_out_all_users(self, file_paths: list) -> dict:
+        """파일들의 체크아웃 상태를 모든 사용자/워크스페이스에서 확인합니다.
+
+        Args:
+            file_paths (list): 확인할 파일 경로 리스트
+
+        Returns:
+            dict: 파일별 체크아웃 상태 정보
+                 {
+                     'file_path': {
+                         'is_checked_out': bool,
+                         'change_list': int or None,
+                         'action': str or None,
+                         'user': str or None,
+                         'client': str or None
+                     }
+                 }
+        """
+        if not self._is_connected():
+            return {}
+        if not file_paths:
+            logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
+            return {}
+        
+        logger.debug(f"파일 체크아웃 상태 확인 중 - 모든 사용자 (파일 {len(file_paths)}개)")
+        
+        result = {}
+        try:
+            # 각 파일의 상태 확인
+            for file_path in file_paths:
+                file_status = {
+                    'is_checked_out': False,
+                    'change_list': None,
+                    'action': None,
+                    'user': None,
+                    'client': None
+                }
+                
+                try:
+                    # p4 opened -a 명령으로 모든 사용자의 파일 체크아웃 상태 확인
+                    opened_files = self.p4.run_opened("-a", file_path)
+                    
+                    if opened_files:
+                        # 파일이 체크아웃되어 있음 (첫 번째 결과 사용)
+                        file_info = opened_files[0]
+                        file_status['is_checked_out'] = True
+                        file_status['change_list'] = int(file_info.get('change', 0))
+                        file_status['action'] = file_info.get('action', '')
+                        file_status['user'] = file_info.get('user', '')
+                        file_status['client'] = file_info.get('client', '')
+                        
+                        logger.debug(f"파일 '{file_path}' 체크아웃됨: CL {file_status['change_list']}, "
+                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}, "
+                                   f"클라이언트: {file_status['client']}")
+                    else:
+                        # 파일이 체크아웃되지 않음
+                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (모든 사용자)")
+                        
+                except P4Exception as e:
+                    # 파일이 perforce에 없거나 접근할 수 없는 경우
+                    if any("not opened" in err.lower() or "no such file" in err.lower() 
+                           for err in self.p4.errors):
+                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (perforce에 없거나 접근 불가)")
+                    else:
+                        self._handle_p4_exception(e, f"파일 '{file_path}' 체크아웃 상태 확인 (모든 사용자)")
+                
+                result[file_path] = file_status
+            
+            checked_out_count = sum(1 for status in result.values() if status['is_checked_out'])
+            logger.info(f"파일 체크아웃 상태 확인 완료 (모든 사용자): 전체 {len(file_paths)}개 중 {checked_out_count}개 체크아웃됨")
+            
+            return result
+            
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"파일들 체크아웃 상태 확인 - 모든 사용자 ({file_paths})")
+            return {}
+
+    def is_file_checked_out_by_others(self, file_path: str) -> bool:
+        """단일 파일이 다른 사용자/워크스페이스에 의해 체크아웃되어 있는지 확인합니다.
+
+        Args:
+            file_path (str): 확인할 파일 경로
+
+        Returns:
+            bool: 다른 사용자에 의해 체크아웃되어 있으면 True, 아니면 False
+        """
+        result = self.check_files_checked_out_all_users([file_path])
+        file_status = result.get(file_path, {})
+        
+        if not file_status.get('is_checked_out', False):
+            return False
+        
+        # 현재 사용자와 클라이언트가 아닌 경우 다른 사용자로 간주
+        current_user = self.p4.user
+        current_client = self.p4.client
+        
+        file_user = file_status.get('user', '')
+        file_client = file_status.get('client', '')
+        
+        return (file_user != current_user) or (file_client != current_client)
+
+    def get_file_checkout_info_all_users(self, file_path: str) -> dict:
+        """단일 파일의 상세 체크아웃 정보를 모든 사용자에서 가져옵니다.
+
+        Args:
+            file_path (str): 확인할 파일 경로
+
+        Returns:
+            dict: 체크아웃 정보 또는 빈 딕셔너리
+                 {
+                     'is_checked_out': bool,
+                     'change_list': int or None,
+                     'action': str or None,
+                     'user': str or None,
+                     'client': str or None,
+                     'is_checked_out_by_current_user': bool,
+                     'is_checked_out_by_others': bool
+                 }
+        """
+        result = self.check_files_checked_out_all_users([file_path])
+        file_status = result.get(file_path, {})
+        
+        if file_status.get('is_checked_out', False):
+            # 현재 사용자와 클라이언트인지 확인
+            current_user = self.p4.user
+            current_client = self.p4.client
+            
+            file_user = file_status.get('user', '')
+            file_client = file_status.get('client', '')
+            
+            is_current_user = (file_user == current_user) and (file_client == current_client)
+            
+            file_status['is_checked_out_by_current_user'] = is_current_user
+            file_status['is_checked_out_by_others'] = not is_current_user
+        else:
+            file_status['is_checked_out_by_current_user'] = False
+            file_status['is_checked_out_by_others'] = False
+        
+        return file_status
+
+    def get_files_checked_out_by_others(self, file_paths: list) -> list:
+        """파일 목록에서 다른 사용자/워크스페이스에 의해 체크아웃된 파일들을 찾습니다.
+
+        Args:
+            file_paths (list): 확인할 파일 경로 리스트
+
+        Returns:
+            list: 다른 사용자에 의해 체크아웃된 파일 정보 리스트
+                  [
+                      {
+                          'file_path': str,
+                          'user': str,
+                          'client': str,
+                          'change_list': int,
+                          'action': str
+                      }
+                  ]
+        """
+        if not file_paths:
+            return []
+        
+        result = self.check_files_checked_out_all_users(file_paths)
+        files_by_others = []
+        
+        current_user = self.p4.user
+        current_client = self.p4.client
+        
+        for file_path, status in result.items():
+            if status.get('is_checked_out', False):
+                file_user = status.get('user', '')
+                file_client = status.get('client', '')
+                
+                # 다른 사용자/클라이언트에 의해 체크아웃된 경우
+                if (file_user != current_user) or (file_client != current_client):
+                    files_by_others.append({
+                        'file_path': file_path,
+                        'user': file_user,
+                        'client': file_client,
+                        'change_list': status.get('change_list'),
+                        'action': status.get('action', '')
+                    })
+        
+        logger.info(f"다른 사용자에 의해 체크아웃된 파일: {len(files_by_others)}개")
+        return files_by_others
