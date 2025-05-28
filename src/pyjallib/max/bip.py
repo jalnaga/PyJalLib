@@ -454,7 +454,7 @@ class Bip:
             rt.biped.collapseAtLayer(inBipRoot.controller, 0)
             layerNum = rt.biped.numLayers(inBipRoot.controller)
     
-    def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True, progress_callback=None):
+    def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True, inUseAnimationRangeOnly=True, progress_callback=None):
         """
         Biped BIP 파일 저장
         
@@ -501,7 +501,15 @@ class Bip:
                 if progress_callback:
                     progress_callback(frame - startFrame + 1, totalFrame)
         
-        rt.biped.saveBipFile(inBipRoot.controller, inFile)
+        if inUseAnimationRangeOnly:
+            allTargetBipedObjs = self.get_nodes(inBipRoot)
+            startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
+            endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
+            
+            rt.biped.saveBipFileSegment(inBipRoot.controller, inFile, startFrame, endFrame)
+        else:
+            rt.biped.saveBipFile(inBipRoot.controller, inFile)
+        
         return True
     
     def link_base_skeleton(self, skinBoneBaseName="b"):
