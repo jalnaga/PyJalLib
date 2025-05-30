@@ -212,15 +212,15 @@ class RootMotion:
                     }
         
         return keyframe_data
-    
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5.0):
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5.0, direction_threshold=0.3):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
         Args:
             bipCom (node): Biped COM 객체
             keyframe_data (dict): 키프레임 데이터 딕셔너리
-            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 0.5)
+            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 5.0)
+            direction_threshold (float): 방향 감지 임계값 (기본값: 0.3, 0.0~1.0)
         
         Returns:
             dict: 변환된 키프레임 데이터 딕셔너리
@@ -285,21 +285,24 @@ class RootMotion:
             else:
                 # 움직임이 거의 없는 경우 모든 dot product를 0으로 설정
                 dot_forward = dot_backward = dot_right = dot_left = 0.0
+              # 임계값을 넘는 방향들 확인
+            active_directions = []
+            if abs(dot_forward) > direction_threshold:
+                active_directions.append(("forward", dot_forward))
+            if abs(dot_backward) > direction_threshold:
+                active_directions.append(("backward", dot_backward))
+            if abs(dot_right) > direction_threshold:
+                active_directions.append(("right", dot_right))
+            if abs(dot_left) > direction_threshold:
+                active_directions.append(("left", dot_left))
             
-            # 가장 큰 dot product 값을 가진 방향 결정
-            max_dot = max(abs(dot_forward), abs(dot_backward), abs(dot_right), abs(dot_left))
-            
+            # 주요 방향 결정 (가장 큰 dot product)
             direction = ""
-            if max_dot == abs(dot_forward):
-                direction = "forward"
-            elif max_dot == abs(dot_backward):
-                direction = "backward"
-            elif max_dot == abs(dot_right):
-                direction = "right"
-            elif max_dot == abs(dot_left):
-                direction = "left"
-            
-            # 로코모션 위치 계산
+            if active_directions:
+                # 절댓값이 가장 큰 방향을 주요 방향으로 설정
+                active_directions.sort(key=lambda x: abs(x[1]), reverse=True)
+                direction = active_directions[0][0]
+              # 로코모션 위치 계산
             if i == 0:
                 # 첫 프레임: 기본 위치로 시작
                 locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
@@ -311,31 +314,33 @@ class RootMotion:
                 # 방향이 바뀌었는지 확인
                 direction_changed = (direction != prev_direction and prev_direction != "")
                 
+                # 각 축별로 독립적으로 업데이트 (임계값 기반)
+                x_updated = False
+                y_updated = False
+                
+                # X축 업데이트 (좌우 움직임)
+                if abs(dot_right) > direction_threshold or abs(dot_left) > direction_threshold:
+                    locomotion_pos.x = bipcom_pos.x
+                    x_updated = True
+                
+                # Y축 업데이트 (앞뒤 움직임)
+                if abs(dot_forward) > direction_threshold or abs(dot_backward) > direction_threshold:
+                    locomotion_pos.y = bipcom_pos.y
+                    y_updated = True
+                
+                # 방향 변경 시 추가 처리
                 if direction_changed:
                     # 방향이 바뀐 경우: 이전 방향의 위치를 저장
                     direction_change_positions[prev_direction] = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, prev_locomotion_pos.z)
                     
-                    # 새로운 방향에 따라 기준 위치 설정
-                    if direction in ["forward", "backward"]:
-                        # 앞/뒤 방향: X축은 방향 변경 전 위치 유지, Y축은 현재 bipCom 위치
-                        if prev_direction in ["right", "left"]:
-                            # 좌우 -> 앞뒤: X축은 이전 위치 유지
-                            locomotion_pos.x = prev_locomotion_pos.x
-                        locomotion_pos.y = bipcom_pos.y
-                    elif direction in ["right", "left"]:
-                        # 좌/우 방향: Y축은 방향 변경 전 위치 유지, X축은 현재 bipCom 위치
-                        if prev_direction in ["forward", "backward"]:
-                            # 앞뒤 -> 좌우: Y축은 이전 위치 유지
-                            locomotion_pos.y = prev_locomotion_pos.y
-                        locomotion_pos.x = bipcom_pos.x
-                else:
-                    # 방향이 바뀌지 않은 경우: 현재 방향에 따라 해당 축만 업데이트
-                    if direction in ["forward", "backward"]:
-                        # Y축만 업데이트, X축은 이전 값 유지
-                        locomotion_pos.y = bipcom_pos.y
-                    elif direction in ["right", "left"]:
-                        # X축만 업데이트, Y축은 이전 값 유지
-                        locomotion_pos.x = bipcom_pos.x
+                    # 새로운 방향이 활성화되지 않은 축은 이전 값 유지
+                    if not x_updated and prev_direction in ["right", "left"]:
+                        # X축이 업데이트되지 않았고 이전이 좌우 방향이었다면 X값 유지
+                        locomotion_pos.x = prev_locomotion_pos.x
+                    
+                    if not y_updated and prev_direction in ["forward", "backward"]:
+                        # Y축이 업데이트되지 않았고 이전이 앞뒤 방향이었다면 Y값 유지
+                        locomotion_pos.y = prev_locomotion_pos.y
             
             converted_data[frame] = {
                 'position': locomotion_pos,
@@ -344,12 +349,14 @@ class RootMotion:
                 'bipComRot': bipcom_rot,
                 'direction': direction,
                 'direction_changed': direction != prev_direction and prev_direction != "",
+                'active_directions': [d[0] for d in active_directions],  # 활성화된 모든 방향들
                 'dot_values': {
                     'forward': dot_forward,
                     'backward': dot_backward,
                     'right': dot_right,
                     'left': dot_left
                 },
+                'direction_threshold': direction_threshold,
                 'velocity': rt.Point3(0, 0, 0),
                 'acceleration': rt.Point3(0, 0, 0),
                 'acceleration_magnitude': 0.0,
