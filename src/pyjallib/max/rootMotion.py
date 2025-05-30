@@ -213,7 +213,7 @@ class RootMotion:
         
         return keyframe_data
     
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5):
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5.0):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
@@ -239,17 +239,24 @@ class RootMotion:
         # 첫 프레임의 bipCom 위치를 기준으로 설정
         first_frame = frame_list[0]
         first_bipcom_pos = keyframe_data[first_frame]['bipComPos']
-          # 월드 축 방향 벡터 정의
+        
+        # 월드 축 방향 벡터 정의
         world_forward = rt.Point3(0, -1, 0)  # 월드 -Y축 (앞)
         world_backward = rt.Point3(0, 1, 0)  # 월드 +Y축 (뒤)
         world_right = rt.Point3(-1, 0, 0)    # 월드 -X축 (오른쪽)
         world_left = rt.Point3(1, 0, 0)      # 월드 +X축 (왼쪽)
-          # 각 프레임별 방향 및 변환된 위치 계산
+        
+        # 방향 변경 추적 변수
+        prev_direction = ""
+        direction_change_positions = {}  # 방향별 마지막 위치 저장
+        
+        # 각 프레임별 방향 및 변환된 위치 계산
         for i, frame in enumerate(frame_list):
             frame_data = keyframe_data[frame]
             bipcom_pos = frame_data['bipComPos']
             bipcom_rot = frame_data['bipComRot']
-              # 실제 이동 방향 계산 (위치 변화 기반)
+            
+            # 실제 이동 방향 계산 (위치 변화 기반)
             movement_direction = rt.Point3(0, 0, 0)
             movement_magnitude = 0.0
             
@@ -278,29 +285,57 @@ class RootMotion:
             else:
                 # 움직임이 거의 없는 경우 모든 dot product를 0으로 설정
                 dot_forward = dot_backward = dot_right = dot_left = 0.0
-              # 가장 큰 dot product 값을 가진 방향 결정
+            
+            # 가장 큰 dot product 값을 가진 방향 결정
             max_dot = max(abs(dot_forward), abs(dot_backward), abs(dot_right), abs(dot_left))
             
-            # 첫 프레임 위치를 기준으로 시작 (Z축은 position의 Z값 사용하여 keepZAtZero 적용)
-            locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
             direction = ""
-            
-            if max_dot == abs(dot_forward):  # 앞으로 향함
+            if max_dot == abs(dot_forward):
                 direction = "forward"
-                # Y축만 현재 bipCom의 Y 위치로 업데이트, X와 Z는 첫 프레임 값 유지
-                locomotion_pos.y = bipcom_pos.y
-            elif max_dot == abs(dot_backward):  # 뒤로 향함
+            elif max_dot == abs(dot_backward):
                 direction = "backward"
-                # Y축만 현재 bipCom의 Y 위치로 업데이트, X와 Z는 첫 프레임 값 유지
-                locomotion_pos.y = bipcom_pos.y
-            elif max_dot == abs(dot_right):  # 오른쪽으로 향함
+            elif max_dot == abs(dot_right):
                 direction = "right"
-                # X축만 현재 bipCom의 X 위치로 업데이트, Y와 Z는 첫 프레임 값 유지
-                locomotion_pos.x = bipcom_pos.x
-            elif max_dot == abs(dot_left):  # 왼쪽으로 향함
+            elif max_dot == abs(dot_left):
                 direction = "left"
-                # X축만 현재 bipCom의 X 위치로 업데이트, Y와 Z는 첫 프레임 값 유지
-                locomotion_pos.x = bipcom_pos.x
+            
+            # 로코모션 위치 계산
+            if i == 0:
+                # 첫 프레임: 기본 위치로 시작
+                locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
+            else:
+                # 이전 프레임의 로코모션 위치를 기준으로 시작
+                prev_locomotion_pos = converted_data[frame_list[i-1]]['position']
+                locomotion_pos = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, frame_data['position'].z)
+                
+                # 방향이 바뀌었는지 확인
+                direction_changed = (direction != prev_direction and prev_direction != "")
+                
+                if direction_changed:
+                    # 방향이 바뀐 경우: 이전 방향의 위치를 저장
+                    direction_change_positions[prev_direction] = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, prev_locomotion_pos.z)
+                    
+                    # 새로운 방향에 따라 기준 위치 설정
+                    if direction in ["forward", "backward"]:
+                        # 앞/뒤 방향: X축은 방향 변경 전 위치 유지, Y축은 현재 bipCom 위치
+                        if prev_direction in ["right", "left"]:
+                            # 좌우 -> 앞뒤: X축은 이전 위치 유지
+                            locomotion_pos.x = prev_locomotion_pos.x
+                        locomotion_pos.y = bipcom_pos.y
+                    elif direction in ["right", "left"]:
+                        # 좌/우 방향: Y축은 방향 변경 전 위치 유지, X축은 현재 bipCom 위치
+                        if prev_direction in ["forward", "backward"]:
+                            # 앞뒤 -> 좌우: Y축은 이전 위치 유지
+                            locomotion_pos.y = prev_locomotion_pos.y
+                        locomotion_pos.x = bipcom_pos.x
+                else:
+                    # 방향이 바뀌지 않은 경우: 현재 방향에 따라 해당 축만 업데이트
+                    if direction in ["forward", "backward"]:
+                        # Y축만 업데이트, X축은 이전 값 유지
+                        locomotion_pos.y = bipcom_pos.y
+                    elif direction in ["right", "left"]:
+                        # X축만 업데이트, Y축은 이전 값 유지
+                        locomotion_pos.x = bipcom_pos.x
             
             converted_data[frame] = {
                 'position': locomotion_pos,
@@ -308,6 +343,7 @@ class RootMotion:
                 'bipComPos': bipcom_pos,
                 'bipComRot': bipcom_rot,
                 'direction': direction,
+                'direction_changed': direction != prev_direction and prev_direction != "",
                 'dot_values': {
                     'forward': dot_forward,
                     'backward': dot_backward,
@@ -319,6 +355,9 @@ class RootMotion:
                 'acceleration_magnitude': 0.0,
                 'needs_keyframe': False
             }
+            
+            # 이전 방향 업데이트
+            prev_direction = direction
         
         # 속도 계산
         for i in range(len(frame_list)):
@@ -336,8 +375,7 @@ class RootMotion:
                 if frame_diff > 0:
                     velocity = pos_diff / frame_diff
                     current_data['velocity'] = velocity
-        
-        # 가속도 계산 및 키프레임 필요성 판단
+          # 가속도 계산 및 키프레임 필요성 판단
         for i in range(1, len(frame_list) - 1):  # 첫 번째와 마지막 프레임 제외
             current_frame = frame_list[i]
             prev_frame = frame_list[i - 1]
@@ -361,8 +399,8 @@ class RootMotion:
                 current_data['acceleration'] = acceleration
                 current_data['acceleration_magnitude'] = rt.length(acceleration)
                 
-                # 가속도 변화가 임계값을 넘으면 키프레임 필요
-                if current_data['acceleration_magnitude'] > acceleration_threshold:
+                # 가속도 변화가 임계값을 넘거나 방향이 바뀌면 키프레임 필요
+                if current_data['acceleration_magnitude'] > acceleration_threshold or current_data.get('direction_changed', False):
                     current_data['needs_keyframe'] = True
         
         # 첫 번째와 마지막 프레임은 항상 키프레임 필요
