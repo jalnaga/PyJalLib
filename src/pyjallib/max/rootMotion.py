@@ -40,79 +40,290 @@ class RootMotion:
 
         # Root Motion 관련 변수 초기화
         self.rootNode = None
+        self.pelvis = None
         self.lFoot = None
         self.rFoot = None
         self.floorThreshold = 2.0  # 바닥 접촉 임계값 기본값
-        
-    def create_root_motion_from_foot_contact(self, rootBoneName, startFrame, endFrame):
+        self.footSpeedThreshold = 1.0  # 발 속도 임계값 기본값
+        self.fps = 60.0
+        self.keepZAtZero = True  # Z축을 0으로 유지할지 여부
+        self.followZRotation = False  # XY 회전을 잠글지 여부
+
+    def is_foot_planted(self, footBone, frameTime, floorThreshold=2.0, fps=60.0, footSpeedThreshold=0.1):
         """
-        발 고정 및 루트 모션 생성 함수
+        발이 바닥에 고정되어 있는지 확인하는 함수
         
         Args:
-            rootBoneName (str): 루트 본 이름 (예: "Bip001")
-            leftFootBoneName (str): 왼발 본 이름 (예: "Bip001_L_Foot")
-            rightFootBoneName (str): 오른발 본 이름 (예: "Bip001_R_Foot")
+            footBone (node): 발 본 객체
+            frameTime (int): 현재 프레임 시간
+            floorThreshold (float): 바닥 접촉 임계값 (기본값: 2.0)
+            fps (float): 초당 프레임 수 (기본값: 60.0)
+            footSpeedThreshold (float): 발 속도 임계값 (기본값: 0.1)
+        
+        Returns:
+            bool: 발이 바닥에 고정되어 있으면 True, 그렇지 않으면 False
+        """
+        footPosCurrentWorld = footBone.transform.position
+        footPosPrevWorld = footBone.transform.position
+        isPlanted = False
+        frameIntervalSec = 1.0 / fps if fps > 0 else 0.0
+        
+        with attime(frameTime):
+            footPosCurrentWorld = footBone.transform.position
+        
+        if frameTime > int(rt.animationRange.start):
+            with attime(frameTime -1):
+                footPosPrevWorld = footBone.transform.position
+            
+            distMovedXY = rt.distance(rt.Point2(footPosCurrentWorld.x, footPosCurrentWorld.y),
+                                      rt.Point2(footPosPrevWorld.x, footPosPrevWorld.y))
+            if frameIntervalSec > 0.0:
+                footSpeedXY = distMovedXY
+            else:
+                footSpeedXY = 0.0
+        else:
+            footSpeedXY = 0.0
+            
+        if footPosCurrentWorld.z <= floorThreshold and footSpeedXY <= footSpeedThreshold:
+            isPlanted = True
+        
+        return isPlanted
+
+    def create_root_motion_from_bounding_box(self, bipCom, rootBone, startFrame, endFrame, floorThreshold=2.0, footSpeedThreshold=1.0, keepZAtZero=True, followZRotation=False):
+        """
+        Root Motion을 Bounding Box를 기반으로 생성하는 함수 (키프레임 데이터만 생성)
+        
+        Args:
+            bipCom (node): Biped COM 객체
+            rootBone (node): 루트 본 객체
             startFrame (int): 시작 프레임
             endFrame (int): 끝 프레임
-            floorThreshold (float): 바닥 접촉 임계값
+            floorThreshold (float): 바닥 접촉 임계값 (기본값: 2.0)
+            footSpeedThreshold (float): 발 속도 임계값 (기본값: 1.0)
+            keepZAtZero (bool): Z축을 0으로 유지할지 여부 (기본값: True)
+            followZRotation (bool): Z축 회전을 따라갈지 여부 (기본값: False)
+        
+        Returns:
+            dict: 키프레임 데이터 딕셔너리 (실패시 None)
         """
-        # 본 객체 가져오기
-        self.rootNode = rt.getNodeByName(rootBoneName)
-        if not rt.isValidNode(self.rootNode):
-            return False
+        # 입력 검증
+        if not rt.isValidNode(rootBone) or startFrame >= endFrame or not rt.isValidNode(bipCom):
+            return None
         
-        bipComs = self.bip.get_coms()
-        if len(bipComs) != 1:
-            return False
-        bip = bipComs[0]
-        self.lFoot = self.bip.get_grouped_nodes(bip, "lLeg")[2]
-        self.rFoot = self.bip.get_grouped_nodes(bip, "rLeg")[2]
+        self.rootNode = rootBone
+          # 발 본 가져오기
+        lToes_nodes = self.bip.get_grouped_nodes(bipCom, "lToes")
+        rToes_nodes = self.bip.get_grouped_nodes(bipCom, "rToes")
+        if not lToes_nodes or not rToes_nodes:
+            return None
         
-        # 이전 프레임의 발 위치 저장 변수
-        prevLeftPos = rt.Point3(0, 0, 0)
-        prevRightPos = rt.Point3(0, 0, 0)
-        leftPlanted = False
-        rightPlanted = False
+        self.lFoot = lToes_nodes[0]
+        self.rFoot = rToes_nodes[0]
+        self.pelvis = self.bip.get_grouped_nodes(bipCom, "pelvis")[0]
         
-        # 애니메이션 범위 설정
-        rt.animationRange = rt.Interval(startFrame, endFrame)
+        # 필요한 Biped 노드 그룹들을 수집
+        node_groups = ["pelvis", "lLeg", "rLeg", "spine", "neck", "head"]
+        allBipNodes = []
         
-        # 각 프레임 처리
+        for group in node_groups:
+            nodes = self.bip.get_grouped_nodes(bipCom, group)
+            allBipNodes.extend(nodes)
+          # 유효한 노드만 필터링
+        allBipNodes = [node for node in allBipNodes if node and rt.isValidNode(node)]
+        if not allBipNodes:
+            return None
+        
+        self.floorThreshold = floorThreshold
+        self.footSpeedThreshold = footSpeedThreshold
+        self.keepZAtZero = keepZAtZero
+        self.followZRotation = followZRotation
+        
+        # 시작 프레임에서 상대적 위치 계산
+        with attime(startFrame):            # 바운딩 박스 계산
+            initialBbox = rt.box3()
+            for obj in allBipNodes:
+                initialBbox += obj.boundingBox
+            # 바운딩 박스 유효성 확인
+            if initialBbox.min == initialBbox.max:
+                return None
+            
+            initialBboxCenter = initialBbox.center
+            initialBboxSize = initialBbox.max - initialBbox.min
+            initialRootPos = bipCom.transform.position
+            initialZOffset = -self.pelvis.transform.position.z
+            
+            # 상대적 오프셋 계산 (0으로 나누기 방지)
+            MIN_SIZE = 0.001
+            relativeOffsetX = (initialRootPos.x - initialBboxCenter.x) / initialBboxSize.x if abs(initialBboxSize.x) > MIN_SIZE else 0.0
+            relativeOffsetY = (initialRootPos.y - initialBboxCenter.y) / initialBboxSize.y if abs(initialBboxSize.y) > MIN_SIZE else 0.0
+        
+        # 키프레임 데이터 수집
+        keyframe_data = {}
+        
         for t in range(startFrame, endFrame + 1):
-            # 현재 시간 설정
-            with attime(t):
-                with animate(True):
-                    leftPos = self.lFoot.position
-                    rightPos = self.rFoot.position
+            isLFootPlanted = self.is_foot_planted(self.lFoot, t, self.floorThreshold, self.fps, self.footSpeedThreshold)
+            isRFootPlanted = self.is_foot_planted(self.rFoot, t, self.floorThreshold, self.fps, self.footSpeedThreshold)
+            
+            # 양발이 모두 땅에 붙어있지 않을 때만 루트 모션 계산
+            if not (isLFootPlanted and isRFootPlanted):
+                # 현재 프레임의 바운딩 박스 계산
+                with attime(t):
+                    currentBbox = rt.box3()
+                    validNodeCount = 0
                     
-                    # 발이 바닥에 닿았는지 확인
-                    leftOnFloor = (leftPos.z <= self.floorThreshold)
-                    rightOnFloor = (rightPos.z <= self.floorThreshold)
-            
+                    for obj in allBipNodes:
+                        currentBbox += obj.boundingBox
+                        validNodeCount += 1
+                      # 유효한 바운딩 박스 확인
+                    if validNodeCount == 0 or currentBbox.min == currentBbox.max:
+                        continue
+                    
+                    currentBboxCenter = currentBbox.center
+                    currentBboxSize = currentBbox.max - currentBbox.min
                     # 새로운 루트 위치 계산
-                    if leftOnFloor and leftPlanted:
-                        # 왼발이 고정되어 있으면 그 차이만큼 루트 본 이동
-                        rootDelta = prevLeftPos - leftPos
-                        self.rootNode.position += rootDelta
-                        print(f"프레임 {t}: 왼발 기준 루트 모션 적용 - 델타: {rootDelta}")
-                        
-                    elif rightOnFloor and rightPlanted:
-                        # 오른발이 고정되어 있으면 그 차이만큼 루트 본 이동
-                        rootDelta = prevRightPos - rightPos
-                        self.rootNode.position += rootDelta
-                        print(f"프레임 {t}: 오른발 기준 루트 모션 적용 - 델타: {rootDelta}")
-            
-                    # 상태 및 위치 업데이트
-                    leftPlanted = leftOnFloor
-                    rightPlanted = rightOnFloor
-                    prevLeftPos = rt.copy(leftPos)
-                    prevRightPos = rt.copy(rightPos)
-            
-                # 진행률 표시 (10프레임마다)
-                if t % 10 == 0:
-                    progress = ((t - startFrame) / (endFrame - startFrame)) * 100
-                    print(f"진행률: {progress:.1f}% (프레임 {t}/{endFrame})")
+                    if self.keepZAtZero:
+                        newRootPos = rt.Point3(
+                            currentBboxCenter.x + (relativeOffsetX * currentBboxSize.x),
+                            currentBboxCenter.y + (relativeOffsetY * currentBboxSize.y),
+                            0.0  # Z축은 0으로 유지
+                        )
+                    else:
+                        newRootPos = rt.Point3(
+                            currentBboxCenter.x + (relativeOffsetX * currentBboxSize.x),
+                            currentBboxCenter.y + (relativeOffsetY * currentBboxSize.y),
+                            self.pelvis.transform.position.z + initialZOffset  # Z축은 현재 펠비스 위치에 오프셋 추가
+                        )
+                    
+                    # 로테이션 계산
+                    if self.followZRotation:
+                        # 펠비스의 Z축 회전을 따라감
+                        newRootRot = rt.EulerAngles(0, 0, self.pelvis.rotation.z)
+                    else:
+                        # 회전 없음 (기본값)
+                        newRootRot = rt.EulerAngles(0, 0, 0)
+                    # 딕셔너리에 위치와 회전 정보 저장
+                    keyframe_data[t] = {
+                        'position': newRootPos,
+                        'rotation': newRootRot
+                    }
         
-        # 타임라인을 시작 프레임으로 되돌리기
-        rt.sliderTime = startFrame
+        return keyframe_data
+
+    def apply_keyframes_locomotion_mode(self, keyframe_data):
+        """
+        로코모션 모드로 키프레임을 적용하는 함수 (시작과 끝 프레임에만 키 생성)
+        
+        Args:
+            keyframe_data (dict): 키프레임 데이터 딕셔너리
+        
+        Returns:
+            bool: 성공 여부
+        """
+        if not keyframe_data or not self.rootNode:
+            return False
+        
+        node_name = self.rootNode.name
+        frame_list = sorted(keyframe_data.keys())
+        
+        if len(frame_list) < 2:
+            return False
+        
+        # 시작과 끝 프레임만 선택
+        start_frame = frame_list[0]
+        end_frame = frame_list[-1]
+        
+        start_data = keyframe_data[start_frame]
+        end_data = keyframe_data[end_frame]
+        
+        maxscriptCode = f"""
+        (
+            animate on(
+                -- 시작 프레임 키
+                at time {start_frame} (
+                    $'{node_name}'.position = [{start_data["position"].x}, {start_data["position"].y}, {start_data["position"].z}]
+                    $'{node_name}'.rotation = (eulerAngles {start_data["rotation"].x} {start_data["rotation"].y} {start_data["rotation"].z})
+                )
+                
+                -- 끝 프레임 키
+                at time {end_frame} (
+                    $'{node_name}'.position = [{end_data["position"].x}, {end_data["position"].y}, {end_data["position"].z}]
+                    $'{node_name}'.rotation = (eulerAngles {end_data["rotation"].x} {end_data["rotation"].y} {end_data["rotation"].z})
+                )
+            )
+        )
+        """
+        
+        try:
+            # 첫 번째 실행 (3DS Max 버그 우회용)
+            rt.execute(maxscriptCode)
             
+            # 생성된 키들을 프레임 범위에서만 삭제
+            self.anim.delete_keys_in_range(self.rootNode, start_frame, end_frame)
+            
+            # 두 번째 실행 (실제 키 생성)
+            rt.execute(maxscriptCode)
+            return True
+        except Exception as e:
+            print(f"Error applying keyframes in locomotion mode: {e}")
+            return False
+
+    def apply_keyframes_normal_mode(self, keyframe_data):
+        """
+        일반 모드로 키프레임을 적용하는 함수 (모든 키프레임에 키 생성)
+        
+        Args:
+            keyframe_data (dict): 키프레임 데이터 딕셔너리
+        
+        Returns:
+            bool: 성공 여부
+        """
+        if not keyframe_data or not self.rootNode:
+            return False
+        
+        node_name = self.rootNode.name
+        frame_list = list(keyframe_data.keys())
+        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframe_data.values()]
+        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframe_data.values()]
+        
+        maxScriptFrameArray = f"#({', '.join(map(str, frame_list))})"
+        maxScriptPosArray = f"#({', '.join(pos_list)})"
+        maxScriptRotArray = f"#({', '.join(rot_list)})"
+        
+        maxscriptCode = f"""
+        (
+            local frameArray = {maxScriptFrameArray}
+            local posArray = {maxScriptPosArray}
+            local rotArray = {maxScriptRotArray}
+            
+            animate on(
+                for i = 1 to frameArray.count do
+                (
+                    local frame_time = frameArray[i]
+                    local position = posArray[i]
+                    local rotation = rotArray[i]
+                    
+                    at time frame_time (
+                        $'{node_name}'.position = position
+                        $'{node_name}'.rotation = rotation
+                    )
+                )
+            )
+        )
+        """
+        
+        try:
+            # 첫 번째 실행 (3DS Max 버그 우회용)
+            rt.execute(maxscriptCode)
+            
+            # 생성된 키들을 프레임 범위에서만 삭제
+            if frame_list:
+                start_frame = min(frame_list)
+                end_frame = max(frame_list)
+                self.anim.delete_keys_in_range(self.rootNode, start_frame, end_frame)
+            
+            # 두 번째 실행 (실제 키 생성)
+            rt.execute(maxscriptCode)
+            return True
+        except Exception as e:
+            print(f"Error applying keyframes in normal mode: {e}")
+            return False

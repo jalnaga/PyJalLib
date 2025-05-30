@@ -477,6 +477,35 @@ class Anim:
         """
         rt.deleteKeys(inObj, rt.Name('allKeys'))
     
+    def delete_keys_in_range(self, node, startFrame, endFrame):
+        """
+        지정된 프레임 범위에서 노드의 모든 키를 삭제하는 함수
+        
+        Args:
+            node: 키를 삭제할 노드
+            startFrame (int): 시작 프레임
+            endFrame (int): 끝 프레임
+        
+        Returns:
+            bool: 성공 여부
+        """
+        if not rt.isValidNode(node):
+            return False
+        
+        try:
+            maxscriptCode = f"""
+            (
+                deleteKeys $'{node.name}'.position.controller #{startFrame}..{endFrame}
+                deleteKeys $'{node.name}'.rotation.controller #{startFrame}..{endFrame}
+                deleteKeys $'{node.name}'.scale.controller #{startFrame}..{endFrame}
+            )
+            """
+            rt.execute(maxscriptCode)
+            return True
+        except Exception as e:
+            print(f"Error deleting keys in range: {e}")
+            return False
+    
     def is_node_animated(self, node):
         """
         객체 및 그 하위 요소(애니메이션, 커스텀 속성 등)가 애니메이션 되었는지 재귀적으로 확인함.
