@@ -150,7 +150,8 @@ class RootMotion:
             initialBboxCenter = initialBbox.center
             initialBboxSize = initialBbox.max - initialBbox.min
             initialRootPos = bipCom.transform.position
-            initialZOffset = -self.pelvis.transform.position.z
+            initialZOffset = -bipCom.transform.position.z
+            initialRot = self.rootNode.transform.rotation
             
             # 상대적 오프셋 계산 (0으로 나누기 방지)
             MIN_SIZE = 0.001
@@ -197,10 +198,10 @@ class RootMotion:
                     # 로테이션 계산
                     if self.followZRotation:
                         # 펠비스의 Z축 회전을 따라감
-                        newRootRot = rt.EulerAngles(0, 0, self.pelvis.rotation.z)
+                        newRootRot = rt.EulerAngles(0, 0, rt.quatToEuler(bipCom.transform.rotation).z)
                     else:
                         # 회전 없음 (기본값)
-                        newRootRot = rt.EulerAngles(0, 0, 0)
+                        newRootRot = rt.quatToEuler(initialRot)
                     # 딕셔너리에 위치와 회전 정보 저장
                     keyframe_data[t] = {
                         'position': newRootPos,
@@ -241,13 +242,13 @@ class RootMotion:
                 -- 시작 프레임 키
                 at time {start_frame} (
                     $'{node_name}'.position = [{start_data["position"].x}, {start_data["position"].y}, {start_data["position"].z}]
-                    $'{node_name}'.rotation = (eulerAngles {start_data["rotation"].x} {start_data["rotation"].y} {start_data["rotation"].z})
+                    $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix {start_data["rotation"].x}) * (rotateYMatrix {start_data["rotation"].y}) * (rotateZMatrix {start_data["rotation"].z}) * (transMatrix $'{node_name}'.pos)
                 )
                 
                 -- 끝 프레임 키
                 at time {end_frame} (
                     $'{node_name}'.position = [{end_data["position"].x}, {end_data["position"].y}, {end_data["position"].z}]
-                    $'{node_name}'.rotation = (eulerAngles {end_data["rotation"].x} {end_data["rotation"].y} {end_data["rotation"].z})
+                    $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix {start_data["rotation"].x}) * (rotateYMatrix {start_data["rotation"].y}) * (rotateZMatrix {start_data["rotation"].z}) * (transMatrix $'{node_name}'.pos)
                 )
             )
         )
@@ -304,7 +305,7 @@ class RootMotion:
                     
                     at time frame_time (
                         $'{node_name}'.position = position
-                        $'{node_name}'.rotation = rotation
+                        $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix rotation.x) * (rotateYMatrix rotation.y) * (rotateZMatrix rotation.z) * (transMatrix $'{node_name}'.pos)
                     )
                 )
             )

@@ -495,9 +495,14 @@ class Anim:
         try:
             maxscriptCode = f"""
             (
-                deleteKeys $'{node.name}'.position.controller #{startFrame}..{endFrame}
-                deleteKeys $'{node.name}'.rotation.controller #{startFrame}..{endFrame}
-                deleteKeys $'{node.name}'.scale.controller #{startFrame}..{endFrame}
+                selectKeys $'{node.name}'.position.controller (interval {startFrame} {endFrame})
+                deleteKeys $'{node.name}'.position.controller #selection
+                
+                selectKeys $'{node.name}'.rotation.controller (interval {startFrame} {endFrame})
+                deleteKeys $'{node.name}'.rotation.controller #selection
+                
+                selectKeys $'{node.name}'.scale.controller (interval {startFrame} {endFrame})
+                deleteKeys $'{node.name}'.scale.controller #selection
             )
             """
             rt.execute(maxscriptCode)
