@@ -48,6 +48,7 @@ class RootMotion:
         self.fps = 60.0
         self.keepZAtZero = True  # Z축을 0으로 유지할지 여부
         self.followZRotation = False  # XY 회전을 잠글지 여부
+        self.accelerationThreshold = 5.0
 
     def is_foot_planted(self, footBone, frameTime, floorThreshold=2.0, fps=60.0, footSpeedThreshold=0.1):
         """
@@ -194,7 +195,6 @@ class RootMotion:
                             currentBboxCenter.y + (relativeOffsetY * currentBboxSize.y),
                             self.pelvis.transform.position.z + initialZOffset  # Z축은 현재 펠비스 위치에 오프셋 추가
                         )
-                    
                     # 로테이션 계산
                     if self.followZRotation:
                         # 펠비스의 Z축 회전을 따라감
@@ -202,20 +202,182 @@ class RootMotion:
                     else:
                         # 회전 없음 (기본값)
                         newRootRot = rt.quatToEuler(initialRot)
+                    
                     # 딕셔너리에 위치와 회전 정보 저장
                     keyframe_data[t] = {
                         'position': newRootPos,
-                        'rotation': newRootRot
+                        'rotation': newRootRot,
+                        'bipComPos': bipCom.transform.position,
+                        'bipComRot': bipCom.transform.rotation
                     }
         
         return keyframe_data
+    
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5):
+        """
+        로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
+        
+        Args:
+            bipCom (node): Biped COM 객체
+            keyframe_data (dict): 키프레임 데이터 딕셔너리
+            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 0.5)
+        
+        Returns:
+            dict: 변환된 키프레임 데이터 딕셔너리
+        """
+        if not keyframe_data or not rt.isValidNode(bipCom):
+            return {}
+        
+        converted_data = {}
+        frame_list = sorted(keyframe_data.keys())
+        
+        if len(frame_list) < 3:  # 가속도 계산을 위해 최소 3개 프레임 필요
+            return {}
+        
+        self.accelerationThreshold = acceleration_threshold
+        
+        # 첫 프레임의 bipCom 위치를 기준으로 설정
+        first_frame = frame_list[0]
+        first_bipcom_pos = keyframe_data[first_frame]['bipComPos']
+          # 월드 축 방향 벡터 정의
+        world_forward = rt.Point3(0, -1, 0)  # 월드 -Y축 (앞)
+        world_backward = rt.Point3(0, 1, 0)  # 월드 +Y축 (뒤)
+        world_right = rt.Point3(-1, 0, 0)    # 월드 -X축 (오른쪽)
+        world_left = rt.Point3(1, 0, 0)      # 월드 +X축 (왼쪽)
+          # 각 프레임별 방향 및 변환된 위치 계산
+        for i, frame in enumerate(frame_list):
+            frame_data = keyframe_data[frame]
+            bipcom_pos = frame_data['bipComPos']
+            bipcom_rot = frame_data['bipComRot']
+              # 실제 이동 방향 계산 (위치 변화 기반)
+            movement_direction = rt.Point3(0, 0, 0)
+            movement_magnitude = 0.0
+            
+            if i > 0:  # 첫 번째 프레임이 아닌 경우
+                prev_frame = frame_list[i - 1]
+                prev_pos = keyframe_data[prev_frame]['bipComPos']
+                movement_vector = bipcom_pos - prev_pos
+                movement_magnitude = rt.length(movement_vector)
+                if movement_magnitude > 0.001:  # 임계값보다 큰 움직임만 처리
+                    movement_direction = rt.normalize(movement_vector)
+            elif i < len(frame_list) - 1:  # 마지막 프레임이 아닌 경우
+                next_frame = frame_list[i + 1]
+                next_pos = keyframe_data[next_frame]['bipComPos']
+                movement_vector = next_pos - bipcom_pos
+                movement_magnitude = rt.length(movement_vector)
+                if movement_magnitude > 0.001:  # 임계값보다 큰 움직임만 처리
+                    movement_direction = rt.normalize(movement_vector)
+            
+            # 이동 방향이 유효한 경우에만 dot product 계산
+            if movement_magnitude > 0.001:  # 매우 작은 움직임 무시
+                # 각 방향과의 dot product 계산
+                dot_forward = rt.dot(movement_direction, world_forward)
+                dot_backward = rt.dot(movement_direction, world_backward)
+                dot_right = rt.dot(movement_direction, world_right)
+                dot_left = rt.dot(movement_direction, world_left)
+            else:
+                # 움직임이 거의 없는 경우 모든 dot product를 0으로 설정
+                dot_forward = dot_backward = dot_right = dot_left = 0.0
+              # 가장 큰 dot product 값을 가진 방향 결정
+            max_dot = max(abs(dot_forward), abs(dot_backward), abs(dot_right), abs(dot_left))
+            
+            # 첫 프레임 위치를 기준으로 시작 (Z축은 position의 Z값 사용하여 keepZAtZero 적용)
+            locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
+            direction = ""
+            
+            if max_dot == abs(dot_forward):  # 앞으로 향함
+                direction = "forward"
+                # Y축만 현재 bipCom의 Y 위치로 업데이트, X와 Z는 첫 프레임 값 유지
+                locomotion_pos.y = bipcom_pos.y
+            elif max_dot == abs(dot_backward):  # 뒤로 향함
+                direction = "backward"
+                # Y축만 현재 bipCom의 Y 위치로 업데이트, X와 Z는 첫 프레임 값 유지
+                locomotion_pos.y = bipcom_pos.y
+            elif max_dot == abs(dot_right):  # 오른쪽으로 향함
+                direction = "right"
+                # X축만 현재 bipCom의 X 위치로 업데이트, Y와 Z는 첫 프레임 값 유지
+                locomotion_pos.x = bipcom_pos.x
+            elif max_dot == abs(dot_left):  # 왼쪽으로 향함
+                direction = "left"
+                # X축만 현재 bipCom의 X 위치로 업데이트, Y와 Z는 첫 프레임 값 유지
+                locomotion_pos.x = bipcom_pos.x
+            
+            converted_data[frame] = {
+                'position': locomotion_pos,
+                'rotation': frame_data['rotation'],
+                'bipComPos': bipcom_pos,
+                'bipComRot': bipcom_rot,
+                'direction': direction,
+                'dot_values': {
+                    'forward': dot_forward,
+                    'backward': dot_backward,
+                    'right': dot_right,
+                    'left': dot_left
+                },
+                'velocity': rt.Point3(0, 0, 0),
+                'acceleration': rt.Point3(0, 0, 0),
+                'acceleration_magnitude': 0.0,
+                'needs_keyframe': False
+            }
+        
+        # 속도 계산
+        for i in range(len(frame_list)):
+            current_frame = frame_list[i]
+            current_data = converted_data[current_frame]
+            
+            # 속도 계산 (현재 프레임과 다음 프레임 사이)
+            if i < len(frame_list) - 1:
+                next_frame = frame_list[i + 1]
+                next_data = converted_data[next_frame]
+                
+                frame_diff = next_frame - current_frame
+                pos_diff = next_data['position'] - current_data['position']
+                
+                if frame_diff > 0:
+                    velocity = pos_diff / frame_diff
+                    current_data['velocity'] = velocity
+        
+        # 가속도 계산 및 키프레임 필요성 판단
+        for i in range(1, len(frame_list) - 1):  # 첫 번째와 마지막 프레임 제외
+            current_frame = frame_list[i]
+            prev_frame = frame_list[i - 1]
+            next_frame = frame_list[i + 1]
+            
+            current_data = converted_data[current_frame]
+            prev_data = converted_data[prev_frame]
+            next_data = converted_data[next_frame]
+            
+            # 가속도 계산 (속도의 변화율)
+            frame_diff_prev = current_frame - prev_frame
+            frame_diff_next = next_frame - current_frame
+            
+            if frame_diff_prev > 0 and frame_diff_next > 0:
+                # 평균 프레임 차이로 정규화
+                avg_frame_diff = (frame_diff_prev + frame_diff_next) / 2.0
+                
+                velocity_diff = current_data['velocity'] - prev_data['velocity']
+                acceleration = velocity_diff / avg_frame_diff if avg_frame_diff > 0 else rt.Point3(0, 0, 0)
+                
+                current_data['acceleration'] = acceleration
+                current_data['acceleration_magnitude'] = rt.length(acceleration)
+                
+                # 가속도 변화가 임계값을 넘으면 키프레임 필요
+                if current_data['acceleration_magnitude'] > acceleration_threshold:
+                    current_data['needs_keyframe'] = True
+        
+        # 첫 번째와 마지막 프레임은 항상 키프레임 필요
+        if frame_list:
+            converted_data[frame_list[0]]['needs_keyframe'] = True
+            converted_data[frame_list[-1]]['needs_keyframe'] = True
+        
+        return converted_data
 
     def apply_keyframes_locomotion_mode(self, keyframe_data):
         """
-        로코모션 모드로 키프레임을 적용하는 함수 (시작과 끝 프레임에만 키 생성)
+        로코모션 모드로 키프레임을 적용하는 함수 (needs_keyframe이 True인 프레임에만 키 생성)
         
         Args:
-            keyframe_data (dict): 키프레임 데이터 딕셔너리
+            keyframe_data (dict): 키프레임 데이터 딕셔너리 (convert_keyframe_data_for_locomotion에서 변환된 데이터)
         
         Returns:
             bool: 성공 여부
@@ -226,35 +388,77 @@ class RootMotion:
         node_name = self.rootNode.name
         frame_list = sorted(keyframe_data.keys())
         
-        if len(frame_list) < 2:
+        if len(frame_list) < 1:
             return False
         
-        # 시작과 끝 프레임만 선택
-        start_frame = frame_list[0]
-        end_frame = frame_list[-1]
+        # 디버깅: keyframe_data 내용 출력
+        print("=== Locomotion Keyframe Data Debug ===")
+        print(f"Total frames: {len(frame_list)}")
+        print(f"Frame range: {min(frame_list)} - {max(frame_list)}")
         
-        start_data = keyframe_data[start_frame]
-        end_data = keyframe_data[end_frame]
+        keyframe_needed_count = 0
+        for frame, data in keyframe_data.items():
+            needs_key = data.get('needs_keyframe', False)
+            if needs_key:
+                keyframe_needed_count += 1
+            
+            print(f"Frame {frame}:")
+            print(f"  Position: [{data['position'].x:.3f}, {data['position'].y:.3f}, {data['position'].z:.3f}]")
+            print(f"  Direction: {data.get('direction', 'unknown')}")
+            print(f"  Velocity: [{data['velocity'].x:.3f}, {data['velocity'].y:.3f}, {data['velocity'].z:.3f}]")
+            print(f"  Acceleration: [{data['acceleration'].x:.3f}, {data['acceleration'].y:.3f}, {data['acceleration'].z:.3f}]")
+            print(f"  Acceleration Magnitude: {data.get('acceleration_magnitude', 0.0):.3f}")
+            print(f"  Needs Keyframe: {needs_key}")
+            if 'dot_values' in data:
+                dots = data['dot_values']
+                print(f"  Dot Products - Forward: {dots['forward']:.3f}, Backward: {dots['backward']:.3f}, Right: {dots['right']:.3f}, Left: {dots['left']:.3f}")
+            print()
+        
+        print(f"Frames needing keyframes: {keyframe_needed_count}/{len(frame_list)}")
+        print("=" * 40)
+        
+        # 모든 프레임 데이터를 MAXScript 배열로 준비
+        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframe_data.values()]
+        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframe_data.values()]
+        needs_keyframe_list = [str(data.get("needs_keyframe", False)).lower() for data in keyframe_data.values()]
+        
+        maxScriptFrameArray = f"#({', '.join(map(str, frame_list))})"
+        maxScriptPosArray = f"#({', '.join(pos_list)})"
+        maxScriptRotArray = f"#({', '.join(rot_list)})"
+        maxScriptNeedsKeyframeArray = f"#({', '.join(needs_keyframe_list)})"
         
         maxscriptCode = f"""
         (
+            local frameArray = {maxScriptFrameArray}
+            local posArray = {maxScriptPosArray}
+            local rotArray = {maxScriptRotArray}
+            local needsKeyframeArray = {maxScriptNeedsKeyframeArray}
+            
             animate on(
-                -- 시작 프레임 키
-                at time {start_frame} (
-                    $'{node_name}'.position = [{start_data["position"].x}, {start_data["position"].y}, {start_data["position"].z}]
-                    $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix {start_data["rotation"].x}) * (rotateYMatrix {start_data["rotation"].y}) * (rotateZMatrix {start_data["rotation"].z}) * (transMatrix $'{node_name}'.pos)
-                )
-                
-                -- 끝 프레임 키
-                at time {end_frame} (
-                    $'{node_name}'.position = [{end_data["position"].x}, {end_data["position"].y}, {end_data["position"].z}]
-                    $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix {start_data["rotation"].x}) * (rotateYMatrix {start_data["rotation"].y}) * (rotateZMatrix {start_data["rotation"].z}) * (transMatrix $'{node_name}'.pos)
+                for i = 1 to frameArray.count do
+                (
+                    -- needs_keyframe이 true인 경우에만 키프레임 생성
+                    if needsKeyframeArray[i] == true then
+                    (
+                        local frame_time = frameArray[i]
+                        local position = posArray[i]
+                        local rotation = rotArray[i]
+                        
+                        at time frame_time (
+                            $'{node_name}'.position = position
+                            $'{node_name}'.transform = (matrix3 1) * (rotateXMatrix rotation.x) * (rotateYMatrix rotation.y) * (rotateZMatrix rotation.z) * (transMatrix $'{node_name}'.pos)
+                        )
+                    )
                 )
             )
         )
         """
         
         try:
+            # 키프레임이 생성될 범위 계산
+            start_frame = min(frame_list)
+            end_frame = max(frame_list)
+            
             # 첫 번째 실행 (3DS Max 버그 우회용)
             rt.execute(maxscriptCode)
             
@@ -263,7 +467,14 @@ class RootMotion:
             
             # 두 번째 실행 (실제 키 생성)
             rt.execute(maxscriptCode)
+            
+            # needs_keyframe이 True인 프레임 개수 계산
+            keyframe_count = sum(1 for data in keyframe_data.values() if data.get('needs_keyframe', False))
+            keyframe_frames = [frame for frame, data in keyframe_data.items() if data.get('needs_keyframe', False)]
+            
+            print(f"Applied {keyframe_count} keyframes for locomotion mode at frames: {keyframe_frames}")
             return True
+            
         except Exception as e:
             print(f"Error applying keyframes in locomotion mode: {e}")
             return False
@@ -328,3 +539,18 @@ class RootMotion:
         except Exception as e:
             print(f"Error applying keyframes in normal mode: {e}")
             return False
+    
+    def get_bipcom_position(self, frame_time):
+        """
+        특정 프레임에서 bipCom의 위치를 가져오는 헬퍼 함수
+        
+        Args:
+            frame_time (int): 프레임 시간
+        
+        Returns:
+            Point3: bipCom의 위치
+        """
+        if hasattr(self, 'pelvis') and self.pelvis and rt.isValidNode(self.pelvis):
+            with attime(frame_time):
+                return self.pelvis.transform.position
+        return rt.Point3(0, 0, 0)
