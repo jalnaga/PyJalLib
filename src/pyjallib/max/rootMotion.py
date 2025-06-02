@@ -48,7 +48,10 @@ class RootMotion:
         self.fps = 60.0
         self.keepZAtZero = True  # Z축을 0으로 유지할지 여부
         self.followZRotation = False  # XY 회전을 잠글지 여부
-        self.accelerationThreshold = 5.0
+        self.accelerationThreshold = 3.0  # 가속도 변화 임계값 (기본값: convert_keyframe_data_for_locomotion의 기본값)
+        self.keySmoothness = 10.0 # 키 부드러움 (기본값: apply_keyframes_locomotion_mode의 기본값)
+        self.directionThreshold = 0.005 # 방향 감지 임계값 (기본값: convert_keyframe_data_for_locomotion의 기본값)
+        self.accelerationFrameRange = 1 # 가속도 계산 프레임 범위 (기본값: convert_keyframe_data_for_locomotion의 기본값)
 
     def is_foot_planted(self, footBone, frameTime, floorThreshold=2.0, fps=60.0, footSpeedThreshold=0.1):
         """
@@ -213,17 +216,18 @@ class RootMotion:
         
         return keyframe_data
     
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.01, acceleration_frame_range=1, followZRotation=False):
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=3.0, direction_threshold=0.005, acceleration_frame_range=1, followZRotation=False):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
         Args:
             bipCom (node): Biped COM 객체
             keyframe_data (dict): 키프레임 데이터 딕셔너리
-            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 5.0)
-            direction_threshold (float): 방향 감지 임계값 (기본값: 0.15, 0.0~1.0).
+            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 3.0)
+            direction_threshold (float): 방향 감지 임계값 (기본값: 0.005, 0.0~1.0).
                                          Strict activation uses (1.0 - direction_threshold).
             acceleration_frame_range (int): 가속도 계산을 위한 프레임 범위 (기본값: 1)
+            followZRotation (bool): Z축 회전을 따라갈지 여부 (기본값: False)
         
         Returns:
             dict: 변환된 키프레임 데이터 딕셔너리
@@ -231,16 +235,22 @@ class RootMotion:
         if not keyframe_data or not rt.isValidNode(bipCom):
             return {}
         
+        # Update instance attributes with provided parameters
+        self.accelerationThreshold = acceleration_threshold
+        self.directionThreshold = direction_threshold
+        self.accelerationFrameRange = acceleration_frame_range
+        self.followZRotation = followZRotation
+        
         converted_data = {}
         frame_list = sorted(keyframe_data.keys())
         
-        min_frames_needed = 2 * acceleration_frame_range + 1
+        min_frames_needed = 2 * self.accelerationFrameRange + 1 # Use instance attribute
         if len(frame_list) < min_frames_needed:
-            print(f"Warning: Need at least {min_frames_needed} frames for acceleration calculation with range {acceleration_frame_range}")
+            print(f"Warning: Need at least {min_frames_needed} frames for acceleration calculation with range {self.accelerationFrameRange}")
             # Return empty or partially processed if preferred, for now returning empty
             return {}
         
-        self.accelerationThreshold = acceleration_threshold
+        # self.accelerationThreshold is already set above
         
         first_frame = frame_list[0]
         first_bipcom_pos = keyframe_data[first_frame]['bipComPos']
@@ -251,7 +261,7 @@ class RootMotion:
         world_left = rt.Point3(1, 0, 0)
         
         prev_primary_direction = ""
-        strict_activation_thresh = 1.0 - direction_threshold
+        strict_activation_thresh = 1.0 - self.directionThreshold # Use instance attribute
 
         for i, frame in enumerate(frame_list):
             frame_data = keyframe_data[frame]
@@ -333,7 +343,7 @@ class RootMotion:
             # Determine final rotation for the frame
             final_frame_rotation = frame_data['rotation'] # Default to original rotation
 
-            if followZRotation:
+            if self.followZRotation: # Use instance attribute
                 if current_primary_direction == "Transition":
                     transition_z_rotation = 0.0
                     if dot_forward > 0:
@@ -341,16 +351,23 @@ class RootMotion:
                     if dot_backward > 0:
                         transition_z_rotation += (90.0 * dot_backward)
                     if dot_left > 0: # world_left (1,0,0) corresponds to 180 deg Z rotation
-                        transition_z_rotation += (180.0 * dot_left)
+                        transition_z_rotation += (0.0 * dot_left)
                     if dot_right > 0: # world_right (-1,0,0) corresponds to -180 deg Z rotation
                         transition_z_rotation += (-180.0 * dot_right)
+                    
+                    # Clamp the transition_z_rotation
+                    if transition_z_rotation < -180.0:
+                        transition_z_rotation = -180.0
+                    elif transition_z_rotation > 180.0:
+                        transition_z_rotation = 180.0
+                        
                     final_frame_rotation = rt.EulerAngles(0, 0, transition_z_rotation)
                 elif current_primary_direction == "forward":
                     final_frame_rotation = rt.EulerAngles(0, 0, -90)
                 elif current_primary_direction == "backward":
                     final_frame_rotation = rt.EulerAngles(0, 0, 90)
                 elif current_primary_direction == "left":
-                    final_frame_rotation = rt.EulerAngles(0, 0, 180)
+                    final_frame_rotation = rt.EulerAngles(0, 0, 0)
                 elif current_primary_direction == "right":
                     final_frame_rotation = rt.EulerAngles(0, 0, -180)
                 # If followZRotation is true but direction is not one of the above (e.g. empty, though unlikely),
@@ -385,8 +402,8 @@ class RootMotion:
             current_frame = frame_list[i]
             current_data = converted_data[current_frame]
             
-            prev_index = max(0, i - acceleration_frame_range)
-            next_index = min(len(frame_list) - 1, i + acceleration_frame_range)
+            prev_index = max(0, i - self.accelerationFrameRange) # Use instance attribute
+            next_index = min(len(frame_list) - 1, i + self.accelerationFrameRange) # Use instance attribute
             
             if prev_index != i and next_index != i:
                 prev_frame_for_vel = frame_list[prev_index]
@@ -419,7 +436,7 @@ class RootMotion:
             current_frame = frame_list[i]
             current_data = converted_data[current_frame]
             
-            prev_index = max(0, i - acceleration_frame_range)
+            prev_index = max(0, i - self.accelerationFrameRange) # Use instance attribute
             # next_index = min(len(frame_list) - 1, i + acceleration_frame_range) # Not used in this specific accel calc
 
             if prev_index < i : # Check if there is a distinct previous frame for accel calc
@@ -450,29 +467,29 @@ class RootMotion:
         
         return converted_data
 
-    def apply_keyframes_locomotion_mode(self, keyframe_data):
+    def apply_keyframes_locomotion_mode(self, keyframeData, keySmoothness=10.0):
         """
         로코모션 모드로 키프레임을 적용하는 함수 (needs_keyframe이 True인 프레임에만 키 생성)
         
         Args:
-            keyframe_data (dict): 키프레임 데이터 딕셔너리 (convert_keyframe_data_for_locomotion에서 변환된 데이터)
+            keyframeData (dict): 키프레임 데이터 딕셔너리 (convert_keyframe_data_for_locomotion에서 변환된 데이터)
         
         Returns:
             bool: 성공 여부
         """
-        if not keyframe_data or not self.rootNode:
+        if not keyframeData or not self.rootNode:
             return False
         
         node_name = self.rootNode.name
-        frame_list = sorted(keyframe_data.keys())
+        frame_list = sorted(keyframeData.keys())
         
         if len(frame_list) < 1:
             return False
         
         # 모든 프레임 데이터를 MAXScript 배열로 준비
-        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframe_data.values()]
-        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframe_data.values()]
-        needs_keyframe_list = [str(data.get("needs_keyframe", False)).lower() for data in keyframe_data.values()]
+        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframeData.values()]
+        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframeData.values()]
+        needs_keyframe_list = [str(data.get("needs_keyframe", False)).lower() for data in keyframeData.values()]
         
         maxScriptFrameArray = f"#({', '.join(map(str, frame_list))})"
         maxScriptPosArray = f"#({', '.join(pos_list)})"
@@ -485,6 +502,8 @@ class RootMotion:
             local posArray = {maxScriptPosArray}
             local rotArray = {maxScriptRotArray}
             local needsKeyframeArray = {maxScriptNeedsKeyframeArray}
+            
+            disableSceneRedraw()
             
             animate on(
                 for i = 1 to frameArray.count do
@@ -504,8 +523,15 @@ class RootMotion:
                 )
             )
             
+            reduceKeys $'{node_name}'.position.controller {keySmoothness} 1f
+            reduceKeys $'{node_name}'.rotation.controller {keySmoothness} 1f
+            reduceKeys $'{node_name}'.scale.controller {keySmoothness} 1f
+            
+            enableSceneRedraw()
         )
         """
+        
+        print(maxscriptCode)
         
         try:
             # 키프레임이 생성될 범위 계산
@@ -527,23 +553,23 @@ class RootMotion:
             print(f"Error applying keyframes in locomotion mode: {e}")
             return False
 
-    def apply_keyframes_normal_mode(self, keyframe_data):
+    def apply_keyframes_normal_mode(self, keyframeData, keySmoothness=10.0):
         """
         일반 모드로 키프레임을 적용하는 함수 (모든 키프레임에 키 생성)
         
         Args:
-            keyframe_data (dict): 키프레임 데이터 딕셔너리
+            keyframeData (dict): 키프레임 데이터 딕셔너리
         
         Returns:
             bool: 성공 여부
         """
-        if not keyframe_data or not self.rootNode:
+        if not keyframeData or not self.rootNode:
             return False
         
         node_name = self.rootNode.name
-        frame_list = list(keyframe_data.keys())
-        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframe_data.values()]
-        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframe_data.values()]
+        frame_list = list(keyframeData.keys())
+        pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframeData.values()]
+        rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframeData.values()]
         
         maxScriptFrameArray = f"#({', '.join(map(str, frame_list))})"
         maxScriptPosArray = f"#({', '.join(pos_list)})"
@@ -554,6 +580,8 @@ class RootMotion:
             local frameArray = {maxScriptFrameArray}
             local posArray = {maxScriptPosArray}
             local rotArray = {maxScriptRotArray}
+            
+            disableSceneRedraw()
             
             animate on(
                 for i = 1 to frameArray.count do
@@ -568,8 +596,15 @@ class RootMotion:
                     )
                 )
             )
+            
+            reduceKeys $'{node_name}'.position.controller {keySmoothness} 1f
+            reduceKeys $'{node_name}'.rotation.controller {keySmoothness} 1f
+            reduceKeys $'{node_name}'.scale.controller {keySmoothness} 1f
+            
+            enableSceneRedraw()
         )
         """
+        print(maxscriptCode)
         
         try:
             # 첫 번째 실행 (3DS Max 버그 우회용)
