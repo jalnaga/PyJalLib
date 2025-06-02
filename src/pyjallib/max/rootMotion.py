@@ -212,7 +212,8 @@ class RootMotion:
                     }
         
         return keyframe_data
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=5.0, direction_threshold=0.3):
+    
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.15, acceleration_frame_range=1):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
@@ -221,6 +222,7 @@ class RootMotion:
             keyframe_data (dict): 키프레임 데이터 딕셔너리
             acceleration_threshold (float): 가속도 변화 임계값 (기본값: 5.0)
             direction_threshold (float): 방향 감지 임계값 (기본값: 0.3, 0.0~1.0)
+            acceleration_frame_range (int): 가속도 계산을 위한 프레임 범위 (기본값: 1)
         
         Returns:
             dict: 변환된 키프레임 데이터 딕셔너리
@@ -231,7 +233,10 @@ class RootMotion:
         converted_data = {}
         frame_list = sorted(keyframe_data.keys())
         
-        if len(frame_list) < 3:  # 가속도 계산을 위해 최소 3개 프레임 필요
+        # 가속도 계산을 위해 최소 필요한 프레임 수 확인
+        min_frames_needed = 2 * acceleration_frame_range + 1
+        if len(frame_list) < min_frames_needed:
+            print(f"Warning: Need at least {min_frames_needed} frames for acceleration calculation with range {acceleration_frame_range}")
             return {}
         
         self.accelerationThreshold = acceleration_threshold
@@ -285,7 +290,8 @@ class RootMotion:
             else:
                 # 움직임이 거의 없는 경우 모든 dot product를 0으로 설정
                 dot_forward = dot_backward = dot_right = dot_left = 0.0
-              # 임계값을 넘는 방향들 확인
+            
+            # 임계값을 넘는 방향들 확인
             active_directions = []
             if abs(dot_forward) > direction_threshold:
                 active_directions.append(("forward", dot_forward))
@@ -302,7 +308,8 @@ class RootMotion:
                 # 절댓값이 가장 큰 방향을 주요 방향으로 설정
                 active_directions.sort(key=lambda x: abs(x[1]), reverse=True)
                 direction = active_directions[0][0]
-              # 로코모션 위치 계산
+            
+            # 로코모션 위치 계산
             if i == 0:
                 # 첫 프레임: 기본 위치로 시작
                 locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
@@ -366,14 +373,31 @@ class RootMotion:
             # 이전 방향 업데이트
             prev_direction = direction
         
-        # 속도 계산
+        # 속도 계산 (지정된 프레임 범위를 사용)
         for i in range(len(frame_list)):
             current_frame = frame_list[i]
             current_data = converted_data[current_frame]
             
-            # 속도 계산 (현재 프레임과 다음 프레임 사이)
-            if i < len(frame_list) - 1:
-                next_frame = frame_list[i + 1]
+            # 속도 계산을 위해 이전/다음 프레임 범위 내에서 가능한 프레임 찾기
+            prev_index = max(0, i - acceleration_frame_range)
+            next_index = min(len(frame_list) - 1, i + acceleration_frame_range)
+            
+            if prev_index != i and next_index != i:
+                # 양방향으로 계산 가능한 경우
+                prev_frame = frame_list[prev_index]
+                next_frame = frame_list[next_index]
+                prev_data = converted_data[prev_frame]
+                next_data = converted_data[next_frame]
+                
+                frame_diff = next_frame - prev_frame
+                pos_diff = next_data['position'] - prev_data['position']
+                
+                if frame_diff > 0:
+                    velocity = pos_diff / frame_diff
+                    current_data['velocity'] = velocity
+            elif next_index != i:
+                # 앞으로만 계산 가능한 경우 (시작 부분)
+                next_frame = frame_list[next_index]
                 next_data = converted_data[next_frame]
                 
                 frame_diff = next_frame - current_frame
@@ -382,33 +406,53 @@ class RootMotion:
                 if frame_diff > 0:
                     velocity = pos_diff / frame_diff
                     current_data['velocity'] = velocity
-          # 가속도 계산 및 키프레임 필요성 판단
-        for i in range(1, len(frame_list) - 1):  # 첫 번째와 마지막 프레임 제외
+            elif prev_index != i:
+                # 뒤로만 계산 가능한 경우 (끝 부분)
+                prev_frame = frame_list[prev_index]
+                prev_data = converted_data[prev_frame]
+                
+                frame_diff = current_frame - prev_frame
+                pos_diff = current_data['position'] - prev_data['position']
+                
+                if frame_diff > 0:
+                    velocity = pos_diff / frame_diff
+                    current_data['velocity'] = velocity
+        
+        # 가속도 계산 및 키프레임 필요성 판단 (지정된 프레임 범위 사용)
+        for i in range(len(frame_list)):
             current_frame = frame_list[i]
-            prev_frame = frame_list[i - 1]
-            next_frame = frame_list[i + 1]
-            
             current_data = converted_data[current_frame]
-            prev_data = converted_data[prev_frame]
-            next_data = converted_data[next_frame]
             
-            # 가속도 계산 (속도의 변화율)
-            frame_diff_prev = current_frame - prev_frame
-            frame_diff_next = next_frame - current_frame
+            # 가속도 계산을 위해 이전/다음 프레임 범위 내에서 가능한 프레임 찾기
+            prev_index = max(0, i - acceleration_frame_range)
+            next_index = min(len(frame_list) - 1, i + acceleration_frame_range)
             
-            if frame_diff_prev > 0 and frame_diff_next > 0:
-                # 평균 프레임 차이로 정규화
-                avg_frame_diff = (frame_diff_prev + frame_diff_next) / 2.0
+            # 양방향으로 충분한 데이터가 있는 경우에만 가속도 계산
+            if prev_index < i and next_index > i:
+                prev_frame = frame_list[prev_index]
+                next_frame = frame_list[next_index]
                 
-                velocity_diff = current_data['velocity'] - prev_data['velocity']
-                acceleration = velocity_diff / avg_frame_diff if avg_frame_diff > 0 else rt.Point3(0, 0, 0)
+                prev_data = converted_data[prev_frame]
+                next_data = converted_data[next_frame]
                 
-                current_data['acceleration'] = acceleration
-                current_data['acceleration_magnitude'] = rt.length(acceleration)
+                # 가속도 계산 (속도의 변화율)
+                frame_diff_prev = current_frame - prev_frame
+                frame_diff_next = next_frame - current_frame
                 
-                # 가속도 변화가 임계값을 넘거나 방향이 바뀌면 키프레임 필요
-                if current_data['acceleration_magnitude'] > acceleration_threshold or current_data.get('direction_changed', False):
-                    current_data['needs_keyframe'] = True
+                if frame_diff_prev > 0 and frame_diff_next > 0:
+                    # 평균 프레임 차이로 정규화
+                    avg_frame_diff = (frame_diff_prev + frame_diff_next) / 2.0
+                    
+                    # 현재 프레임의 속도와 이전 프레임의 속도 차이
+                    velocity_diff = current_data['velocity'] - prev_data['velocity']
+                    acceleration = velocity_diff / avg_frame_diff if avg_frame_diff > 0 else rt.Point3(0, 0, 0)
+                    
+                    current_data['acceleration'] = acceleration
+                    current_data['acceleration_magnitude'] = rt.length(acceleration)
+                    
+                    # 가속도 변화가 임계값을 넘거나 방향이 바뀌면 키프레임 필요
+                    if current_data['acceleration_magnitude'] > acceleration_threshold or current_data.get('direction_changed', False):
+                        current_data['needs_keyframe'] = True
         
         # 첫 번째와 마지막 프레임은 항상 키프레임 필요
         if frame_list:
