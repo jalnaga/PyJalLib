@@ -213,7 +213,7 @@ class RootMotion:
         
         return keyframe_data
     
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.01, acceleration_frame_range=1):
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.01, acceleration_frame_range=1, followZRotation=False):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
@@ -330,9 +330,35 @@ class RootMotion:
             # Direction changed flag considers "Transition" as a distinct direction state
             direction_changed_flag = (current_primary_direction != prev_primary_direction and prev_primary_direction != "")
 
+            # Determine final rotation for the frame
+            final_frame_rotation = frame_data['rotation'] # Default to original rotation
+
+            if followZRotation:
+                if current_primary_direction == "Transition":
+                    transition_z_rotation = 0.0
+                    if dot_forward > 0:
+                        transition_z_rotation += (-90.0 * dot_forward)
+                    if dot_backward > 0:
+                        transition_z_rotation += (90.0 * dot_backward)
+                    if dot_left > 0: # world_left (1,0,0) corresponds to 180 deg Z rotation
+                        transition_z_rotation += (180.0 * dot_left)
+                    if dot_right > 0: # world_right (-1,0,0) corresponds to -180 deg Z rotation
+                        transition_z_rotation += (-180.0 * dot_right)
+                    final_frame_rotation = rt.EulerAngles(0, 0, transition_z_rotation)
+                elif current_primary_direction == "forward":
+                    final_frame_rotation = rt.EulerAngles(0, 0, -90)
+                elif current_primary_direction == "backward":
+                    final_frame_rotation = rt.EulerAngles(0, 0, 90)
+                elif current_primary_direction == "left":
+                    final_frame_rotation = rt.EulerAngles(0, 0, 180)
+                elif current_primary_direction == "right":
+                    final_frame_rotation = rt.EulerAngles(0, 0, -180)
+                # If followZRotation is true but direction is not one of the above (e.g. empty, though unlikely),
+                # it will keep the original frame_data['rotation']. This is a safe fallback.
+
             converted_data[frame] = {
                 'position': locomotion_pos,
-                'rotation': frame_data['rotation'],
+                'rotation': final_frame_rotation, # Apply the calculated rotation
                 'bipComPos': bipcom_pos,
                 'bipComRot': bipcom_rot,
                 'direction': current_primary_direction,
@@ -443,32 +469,6 @@ class RootMotion:
         if len(frame_list) < 1:
             return False
         
-        # 디버깅: keyframe_data 내용 출력
-        print("=== Locomotion Keyframe Data Debug ===")
-        print(f"Total frames: {len(frame_list)}")
-        print(f"Frame range: {min(frame_list)} - {max(frame_list)}")
-        
-        keyframe_needed_count = 0
-        for frame, data in keyframe_data.items():
-            needs_key = data.get('needs_keyframe', False)
-            if needs_key:
-                keyframe_needed_count += 1
-            
-            print(f"Frame {frame}:")
-            print(f"  Position: [{data['position'].x:.3f}, {data['position'].y:.3f}, {data['position'].z:.3f}]")
-            print(f"  Direction: {data.get('direction', 'unknown')}")
-            print(f"  Velocity: [{data['velocity'].x:.3f}, {data['velocity'].y:.3f}, {data['velocity'].z:.3f}]")
-            print(f"  Acceleration: [{data['acceleration'].x:.3f}, {data['acceleration'].y:.3f}, {data['acceleration'].z:.3f}]")
-            print(f"  Acceleration Magnitude: {data.get('acceleration_magnitude', 0.0):.3f}")
-            print(f"  Needs Keyframe: {needs_key}")
-            if 'dot_values' in data:
-                dots = data['dot_values']
-                print(f"  Dot Products - Forward: {dots['forward']:.3f}, Backward: {dots['backward']:.3f}, Right: {dots['right']:.3f}, Left: {dots['left']:.3f}")
-            print()
-        
-        print(f"Frames needing keyframes: {keyframe_needed_count}/{len(frame_list)}")
-        print("=" * 40)
-        
         # 모든 프레임 데이터를 MAXScript 배열로 준비
         pos_list = [f'[{data["position"].x}, {data["position"].y}, {data["position"].z}]' for data in keyframe_data.values()]
         rot_list = [f'(eulerAngles {data["rotation"].x} {data["rotation"].y} {data["rotation"].z})' for data in keyframe_data.values()]
@@ -503,6 +503,7 @@ class RootMotion:
                     )
                 )
             )
+            
         )
         """
         
@@ -520,11 +521,6 @@ class RootMotion:
             # 두 번째 실행 (실제 키 생성)
             rt.execute(maxscriptCode)
             
-            # needs_keyframe이 True인 프레임 개수 계산
-            keyframe_count = sum(1 for data in keyframe_data.values() if data.get('needs_keyframe', False))
-            keyframe_frames = [frame for frame, data in keyframe_data.items() if data.get('needs_keyframe', False)]
-            
-            print(f"Applied {keyframe_count} keyframes for locomotion mode at frames: {keyframe_frames}")
             return True
             
         except Exception as e:
