@@ -213,7 +213,7 @@ class RootMotion:
         
         return keyframe_data
     
-    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.15, acceleration_frame_range=1):
+    def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=1.0, direction_threshold=0.01, acceleration_frame_range=1):
         """
         로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
         
@@ -221,7 +221,8 @@ class RootMotion:
             bipCom (node): Biped COM 객체
             keyframe_data (dict): 키프레임 데이터 딕셔너리
             acceleration_threshold (float): 가속도 변화 임계값 (기본값: 5.0)
-            direction_threshold (float): 방향 감지 임계값 (기본값: 0.3, 0.0~1.0)
+            direction_threshold (float): 방향 감지 임계값 (기본값: 0.15, 0.0~1.0).
+                                         Strict activation uses (1.0 - direction_threshold).
             acceleration_frame_range (int): 가속도 계산을 위한 프레임 범위 (기본값: 1)
         
         Returns:
@@ -233,231 +234,193 @@ class RootMotion:
         converted_data = {}
         frame_list = sorted(keyframe_data.keys())
         
-        # 가속도 계산을 위해 최소 필요한 프레임 수 확인
         min_frames_needed = 2 * acceleration_frame_range + 1
         if len(frame_list) < min_frames_needed:
             print(f"Warning: Need at least {min_frames_needed} frames for acceleration calculation with range {acceleration_frame_range}")
+            # Return empty or partially processed if preferred, for now returning empty
             return {}
         
         self.accelerationThreshold = acceleration_threshold
         
-        # 첫 프레임의 bipCom 위치를 기준으로 설정
         first_frame = frame_list[0]
         first_bipcom_pos = keyframe_data[first_frame]['bipComPos']
         
-        # 월드 축 방향 벡터 정의
-        world_forward = rt.Point3(0, -1, 0)  # 월드 -Y축 (앞)
-        world_backward = rt.Point3(0, 1, 0)  # 월드 +Y축 (뒤)
-        world_right = rt.Point3(-1, 0, 0)    # 월드 -X축 (오른쪽)
-        world_left = rt.Point3(1, 0, 0)      # 월드 +X축 (왼쪽)
+        world_forward = rt.Point3(0, -1, 0)
+        world_backward = rt.Point3(0, 1, 0)
+        world_right = rt.Point3(-1, 0, 0)
+        world_left = rt.Point3(1, 0, 0)
         
-        # 방향 변경 추적 변수
-        prev_direction = ""
-        direction_change_positions = {}  # 방향별 마지막 위치 저장
-        
-        # 각 프레임별 방향 및 변환된 위치 계산
+        prev_primary_direction = ""
+        strict_activation_thresh = 1.0 - direction_threshold
+
         for i, frame in enumerate(frame_list):
             frame_data = keyframe_data[frame]
             bipcom_pos = frame_data['bipComPos']
             bipcom_rot = frame_data['bipComRot']
             
-            # 실제 이동 방향 계산 (위치 변화 기반)
-            movement_direction = rt.Point3(0, 0, 0)
+            movement_direction_vec = rt.Point3(0, 0, 0)
             movement_magnitude = 0.0
             
-            if i > 0:  # 첫 번째 프레임이 아닌 경우
-                prev_frame = frame_list[i - 1]
-                prev_pos = keyframe_data[prev_frame]['bipComPos']
-                movement_vector = bipcom_pos - prev_pos
+            if i > 0:
+                prev_frame_data = keyframe_data[frame_list[i-1]]
+                movement_vector = bipcom_pos - prev_frame_data['bipComPos']
                 movement_magnitude = rt.length(movement_vector)
-                if movement_magnitude > 0.001:  # 임계값보다 큰 움직임만 처리
-                    movement_direction = rt.normalize(movement_vector)
-            elif i < len(frame_list) - 1:  # 마지막 프레임이 아닌 경우
-                next_frame = frame_list[i + 1]
-                next_pos = keyframe_data[next_frame]['bipComPos']
-                movement_vector = next_pos - bipcom_pos
+                if movement_magnitude > 0.001:
+                    movement_direction_vec = rt.normalize(movement_vector)
+            elif i < len(frame_list) - 1: # First frame, use next frame for initial direction
+                next_frame_data = keyframe_data[frame_list[i+1]]
+                movement_vector = next_frame_data['bipComPos'] - bipcom_pos
                 movement_magnitude = rt.length(movement_vector)
-                if movement_magnitude > 0.001:  # 임계값보다 큰 움직임만 처리
-                    movement_direction = rt.normalize(movement_vector)
-            
-            # 이동 방향이 유효한 경우에만 dot product 계산
-            if movement_magnitude > 0.001:  # 매우 작은 움직임 무시
-                # 각 방향과의 dot product 계산
-                dot_forward = rt.dot(movement_direction, world_forward)
-                dot_backward = rt.dot(movement_direction, world_backward)
-                dot_right = rt.dot(movement_direction, world_right)
-                dot_left = rt.dot(movement_direction, world_left)
+                if movement_magnitude > 0.001:
+                    movement_direction_vec = rt.normalize(movement_vector)
+
+            dot_forward = 0.0
+            dot_backward = 0.0
+            dot_right = 0.0
+            dot_left = 0.0
+
+            if movement_magnitude > 0.001:
+                dot_forward = rt.dot(movement_direction_vec, world_forward)
+                dot_backward = rt.dot(movement_direction_vec, world_backward)
+                dot_right = rt.dot(movement_direction_vec, world_right)
+                dot_left = rt.dot(movement_direction_vec, world_left)
+
+            # Determine strictly active directions
+            strictly_active_directions = []
+            if dot_forward >= strict_activation_thresh:
+                strictly_active_directions.append(("forward", dot_forward))
+            if dot_backward >= strict_activation_thresh:
+                strictly_active_directions.append(("backward", dot_backward))
+            if dot_right >= strict_activation_thresh:
+                strictly_active_directions.append(("right", dot_right))
+            if dot_left >= strict_activation_thresh:
+                strictly_active_directions.append(("left", dot_left))
+
+            current_primary_direction = ""
+            current_active_directions_list = []
+            is_transition_frame = not strictly_active_directions
+
+            if is_transition_frame:
+                current_primary_direction = "Transition"
             else:
-                # 움직임이 거의 없는 경우 모든 dot product를 0으로 설정
-                dot_forward = dot_backward = dot_right = dot_left = 0.0
+                strictly_active_directions.sort(key=lambda x: x[1], reverse=True) # Sort by dot product value
+                current_primary_direction = strictly_active_directions[0][0]
+                current_active_directions_list = [d[0] for d in strictly_active_directions]
             
-            # 임계값을 넘는 방향들 확인
-            active_directions = []
-            if abs(dot_forward) > direction_threshold:
-                active_directions.append(("forward", dot_forward))
-            if abs(dot_backward) > direction_threshold:
-                active_directions.append(("backward", dot_backward))
-            if abs(dot_right) > direction_threshold:
-                active_directions.append(("right", dot_right))
-            if abs(dot_left) > direction_threshold:
-                active_directions.append(("left", dot_left))
-            
-            # 주요 방향 결정 (가장 큰 dot product)
-            direction = ""
-            if active_directions:
-                # 절댓값이 가장 큰 방향을 주요 방향으로 설정
-                active_directions.sort(key=lambda x: abs(x[1]), reverse=True)
-                direction = active_directions[0][0]
-            
-            # 로코모션 위치 계산
+            # Calculate locomotion_pos
+            locomotion_pos_z = frame_data['position'].z # Z is always from original calculation or fixed
             if i == 0:
-                # 첫 프레임: 기본 위치로 시작
-                locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, frame_data['position'].z)
+                locomotion_pos = rt.Point3(first_bipcom_pos.x, first_bipcom_pos.y, locomotion_pos_z)
             else:
-                # 이전 프레임의 로코모션 위치를 기준으로 시작
                 prev_locomotion_pos = converted_data[frame_list[i-1]]['position']
-                locomotion_pos = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, frame_data['position'].z)
-                
-                # 방향이 바뀌었는지 확인
-                direction_changed = (direction != prev_direction and prev_direction != "")
-                
-                # 각 축별로 독립적으로 업데이트 (임계값 기반)
-                x_updated = False
-                y_updated = False
-                
-                # X축 업데이트 (좌우 움직임)
-                if abs(dot_right) > direction_threshold or abs(dot_left) > direction_threshold:
+                locomotion_pos = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, locomotion_pos_z)
+
+                if is_transition_frame:
                     locomotion_pos.x = bipcom_pos.x
-                    x_updated = True
-                
-                # Y축 업데이트 (앞뒤 움직임)
-                if abs(dot_forward) > direction_threshold or abs(dot_backward) > direction_threshold:
                     locomotion_pos.y = bipcom_pos.y
-                    y_updated = True
-                
-                # 방향 변경 시 추가 처리
-                if direction_changed:
-                    # 방향이 바뀐 경우: 이전 방향의 위치를 저장
-                    direction_change_positions[prev_direction] = rt.Point3(prev_locomotion_pos.x, prev_locomotion_pos.y, prev_locomotion_pos.z)
+                else:
+                    # Update Y if forward or backward is strictly active
+                    if "forward" in current_active_directions_list or "backward" in current_active_directions_list:
+                        locomotion_pos.y = bipcom_pos.y
                     
-                    # 새로운 방향이 활성화되지 않은 축은 이전 값 유지
-                    if not x_updated and prev_direction in ["right", "left"]:
-                        # X축이 업데이트되지 않았고 이전이 좌우 방향이었다면 X값 유지
-                        locomotion_pos.x = prev_locomotion_pos.x
-                    
-                    if not y_updated and prev_direction in ["forward", "backward"]:
-                        # Y축이 업데이트되지 않았고 이전이 앞뒤 방향이었다면 Y값 유지
-                        locomotion_pos.y = prev_locomotion_pos.y
+                    # Update X if right or left is strictly active
+                    if "right" in current_active_directions_list or "left" in current_active_directions_list:
+                        locomotion_pos.x = bipcom_pos.x
             
+            # Direction changed flag considers "Transition" as a distinct direction state
+            direction_changed_flag = (current_primary_direction != prev_primary_direction and prev_primary_direction != "")
+
             converted_data[frame] = {
                 'position': locomotion_pos,
                 'rotation': frame_data['rotation'],
                 'bipComPos': bipcom_pos,
                 'bipComRot': bipcom_rot,
-                'direction': direction,
-                'direction_changed': direction != prev_direction and prev_direction != "",
-                'active_directions': [d[0] for d in active_directions],  # 활성화된 모든 방향들
+                'direction': current_primary_direction,
+                'direction_changed': direction_changed_flag,
+                'active_directions': current_active_directions_list, # Will be empty for "Transition"
                 'dot_values': {
                     'forward': dot_forward,
                     'backward': dot_backward,
                     'right': dot_right,
                     'left': dot_left
                 },
-                'direction_threshold': direction_threshold,
+                'direction_threshold': direction_threshold, # Store original for reference
+                'strict_activation_threshold': strict_activation_thresh,
                 'velocity': rt.Point3(0, 0, 0),
                 'acceleration': rt.Point3(0, 0, 0),
                 'acceleration_magnitude': 0.0,
-                'needs_keyframe': False
+                'needs_keyframe': False 
             }
             
-            # 이전 방향 업데이트
-            prev_direction = direction
+            prev_primary_direction = current_primary_direction
         
         # 속도 계산 (지정된 프레임 범위를 사용)
         for i in range(len(frame_list)):
             current_frame = frame_list[i]
             current_data = converted_data[current_frame]
             
-            # 속도 계산을 위해 이전/다음 프레임 범위 내에서 가능한 프레임 찾기
             prev_index = max(0, i - acceleration_frame_range)
             next_index = min(len(frame_list) - 1, i + acceleration_frame_range)
             
             if prev_index != i and next_index != i:
-                # 양방향으로 계산 가능한 경우
-                prev_frame = frame_list[prev_index]
-                next_frame = frame_list[next_index]
-                prev_data = converted_data[prev_frame]
-                next_data = converted_data[next_frame]
+                prev_frame_for_vel = frame_list[prev_index]
+                next_frame_for_vel = frame_list[next_index]
+                prev_data_for_vel = converted_data[prev_frame_for_vel]
+                next_data_for_vel = converted_data[next_frame_for_vel]
                 
-                frame_diff = next_frame - prev_frame
-                pos_diff = next_data['position'] - prev_data['position']
-                
-                if frame_diff > 0:
-                    velocity = pos_diff / frame_diff
-                    current_data['velocity'] = velocity
-            elif next_index != i:
-                # 앞으로만 계산 가능한 경우 (시작 부분)
-                next_frame = frame_list[next_index]
-                next_data = converted_data[next_frame]
-                
-                frame_diff = next_frame - current_frame
-                pos_diff = next_data['position'] - current_data['position']
+                frame_diff = float(next_frame_for_vel - prev_frame_for_vel)
+                pos_diff = next_data_for_vel['position'] - prev_data_for_vel['position']
                 
                 if frame_diff > 0:
-                    velocity = pos_diff / frame_diff
-                    current_data['velocity'] = velocity
-            elif prev_index != i:
-                # 뒤로만 계산 가능한 경우 (끝 부분)
-                prev_frame = frame_list[prev_index]
-                prev_data = converted_data[prev_frame]
-                
-                frame_diff = current_frame - prev_frame
-                pos_diff = current_data['position'] - prev_data['position']
-                
+                    current_data['velocity'] = pos_diff / frame_diff
+            elif next_index != i: # Start of range
+                next_frame_for_vel = frame_list[next_index]
+                next_data_for_vel = converted_data[next_frame_for_vel]
+                frame_diff = float(next_frame_for_vel - current_frame)
+                pos_diff = next_data_for_vel['position'] - current_data['position']
                 if frame_diff > 0:
-                    velocity = pos_diff / frame_diff
-                    current_data['velocity'] = velocity
+                    current_data['velocity'] = pos_diff / frame_diff
+            elif prev_index != i: # End of range
+                prev_frame_for_vel = frame_list[prev_index]
+                prev_data_for_vel = converted_data[prev_frame_for_vel]
+                frame_diff = float(current_frame - prev_frame_for_vel)
+                pos_diff = current_data['position'] - prev_data_for_vel['position']
+                if frame_diff > 0:
+                    current_data['velocity'] = pos_diff / frame_diff
         
-        # 가속도 계산 및 키프레임 필요성 판단 (지정된 프레임 범위 사용)
+        # 가속도 계산 및 키프레임 필요성 판단
         for i in range(len(frame_list)):
             current_frame = frame_list[i]
             current_data = converted_data[current_frame]
             
-            # 가속도 계산을 위해 이전/다음 프레임 범위 내에서 가능한 프레임 찾기
             prev_index = max(0, i - acceleration_frame_range)
-            next_index = min(len(frame_list) - 1, i + acceleration_frame_range)
-            
-            # 양방향으로 충분한 데이터가 있는 경우에만 가속도 계산
-            if prev_index < i and next_index > i:
-                prev_frame = frame_list[prev_index]
-                next_frame = frame_list[next_index]
+            # next_index = min(len(frame_list) - 1, i + acceleration_frame_range) # Not used in this specific accel calc
+
+            if prev_index < i : # Check if there is a distinct previous frame for accel calc
+                prev_frame_for_accel = frame_list[prev_index]
+                prev_data_for_accel = converted_data[prev_frame_for_accel]
                 
-                prev_data = converted_data[prev_frame]
-                next_data = converted_data[next_frame]
-                
-                # 가속도 계산 (속도의 변화율)
-                frame_diff_prev = current_frame - prev_frame
-                frame_diff_next = next_frame - current_frame
-                
-                if frame_diff_prev > 0 and frame_diff_next > 0:
-                    # 평균 프레임 차이로 정규화
-                    avg_frame_diff = (frame_diff_prev + frame_diff_next) / 2.0
-                    
-                    # 현재 프레임의 속도와 이전 프레임의 속도 차이
-                    velocity_diff = current_data['velocity'] - prev_data['velocity']
-                    acceleration = velocity_diff / avg_frame_diff if avg_frame_diff > 0 else rt.Point3(0, 0, 0)
-                    
+                frame_span_from_prev_sample = float(current_frame - prev_frame_for_accel)
+                if frame_span_from_prev_sample > 0:
+                    velocity_diff = current_data['velocity'] - prev_data_for_accel['velocity']
+                    acceleration = velocity_diff / frame_span_from_prev_sample
                     current_data['acceleration'] = acceleration
                     current_data['acceleration_magnitude'] = rt.length(acceleration)
-                    
-                    # 가속도 변화가 임계값을 넘거나 방향이 바뀌면 키프레임 필요
-                    if current_data['acceleration_magnitude'] > acceleration_threshold or current_data.get('direction_changed', False):
-                        current_data['needs_keyframe'] = True
+            
+            # 키프레임 필요성 판단 로직 수정
+            if current_data['direction'] == "Transition":
+                if current_data['acceleration_magnitude'] > (self.accelerationThreshold / 2.0):
+                    current_data['needs_keyframe'] = True
+            else: # "forward", "backward", "left", "right"
+                if current_data['acceleration_magnitude'] > self.accelerationThreshold or current_data.get('direction_changed', False):
+                    current_data['needs_keyframe'] = True
         
-        # 첫 번째와 마지막 프레임은 항상 키프레임 필요
         if frame_list:
-            converted_data[frame_list[0]]['needs_keyframe'] = True
-            converted_data[frame_list[-1]]['needs_keyframe'] = True
+            if converted_data: # Ensure converted_data is not empty
+                 if frame_list[0] in converted_data:
+                    converted_data[frame_list[0]]['needs_keyframe'] = True
+                 if len(frame_list) > 1 and frame_list[-1] in converted_data: # Ensure there's more than one frame
+                    converted_data[frame_list[-1]]['needs_keyframe'] = True
         
         return converted_data
 
