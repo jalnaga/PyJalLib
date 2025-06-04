@@ -74,17 +74,20 @@ class BoneChain:
             return False
             
         try:
-            # 뼈대 삭제
-            if self.bones:
-                for bone in self.bones:
-                    if rt.isValidNode(bone):
-                        rt.delete(bone)
+            # 유효한 노드들을 모아서 한 번에 삭제
+            valid_nodes = []
             
-            # 헬퍼 삭제
+            # 유효한 뼈대 수집
+            if self.bones:
+                valid_nodes.extend([bone for bone in self.bones if rt.isValidNode(bone)])
+            
+            # 유효한 헬퍼 수집
             if self.helpers:
-                for helper in self.helpers:
-                    if rt.isValidNode(helper):
-                        rt.delete(helper)
+                valid_nodes.extend([helper for helper in self.helpers if rt.isValidNode(helper)])
+            
+            # 수집된 노드가 있으면 한 번에 삭제
+            if valid_nodes:
+                rt.delete(valid_nodes)
             
             self.bones = []
             self.helpers = []
@@ -95,7 +98,7 @@ class BoneChain:
     
     def delete_all(self):
         """
-        체인의 모든 뼈대와 헬퍼를 3ds Max 씬에서 삭제
+        체인의 모든 뼈대와 헬퍼를 3ds Max 씬에서 삭제하고 소스본과 파라미터도 초기화
         
         Returns:
             bool: 삭제 성공 여부
@@ -104,20 +107,14 @@ class BoneChain:
             return False
             
         try:
-            # 뼈대 삭제
-            if self.bones:
-                for bone in self.bones:
-                    if rt.isValidNode(bone):
-                        rt.delete(bone)
+            # delete 메소드를 재사용하여 뼈대와 헬퍼 삭제
+            result = self.delete()
             
-            # 헬퍼 삭제
-            if self.helpers:
-                for helper in self.helpers:
-                    if rt.isValidNode(helper):
-                        rt.delete(helper)
-                
-            self.clear()
-            return True
+            # 추가로 소스본과 파라미터 초기화
+            self.sourceBones = []
+            self.parameters = []
+            
+            return result
         except:
             return False
     
