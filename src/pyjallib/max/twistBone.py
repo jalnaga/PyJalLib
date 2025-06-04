@@ -258,6 +258,9 @@ class TwistBone:
         twistBoneRotListController.setActive(twistBoneRotListController.count)
         twistBoneRotListController.weight[0] = 100.0
         
+        # 첫 번째 트위스트 본을 boneChainArray에 추가
+        boneChainArray.append(twistBone)
+        
         if twistNum > 1:
             lastBone = self.bone.create_nub_bone(boneName, 2)
             lastBone.name = self.name.replace_name_part("Index", boneName, str(twistNum))
@@ -320,7 +323,8 @@ class TwistBone:
         if not inBoneChain or inBoneChain.is_empty():
             return None
             
-        # 기존 객체 삭제
+        # 기존 객체 삭제 (delete_all 대신 delete 사용)
+        # delete는 bones와 helpers만 삭제하고 sourceBones와 parameters는 유지함
         inBoneChain.delete()
             
         # BoneChain에서 필요한 정보 추출

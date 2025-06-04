@@ -275,7 +275,8 @@ class VolumeBone:  # Updated class name to match the new file name
         if not inBoneChain or inBoneChain.is_empty():
             return None
             
-        # 기존 객체 삭제
+        # 기존 객체 삭제 (delete_all 대신 delete 사용)
+        # delete는 bones와 helpers만 삭제하고 sourceBones와 parameters는 유지함
         inBoneChain.delete()
             
         # BoneChain에서 필요한 정보 추출
