@@ -108,7 +108,7 @@ class AutoClavicle:
         autoClavicleBone.transform = inClavicle.transform
         self.anim.move_local(autoClavicleBone, clavicleLength/2.0, 0.0, 0.0)
         autoClavicleBone.parent = inClavicle
-        genBones.extend(autoClavicleBone)
+        genBones.append(autoClavicleBone)
         
         # 타겟 헬퍼 포인트 생성 (쇄골과 상완용)
         rotTargetClavicle = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
