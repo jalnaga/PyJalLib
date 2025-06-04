@@ -292,7 +292,7 @@ class KneeBone:
             bool: 중간 본 생성 성공 여부
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf):
-            return False
+            return None
         
         facingDirVec = inCalf.transform.position - inThigh.transform.position
         inObjXAxisVec = inCalf.objectTransform.row1
@@ -320,15 +320,15 @@ class KneeBone:
             replaceName = replaceName.lower()
             calfName = calfName.lower()
         
-        for item in result["Bones"]:
+        for item in result.bones:
             item.name = item.name.replace(calfName, replaceName)
         
-        result["RootBone"].name = result["RootBone"].name.replace(calfName, replaceName)
-        result["RotHelper"].name = result["RotHelper"].name.replace(calfName, replaceName)
+        result.bones[0].name = result.bones[0].name.replace(calfName, replaceName)
+        result.helpers[0].name = result.helpers[0].name.replace(calfName, replaceName)
         
-        # 결과 저장
-        if result and "Bones" in result:
-            self.middleBones.extend(result["Bones"])
+        # 결과 저장 - 기존 확장 방식에서 직접 할당으로 변경
+        if result.bones:
+            self.middleBones = result.bones
         
         return result
     
@@ -448,7 +448,7 @@ class KneeBone:
             BoneChain: 생성된 자동 무릎 본 체인 객체
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf) or not rt.isValidNode(inFoot):
-            return False
+            return None
         
         self.create_lookat_helper(inThigh, inFoot)
         self.create_rot_root_heleprs(inThigh, inCalf, inFoot)
@@ -458,10 +458,31 @@ class KneeBone:
         self.create_middle_bone(inThigh, inCalf, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
         self.create_twist_bones(inThigh, inCalf)
         
-        # 모든 생성된 본들 수집
-        all_bones = self.thighTwistBones + self.calfTwistBones + self.middleBones
+        # 모든 생성된 본들을 개별적으로 수집
+        all_bones = []
+        
+        # 대퇴부 트위스트 본 추가
+        for bone in self.thighTwistBones:
+            all_bones.append(bone)
+            
+        # 종아리 트위스트 본 추가
+        for bone in self.calfTwistBones:
+            all_bones.append(bone)
+            
+        # 중간 본 추가
+        for bone in self.middleBones:
+            all_bones.append(bone)
+        
+        # 모든 헬퍼 수집
         all_helpers = [self.lookAtHleper, self.thighRotHelper, self.calfRotHelper, 
-                      self.thighRotRootHelper, self.calfRotRootHelper] + self.thighTwistHelpers + self.calfTwistHelpers
+                      self.thighRotRootHelper, self.calfRotRootHelper]
+                      
+        # 트위스트 헬퍼 추가
+        for helper in self.thighTwistHelpers:
+            all_helpers.append(helper)
+            
+        for helper in self.calfTwistHelpers:
+            all_helpers.append(helper)
         
         # 결과를 BoneChain 형태로 준비
         result = {
