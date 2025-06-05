@@ -177,7 +177,7 @@ class Hip:
         self.helpers.append(thighPosHelper)
         self.helpers.append(thighRotRootHelper)
     
-    def assing_constraint(self, inCalf, inPelvisWeight=0.6, inThighWeight=0.4, inPushAmount=5.0):
+    def assing_constraint(self, inCalf, inPelvisWeight=60.0, inThighWeight=40.0, inPushAmount=5.0):
         self.calf = inCalf
         self.pelvisWeight = inPelvisWeight
         self.thighWeight = inThighWeight
@@ -188,8 +188,8 @@ class Hip:
         distanceDir = -1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else 1.0
         
         rotConst = self.const.assign_rot_const_multi(self.thighRotHelper, [self.pelvisHelper, self.thighTwistHelper])
-        rotConst.setWeight(1, self.pelvisWeight * 100.0)
-        rotConst.setWeight(2, self.thighWeight * 100.0)
+        rotConst.setWeight(1, self.pelvisWeight)
+        rotConst.setWeight(2, self.thighWeight)
         
         localRotRefTm = self.thighRotHelper.transform * rt.inverse(self.thighRotRootHelper.transform)
         posConst = self.const.assign_pos_script_controller(self.thighPosHelper)
@@ -200,7 +200,7 @@ class Hip:
         posConst.setExpression(self.posScriptExpression)
         posConst.update()
         
-    def create_bone(self, inPelvis, inThigh, inThighTwist, inCalf, pushAmount=5.0, inPelvisWeight=0.6, inThighWeight=0.4):
+    def create_bone(self, inPelvis, inThigh, inThighTwist, inCalf, pushAmount=5.0, inPelvisWeight=60.0, inThighWeight=40.0):
         if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
             return False
         
