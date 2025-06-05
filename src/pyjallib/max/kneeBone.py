@@ -66,6 +66,7 @@ class KneeBone:
         self.calfTwistHelpers = []
         
         self.middleBones = []
+        self.middleHelper = None
         
         self.liftScale = 0.05
         
@@ -275,7 +276,7 @@ class KneeBone:
         
         self.const.set_rot_controllers_weight_in_list(self.calfRotHelper, 1, self.liftScale * 100.0)
         
-    def create_middle_bone(self, inThigh, inCalf, inKneePopScale=0.1, inKneeBackScale=1.5):
+    def create_middle_bone(self, inThigh, inCalf, inKneeVolumeSize=5.0, inKneePopScale=0.1, inKneeBackScale=1.5):
         """
         무릎 중간 본을 생성합니다.
         
@@ -309,7 +310,7 @@ class KneeBone:
             transScales.append(inKneeBackScale)
             transScales.append(inKneePopScale)
         
-        result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=5.0, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
+        result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=inKneeVolumeSize, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
         filteringChar = self.name._get_filtering_char(inCalf.name)
         calfName = self.name.get_RealName(inCalf.name)
@@ -329,6 +330,7 @@ class KneeBone:
         # 결과 저장 - 기존 확장 방식에서 직접 할당으로 변경
         if result.bones:
             self.middleBones = result.bones
+            self.middleHelper = result.helpers[0]
         
         return result
     
@@ -424,7 +426,7 @@ class KneeBone:
             self.calfTwistBones.append(liftTwistBone)
             self.calfTwistHelpers.append(liftTwistHelper)
             
-    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneePopScale=0.1, inKneeBackScale=1.5):
+    def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneeVolumeSize=5.0, inKneePopScale=0.1, inKneeBackScale=1.5):
         """
         자동 무릎 본 시스템의 모든 요소를 생성하는 주요 메서드입니다.
         
@@ -455,7 +457,7 @@ class KneeBone:
         self.create_rot_helper(inThigh, inCalf, inFoot)
         self.assign_thigh_rot_constraint(inLiftScale=inLiftScale)
         self.assign_calf_rot_constraint(inLiftScale=inLiftScale)
-        self.create_middle_bone(inThigh, inCalf, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
+        self.create_middle_bone(inThigh, inCalf, inKneeVolumeSize=inKneeVolumeSize, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
         self.create_twist_bones(inThigh, inCalf)
         
         # 모든 생성된 본들을 개별적으로 수집
@@ -475,7 +477,7 @@ class KneeBone:
         
         # 모든 헬퍼 수집
         all_helpers = [self.lookAtHleper, self.thighRotHelper, self.calfRotHelper, 
-                      self.thighRotRootHelper, self.calfRotRootHelper]
+                      self.thighRotRootHelper, self.calfRotRootHelper, self.middleHelper]
                       
         # 트위스트 헬퍼 추가
         for helper in self.thighTwistHelpers:
@@ -489,7 +491,7 @@ class KneeBone:
             "Bones": all_bones,
             "Helpers": all_helpers,
             "SourceBones": [inThigh, inCalf, inFoot],
-            "Parameters": [inLiftScale, inKneePopScale, inKneeBackScale]
+            "Parameters": [inLiftScale, inKneeVolumeSize, inKneePopScale, inKneeBackScale]
         }
         
         # 메소드 호출 후 데이터 초기화
@@ -524,8 +526,9 @@ class KneeBone:
             
         # 파라미터 가져오기 (또는 기본값 사용)
         liftScale = parameters[0] if len(parameters) > 0 else 0.05
-        kneePopScale = parameters[1] if len(parameters) > 1 else 0.1
-        kneeBackScale = parameters[2] if len(parameters) > 2 else 1.5
+        kneeVolumeSize = parameters[1] if len(parameters) > 1 else 5.0
+        kneePopScale = parameters[2] if len(parameters) > 2 else 0.1
+        kneeBackScale = parameters[3] if len(parameters) > 3 else 1.5
         
         # 무릎 본 생성
         inThigh = sourceBones[0]
@@ -533,7 +536,7 @@ class KneeBone:
         inFoot = sourceBones[2]
         
         # 새로운 자동 무릎 본 생성
-        return self.create_bone(inThigh, inCalf, inFoot, liftScale, kneePopScale, kneeBackScale)
+        return self.create_bone(inThigh, inCalf, inFoot, liftScale, kneeVolumeSize, kneePopScale, kneeBackScale)
     
     def reset(self):
         """

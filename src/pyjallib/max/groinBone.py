@@ -110,7 +110,7 @@ class GroinBone:
         lThighTwistHelperName = self.name.replace_name_part("Index", lThighTwistHelperName, "0")
         lThighTwistHelper = self.helper.create_point(lThighTwistHelperName)
         lThighTwistHelper.transform = pelvisHelper.transform
-        lThighTwistHelper.position = inLThighTwist.position
+        lThighTwistHelper.position = inLThighTwist.transform.position
         lThighTwistHelper.parent = inLThighTwist
         self.helper.set_shape_to_box(lThighTwistHelper)
         
@@ -119,7 +119,7 @@ class GroinBone:
         rThighTwistHelperName = self.name.replace_name_part("Index", rThighTwistHelperName, "0")
         rThighTwistHelper = self.helper.create_point(rThighTwistHelperName)
         rThighTwistHelper.transform = pelvisHelper.transform
-        rThighTwistHelper.position = inRThighTwist.position
+        rThighTwistHelper.position = inRThighTwist.transform.position
         rThighTwistHelper.parent = inRThighTwist
         self.helper.set_shape_to_box(rThighTwistHelper)
         
@@ -193,4 +193,4 @@ class GroinBone:
         inLThighTwist = sourceBones[1]
         inRThighTwist = sourceBones[2]
         
-        return self.create_bone(inPelvis, inLThighTwist, inRThighTwist, pelvisWeight, thighWeight)
+        return self.create_bone(inPelvis, inLThighTwist, inRThighTwist, inPelvisWeight=pelvisWeight, inThighWeight=thighWeight)
