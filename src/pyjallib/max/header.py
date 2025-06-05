@@ -36,6 +36,7 @@ from .morph import Morph
 from .rootMotion import RootMotion
 
 from .fbxHandler import FBXHandler
+from .toolManager import ToolManager
 
 class Header:
     """
@@ -87,7 +88,7 @@ class Header:
         
         self.fbx = FBXHandler()
         
-        self.tools = []
+        self.toolManager = ToolManager()
     
     def update_nameConifg(self, configPath):
         """
@@ -97,18 +98,6 @@ class Header:
             configPath: ConfigPath 인스턴스
         """
         self.name.load_from_config_file(configPath)
-    
-    def add_tool(self, tool):
-        """
-        도구를 추가합니다.
-        
-        Args:
-            tool: 추가할 도구
-        """
-        if tool in self.tools:
-            self.tools.remove(tool)
-        
-        self.tools.append(tool)
 
 # 모듈 레벨에서 전역 인스턴스 생성
 _pyjallibmaxheader = Header.get_instance()
