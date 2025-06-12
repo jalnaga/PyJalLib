@@ -38,6 +38,7 @@ from pyjallib.max.hip import Hip
 from pyjallib.max.rootMotion import RootMotion
 
 from pyjallib.max.fbxHandler import FBXHandler
+from pyjallib.max.toolManager import ToolManager
 
 from pyjallib.max.ui.Container import Container
 
@@ -66,5 +67,6 @@ __all__ = [
     'Hip',
     'RootMotion',
     'FBXHandler',
+    'ToolManager',
     'Container'
 ]
