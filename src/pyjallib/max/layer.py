@@ -66,12 +66,18 @@ class Layer:
             레이어에 포함된 노드 배열 또는 빈 배열
         """
         returnVal = []
-        layer = rt.ILayerManager.getLayerObject(inLayerNum)
-        if layer is not None:
-            layerNodes = rt.refs.dependents(layer)
-            for item in layerNodes:
-                if rt.isValidNode(item):
-                    returnVal.append(item)
+        
+        code = f"""
+        layer = layermanager.getLayer {inLayerNum}
+        layer.nodes &theNodes
+        theNodes
+        """
+
+        nodes = rt.execute(code)
+        
+        for item in nodes:
+            if rt.isValidNode(item):
+                returnVal.append(item)
                     
         return returnVal
     
