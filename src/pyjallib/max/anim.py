@@ -608,6 +608,45 @@ class Anim:
         
         return result
     
+    def save_animation(self, inObjs, inSaveFilePath):
+        """
+        객체의 애니메이션을 저장함.
+        
+        매개변수:
+            inObj : 애니메이션을 저장할 객체
+        """
+        
+        if not(len(inObjs) > 0):
+            return False
+        
+        for obj in inObjs:
+            if not(rt.isValidNode(obj)):
+                return False
+        
+        animatedNodes = self.find_animated_nodes(inObjs)
+        rt.LoadSaveAnimation.setUpAnimsForSave(animatedNodes, animatedTracks=True, includeContraints=True, keyable=True)
+        rt.LoadSaveAnimation.saveAnimation(inSaveFilePath, animatedNodes, "tempVal", "tempVal", animatedTracks=True, includeConstraints=True, keyableTracks=False, SaveSegment=False, segInterval=rt.animationRange)
+        
+        return True
+    
+    def load_animation(self, inObjs, inLoadFilePath):
+        """
+        애니메이션을 로드함.
+        
+        매개변수:
+            inObjs : 애니메이션을 로드할 객체
+            inLoadFilePath : 애니메이션을 로드할 파일 경로
+        """
+        
+        if not(rt.doesFileExist(inLoadFilePath)):
+            return False
+        
+        rt.LoadSaveAnimation.setUpAnimsForLoad(inObjs, includePB2s=True, stripLayers=True)
+        rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True)
+        
+        return True
+        
+    
     def save_xform(self, inObj):
         """
         객체의 현재 변환 행렬(월드, 부모 스페이스)을 저장하여 복원을 가능하게 함.
