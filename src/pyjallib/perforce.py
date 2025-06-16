@@ -771,6 +771,40 @@ class Perforce:
             self._handle_p4_exception(e, f"파일/폴더 업데이트 필요 여부 확인 ({processed_paths})")
             return False
 
+    def is_file_in_perforce(self, file_path: str) -> bool:
+        """파일이 Perforce에 속하는지 확인합니다.
+
+        Args:
+            file_path (str): 확인할 파일 경로
+
+        Returns:
+            bool: 파일이 Perforce에 속하면 True, 아니면 False
+        """
+        if not self._is_connected():
+            return False
+            
+        logger.debug(f"파일 '{file_path}'가 Perforce에 속하는지 확인 중...")
+        try:
+            # p4 files 명령으로 파일 정보 조회
+            file_info = self.p4.run_files(file_path)
+            
+            # 파일 정보가 있고, 'no such file(s)' 오류가 없는 경우
+            if file_info and not any("no such file(s)" in str(err).lower() for err in self.p4.errors):
+                logger.info(f"파일 '{file_path}'가 Perforce에 존재합니다.")
+                return True
+            else:
+                logger.info(f"파일 '{file_path}'가 Perforce에 존재하지 않습니다.")
+                return False
+                
+        except P4Exception as e:
+            # 파일이 존재하지 않는 경우는 일반적인 상황이므로 경고 레벨로 로깅
+            if any("no such file(s)" in err.lower() for err in self.p4.errors):
+                logger.info(f"파일 '{file_path}'가 Perforce에 존재하지 않습니다.")
+                return False
+            else:
+                self._handle_p4_exception(e, f"파일 '{file_path}' Perforce 존재 여부 확인")
+                return False
+
     def sync_files(self, file_paths: list) -> bool:
         """파일이나 폴더를 동기화합니다.
 

@@ -625,7 +625,18 @@ class Anim:
         
         animatedNodes = self.find_animated_nodes(inObjs)
         rt.LoadSaveAnimation.setUpAnimsForSave(animatedNodes, animatedTracks=True, includeContraints=True, keyable=True)
-        rt.LoadSaveAnimation.saveAnimation(inSaveFilePath, animatedNodes, "tempVal", "tempVal", animatedTracks=True, includeConstraints=True, keyableTracks=False, SaveSegment=False, segInterval=rt.animationRange)
+        rt.LoadSaveAnimation.saveAnimation(
+            inSaveFilePath,
+            animatedNodes,
+            "tempVal",
+            "tempVal",
+            animatedTracks=True,
+            includeConstraints=True,
+            keyableTracks=False,
+            SaveSegment=True,
+            segInterval=rt.animationRange,
+            segKeyPerFrame=True
+        )
         
         return True
     
