@@ -542,76 +542,63 @@ class Bip:
         """
         기본 스켈레톤 링크 (Biped와 일반 뼈대 연결)
         """
-        rt.setWaitCursor()
+        bipComs = self.get_coms()
+        if len(bipComs) != 1:
+            return False
         
-        bipSkel = self.get_bips()
-        baseSkel = [None] * len(bipSkel)
+        bipCom = bipComs[0]
+        bipNodes = self.get_nodes(bipCom)
         
-        for i in range(len(bipSkel)):
-            baseSkeletonName = self.name.replace_base(bipSkel[i].name, skinBoneBaseName)
-            baseSkeletonName = self.name.replace_filteringChar(baseSkeletonName, "_")
-            baseSkelObj = rt.getNodeByName(baseSkeletonName)
-            if rt.isValidObj(baseSkelObj):
-                baseSkel[i] = baseSkelObj
+        targetBones = [item for item in bipNodes 
+                      if (rt.classOf(item) == rt.Biped_Object) 
+                      and (not rt.matchPattern(item.name, pattern="*Twist*")) 
+                      and (item != item.controller.rootNode)]
+        sortedBipBones = self.bone.sort_bones_as_hierarchy(targetBones)
         
-            self.anim.save_xform(bipSkel[i])
-            self.anim.set_xform(bipSkel[i])
-            
-            self.anim.save_xform(baseSkel[i])
-            self.anim.set_xform(baseSkel[i])
+        skinBones = []
+        for item in sortedBipBones:
+            skinBoneName = self.name.replace_name_part("Base", item.name, skinBoneBaseName)
+            skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
+            foundSkinBone = rt.getNodeByName(skinBoneName)
+            if rt.isValidObj(foundSkinBone):
+                skinBones.append(foundSkinBone)
+            else:
+                skinBones.append(None)
         
-        for i in range(len(baseSkel)):
-            if baseSkel[i] is not None:
-                baseSkel[i].scale.controller = rt.scaleXYZ()
-                baseSkel[i].controller = rt.link_constraint()
-                
-                self.anim.set_xform([baseSkel[i]], space="World")
-                baseSkel[i].transform.controller.AddTarget(bipSkel[i], 0)
-        
-        for i in range(len(baseSkel)):
-            if baseSkel[i] is not None:
-                baseSkel[i].boneEnable = True
-                
-        rt.setArrowCursor()
+        for i, item in enumerate(sortedBipBones):
+            if skinBones[i] is not None:
+                self.bone.link_skin_bone(skinBones[i], item)
     
     def unlink_base_skeleton(self, skinBoneBaseName="b"):
         """
         기본 스켈레톤 링크 해제
         """
-        rt.setWaitCursor()
-        
         bipComs = self.get_coms()
-        allBips = self.get_nodes(bipComs[0])
-        bipSkel = [item for item in allBips if item != bipComs[0]]
-        baseSkel = [None] * len(bipSkel)
+        if len(bipComs) != 1:
+            return False
         
-        for i in range(len(bipSkel)):
-            baseSkeletonName = self.name.replace_name_part("Base", bipSkel[i].name, skinBoneBaseName)
-            baseSkeletonName = self.name.replace_filtering_char(baseSkeletonName, "_")
-            print("baseSkeletonName", baseSkeletonName)
-            baseSkelObj = rt.getNodeByName(baseSkeletonName)
-            print("baseSkelObj", baseSkelObj)
-            if rt.isValidObj(baseSkelObj):
-                baseSkel[i] = baseSkelObj
+        bipCom = bipComs[0]
+        bipNodes = self.get_nodes(bipCom)
+        targetBones = [item for item in bipNodes 
+                      if (rt.classOf(item) == rt.Biped_Object) 
+                      and (not rt.matchPattern(item.name, pattern="*Twist*")) 
+                      and (item != item.controller.rootNode)]
+        sortedBipBones = self.bone.sort_bones_as_hierarchy(targetBones)
+        skinBones = []
+        for item in sortedBipBones:
+            skinBoneName = self.name.replace_name_part("Base", item.name, skinBoneBaseName)
+            skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
+            foundSkinBone = rt.getNodeByName(skinBoneName)
+            if rt.isValidObj(foundSkinBone):
+                skinBones.append(foundSkinBone)
+            else:
+                skinBones.append(None)
         
-            self.anim.save_xform(bipSkel[i])
-            self.anim.set_xform(bipSkel[i])
-            
-            self.anim.save_xform(baseSkel[i])
-            self.anim.set_xform(baseSkel[i])
+        for item in skinBones:
+            if item is not None:
+                self.bone.unlink_skin_bone(item)
         
-        for i in range(len(baseSkel)):
-            if baseSkel[i] is not None:
-                baseSkel[i].controller = rt.prs()
-                self.anim.set_xform([baseSkel[i]], space="World")
-        
-        for i in range(len(baseSkel)):
-            if baseSkel[i] is not None:
-                baseSkel[i].boneEnable = True
-                
-        rt.setArrowCursor()
-        
-    def convert_name_for_ue5(self, inBipRoot, inBipNameConfigFile):
+    def convert_name_for_ue5(self, inBipRoot, inBipNameConfigFile, inRenameFingers=True):
         """
         Biped 이름을 UE5에 맞게 변환
         
@@ -621,17 +608,11 @@ class Bip:
         Returns:
             변환된 Biped 객체
         """
-        bipComs = self.get_coms()
-    
-        if len(bipComs) > 1:
-            rt.messageBox("Please select only one Biped object.")
-            return False
-        
         from pyjallib.max.name import Name
         
         bipNameTool = Name(configPath=inBipNameConfigFile)
         
-        bipObj = bipComs[0]
+        bipObj = inBipRoot
         bipNodes = self.get_all(bipObj)
         for bipNode in bipNodes:
             if bipNode.name == bipObj.controller.rootName:
@@ -662,7 +643,7 @@ class Bip:
             if newNameDict["RealName"] == "Forearm":
                 newNameDict["RealName"] = "Lowerarm"
             
-            if newNameDict["RealName"] == "Spine" or newNameDict["RealName"] == "Neck":
+            if newNameDict["RealName"] == "Spine" or newNameDict["RealName"] == "Neck" or newNameDict["RealName"] == "Tail":
                 if newNameDict["Index"] == "":
                     newNameDict["Index"] = str(int(1)).zfill(self.name.get_padding_num())
                 else:
@@ -673,13 +654,6 @@ class Bip:
             bipNode.name = newBipName.lower()
             
         # 손가락 바꾸는 부분
-        # 5개가 아닌 손가락은 지원하지 않음
-        # 손가락 하나의 최대 링크는 3개
-        indices = []
-        if bipObj.controller.knuckles:
-            pass
-        else:
-            indices = list(range(0, 15, 3))
             
         fingerNum = bipObj.controller.fingers
         fingerLinkNum = bipObj.controller.fingerLinks
@@ -702,7 +676,9 @@ class Bip:
                 fingers.append(fingerNode)
             rFingersList.append(fingers)
             
-        fingerName = ["thumb", "index", "middle", "ring", "pinky"]
+        fingerName = ["finger0", "finger1", "finger2", "finger3", "finger4"]
+        if inRenameFingers:
+            fingerName = ["thumb", "index", "middle", "ring", "pinky"]
         
         for i, fingers in enumerate(lFingersList):
             for j, item in enumerate(fingers):

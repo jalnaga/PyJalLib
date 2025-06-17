@@ -751,6 +751,34 @@ class Bone:
         
         return True
     
+    def unlink_skin_bone(self, inSkinBone):
+        """
+        스킨 뼈대를 원본 뼈대에서 연결 해제.
+        
+        Args:
+            inSkinBone: 연결 해제할 스킨 뼈대
+        """
+        self.anim.save_xform(inSkinBone)
+        self.anim.set_xform(inSkinBone)
+        
+        inSkinBone.controller = rt.prs()
+        self.anim.set_xform(inSkinBone, space="World")
+        
+        return True
+    
+    def unlink_skin_bones(self, inSkinBoneArray):
+        """
+        스킨 뼈대 배열을 원본 뼈대에서 연결 해제.
+        
+        Args:
+            inSkinBoneArray: 연결 해제할 스킨 뼈대 배열
+        """
+        for item in inSkinBoneArray:
+            if rt.isValidObj(item):
+                self.unlink_skin_bone(item)
+        
+        return True
+    
     def create_skin_bone(self, inBoneArray, skipNub=True, mesh=True, link=True, skinBoneBaseName=""):
         """
         스킨 뼈대 생성.
@@ -1190,6 +1218,17 @@ class Bone:
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
             if rt.matchPattern(item.name, pattern="*pinky*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+                
+            if rt.matchPattern(item.name, pattern="*finger0*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*finger1*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*finger2*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*finger3*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
+            if rt.matchPattern(item.name, pattern="*finger4*r"):
+                self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
             
             if rt.matchPattern(item.name, pattern="*metacarpal*"):
                 tempArray = self.name._split_to_array(item.name)
@@ -1198,7 +1237,8 @@ class Bone:
             
             self.anim.save_xform(item)
             
-        self.relink_missing_skin_bones_for_ue5manny(skinBones)
+        if isHuman:
+            self.relink_missing_skin_bones_for_ue5manny(skinBones)
         
         self.link_skin_bones(skinBones, sortedBipBones)
         for item in skinBones:
