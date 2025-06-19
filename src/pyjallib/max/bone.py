@@ -1183,56 +1183,76 @@ class Bone:
         if len(skinBones) == 0:
             return False
         
+        pelvisBone = None
+        lastSpineBone = None
+        
         for item in skinBones:
-            if rt.matchPattern(item.name, pattern="*pelvis*"):
+            if rt.matchPattern(item.name.lower(), pattern="*pelvis*"):
+                pelvisBone = item
+            if rt.matchPattern(item.name.lower(), pattern="*spine*"):
+                lastSpineBone = item
+                foundChildren = self.get_every_children(item)
+                for child in foundChildren:
+                    if rt.matchPattern(child.name.lower(), pattern="*spine*"):
+                        lastSpineBone = child
+        
+        if pelvisBone is not None and lastSpineBone is not None:
+            for item in skinBones:
+                if rt.matchPattern(item.name.lower(), pattern="*thigh*"):
+                    item.parent = pelvisBone
+                if rt.matchPattern(item.name.lower(), pattern="*clavicle*"):
+                    item.parent = lastSpineBone
+        
+        for item in skinBones:
+            if rt.matchPattern(item.name.lower(), pattern="*pelvis*"):
                 self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*spine*"):
+            if rt.matchPattern(item.name.lower(), pattern="*spine*"):
                 self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*neck*"):
+            if rt.matchPattern(item.name.lower(), pattern="*neck*"):
                 self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*head*"):
+            if rt.matchPattern(item.name.lower(), pattern="*head*"):
                 self.anim.rotate_local(item, 180, 0, 0, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*thigh*l"):
+            if rt.matchPattern(item.name.lower(), pattern="*thigh*l"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*calf*l"):
+            if rt.matchPattern(item.name.lower(), pattern="*calf*l"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*foot*l"):
+            if rt.matchPattern(item.name.lower(), pattern="*foot*l"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*ball*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*ball*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
                 
-            if rt.matchPattern(item.name, pattern="*clavicle*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*clavicle*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*upperarm*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*upperarm*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*lowerarm*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*lowerarm*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*hand*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*hand*r"):
                 self.anim.rotate_local(item, 0, 0, -180, dontAffectChildren=True)
             
-            if rt.matchPattern(item.name, pattern="*thumb*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*thumb*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*index*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*index*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*middle*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*middle*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*ring*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*ring*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*pinky*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*pinky*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
                 
-            if rt.matchPattern(item.name, pattern="*finger0*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*finger0*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*finger1*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*finger1*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*finger2*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*finger2*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*finger3*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*finger3*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
-            if rt.matchPattern(item.name, pattern="*finger4*r"):
+            if rt.matchPattern(item.name.lower(), pattern="*finger4*r"):
                 self.anim.rotate_local(item, 0, 0, 180, dontAffectChildren=True)
             
-            if rt.matchPattern(item.name, pattern="*metacarpal*"):
+            if rt.matchPattern(item.name.lower(), pattern="*metacarpal*"):
                 tempArray = self.name._split_to_array(item.name)
                 item.name = self.name._combine(tempArray, inFilChar="_")
                 item.name = self.name.remove_name_part("Base", item.name)
@@ -1246,7 +1266,7 @@ class Bone:
         for item in skinBones:
             self.anim.save_xform(item)
         
-        return skinBones
+        return (skinBones + missingBipBones)
     
     def set_bone_on(self, inBone):
         """
