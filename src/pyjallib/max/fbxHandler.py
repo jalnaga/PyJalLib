@@ -35,6 +35,14 @@ class FBXHandler:
                 return i + 1  # 1-based index
         return 0
     
+    def _get_import_fbx_class_index(self) -> int:
+        """FBX 임포터 클래스 인덱스 가져오기"""
+        importerPlugin = rt.importerPlugin
+        for i, cls in enumerate(importerPlugin.classes):
+            if "FBX" in str(cls):
+                return i + 1  # 1-based index
+        return 0
+    
     def _set_export_options(self):
         """FBX 익스포트 옵션 설정"""
         # FBX 익스포트 프리셋 리셋
@@ -76,37 +84,33 @@ class FBXHandler:
         rt.FBXExporterSetParam("ASCII", False)
         rt.FBXExporterSetParam("FileVersion", "FBX202031")
     
-    def _set_import_options(self, **options):
-        """FBX 임포트 옵션 설정"""
-        rt.FBXResetImport()
+    def _set_import_options(self, inImportMode: str = "add_and_update_animation", inUpAxis: str = "Z"):
+        """FBX 임포트 옵션 설정
         
-        if 'animation' in options:
-            rt.FBXImportAnimation = options['animation']
+        Args:
+            inImportMode: 임포트 모드 ('add_and_update_animation' 또는 'update_animation')
+        """
+        # FBX 임포트 프리셋 리셋
+        rt.FBXImporterSetParam("ResetImport")
         
-        if 'cameras' in options:
-            rt.FBXImportCameras = options['cameras']
+        # 임포트 모드 설정
+        if inImportMode == "update_animation":
+            rt.FBXImporterSetParam("Mode", rt.Name("exmerge"))  # Update Animation 모드
+        else:  # "add_and_update_animation" (기본값)
+            rt.FBXImporterSetParam("Mode", rt.Name("merge"))  # Add and Update Animation 모드
         
-        if 'lights' in options:
-            rt.FBXImportLights = options['lights']
-        
-        if 'materials' in options:
-            rt.FBXImportMaterials = options['materials']
-        
-        if 'convert_units' in options:
-            rt.FBXImportConvertUnit = options['convert_units']
-        
-        if 'import_mode' in options:
-            mode = options['import_mode'].lower()
-            if mode == 'add':
-                rt.FBXImportMode = rt.Name("exmerge")
-            elif mode == 'add_and_update_animation':
-                rt.FBXImportMode = rt.Name("exupdate")
-            elif mode == 'update_animation':
-                rt.FBXImportMode = rt.Name("exupdate")
-            else:
-                rt.FBXImportMode = rt.Name("exmerge")  # 기본값
-        else:
-            rt.FBXImportMode = rt.Name("exmerge")  # 기본값
+        rt.FBXImporterSetParam("SmoothingGroups", True)
+        rt.FBXImporterSetParam("Animation", True)
+        rt.FBXImporterSetParam("BakeAnimationLayers", True)
+        rt.FBXImporterSetParam("FillTimeline", True)
+        rt.FBXImporterSetParam("Skin", True)
+        rt.FBXImporterSetParam("Shape", True)
+        rt.FBXImporterSetParam("Cameras", False)
+        rt.FBXImporterSetParam("Lights", False)
+        rt.FBXImporterSetParam("GenerateLog", False)
+        rt.FBXImporterSetParam("GenerateLog", False)
+        rt.FBXImporterSetParam("ImportBoneAsDummy", True)
+        rt.FBXImporterSetParam("UpAxis", inUpAxis)
     
     def set_fbx_exporting_anim_range(self, inStartFrame: Optional[int] = None, inEndFrame: Optional[int] = None):
         """애니메이션 범위 설정
@@ -172,19 +176,13 @@ class FBXHandler:
         
         return result
     
-    def import_fbx(self, inImportFile: str, **inOptions) -> bool:
+    def import_fbx(self, inImportFile: str, inImportMode: str = "add_and_update_animation", inUpAxis: str = "Z") -> bool:
         """
         FBX 파일을 임포트
         
         Args:
             inImportFile: 임포트할 파일 경로
-            **inOptions: 임포트 옵션
-                - animation: 애니메이션 임포트 여부 (기본값: True)
-                - cameras: 카메라 임포트 여부 (기본값: False)
-                - lights: 라이트 임포트 여부 (기본값: False)
-                - materials: 머티리얼 임포트 여부 (기본값: True)
-                - convert_units: 유닛 변환 여부 (기본값: True)
-                - import_mode: 임포트 모드 ('add', 'add_and_update_animation', 'update_animation')
+            inImportMode: 임포트 모드 ('add_and_update_animation' 또는 'update_animation')
                 
         Returns:
             bool: 임포트 성공 여부
@@ -194,31 +192,24 @@ class FBXHandler:
         if not filePath.exists():
             return False
         
-        # 기본 옵션 설정
-        defaultOptions = {
-            'animation': True,
-            'cameras': False,
-            'lights': False,
-            'materials': True,
-            'convert_units': True,
-            'import_mode': 'add'
-        }
-        
-        # 사용자 옵션으로 기본값 덮어쓰기
-        defaultOptions.update(inOptions)
+        # FBX 임포터 클래스 인덱스 가져오기
+        importClassIndex = self._get_import_fbx_class_index()
+        if importClassIndex == 0:
+            return False
         
         # FBX 임포트 옵션 설정
-        self._set_import_options(**defaultOptions)
+        self._set_import_options(inImportMode, inUpAxis)
         
         # 임포트 실행
+        importerPlugin = rt.importerPlugin
         result = rt.importFile(
             str(filePath),
             rt.Name("noPrompt"),
-            using=rt.FBXIMP
+            using=importerPlugin.classes[importClassIndex - 1]  # 0-based index로 변환
         )
         
         return result
     
     def reset_import_options(self):
         """FBX 임포트 옵션을 기본값으로 리셋"""
-        rt.FBXResetImport()
+        rt.FBXImporterSetParam("ResetImport")

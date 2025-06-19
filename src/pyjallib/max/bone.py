@@ -212,14 +212,14 @@ class Bone:
                 return False
         return False
     
-    def create_nub_bone(self, inName, inSize):
+    def create_nub_bone(self, inName, inSize, inBoneScaleType=rt.Name("none")):
         """
         Nub 뼈대 생성.
         
         Args:
             inName: 뼈대 이름
             inSize: 뼈대 크기
-            
+            inBoneScaleType: 뼈대 스케일 타입 (기본값: rt.Name("none"))
         Returns:
             생성된 Nub 뼈대
         """
@@ -241,6 +241,8 @@ class Bone:
         nubBone.name = self.name.remove_name_part("Index", inName)
         nubBone.name = self.name.remove_name_part("Nub", nubBone.name)
         nubBone.name = self.name.replace_name_part("Nub", nubBone.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        
+        nubBone.boneScaleType = inBoneScaleType
         
         # 화면 갱신 재개
         rt.enableSceneRedraw()
