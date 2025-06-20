@@ -16,10 +16,14 @@ from pathlib import Path
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
+# 기본 로그 레벨은 ERROR로 설정 (디버그 모드는 생성자에서 설정)
+logger.setLevel(logging.ERROR)
+
 # 사용자 문서 폴더 내 로그 파일 저장
 log_path = os.path.join(Path.home() / "Documents", 'Perforce.log')
 file_handler = logging.FileHandler(log_path, encoding='utf-8')
+file_handler.setLevel(logging.ERROR)  # 기본적으로 ERROR 레벨만 기록
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
 
@@ -27,8 +31,19 @@ logger.addHandler(file_handler)
 class Perforce:
     """P4Python을 사용하여 Perforce 작업을 수행하는 클래스."""
 
-    def __init__(self):
-        """Perforce 인스턴스를 초기화합니다."""
+    def __init__(self, debug_mode: bool = False):
+        """Perforce 인스턴스를 초기화합니다.
+        
+        Args:
+            debug_mode (bool): True로 설정하면 DEBUG 레벨 로그를 활성화합니다. 
+                             기본값은 False (ERROR 레벨만 기록)
+        """
+        # 디버그 모드에 따라 로그 레벨 설정
+        if debug_mode:
+            logger.setLevel(logging.DEBUG)
+            file_handler.setLevel(logging.DEBUG)
+            logger.debug("디버그 모드가 활성화되었습니다.")
+        
         self.p4 = P4()
         self.connected = False
         self.workspaceRoot = r""
@@ -575,11 +590,13 @@ class Perforce:
             
         return all_success
 
-    def submit_change_list(self, change_list_number: int) -> bool:
+    def submit_change_list(self, change_list_number: int, auto_revert_unchanged: bool = True) -> bool:
         """체인지 리스트를 제출합니다.
 
         Args:
             change_list_number (int): 제출할 체인지 리스트 번호
+            auto_revert_unchanged (bool, optional): 제출 후 변경사항이 없는 체크아웃된 파일들을 
+                                                  자동으로 리버트할지 여부. 기본값 True
 
         Returns:
             bool: 제출 성공 시 True, 실패 시 False
@@ -590,12 +607,73 @@ class Perforce:
         try:
             self.p4.run_submit("-c", change_list_number)
             logger.info(f"체인지 리스트 {change_list_number} 제출 성공.")
+            
+            # 제출 후 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트
+            if auto_revert_unchanged:
+                self._auto_revert_unchanged_files(change_list_number)
+            
             return True
         except P4Exception as e:
             self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 제출")
             if any("nothing to submit" in err.lower() for err in self.p4.errors):
                 logger.warning(f"체인지 리스트 {change_list_number}에 제출할 파일이 없습니다.")
             return False
+
+    def _auto_revert_unchanged_files(self, change_list_number: int) -> None:
+        """제출 후 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트합니다.
+
+        Args:
+            change_list_number (int): 체인지 리스트 번호
+        """
+        logger.debug(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일들 자동 리버트 시도...")
+        try:
+            # 체인지 리스트에서 체크아웃된 파일들 가져오기
+            opened_files = self.p4.run_opened("-c", change_list_number)
+            
+            if not opened_files:
+                logger.debug(f"체인지 리스트 {change_list_number}에 체크아웃된 파일이 없습니다.")
+                return
+            
+            unchanged_files = []
+            for file_info in opened_files:
+                file_path = file_info.get('clientFile', '')
+                action = file_info.get('action', '')
+                
+                # edit 액션의 파일만 확인 (add, delete는 변경사항이 있음)
+                if action == 'edit':
+                    try:
+                        # p4 diff 명령으로 파일의 변경사항 확인
+                        diff_result = self.p4.run_diff("-sa", file_path)
+                        
+                        # diff 결과가 비어있으면 변경사항이 없음
+                        if not diff_result:
+                            unchanged_files.append(file_path)
+                            logger.debug(f"파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
+                        else:
+                            logger.debug(f"파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
+                            
+                    except P4Exception as e:
+                        # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
+                        unchanged_files.append(file_path)
+                        logger.debug(f"파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
+                else:
+                    logger.debug(f"파일 '{file_path}'는 {action} 액션이므로 리버트하지 않음")
+            
+            # 변경사항이 없는 파일들을 리버트
+            if unchanged_files:
+                logger.info(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 시도...")
+                for file_path in unchanged_files:
+                    try:
+                        self.p4.run_revert("-c", change_list_number, file_path)
+                        logger.info(f"파일 '{file_path}' 자동 리버트 완료")
+                    except P4Exception as e:
+                        self._handle_p4_exception(e, f"파일 '{file_path}' 자동 리버트")
+                logger.info(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 완료")
+            else:
+                logger.debug(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일이 없습니다.")
+                
+        except P4Exception as e:
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 자동 리버트 처리")
 
     def revert_change_list(self, change_list_number: int) -> bool:
         """체인지 리스트를 되돌리고 삭제합니다.
