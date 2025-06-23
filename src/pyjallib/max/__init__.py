@@ -40,6 +40,7 @@ from pyjallib.max.rootMotion import RootMotion
 
 from pyjallib.max.fbxHandler import FBXHandler
 from pyjallib.max.toolManager import ToolManager
+from pyjallib.max.progress import Progress
 
 from pyjallib.max.ui.Container import Container
 
@@ -70,5 +71,6 @@ __all__ = [
     'RootMotion',
     'FBXHandler',
     'ToolManager',
+    'Progress',
     'Container'
 ]
