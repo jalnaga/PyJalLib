@@ -23,6 +23,7 @@ from .link import Link
 
 from .bip import Bip
 from .skin import Skin
+from .skeleton import Skeleton
 
 from .twistBone import TwistBone
 from .autoClavicle import AutoClavicle
@@ -74,6 +75,7 @@ class Header:
 
         self.bip = Bip(animService=self.anim, nameService=self.name, boneService=self.bone)
         self.skin = Skin()
+        self.skeleton = Skeleton(animService=self.anim, nameService=self.name, boneService=self.bone, bipService=self.bip, layerService=self.layer)
 
         self.twistBone = TwistBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, bipService=self.bip, boneService=self.bone)
         self.groinBone = GroinBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)

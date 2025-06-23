@@ -24,6 +24,7 @@ from pyjallib.max.link import Link
 
 from pyjallib.max.bip import Bip
 from pyjallib.max.skin import Skin
+from pyjallib.max.skeleton import Skeleton
 from pyjallib.max.morph import Morph
 
 from pyjallib.max.boneChain import BoneChain
@@ -57,6 +58,7 @@ __all__ = [
     'Link',
     'Bip',
     'Skin',
+    'Skeleton',
     'Morph',
     'BoneChain',
     'TwistBone',
