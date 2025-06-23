@@ -671,9 +671,64 @@ class Perforce:
                 logger.info(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 완료")
             else:
                 logger.debug(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일이 없습니다.")
+            
+            # default change list에서도 변경사항이 없는 파일들 처리
+            self._auto_revert_unchanged_files_in_default_changelist()
                 
         except P4Exception as e:
             self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 자동 리버트 처리")
+
+    def _auto_revert_unchanged_files_in_default_changelist(self) -> None:
+        """default change list에서 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트합니다."""
+        logger.debug("default change list에서 변경사항이 없는 파일들 자동 리버트 시도...")
+        try:
+            # default change list에서 체크아웃된 파일들 가져오기
+            opened_files = self.p4.run_opened("-c", "default")
+            
+            if not opened_files:
+                logger.debug("default change list에 체크아웃된 파일이 없습니다.")
+                return
+            
+            unchanged_files = []
+            for file_info in opened_files:
+                file_path = file_info.get('clientFile', '')
+                action = file_info.get('action', '')
+                
+                # edit 액션의 파일만 확인 (add, delete는 변경사항이 있음)
+                if action == 'edit':
+                    try:
+                        # p4 diff 명령으로 파일의 변경사항 확인
+                        diff_result = self.p4.run_diff("-sa", file_path)
+                        
+                        # diff 결과가 비어있으면 변경사항이 없음
+                        if not diff_result:
+                            unchanged_files.append(file_path)
+                            logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
+                        else:
+                            logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
+                            
+                    except P4Exception as e:
+                        # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
+                        unchanged_files.append(file_path)
+                        logger.debug(f"default change list의 파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
+                else:
+                    logger.debug(f"default change list의 파일 '{file_path}'는 {action} 액션이므로 리버트하지 않음")
+            
+            # 변경사항이 없는 파일들을 리버트
+            if unchanged_files:
+                logger.info(f"default change list에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 시도...")
+                for file_path in unchanged_files:
+                    try:
+                        self.p4.run_revert(file_path)
+                        logger.info(f"default change list의 파일 '{file_path}' 자동 리버트 완료")
+                    except P4Exception as e:
+                        self._handle_p4_exception(e, f"default change list의 파일 '{file_path}' 자동 리버트")
+                logger.info(f"default change list에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 완료")
+            else:
+                logger.debug("default change list에서 변경사항이 없는 파일이 없습니다.")
+                
+        except P4Exception as e:
+            self._handle_p4_exception(e, "default change list 자동 리버트 처리")
 
     def revert_change_list(self, change_list_number: int) -> bool:
         """체인지 리스트를 되돌리고 삭제합니다.
