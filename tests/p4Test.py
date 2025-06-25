@@ -16,8 +16,7 @@ import pyjallib
 from pyjallib.perforce import Perforce
 
 testP4 = Perforce()
-testP4.connect("DongseokKim_Omni")
-print(testP4.workspaceRoot)
-testP4.disconnect()
+
 testP4.connect("DongseokKim_DevStorage")
-print(testP4.workspaceRoot)
+
+testP4._auto_revert_unchanged_files_in_default_changelist()

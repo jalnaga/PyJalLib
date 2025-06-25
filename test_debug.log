@@ -1,0 +1,9 @@
+2025-06-25 13:25:52,377 - pyjallib.perforce - DEBUG - 디버그 모드가 활성화되었습니다.
+2025-06-25 13:25:52,378 - pyjallib.perforce - INFO - Perforce 인스턴스 생성됨
+2025-06-25 13:25:52,378 - pyjallib.perforce - INFO - 'DongseokKim_DevStorage' 워크스페이스에 연결 시도 중...
+2025-06-25 13:25:52,390 - pyjallib.perforce - INFO - 워크스페이스 루트 절대 경로: E:\DevStorage_root
+2025-06-25 13:25:52,390 - pyjallib.perforce - INFO - 'DongseokKim_DevStorage' 워크스페이스에 성공적으로 연결됨 (User: Dev, Port: PC-BUILD:1666)
+2025-06-25 13:25:52,391 - pyjallib.perforce - DEBUG - default change list에서 변경사항이 없는 파일들 자동 리버트 시도...
+2025-06-25 13:25:52,400 - pyjallib.perforce - DEBUG - default change list에 체크아웃된 파일이 없습니다.
+2025-06-25 13:25:52,401 - pyjallib.perforce - INFO - Perforce 서버 연결 해제 완료.
+2025-06-25 13:25:52,403 - pyjallib.perforce - DEBUG - Perforce 서버에 이미 연결되지 않은 상태입니다.

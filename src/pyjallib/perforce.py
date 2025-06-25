@@ -18,7 +18,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # 기본 로그 레벨은 ERROR로 설정 (디버그 모드는 생성자에서 설정)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # 사용자 문서 폴더 내 로그 파일 저장
 log_path = os.path.join(Path.home() / "Documents", 'Perforce.log')
@@ -682,37 +682,32 @@ class Perforce:
         """default change list에서 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트합니다."""
         logger.debug("default change list에서 변경사항이 없는 파일들 자동 리버트 시도...")
         try:
-            # default change list에서 체크아웃된 파일들 가져오기
-            opened_files = self.p4.run_opened("-c", "default")
+            # get_default_change_list를 사용해서 default change list의 파일들 가져오기
+            default_cl_info = self.get_default_change_list()
             
-            if not opened_files:
+            if not default_cl_info or not default_cl_info.get('Files'):
                 logger.debug("default change list에 체크아웃된 파일이 없습니다.")
                 return
             
+            files_list = default_cl_info.get('Files', [])
             unchanged_files = []
-            for file_info in opened_files:
-                file_path = file_info.get('clientFile', '')
-                action = file_info.get('action', '')
-                
-                # edit 액션의 파일만 확인 (add, delete는 변경사항이 있음)
-                if action == 'edit':
-                    try:
-                        # p4 diff 명령으로 파일의 변경사항 확인
-                        diff_result = self.p4.run_diff("-sa", file_path)
-                        
-                        # diff 결과가 비어있으면 변경사항이 없음
-                        if not diff_result:
-                            unchanged_files.append(file_path)
-                            logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
-                        else:
-                            logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
-                            
-                    except P4Exception as e:
-                        # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
+            
+            for file_path in files_list:
+                try:
+                    # p4 diff 명령으로 파일의 변경사항 확인
+                    diff_result = self.p4.run_diff("-sa", file_path)
+                    
+                    # diff 결과가 비어있으면 변경사항이 없음
+                    if not diff_result:
                         unchanged_files.append(file_path)
-                        logger.debug(f"default change list의 파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
-                else:
-                    logger.debug(f"default change list의 파일 '{file_path}'는 {action} 액션이므로 리버트하지 않음")
+                        logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
+                    else:
+                        logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
+                        
+                except P4Exception as e:
+                    # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
+                    unchanged_files.append(file_path)
+                    logger.debug(f"default change list의 파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
             
             # 변경사항이 없는 파일들을 리버트
             if unchanged_files:
@@ -1173,3 +1168,29 @@ class Perforce:
         
         logger.info(f"다른 사용자에 의해 체크아웃된 파일: {len(files_by_others)}개")
         return files_by_others
+
+    def get_default_change_list(self) -> dict:
+        """default change list의 정보를 가져옵니다.
+
+        Returns:
+            dict: get_change_list_by_number와 동일한 형태의 딕셔너리
+        """
+        if not self._is_connected():
+            return {}
+        logger.debug("default change list 정보 조회 중...")
+        try:
+            opened_files = self.p4.run_opened("-c", "default")
+            files_list = [f.get('clientFile', '') for f in opened_files]
+            result = {
+                'Change': 'default',
+                'Description': 'Default change',
+                'User': getattr(self.p4, 'user', ''),
+                'Client': getattr(self.p4, 'client', ''),
+                'Status': 'pending',
+                'Files': files_list
+            }
+            logger.info(f"default change list 정보 조회 완료: {len(files_list)}개 파일")
+            return result
+        except P4Exception as e:
+            self._handle_p4_exception(e, "default change list 정보 조회")
+            return {}
