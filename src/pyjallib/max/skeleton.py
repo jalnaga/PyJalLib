@@ -164,7 +164,6 @@ class Skeleton:
         returnArray = []
         nodeArray = self.get_dependencies(inObjs)
         
-        
         # 애드온 레이어의 노드들만 필터링
         addOnArray = []
         for item in nodeArray:
@@ -172,13 +171,7 @@ class Skeleton:
                 addOnArray.append(item)
         
         # 애드온 노드들의 의존성 가져오기
-        addOnRefArray = []
-        progress = Progress("Get All Dependencies", inTotalSteps=len(addOnArray))
-        for i,item in enumerate(addOnArray):
-            refs = self.get_dependencies(item)
-            progress.update(i)
-            
-            addOnRefArray.extend(refs)
+        addOnRefArray = self.get_dependencies(addOnArray)
             
         # 모든 노드들을 returnArray에 추가 (중복 없이)
         for item in nodeArray:
