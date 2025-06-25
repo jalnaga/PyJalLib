@@ -19,4 +19,4 @@ testP4 = Perforce()
 
 testP4.connect("DongseokKim_DevStorage")
 
-testP4._auto_revert_unchanged_files_in_default_changelist()
+testP4.submit_change_list(18368)

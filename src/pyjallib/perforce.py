@@ -18,7 +18,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # 기본 로그 레벨은 ERROR로 설정 (디버그 모드는 생성자에서 설정)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # 사용자 문서 폴더 내 로그 파일 저장
 log_path = os.path.join(Path.home() / "Documents", 'Perforce.log')
@@ -604,20 +604,31 @@ class Perforce:
         if not self._is_connected():
             return False
         logger.info(f"체인지 리스트 {change_list_number} 제출 시도...")
+        
+        submit_success = False
         try:
             self.p4.run_submit("-c", change_list_number)
             logger.info(f"체인지 리스트 {change_list_number} 제출 성공.")
-            
-            # 제출 후 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트
-            if auto_revert_unchanged:
-                self._auto_revert_unchanged_files(change_list_number)
-            
-            return True
+            submit_success = True
         except P4Exception as e:
             self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 제출")
             if any("nothing to submit" in err.lower() for err in self.p4.errors):
                 logger.warning(f"체인지 리스트 {change_list_number}에 제출할 파일이 없습니다.")
-            return False
+            submit_success = False
+        
+        # 제출 성공 여부와 관계없이 후속 작업 실행
+        try:
+            # 제출 후 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트
+            if auto_revert_unchanged:
+                self._auto_revert_unchanged_files(change_list_number)
+                self._auto_revert_unchanged_files_in_default_changelist()
+            
+            # 빈 체인지 리스트 삭제
+            self.delete_empty_change_list(change_list_number)
+        except Exception as e:
+            logger.error(f"체인지 리스트 {change_list_number} 제출 후 후속 작업 중 오류 발생: {e}")
+        
+        return submit_success
 
     def _auto_revert_unchanged_files(self, change_list_number: int) -> None:
         """제출 후 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트합니다.
