@@ -54,26 +54,27 @@ class SkeletonImporter(BaseImporter):
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
         
         task = self._create_import_task(inFbxFile, destinationPath)
-        # task의 destination_name을 실제 assetName으로 업데이트
         
-        skeletonPrefix = self.naming.get_name_part("AssetType").get_value_by_description("Skeleton")
-        print(f"assetName: {assetName}, skeletonPrefix: {skeletonPrefix}")
-        newName = self.naming.replace_name_part("AssetType", assetName, skeletonPrefix)
-        print(f"newName: {newName}")
+        ue5_logger.info(f"스켈레톤 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
+        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
         
-        # task.destination_name = assetName
+        result = task.get_objects()
+        if len(result) == 0:
+            error_msg = f"스켈레톤 임포트 실패: {inFbxFile}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
         
-        # ue5_logger.info(f"스켈레톤 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
-        # unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+        importedSkeletalMesh = None
+        for asset in result:
+            if isinstance(asset, unreal.SkeletalMesh):
+                importedSkeletalMesh = asset
+        importedSkeleton = importedSkeletalMesh.skeleton
+        newSkeletonName = self.naming.replace_name_part("AssetType", assetName, self.naming.get_name_part("AssetType").get_value_by_description("Skeleton"))
+        skeletonRenameData = unreal.AssetRenameData(importedSkeleton, destinationPath, newSkeletonName)
+        unreal.AssetToolsHelpers.get_asset_tools().rename_assets([skeletonRenameData])
         
-        # result = task.get_objects()
-        # if len(result) == 0:
-        #     error_msg = f"스켈레톤 임포트 실패: {inFbxFile}"
-        #     ue5_logger.error(error_msg)
-        #     raise ValueError(error_msg)
-        
-        # ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        # return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
+        ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
+        return self._create_result_dict(inFbxFile, destinationPath, newSkeletonName, True)
         
         
         

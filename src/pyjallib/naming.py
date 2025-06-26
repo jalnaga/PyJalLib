@@ -1014,7 +1014,10 @@ class Naming:
             nameArray[partIndex] = inNewName
         
         newName = self._combine(nameArray, self._get_filtering_char(inStr))
-        newName = self.set_index_padding_num(newName)
+        
+        indexIndex = self.get_name_part_index("Index")
+        if indexIndex >= 0:
+            newName = self.set_index_padding_num(newName)
         
         return newName
 

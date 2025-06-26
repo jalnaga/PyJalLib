@@ -8,7 +8,7 @@
         "AnimStatus",
         "AnimMainCategory",
         "RealName",
-        "EndFoot"
+        "Index"
     ],
     "nameParts": [
         {
@@ -475,24 +475,12 @@
             "isDirection": false
         },
         {
-            "name": "EndFoot",
-            "predefinedValues": [
-                "LFoot",
-                "RFoot"
-            ],
-            "weights": [
-                5,
-                10
-            ],
-            "type": "SUFFIX",
-            "descriptions": [
-                "Left Foot",
-                "Right Foot"
-            ],
-            "koreanDescriptions": [
-                "왼발",
-                "오른발"
-            ],
+            "name": "Index",
+            "predefinedValues": [],
+            "weights": [],
+            "type": "INDEX",
+            "descriptions": [],
+            "koreanDescriptions": [],
             "isDirection": false
         }
     ]

@@ -114,26 +114,26 @@ class BaseImporter(ABC):
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
         
-        # Path 객체에서 파일 이름과 경로 분리
-        assetPathObj = Path(assetPath)
-        fullAssetPath = str(assetPathObj)
-        destinationPath = str(assetPathObj.parent)
+        # UE5 내장 함수를 사용하여 경로 정규화
+        normalizedAssetPath = unreal.Paths.normalize_directory_name(assetPath)
+        
+        # 경로에서 파일명 분리
+        destinationPath = unreal.Paths.get_path(normalizedAssetPath)
+        assetName = unreal.Paths.get_base_filename(normalizedAssetPath)
         
         # 에셋 이름 결정: 입력된 이름이 있으면 사용, 없으면 FBX 파일 이름에서 확장자 제거
         if inAssetName is not None:
             assetName = inAssetName
-        else:
-            assetName = Path(inFbxFile).stem  # 확장자 제거된 파일 이름
 
-        ue5_logger.debug(f"임포트 경로 정보: Destination={destinationPath}, AssetName={assetName}")
+        ue5_logger.info(f"임포트 경로 정보: Destination={destinationPath}, AssetName={assetName}")
 
         if not unreal.Paths.directory_exists(destinationPath):
             ue5_logger.info(f"디렉토리 생성: {destinationPath}")
             unreal.EditorAssetLibrary.make_directory(destinationPath)
         
-        if unreal.Paths.file_exists(fullAssetPath):
-            ue5_logger.info(f"기존 파일 체크아웃: {fullAssetPath}")
-            unreal.SourceControl.check_out_or_add_file(fullAssetPath)
+        if unreal.Paths.file_exists(normalizedAssetPath):
+            ue5_logger.info(f"기존 파일 체크아웃: {normalizedAssetPath}")
+            unreal.SourceControl.check_out_or_add_file(normalizedAssetPath)
         
         return destinationPath, assetName
     
