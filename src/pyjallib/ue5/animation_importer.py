@@ -26,19 +26,29 @@ class AnimationImporter(BaseImporter):
     def asset_type(self) -> str:
         return "Animation"
     
-    def _create_import_task(self, inFbxFile: str, inDestinationPath: str, inSkeleton: unreal.Skeleton = None):
-        """애니메이션 임포트를 위한 태스크 생성 - 지정된 스켈레톤 사용"""
+    def _create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
+        """애니메이션 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         ue5_logger.debug(f"애니메이션 임포트 태스크 생성 시작: {inFbxFile}")
         
         importOptions = self.importerSettings.load_options()
         ue5_logger.debug("애니메이션 임포트 옵션 로드 완료")
         
-        # 스켈레톤이 지정된 경우 옵션에 설정
-        if inSkeleton is not None:
-            importOptions.set_editor_property('skeleton', inSkeleton)
-            ue5_logger.debug(f"스켈레톤 설정됨: {inSkeleton.get_name()}")
-        else:
-            ue5_logger.warning("애니메이션 임포트에 스켈레톤이 지정되지 않음")
+        # 스켈레톤 필수 설정
+        if inFbxSkeletonPath is None:
+            error_msg = "애니메이션 임포트에는 스켈레톤이 필수입니다"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
+        skeletonAssetData = unreal.EditorAssetLibrary.find_asset_data(skeletonPath)
+        if not skeletonAssetData.is_valid():
+            error_msg = f"스켈레톤 에셋을 찾을 수 없음: {skeletonPath}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        animSkeleton = skeletonAssetData.get_asset()
+        importOptions.skeleton = skeletonAssetData.get_asset()
+        ue5_logger.debug(f"스켈레톤 설정됨: {animSkeleton.get_name()}")
         
         # 에셋 이름 결정: FBX 파일 이름에서 확장자 제거
         assetName = Path(inFbxFile).stem
@@ -55,14 +65,17 @@ class AnimationImporter(BaseImporter):
         ue5_logger.debug(f"애니메이션 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
         return task
     
-    def import_animation(self, inFbxFile: str, inAssetName: str = None, inSkeleton: unreal.Skeleton = None):
+    def import_animation(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None):
         ue5_logger.info(f"애니메이션 임포트 시작: {inFbxFile}")
         
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
+        assetFullPath = f"{destinationPath}/{assetName}"
         
-        task = self._create_import_task(inFbxFile, destinationPath, inSkeleton)
-        # task의 destination_name을 실제 assetName으로 업데이트
-        task.destination_name = assetName
+        # 기존 에셋이 있는 경우 소스 컨트롤에서 체크아웃
+        if unreal.Paths.file_exists(assetFullPath):
+            unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
+        
+        task = self._create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath)
         
         ue5_logger.info(f"애니메이션 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
@@ -72,6 +85,26 @@ class AnimationImporter(BaseImporter):
             error_msg = f"애니메이션 임포트 실패: {inFbxFile}"
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
+        
+        # 임포트된 애니메이션 에셋의 시스템 경로 가져오기
+        importedAnimation = None
+        for asset in result:
+            if isinstance(asset, unreal.AnimSequence):
+                importedAnimation = asset
+                break
+        
+        if importedAnimation is None:
+            error_msg = f"애니메이션 에셋을 찾을 수 없음: {inFbxFile}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        animationSystemFullPath = unreal.SystemLibrary.get_system_path(importedAnimation)
+        
+        checkInDescription = f"Animation Imported by {inFbxFile} to {assetFullPath}"
+        if inDescription is not None:
+            checkInDescription = inDescription
+        
+        unreal.SourceControl.check_in_files([animationSystemFullPath], checkInDescription, silent=True)
         
         ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 

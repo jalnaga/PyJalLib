@@ -86,11 +86,30 @@ class BaseImporter(ABC):
             # pathlib을 사용하여 경로 정규화
             normalizedPath = Path(relativePath).as_posix()
             result_path = f"/Game/{normalizedPath}"
-            ue5_logger.debug(f"Content 경로 변환 완료: {inFbxPath} -> {result_path}")
-            return result_path
+            
+            # UE5 내장 함수를 사용하여 경로 정규화
+            normalizedResultPath = unreal.Paths.normalize_directory_name(result_path)
+            
+            ue5_logger.debug(f"Content 경로 변환 완료: {inFbxPath} -> {normalizedResultPath}")
+            return normalizedResultPath
         else:
             ue5_logger.error(f"절대 경로가 콘텐츠 디렉토리로 시작하지 않습니다: {absoluteContentPath}")
             return ""
+        
+    def convert_fbx_path_to_skeleton_path(self, inFbxPath: str) -> str:
+        """
+        FBX 파일 경로를 스켈레톤 경로로 변환합니다.
+        fbxRootPrefix가 inFbxPath의 prefix일 경우, contentRootPrefix로 치환합니다.
+        """
+        skeletonPath = self.convert_fbx_path_to_content_path(inFbxPath)
+        if skeletonPath == "":
+            return ""
+        
+        destinationPath = unreal.Paths.get_path(skeletonPath)
+        assetName = unreal.Paths.get_base_filename(skeletonPath)
+        assetName = self.naming.replace_name_part("AssetType", assetName, self.naming.get_name_part("AssetType").get_value_by_description("Skeleton"))
+        skeletonFullPath = f"{destinationPath}/{assetName}"
+        return skeletonFullPath
     
     def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True):
         """결과 딕셔너리를 생성하는 공통 메서드"""
@@ -114,12 +133,9 @@ class BaseImporter(ABC):
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
         
-        # UE5 내장 함수를 사용하여 경로 정규화
-        normalizedAssetPath = unreal.Paths.normalize_directory_name(assetPath)
-        
         # 경로에서 파일명 분리
-        destinationPath = unreal.Paths.get_path(normalizedAssetPath)
-        assetName = unreal.Paths.get_base_filename(normalizedAssetPath)
+        destinationPath = unreal.Paths.get_path(assetPath)
+        assetName = unreal.Paths.get_base_filename(assetPath)
         
         # 에셋 이름 결정: 입력된 이름이 있으면 사용, 없으면 FBX 파일 이름에서 확장자 제거
         if inAssetName is not None:
@@ -131,9 +147,9 @@ class BaseImporter(ABC):
             ue5_logger.info(f"디렉토리 생성: {destinationPath}")
             unreal.EditorAssetLibrary.make_directory(destinationPath)
         
-        if unreal.Paths.file_exists(normalizedAssetPath):
-            ue5_logger.info(f"기존 파일 체크아웃: {normalizedAssetPath}")
-            unreal.SourceControl.check_out_or_add_file(normalizedAssetPath)
+        if unreal.Paths.file_exists(assetPath):
+            ue5_logger.info(f"기존 파일 체크아웃: {assetPath}")
+            unreal.SourceControl.check_out_or_add_file(assetPath)
         
         return destinationPath, assetName
     
