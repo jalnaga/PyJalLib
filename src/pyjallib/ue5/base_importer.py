@@ -1,7 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 UE5 베이스 임포터 모듈
-
-이 모듈은 모든 UE5 임포터 클래스의 공통 기능을 제공합니다.
+UE5 에셋 임포트의 기본 기능을 제공하는 추상 클래스입니다.
 """
 
 import json
@@ -10,11 +12,13 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 
+from pyjallib.naming import Naming
+
 import unreal
 
 # UE5 모듈 import
 from .importer_settings import ImporterSettings
-from . import ue5_logger
+from .logger import ue5_logger
 
 class BaseImporter(ABC):
     """모든 UE5 임포터의 베이스 클래스"""
@@ -27,6 +31,9 @@ class BaseImporter(ABC):
             inFbxRootPrefix=inFbxRootPrefix, 
             inPresetName=inPresetName
         )
+        current_file_path = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_file_path, "ConfigFiles", "UE5NamingConfig.json")
+        self.naming = Naming(configPath=config_path)
         ue5_logger.debug(f"BaseImporter 초기화: ContentRoot={inContentRootPrefix}, FbxRoot={inFbxRootPrefix}, Preset={inPresetName}")
     
     @property

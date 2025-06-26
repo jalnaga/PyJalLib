@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 import unreal
-from . import ue5_logger
+from .logger import ue5_logger
 
 
 class ImporterSettings:

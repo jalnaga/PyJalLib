@@ -479,27 +479,6 @@ class Bip:
         
         if inCollapseLayers:
             self.collapse_layers(inBipRoot)
-        
-        if inBakeAllKeys:
-            allTargetBipedObjs = self.get_nodes(inBipRoot)
-            startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
-            endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
-            totalFrame = endFrame - startFrame + 1
-            
-            for frame in range(startFrame, endFrame + 1):
-                for item in allTargetBipedObjs:
-                    if item == item.controller.rootNode:
-                        horizontalController = rt.getPropertyController(item.controller, "horizontal")
-                        verticalController = rt.getPropertyController(item.controller, "vertical")
-                        turningController = rt.getPropertyController(item.controller, "turning")
-                        
-                        rt.biped.addNewKey(horizontalController, frame)
-                        rt.biped.addNewKey(verticalController, frame)
-                        rt.biped.addNewKey(turningController, frame)
-                    else:
-                        rt.biped.addNewKey(item.controller, frame)
-                if progress_callback:
-                    progress_callback(frame - startFrame + 1, totalFrame)
                     
         minFrame = 0.0
         maxFrame = 0.0

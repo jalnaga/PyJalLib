@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 UE5 스켈레톤 임포터 모듈
 
@@ -7,10 +10,12 @@ PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니�
 
 import unreal
 from pathlib import Path
+from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from .base_importer import BaseImporter
-from . import ue5_logger
+from .logger import ue5_logger
+from .importer_settings import ImporterSettings
 
 class SkeletonImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
@@ -50,19 +55,25 @@ class SkeletonImporter(BaseImporter):
         
         task = self._create_import_task(inFbxFile, destinationPath)
         # task의 destination_name을 실제 assetName으로 업데이트
-        task.destination_name = assetName
         
-        ue5_logger.info(f"스켈레톤 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
-        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+        skeletonPrefix = self.naming.get_name_part("AssetType").get_value_by_description("Skeleton")
+        print(f"assetName: {assetName}, skeletonPrefix: {skeletonPrefix}")
+        newName = self.naming.replace_name_part("AssetType", assetName, skeletonPrefix)
+        print(f"newName: {newName}")
         
-        result = task.get_objects()
-        if len(result) == 0:
-            error_msg = f"스켈레톤 임포트 실패: {inFbxFile}"
-            ue5_logger.error(error_msg)
-            raise ValueError(error_msg)
+        # task.destination_name = assetName
         
-        ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
+        # ue5_logger.info(f"스켈레톤 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
+        # unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+        
+        # result = task.get_objects()
+        # if len(result) == 0:
+        #     error_msg = f"스켈레톤 임포트 실패: {inFbxFile}"
+        #     ue5_logger.error(error_msg)
+        #     raise ValueError(error_msg)
+        
+        # ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
+        # return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
         
         
         

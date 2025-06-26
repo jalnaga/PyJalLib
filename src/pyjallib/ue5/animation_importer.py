@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 UE5 애니메이션 임포터 모듈
 
@@ -7,10 +10,12 @@ PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니�
 
 import unreal
 from pathlib import Path
+from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from .base_importer import BaseImporter
-from . import ue5_logger
+from .logger import ue5_logger
+from .importer_settings import ImporterSettings
 
 class AnimationImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
