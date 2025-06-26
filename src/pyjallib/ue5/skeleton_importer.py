@@ -48,10 +48,20 @@ class SkeletonImporter(BaseImporter):
         ue5_logger.debug(f"스켈레톤 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
         return task
     
-    def import_skeleton(self, inFbxFile: str, inAssetName: str = None):
+    def import_skeleton(self, inFbxFile: str, inAssetName: str = None, inDescription: str = None):
         ue5_logger.info(f"스켈레톤 임포트 시작: {inFbxFile}")
         
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
+        skeletonName = self.naming.replace_name_part("AssetType", assetName, self.naming.get_name_part("AssetType").get_value_by_description("Skeleton"))
+        
+        assetFullPath = f"{destinationPath}/{assetName}"
+        skeletonFullPath = f"{destinationPath}/{skeletonName}"
+        
+        if unreal.Paths.file_exists(assetFullPath) or unreal.Paths.file_exists(skeletonFullPath):
+            if unreal.Paths.file_exists(assetFullPath):
+                unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
+            if unreal.Paths.file_exists(skeletonFullPath):
+                unreal.SourceControl.check_out_or_add_file(skeletonFullPath, silent=True)
         
         task = self._create_import_task(inFbxFile, destinationPath)
         
@@ -69,12 +79,20 @@ class SkeletonImporter(BaseImporter):
             if isinstance(asset, unreal.SkeletalMesh):
                 importedSkeletalMesh = asset
         importedSkeleton = importedSkeletalMesh.skeleton
-        newSkeletonName = self.naming.replace_name_part("AssetType", assetName, self.naming.get_name_part("AssetType").get_value_by_description("Skeleton"))
-        skeletonRenameData = unreal.AssetRenameData(importedSkeleton, destinationPath, newSkeletonName)
+        skeletonRenameData = unreal.AssetRenameData(importedSkeleton, destinationPath, skeletonName)
         unreal.AssetToolsHelpers.get_asset_tools().rename_assets([skeletonRenameData])
         
+        assetSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh)
+        skeletonSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh.skeleton)
+        
+        checkInDescription = f"Skeleton Imported by {inFbxFile} to {assetFullPath}"
+        if inDescription is not None:
+            checkInDescription = inDescription
+        
+        unreal.SourceControl.check_in_files([assetSystemFullPath, skeletonSystemFullPath], checkInDescription, silent=True)
+        
         ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        return self._create_result_dict(inFbxFile, destinationPath, newSkeletonName, True)
+        return self._create_result_dict(inFbxFile, destinationPath, skeletonName, True)
         
         
         
