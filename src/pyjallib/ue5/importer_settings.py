@@ -9,9 +9,9 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
-import logging
 
 import unreal
+from . import ue5_logger
 
 
 class ImporterSettings:
@@ -31,6 +31,7 @@ class ImporterSettings:
         self.presetName = inPresetName
         
         self.configPath = Path(__file__).parent / 'ConfigFiles' / 'UE5ImportConfig.json'
+        ue5_logger.debug(f"ImporterSettings 초기화: ContentRoot={inContentRootPrefix}, FbxRoot={inFbxRootPrefix}, Preset={inPresetName}")
     
     def load_preset(self, inPresetName: Optional[str] = None):
         if inPresetName is None:
@@ -40,26 +41,6 @@ class ImporterSettings:
             raise ValueError("Preset name is required")
         
         preset_path = Path(__file__).parent / 'ConfigFiles' / f'{inPresetName}.json'
-    
-    def convert_fbx_path_to_content_path(self, inFbxPath: str) -> str:
-        """
-        FBX 파일 경로를 UE5 Content 경로로 변환합니다.
-        fbxRootPrefix가 inFbxPath의 prefix일 경우, contentRootPrefix로 치환합니다.
-        Args:
-            inFbxPath (str): 변환할 FBX 파일 경로
-        Returns:
-            str: 변환된 Content 경로
-        """
-        fbxRoot = Path(self.fbxRootPrefix).resolve()
-        contentRoot = Path(self.contentRootPrefix).resolve()
-        fbxPath = Path(inFbxPath).resolve()
-
-        if str(fbxPath).startswith(str(fbxRoot)):
-            relative_path = fbxPath.relative_to(fbxRoot)
-            return str(contentRoot / relative_path)
-        else:
-            logging.warning(f"입력 경로가 fbxRootPrefix로 시작하지 않습니다: {inFbxPath}")
-            return ""
     
     def set_options_for_skeleton_import(self):
         """
@@ -92,7 +73,7 @@ class ImporterSettings:
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('force_front_x_axis', False)  # X축 강제 변환 안함
         
         # LOD 임포트 (필요하다면)
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds ', False)  # LOD를 임포트하지 않음
+        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds', False)  # LOD를 임포트하지 않음
         
         # 스켈레톤 생성 옵션
         fbxImportOptions.set_editor_property('skeleton', None)  # 새 스켈레톤 생성
@@ -192,7 +173,8 @@ class ImporterSettings:
         elif inPresetName.lower() == "animation":
             return self.set_options_for_animation_import()
         else:
-            raise ValueError(f"Unsupported preset name: {inPresetName}. Supported presets: Skeleton, SkeletalMesh, Animation")
+            ue5_logger.error(f"Unsupported preset name: {inPresetName}. Supported presets: Skeleton, SkeletalMesh, Animation")
+            raise None
 
 
     

@@ -1,0 +1,136 @@
+"""
+UE5 베이스 임포터 모듈
+
+이 모듈은 모든 UE5 임포터 클래스의 공통 기능을 제공합니다.
+"""
+
+import json
+import os
+from pathlib import Path
+from abc import ABC, abstractmethod
+from typing import Dict, Any, Optional
+
+import unreal
+
+# UE5 모듈 import
+from .importer_settings import ImporterSettings
+from . import ue5_logger
+
+class BaseImporter(ABC):
+    """모든 UE5 임포터의 베이스 클래스"""
+    
+    def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str, inPresetName: str):
+        self.contentRootPrefix = inContentRootPrefix
+        self.fbxRootPrefix = inFbxRootPrefix
+        self.importerSettings = ImporterSettings(
+            inContentRootPrefix=inContentRootPrefix, 
+            inFbxRootPrefix=inFbxRootPrefix, 
+            inPresetName=inPresetName
+        )
+        ue5_logger.debug(f"BaseImporter 초기화: ContentRoot={inContentRootPrefix}, FbxRoot={inFbxRootPrefix}, Preset={inPresetName}")
+    
+    @property
+    @abstractmethod
+    def asset_type(self) -> str:
+        """에셋 타입을 반환하는 추상 프로퍼티"""
+        pass
+    
+    def convert_fbx_path_to_absolute_content_path(self, inFbxPath: str) -> str:
+        """
+        FBX 파일 경로를 UE5 Content 경로로 변환합니다.
+        fbxRootPrefix가 inFbxPath의 prefix일 경우, contentRootPrefix로 치환합니다.
+        Args:
+            inFbxPath (str): 변환할 FBX 파일 경로
+        Returns:
+            str: 변환된 Content 경로
+        """
+        ue5_logger.debug(f"FBX 경로 변환 시작: {inFbxPath}")
+        
+        fbxRoot = Path(self.fbxRootPrefix).resolve()
+        contentRoot = Path(self.contentRootPrefix).resolve()
+        fbxPath = Path(inFbxPath).resolve()
+
+        if str(fbxPath).startswith(str(fbxRoot)):
+            relative_path = fbxPath.relative_to(fbxRoot)
+            result_path = str(contentRoot / relative_path)
+            ue5_logger.debug(f"경로 변환 완료: {inFbxPath} -> {result_path}")
+            return result_path
+        else:
+            ue5_logger.error(f"입력 경로가 fbxRootPrefix로 시작하지 않습니다: {inFbxPath}")
+            return ""
+    
+    def convert_fbx_path_to_content_path(self, inFbxPath: str) -> str:
+        ue5_logger.debug(f"Content 경로 변환 시작: {inFbxPath}")
+        
+        absoluteContentPath = self.convert_fbx_path_to_absolute_content_path(inFbxPath)
+        if absoluteContentPath == "":
+            return ""
+        
+        # UE5 프로젝트의 Content 디렉토리 경로 가져오기
+        contentPath = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
+        
+        absoluteContentPathObj = Path(absoluteContentPath)
+        contentPathObj = Path(contentPath)
+        
+        # absoluteContentPath가 contentPath로 시작하는지 확인
+        if str(absoluteContentPathObj).startswith(str(contentPathObj)):
+            # contentPath 부분을 /Game/으로 직접 치환
+            relativePath = absoluteContentPathObj.relative_to(contentPathObj)
+            # pathlib을 사용하여 경로 정규화
+            normalizedPath = Path(relativePath).as_posix()
+            result_path = f"/Game/{normalizedPath}"
+            ue5_logger.debug(f"Content 경로 변환 완료: {inFbxPath} -> {result_path}")
+            return result_path
+        else:
+            ue5_logger.error(f"절대 경로가 콘텐츠 디렉토리로 시작하지 않습니다: {absoluteContentPath}")
+            return ""
+    
+    def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True):
+        """결과 딕셔너리를 생성하는 공통 메서드"""
+        result = {
+            "SourceFile": inSourceFile,
+            "Path": inPath,
+            "Name": inName,
+            "Type": self.asset_type,
+            "Success": inSuccess
+        }
+        ue5_logger.debug(f"결과 딕셔너리 생성: {result}")
+        return result
+    
+    def _prepare_import_paths(self, inFbxFile: str, inAssetName: str = None):
+        """임포트 경로를 준비하는 공통 메서드"""
+        ue5_logger.info(f"임포트 경로 준비 시작: {inFbxFile}")
+        
+        assetPath = self.convert_fbx_path_to_content_path(inFbxFile)
+        if assetPath == "":
+            error_msg = f"FBX 파일 경로가 올바르지 않습니다: {inFbxFile}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # Path 객체에서 파일 이름과 경로 분리
+        assetPathObj = Path(assetPath)
+        fullAssetPath = str(assetPathObj)
+        destinationPath = str(assetPathObj.parent)
+        
+        # 에셋 이름 결정: 입력된 이름이 있으면 사용, 없으면 FBX 파일 이름에서 확장자 제거
+        if inAssetName is not None:
+            assetName = inAssetName
+        else:
+            assetName = Path(inFbxFile).stem  # 확장자 제거된 파일 이름
+
+        ue5_logger.debug(f"임포트 경로 정보: Destination={destinationPath}, AssetName={assetName}")
+
+        if not unreal.Paths.directory_exists(destinationPath):
+            ue5_logger.info(f"디렉토리 생성: {destinationPath}")
+            unreal.EditorAssetLibrary.make_directory(destinationPath)
+        
+        if unreal.Paths.file_exists(fullAssetPath):
+            ue5_logger.info(f"기존 파일 체크아웃: {fullAssetPath}")
+            unreal.SourceControl.check_out_or_add_file(fullAssetPath)
+        
+        return destinationPath, assetName
+    
+    @abstractmethod
+    def _create_import_task(self, inFbxFile: str, inDestinationPath: str):
+        """임포트 태스크를 생성하는 추상 메서드 - 각 임포터에서 구현"""
+        pass 

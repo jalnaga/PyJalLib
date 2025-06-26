@@ -1,10 +1,8 @@
 import sys
 import os
 
-# 현재 스크립트의 디렉토리 path 가져오기
-current_dir = os.path.dirname(os.path.abspath(__file__))
 # 프로젝트 루트 디렉토리 추가 (PyJalLib 디렉토리)
-project_root = os.path.abspath(os.path.join(current_dir, "..", "src"))
+project_root = r"E:\DevStorage_root\DevStorage\ExtPythonPackage\.venv\Lib\site-packages"
 
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -14,4 +12,6 @@ pyjallib.reload_modules()
 
 from pyjallib.ue5.skeleton_importer import SkeletonImporter
 
-testImporter = SkeletonImporter()
+testImporter = SkeletonImporter(inContentRootPrefix=r"D:\root\Omni\Content\Omni", inFbxRootPrefix=r"E:\DevStorage_root\DevStorage")
+result = testImporter.import_skeleton(inFbxFile=r"E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BaseSkeleton\SK_Sh_Human_M_BaseSkeleton.fbx")
+print(result)

@@ -5,69 +5,64 @@ UE5 스켈레톤 임포터 모듈
 PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니다.
 """
 
-import os
-import logging
-from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
-from dataclasses import dataclass
-
 import unreal
-
-# PyJalLib 모듈 import
-from pyjallib import naming
+from pathlib import Path
 
 # UE5 모듈 import
-from .importer_settings import ImporterSettings
+from .base_importer import BaseImporter
+from . import ue5_logger
 
-class SkeletonImporter:
+class SkeletonImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
-        self.importerSettings = ImporterSettings(inContentRootPrefix=inContentRootPrefix, inFbxRootPrefix=inFbxRootPrefix, inPresetName="Skeleton")
+        super().__init__(inContentRootPrefix, inFbxRootPrefix, "Skeleton")
+        ue5_logger.info("SkeletonImporter 초기화 완료")
     
-    def import_skeleton(self, inFbxFile: str):
-        assetPath = self.importerSettings.convert_fbx_path_to_content_path(inFbxFile)
-        if assetPath == "":
-            raise ValueError(f"FBX 파일 경로가 올바르지 않습니다: {inFbxFile}")
-        
-        # Path 객체에서 파일 이름과 경로 분리
-        assetPathObj = Path(assetPath)
-        destinationPath = str(assetPathObj.parent)
-        fileName = str(assetPathObj.stem)
+    @property
+    def asset_type(self) -> str:
+        return "Skeleton"
+    
+    def _create_import_task(self, inFbxFile: str, inDestinationPath: str):
+        """스켈레톤 임포트를 위한 태스크 생성 - 새 스켈레톤 생성"""
+        ue5_logger.debug(f"스켈레톤 임포트 태스크 생성 시작: {inFbxFile}")
         
         importOptions = self.importerSettings.load_options()
+        ue5_logger.debug("스켈레톤 임포트 옵션 로드 완료")
+        
+        # 에셋 이름 결정: FBX 파일 이름에서 확장자 제거
+        assetName = Path(inFbxFile).stem
         
         task = unreal.AssetImportTask()
         task.automated = True
-        task.destination_path = destinationPath
-        task.filename = fileName
+        task.destination_path = inDestinationPath
+        task.filename = inFbxFile
+        task.destination_name = assetName
         task.replace_existing = True
         task.save = True
         task.options = importOptions
         
-        taskResultDict = {
-            "SourceFile": "",
-            "Path": "",
-            "Name": "",
-            "Type": "",
-            "Success": False
-        }
+        ue5_logger.debug(f"스켈레톤 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
+        return task
+    
+    def import_skeleton(self, inFbxFile: str, inAssetName: str = None):
+        ue5_logger.info(f"스켈레톤 임포트 시작: {inFbxFile}")
+        
+        destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
+        
+        task = self._create_import_task(inFbxFile, destinationPath)
+        # task의 destination_name을 실제 assetName으로 업데이트
+        task.destination_name = assetName
+        
+        ue5_logger.info(f"스켈레톤 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
         
         result = task.get_objects()
         if len(result) == 0:
-            taskResultDict["SourceFile"] = inFbxFile
-            taskResultDict["Path"] = destinationPath
-            taskResultDict["Name"] = fileName
-            taskResultDict["Type"] = "Skeleton"
-            taskResultDict["Success"] = False
-            raise ValueError(f"스켈레톤 임포트 실패: {inFbxFile}")
+            error_msg = f"스켈레톤 임포트 실패: {inFbxFile}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
         
-        taskResultDict["SourceFile"] = inFbxFile
-        taskResultDict["Path"] = destinationPath
-        taskResultDict["Name"] = fileName
-        taskResultDict["Type"] = "Skeleton"
-        taskResultDict["Success"] = True
-        
-        return taskResultDict
+        ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
+        return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
         
         
         
