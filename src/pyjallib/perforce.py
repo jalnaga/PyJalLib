@@ -21,8 +21,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 # 사용자 문서 폴더 내 로그 파일 저장
-log_path = os.path.join(Path.home() / "Documents", 'Perforce.log')
-file_handler = logging.FileHandler(log_path, encoding='utf-8')
+log_path = Path.home() / "Documents" / "PyJalLib" / "logs" / "Perforce.log"
+
+# 로그 디렉토리가 존재하지 않으면 생성
+log_path.parent.mkdir(parents=True, exist_ok=True)
+
+file_handler = logging.FileHandler(str(log_path), encoding='utf-8')
 file_handler.setLevel(logging.ERROR)  # 기본적으로 ERROR 레벨만 기록
 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(file_handler)
