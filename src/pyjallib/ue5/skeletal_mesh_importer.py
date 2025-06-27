@@ -25,7 +25,7 @@ class SkeletalMeshImporter(BaseImporter):
     def asset_type(self) -> str:
         return "SkeletalMesh"
     
-    def _create_import_task(self, inFbxFile: str, inDestinationPath: str, inSkeleton: unreal.Skeleton):
+    def _create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
         """스켈레탈 메시 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         ue5_logger.debug(f"스켈레탈 메시 임포트 태스크 생성 시작: {inFbxFile}")
         
@@ -33,13 +33,21 @@ class SkeletalMeshImporter(BaseImporter):
         ue5_logger.debug("스켈레탈 메시 임포트 옵션 로드 완료")
         
         # 스켈레톤 필수 설정
-        if inSkeleton is None:
+        if inFbxSkeletonPath is None:
             error_msg = "스켈레탈 메시 임포트에는 스켈레톤이 필수입니다"
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
         
-        importOptions.set_editor_property('skeleton', inSkeleton)
-        ue5_logger.debug(f"스켈레톤 설정됨: {inSkeleton.get_name()}")
+        skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
+        skeletonAssetData = unreal.EditorAssetLibrary.find_asset_data(skeletonPath)
+        if not skeletonAssetData.is_valid():
+            error_msg = f"스켈레톤 에셋을 찾을 수 없음: {skeletonPath}"
+            ue5_logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        skeletalSkeleton = skeletonAssetData.get_asset()
+        importOptions.set_editor_property('skeleton', skeletalSkeleton)
+        ue5_logger.debug(f"스켈레톤 설정됨: {skeletalSkeleton.get_name()}")
         
         # 에셋 이름 결정: FBX 파일 이름에서 확장자 제거
         assetName = Path(inFbxFile).stem
@@ -56,7 +64,7 @@ class SkeletalMeshImporter(BaseImporter):
         ue5_logger.debug(f"스켈레탈 메시 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
         return task
     
-    def import_skeletal_mesh(self, inFbxFile: str, inSkeleton: unreal.Skeleton, inAssetName: str = None, inDescription: str = None):
+    def import_skeletal_mesh(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None):
         ue5_logger.info(f"스켈레탈 메시 임포트 시작: {inFbxFile}")
         
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -66,7 +74,7 @@ class SkeletalMeshImporter(BaseImporter):
         if unreal.Paths.file_exists(assetFullPath):
             unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
         
-        task = self._create_import_task(inFbxFile, destinationPath, inSkeleton)
+        task = self._create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath)
         
         ue5_logger.info(f"스켈레탈 메시 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])

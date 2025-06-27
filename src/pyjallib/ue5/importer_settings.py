@@ -109,7 +109,7 @@ class ImporterSettings:
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)  # 노멀 임포트
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('normal_generation_method', unreal.FBXNormalGenerationMethod.MIKK_T_SPACE)  # 탄젠트 계산
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('preserve_smoothing_groups', True)  # 스무딩 그룹 보존
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('reorder_material_to_fbx_order ', True)  # Material 순서 재정렬
+        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('reorder_material_to_fbx_order', True)  # Material 순서 재정렬
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds', False)  # LOD 임포트 안함
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', False)  # 씬 단위 변환 안함
         fbxImportOptions.skeletal_mesh_import_data.set_editor_property('force_front_x_axis', False)  # X축 강제 변환 안함
