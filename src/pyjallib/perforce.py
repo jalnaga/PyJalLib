@@ -284,6 +284,12 @@ class Perforce:
             logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
             return {}
         
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
+        
         logger.debug(f"파일 체크아웃 상태 확인 중 (파일 {len(file_paths)}개)")
         
         result = {}
@@ -489,6 +495,12 @@ class Perforce:
         if not file_paths:
             logger.debug("체크아웃할 파일 목록이 비어있습니다.")
             return True
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 checkout_file() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
             
         logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 체크아웃 시도...")
         
@@ -531,6 +543,12 @@ class Perforce:
         if not file_paths:
             logger.debug("추가할 파일 목록이 비어있습니다.")
             return True
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 add_file() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
             
         logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 추가 시도...")
         
@@ -573,6 +591,12 @@ class Perforce:
         if not file_paths:
             logger.debug("삭제할 파일 목록이 비어있습니다.")
             return True
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 delete_file() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
             
         logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 삭제 시도...")
         
@@ -836,6 +860,12 @@ class Perforce:
         if not file_paths:
             logger.warning("되돌릴 파일 목록이 비어있습니다.")
             return True
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 revert_file() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
             
         logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 되돌리기 시도...")
         
@@ -868,6 +898,12 @@ class Perforce:
         if not file_paths:
             logger.debug("업데이트 필요 여부 확인할 파일/폴더 목록이 비어있습니다.")
             return False
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 경로도 리스트로 감싸서 전달하세요: ['{file_paths}']"
+            logger.error(error_msg)
+            raise TypeError(error_msg)
         
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
         processed_paths = []
@@ -907,8 +943,20 @@ class Perforce:
                 logger.info(f"지정된 모든 파일/폴더가 최신 상태입니다.")
             return needs_update
         except P4Exception as e:
-            self._handle_p4_exception(e, f"파일/폴더 업데이트 필요 여부 확인 ({processed_paths})")
-            return False
+            # "up-to-date" 메시지는 정상적인 응답이므로 에러로 처리하지 않음
+            exception_str = str(e)
+            error_messages = [str(err) for err in self.p4.errors]
+            warning_messages = [str(warn) for warn in self.p4.warnings]
+            
+            # P4Exception 자체 메시지나 에러/경고 메시지에서 "up-to-date" 확인
+            if ("up-to-date" in exception_str or 
+                any("up-to-date" in msg for msg in error_messages) or
+                any("up-to-date" in msg for msg in warning_messages)):
+                logger.debug(f"파일/폴더가 이미 최신 상태입니다: {processed_paths}")
+                return False
+            else:
+                self._handle_p4_exception(e, f"파일/폴더 업데이트 필요 여부 확인 ({processed_paths})")
+                return False
 
     def is_file_in_perforce(self, file_path: str) -> bool:
         """파일이 Perforce에 속하는지 확인합니다.
@@ -949,7 +997,7 @@ class Perforce:
 
         Args:
             file_paths (list): 동기화할 파일 또는 폴더 경로 리스트.
-                             폴더 경로는 자동으로 재귀적으로 처리됩니다.
+                              폴더 경로는 자동으로 재귀적으로 처리됩니다.
 
         Returns:
             bool: 동기화 성공 시 True, 실패 시 False
@@ -959,6 +1007,12 @@ class Perforce:
         if not file_paths:
             logger.debug("싱크할 파일/폴더 목록이 비어있습니다.")
             return True
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 경로도 리스트로 감싸서 전달하세요: ['{file_paths}']"
+            logger.error(error_msg)
+            raise TypeError(error_msg)
         
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
         processed_paths = []
@@ -1018,6 +1072,12 @@ class Perforce:
         if not file_paths:
             logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
             return {}
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 get_file_checkout_info_all_users() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
         
         logger.debug(f"파일 체크아웃 상태 확인 중 - 모든 사용자 (파일 {len(file_paths)}개)")
         
@@ -1155,6 +1215,12 @@ class Perforce:
         """
         if not file_paths:
             return []
+        
+        # 타입 검증: 리스트가 아닌 경우 에러 발생
+        if not isinstance(file_paths, list):
+            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out_by_others() 메서드를 사용하세요."
+            logger.error(error_msg)
+            raise TypeError(error_msg)
         
         result = self.check_files_checked_out_all_users(file_paths)
         files_by_others = []
