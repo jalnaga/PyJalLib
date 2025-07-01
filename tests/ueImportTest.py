@@ -57,11 +57,4 @@ try:
 except Exception as e:
     print(f"파일 삭제 중 오류가 발생했습니다: {e}")
 
-# 보너스: 모듈 상태 정보 출력
-print("\n=== PyJalLib UE5 모듈 상태 ===")
-from pyjallib.ue5 import get_module_status, is_ue5_available
-
-print(f"UE5 사용 가능: {is_ue5_available()}")
-status = get_module_status()
-print(f"사용 가능한 모듈: {status['available_modules']}")
 
