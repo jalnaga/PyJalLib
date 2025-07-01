@@ -17,7 +17,7 @@ from pyjallib.naming import Naming
 import unreal
 
 # UE5 모듈 import
-from .importer_settings import ImporterSettings
+from .importerSettings import ImporterSettings
 from .logger import ue5_logger
 
 class BaseImporter(ABC):

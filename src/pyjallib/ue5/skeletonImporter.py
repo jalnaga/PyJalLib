@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 # UE5 모듈 import
-from .base_importer import BaseImporter
+from .baseImporter import BaseImporter
 from .logger import ue5_logger
-from .importer_settings import ImporterSettings
+from .importerSettings import ImporterSettings
 
 class SkeletonImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
@@ -89,7 +89,7 @@ class SkeletonImporter(BaseImporter):
         if inDescription is not None:
             checkInDescription = inDescription
         
-        unreal.SourceControl.check_in_files([assetSystemFullPath, skeletonSystemFullPath], checkInDescription, silent=True)
+        # unreal.SourceControl.check_in_files([assetSystemFullPath, skeletonSystemFullPath], checkInDescription, silent=True)
         
         ue5_logger.info(f"스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, skeletonName, True)

@@ -128,20 +128,19 @@ class ImporterSettings:
         """
         # FBX 임포트 옵션 설정
         fbxImportOptions = unreal.FbxImportUI()
+        fbxImportOptions.reset_to_default()
         fbxImportOptions.set_editor_property('original_import_type', unreal.FBXImportType.FBXIT_ANIMATION)  # 애니메이션 타입
         
         # 메시 임포트 옵션 설정
+        fbxImportOptions.set_editor_property('import_animations', True)  # 애니메이션 임포트
         fbxImportOptions.set_editor_property('import_mesh', False)  # 메쉬 임포트 안함
         fbxImportOptions.set_editor_property('import_textures', False)  # 텍스처 임포트 안함
         fbxImportOptions.set_editor_property('import_materials', False)  # 매테리얼 임포트 안함
-        fbxImportOptions.set_editor_property('import_animations', True)  # 애니메이션 임포트
-        fbxImportOptions.set_editor_property('import_as_skeletal', True)  # 스켈레탈 메쉬로 임포트
         
         fbxImportOptions.anim_sequence_import_data.set_editor_property('animation_length', unreal.FBXAnimationLengthImportType.FBXALIT_EXPORTED_TIME)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('do_not_import_curve_with_zero', True)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_bone_tracks', True)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_custom_attribute', True)
-        fbxImportOptions.anim_sequence_import_data.set_editor_property('import_meshes_in_bone_hierarchy', True)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_meshes_in_bone_hierarchy', True)
         
         return fbxImportOptions

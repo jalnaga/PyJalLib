@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 # UE5 모듈 import
-from .base_importer import BaseImporter
+from .baseImporter import BaseImporter
 from .logger import ue5_logger
-from .importer_settings import ImporterSettings
+from .importerSettings import ImporterSettings
 
 class AnimationImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
@@ -47,7 +47,7 @@ class AnimationImporter(BaseImporter):
             raise ValueError(error_msg)
         
         animSkeleton = skeletonAssetData.get_asset()
-        importOptions.skeleton = skeletonAssetData.get_asset()
+        importOptions.set_editor_property('skeleton', animSkeleton)
         ue5_logger.debug(f"스켈레톤 설정됨: {animSkeleton.get_name()}")
         
         # 에셋 이름 결정: FBX 파일 이름에서 확장자 제거
@@ -104,7 +104,7 @@ class AnimationImporter(BaseImporter):
         if inDescription is not None:
             checkInDescription = inDescription
         
-        unreal.SourceControl.check_in_files([animationSystemFullPath], checkInDescription, silent=True)
+        # unreal.SourceControl.check_in_files([animationSystemFullPath], checkInDescription, silent=True)
         
         ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 

@@ -11,10 +11,10 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 from .logger import ue5_logger
-from .importer_settings import ImporterSettings
+from .importerSettings import ImporterSettings
 
 # UE5 모듈 import
-from .base_importer import BaseImporter
+from .baseImporter import BaseImporter
 
 class SkeletalMeshImporter(BaseImporter):
     def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str):
@@ -103,7 +103,7 @@ class SkeletalMeshImporter(BaseImporter):
         if inDescription is not None:
             checkInDescription = inDescription
         
-        unreal.SourceControl.check_in_files([skeletalMeshSystemFullPath], checkInDescription, silent=True)
+        # unreal.SourceControl.check_in_files([skeletalMeshSystemFullPath], checkInDescription, silent=True)
         
         ue5_logger.info(f"스켈레탈 메시 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 
