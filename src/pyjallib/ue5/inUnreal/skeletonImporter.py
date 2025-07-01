@@ -14,7 +14,7 @@ from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from .baseImporter import BaseImporter
-from .logger import ue5_logger
+from ..logger import ue5_logger
 from .importerSettings import ImporterSettings
 
 class SkeletonImporter(BaseImporter):

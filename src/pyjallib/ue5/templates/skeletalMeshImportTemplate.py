@@ -9,14 +9,14 @@ if extPackagePath not in sys.path:
     sys.path.insert(0, extPackagePath)
 
 import pyjallib
-from pyjallib.ue5.animationImporter import AnimationImporter
+from pyjallib.ue5.inUnreal.skeletalMeshImporter import SkeletalMeshImporter
 
-fbxPath = '{inAnimFbxPath}'
+fbxPath = '{inSkeletalMeshFbxPath}'
 skeletonPath = '{inSkeletonFbxPath}'
 
 contentRootPrefix = '{inContentRootPrefix}'
 fbxRootPrefix = '{inFbxRootPrefix}'
 
-animImporter = AnimationImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
+skeletalMeshImporter = SkeletalMeshImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
 
-result = animImporter.import_animation(fbxPath, skeletonPath)
+result = skeletalMeshImporter.import_skeletal_mesh(fbxPath, skeletonPath)

@@ -9,7 +9,7 @@ if extPackagePath not in sys.path:
     sys.path.insert(0, extPackagePath)
 
 import pyjallib
-from pyjallib.ue5.skeletonImporter import SkeletonImporter
+from pyjallib.ue5.inUnreal.skeletonImporter import SkeletonImporter
 
 fbxPath = '{inSkeletonFbxPath}'
 

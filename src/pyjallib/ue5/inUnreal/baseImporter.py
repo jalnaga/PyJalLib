@@ -18,7 +18,7 @@ import unreal
 
 # UE5 모듈 import
 from .importerSettings import ImporterSettings
-from .logger import ue5_logger
+from ..logger import ue5_logger
 
 class BaseImporter(ABC):
     """모든 UE5 임포터의 베이스 클래스"""

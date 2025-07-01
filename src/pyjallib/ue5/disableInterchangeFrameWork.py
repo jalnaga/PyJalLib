@@ -78,3 +78,5 @@ def add_disabled_plugins_to_uproject(uproject_path):
     
     ue5_logger.info(f"총 {added_count}개 플러그인 추가 (비활성화 상태)")
     ue5_logger.info(f"출력 파일: {output_path}")
+    
+    return output_path
