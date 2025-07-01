@@ -98,13 +98,22 @@ class AnimationImporter(BaseImporter):
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
         
+        importedObjectPaths = []
+        for item in task.imported_object_paths:
+            unreal.EditorAssetLibrary.save_asset(item, True)
+            importedObjectPaths.append(item)
+        
         animationSystemFullPath = unreal.SystemLibrary.get_system_path(importedAnimation)
+        # animationSystemFullPath가 importedObjectPaths에 없는 경우에만 추가
+        if animationSystemFullPath not in importedObjectPaths:
+            importedObjectPaths.append(animationSystemFullPath)
+            ue5_logger.debug(f"animationSystemFullPath를 importedObjectPaths에 추가: {animationSystemFullPath}")
         
         checkInDescription = f"Animation Imported by {inFbxFile} to {assetFullPath}"
         if inDescription is not None:
             checkInDescription = inDescription
         
-        # unreal.SourceControl.check_in_files([animationSystemFullPath], checkInDescription, silent=True)
+        # unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
         
         ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 

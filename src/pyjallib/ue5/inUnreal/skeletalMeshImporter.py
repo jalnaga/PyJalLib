@@ -97,13 +97,22 @@ class SkeletalMeshImporter(BaseImporter):
             ue5_logger.error(error_msg)
             raise ValueError(error_msg)
         
+        importedObjectPaths = []
+        for item in task.imported_object_paths:
+            unreal.EditorAssetLibrary.save_asset(item, True)
+            importedObjectPaths.append(item)
+        
         skeletalMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh)
+        # skeletalMeshSystemFullPath가 importedObjectPaths에 없는 경우에만 추가
+        if skeletalMeshSystemFullPath not in importedObjectPaths:
+            importedObjectPaths.append(skeletalMeshSystemFullPath)
+            ue5_logger.debug(f"skeletalMeshSystemFullPath를 importedObjectPaths에 추가: {skeletalMeshSystemFullPath}")
         
         checkInDescription = f"SkeletalMesh Imported by {inFbxFile} to {assetFullPath}"
         if inDescription is not None:
             checkInDescription = inDescription
         
-        # unreal.SourceControl.check_in_files([skeletalMeshSystemFullPath], checkInDescription, silent=True)
+        # unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
         
         ue5_logger.info(f"스켈레탈 메시 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 
