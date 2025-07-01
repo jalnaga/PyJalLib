@@ -156,3 +156,29 @@ class BaseImporter(ABC):
     def _create_import_task(self, inFbxFile: str, inDestinationPath: str):
         """임포트 태스크를 생성하는 추상 메서드 - 각 임포터에서 구현"""
         pass 
+    
+    def get_dirty_deps(self, inAssetPath: str):
+        returnList = []
+        
+        assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
+        assetData = unreal.EditorAssetLibrary.find_asset_data(inAssetPath)
+        
+        depPackages = assetRegistry.get_dependencies(
+            assetData.package_name,  
+            unreal.AssetRegistryDependencyOptions(
+                include_soft_package_references=False,  # Soft reference 제외
+                include_hard_package_references=True,   # Hard reference만
+                include_searchable_names=False,
+                include_soft_management_references=False,
+                include_hard_management_references=False
+            )
+        )
+        
+        for dep in depPackages:
+            depPathStart = str(dep).split('/')[1]
+            assetPathStart = str(assetData.package_name).split('/')[1]
+            if depPathStart == assetPathStart:
+                if unreal.EditorAssetLibrary.save_asset(dep, only_if_is_dirty=True):
+                    returnList.append(dep)
+        
+        return returnList
