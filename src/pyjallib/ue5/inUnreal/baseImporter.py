@@ -31,8 +31,7 @@ class BaseImporter(ABC):
             inFbxRootPrefix=inFbxRootPrefix, 
             inPresetName=inPresetName
         )
-        current_file_path = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_file_path, "ConfigFiles", "UE5NamingConfig.json")
+        config_path = str(Path(__file__).parent.parent / "ConfigFiles" / "UE5NamingConfig.json")
         self.naming = Naming(configPath=config_path)
         ue5_logger.debug(f"BaseImporter 초기화: ContentRoot={inContentRootPrefix}, FbxRoot={inFbxRootPrefix}, Preset={inPresetName}")
     

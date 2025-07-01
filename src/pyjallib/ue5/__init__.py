@@ -162,25 +162,9 @@ def get_module_status() -> dict:
     }
     return status
 
-# 편의 함수들 - 자주 사용되는 기능들을 쉽게 접근할 수 있도록
-def create_template_processor():
-    """
-    TemplateProcessor 인스턴스를 생성합니다.
-    
-    Returns:
-        TemplateProcessor: 새로운 TemplateProcessor 인스턴스
-        
-    Raises:
-        ImportError: TemplateProcessor를 사용할 수 없는 경우
-    """
-    if TemplateProcessor is None:
-        raise ImportError("TemplateProcessor를 사용할 수 없습니다. 모듈 로드에 실패했습니다.")
-    return TemplateProcessor()
-
 # 헬퍼 함수들도 __all__에 추가
 __all__.extend([
     'is_ue5_available', 
     'get_available_modules', 
-    'get_module_status',
-    'create_template_processor'
+    'get_module_status'
 ])
