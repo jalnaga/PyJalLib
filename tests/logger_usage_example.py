@@ -149,8 +149,11 @@ def main():
         print("\n=== 모든 예제 실행 완료 ===")
         print("✓ Logger 클래스가 PRD 요구사항에 맞게 동작합니다")
         
-        # 로그 파일 확인
-        log_path = Path.home() / "Documents" / "PyJalLib" / "logs" / "pyjallib.log"
+        # 로그 파일 확인 (날짜 기반 파일명)
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y%m%d")
+        log_filename = f"{current_date}_pyjallib.log"
+        log_path = Path.home() / "Documents" / "PyJalLib" / "logs" / log_filename
         if log_path.exists():
             print(f"\n로그 파일 위치: {log_path}")
             print("로그 파일 내용 (마지막 20줄):")

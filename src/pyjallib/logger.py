@@ -9,17 +9,21 @@ PyJalLib 중앙 집중식 로깅 모듈
 import logging
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 
 class Logger:
     """PyJalLib 간단한 로깅 클래스"""
     
-    def __init__(self, inLogPath: Optional[str] = None, inEnableConsole: bool = True, inEnableUE5: bool = False):
+    def __init__(self, inLogPath: Optional[str] = None, inLogFileName: Optional[str] = None, inEnableConsole: bool = True, inEnableUE5: bool = False):
         """로거 인스턴스 초기화
         
         Args:
             inLogPath (str, optional): 로그 파일 저장 경로. 
                                      None인 경우 기본 경로 사용 (Documents/PyJalLib/logs)
+            inLogFileName (str, optional): 로그 파일명 (확장자 제외). 
+                                         None인 경우 기본값 "pyjallib" 사용
+                                         실제 파일명은 "YYYYMMDD_파일명.log" 형식으로 생성
             inEnableConsole (bool): 콘솔 출력 활성화 여부 (기본값: True)
             inEnableUE5 (bool): UE5 출력 활성화 여부 (기본값: False)
         """
@@ -32,6 +36,9 @@ class Logger:
             
         # 로그 디렉토리 생성
         self._logPath.mkdir(parents=True, exist_ok=True)
+        
+        # 로그 파일명 설정 (확장자 제외)
+        self._logFileName = inLogFileName if inLogFileName is not None else "pyjallib"
         
         # 출력 옵션 설정
         self._enableConsole = inEnableConsole
@@ -127,8 +134,10 @@ class Logger:
         
     def _setup_handlers(self) -> None:
         """로거에 핸들러 설정"""
-        # 파일 핸들러 (항상 활성화)
-        log_file = self._logPath / "pyjallib.log"
+        # 파일 핸들러 (항상 활성화) - 날짜 기반 파일명
+        current_date = datetime.now().strftime("%Y%m%d")
+        log_filename = f"{current_date}_{self._logFileName}.log"
+        log_file = self._logPath / log_filename
         file_handler = logging.FileHandler(log_file, encoding='utf-8')
         file_handler.setFormatter(self._get_formatter())
         self._logger.addHandler(file_handler)

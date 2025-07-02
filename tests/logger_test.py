@@ -36,8 +36,11 @@ def test_basic_logging():
         # 세션 종료
         logger.end_session()
         
-        # 로그 파일 확인
-        log_file = Path(temp_dir) / "pyjallib.log"
+        # 로그 파일 확인 (날짜 기반 파일명)
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y%m%d")
+        log_filename = f"{current_date}_pyjallib.log"
+        log_file = Path(temp_dir) / log_filename
         if log_file.exists():
             print(f"✓ 로그 파일 생성됨: {log_file}")
             with open(log_file, 'r', encoding='utf-8') as f:
@@ -90,8 +93,11 @@ def test_console_disable():
         logger.warning("이 경고도 콘솔에 출력되지 않습니다")
         logger.end_session()
         
-        # 파일에는 기록되었는지 확인
-        log_file = Path(temp_dir) / "pyjallib.log"
+        # 파일에는 기록되었는지 확인 (날짜 기반 파일명)
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y%m%d")
+        log_filename = f"{current_date}_pyjallib.log"
+        log_file = Path(temp_dir) / log_filename
         if log_file.exists():
             with open(log_file, 'r', encoding='utf-8') as f:
                 content = f.read()
