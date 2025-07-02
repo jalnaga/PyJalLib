@@ -9,49 +9,20 @@ P4Python을 사용하는 Perforce 모듈.
 - 파일 동기화 및 업데이트 확인
 """
 
-import logging
 from P4 import P4, P4Exception
 import os
-from pathlib import Path
-
-# 로깅 설정
-logger = logging.getLogger(__name__)
-
-# 기본 로그 레벨은 ERROR로 설정 (디버그 모드는 생성자에서 설정)
-logger.setLevel(logging.ERROR)
-
-# 사용자 문서 폴더 내 로그 파일 저장
-log_path = Path.home() / "Documents" / "PyJalLib" / "logs" / "Perforce.log"
-
-# 로그 디렉토리가 존재하지 않으면 생성
-log_path.parent.mkdir(parents=True, exist_ok=True)
-
-file_handler = logging.FileHandler(str(log_path), encoding='utf-8')
-file_handler.setLevel(logging.ERROR)  # 기본적으로 ERROR 레벨만 기록
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-logger.addHandler(file_handler)
 
 
 class Perforce:
     """P4Python을 사용하여 Perforce 작업을 수행하는 클래스."""
 
-    def __init__(self, debug_mode: bool = False):
-        """Perforce 인스턴스를 초기화합니다.
-        
-        Args:
-            debug_mode (bool): True로 설정하면 DEBUG 레벨 로그를 활성화합니다. 
-                             기본값은 False (ERROR 레벨만 기록)
-        """
-        # 디버그 모드에 따라 로그 레벨 설정
-        if debug_mode:
-            logger.setLevel(logging.DEBUG)
-            file_handler.setLevel(logging.DEBUG)
-            logger.debug("디버그 모드가 활성화되었습니다.")
-        
+    def __init__(self):
+        """Perforce 인스턴스를 초기화합니다."""
         self.p4 = P4()
         self.connected = False
         self.workspaceRoot = r""
-        logger.info("Perforce 인스턴스 생성됨")
+        self.last_error = None
+        self.last_warnings = []
 
     def _is_connected(self) -> bool:
         """Perforce 서버 연결 상태를 확인합니다.
@@ -60,22 +31,40 @@ class Perforce:
             bool: 연결되어 있으면 True, 아니면 False
         """
         if not self.connected:
-            logger.warning("Perforce 서버에 연결되지 않았습니다.")
+            self.last_error = "Perforce 서버에 연결되지 않았습니다."
             return False
         return True
 
     def _handle_p4_exception(self, e: P4Exception, context_msg: str = "") -> None:
-        """P4Exception을 처리하고 로깅합니다.
+        """P4Exception을 처리하고 에러 정보를 저장합니다.
 
         Args:
             e (P4Exception): 발생한 예외
             context_msg (str, optional): 예외가 발생한 컨텍스트 설명
         """
-        logger.error(f"{context_msg} 중 P4Exception 발생: {e}")
-        for err in self.p4.errors:
-            logger.error(f"  P4 Error: {err}")
-        for warn in self.p4.warnings:
-            logger.warning(f"  P4 Warning: {warn}")
+        self.last_error = f"{context_msg} 중 P4Exception 발생: {e}"
+        self.last_warnings = list(self.p4.warnings) if self.p4.warnings else []
+        
+    def get_last_error(self) -> str:
+        """마지막 에러 메시지를 반환합니다.
+        
+        Returns:
+            str: 마지막 에러 메시지. 에러가 없으면 None
+        """
+        return self.last_error
+        
+    def get_last_warnings(self) -> list:
+        """마지막 경고 메시지들을 반환합니다.
+        
+        Returns:
+            list: 마지막 경고 메시지들의 리스트
+        """
+        return self.last_warnings
+        
+    def clear_last_error(self) -> None:
+        """마지막 에러와 경고 정보를 초기화합니다."""
+        self.last_error = None
+        self.last_warnings = []
 
     def connect(self, workspace_name: str) -> bool:
         """지정된 워크스페이스에 연결합니다.
@@ -86,7 +75,7 @@ class Perforce:
         Returns:
             bool: 연결 성공 시 True, 실패 시 False
         """
-        logger.info(f"'{workspace_name}' 워크스페이스에 연결 시도 중...")
+        self.clear_last_error()
         try:
             self.p4.client = workspace_name
             self.p4.connect()
@@ -101,16 +90,14 @@ class Perforce:
                 root_path = os.path.normpath(root_path)
                 
                 self.workspaceRoot = root_path
-                logger.info(f"워크스페이스 루트 절대 경로: {self.workspaceRoot}")
             except (IndexError, KeyError) as e:
-                logger.error(f"워크스페이스 루트 경로 가져오기 실패: {e}")
+                self.last_error = f"워크스페이스 루트 경로 가져오기 실패: {e}"
                 self.workspaceRoot = ""
                 
-            logger.info(f"'{workspace_name}' 워크스페이스에 성공적으로 연결됨 (User: {self.p4.user}, Port: {self.p4.port})")
             return True
         except P4Exception as e:
             self.connected = False
-            self._handle_p4_exception(e, f"'{workspace_name}' 워크스페이스 연결")
+            self._handle_p4_exception(e, f"'{workspace_name}' 워크스페이스 연결 실패")
             return False
 
     def get_pending_change_list(self) -> list:
@@ -121,7 +108,7 @@ class Perforce:
         """
         if not self._is_connected():
             return []
-        logger.debug("Pending 체인지 리스트 조회 중...")
+        self.clear_last_error()
         try:
             pending_changes = self.p4.run_changes("-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
             change_numbers = [int(cl['change']) for cl in pending_changes]
@@ -133,10 +120,9 @@ class Perforce:
                 if cl_info:
                     change_list_info.append(cl_info)
             
-            logger.info(f"Pending 체인지 리스트 {len(change_list_info)}개 조회 완료")
             return change_list_info
         except P4Exception as e:
-            self._handle_p4_exception(e, "Pending 체인지 리스트 조회")
+            self._handle_p4_exception(e, "Pending 체인지 리스트 조회 실패")
             return []
 
     def create_change_list(self, description: str) -> dict:
@@ -150,19 +136,18 @@ class Perforce:
         """
         if not self._is_connected():
             return {}
-        logger.info(f"새 체인지 리스트 생성 시도: '{description}'")
+        self.clear_last_error()
         try:
             change_spec = self.p4.fetch_change()
             change_spec["Description"] = description
             result = self.p4.save_change(change_spec)
             created_change_number = int(result[0].split()[1])
-            logger.info(f"체인지 리스트 {created_change_number} 생성 완료: '{description}'")
             return self.get_change_list_by_number(created_change_number)
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 생성 ('{description}')")
+            self._handle_p4_exception(e, f"체인지 리스트 생성 실패 ('{description}')")
             return {}
         except (IndexError, ValueError) as e:
-            logger.error(f"체인지 리스트 번호 파싱 오류: {e}")
+            self.last_error = f"체인지 리스트 번호 파싱 오류: {e}"
             return {}
 
     def get_change_list_by_number(self, change_list_number: int) -> dict:
@@ -176,17 +161,16 @@ class Perforce:
         """
         if not self._is_connected():
             return {}
-        logger.debug(f"체인지 리스트 {change_list_number} 정보 조회 중...")
+        self.clear_last_error()
         try:
             cl_info = self.p4.fetch_change(change_list_number)
             if cl_info:
-                logger.info(f"체인지 리스트 {change_list_number} 정보 조회 완료.")
                 return cl_info
             else:
-                logger.warning(f"체인지 리스트 {change_list_number}를 찾을 수 없습니다.")
+                self.last_error = f"체인지 리스트 {change_list_number}를 찾을 수 없습니다."
                 return {}
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 정보 조회")
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 정보 조회 실패")
             return {}
 
     def get_change_list_by_description(self, description: str) -> dict:
@@ -200,18 +184,16 @@ class Perforce:
         """
         if not self._is_connected():
             return {}
-        logger.debug(f"설명으로 체인지 리스트 조회 중: '{description}'")
+        self.clear_last_error()
         try:
             pending_changes = self.p4.run_changes("-l", "-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
             for cl in pending_changes:
                 cl_desc = cl.get('Description', b'').decode('utf-8', 'replace').strip()
                 if cl_desc == description.strip():
-                    logger.info(f"설명 '{description}'에 해당하는 체인지 리스트 {cl['change']} 조회 완료.")
                     return self.get_change_list_by_number(int(cl['change']))
-            logger.info(f"설명 '{description}'에 해당하는 Pending 체인지 리스트를 찾을 수 없습니다.")
             return {}
         except P4Exception as e:
-            self._handle_p4_exception(e, f"설명으로 체인지 리스트 조회 ('{description}')")
+            self._handle_p4_exception(e, f"설명으로 체인지 리스트 조회 실패 ('{description}')")
             return {}
 
     def get_change_list_by_description_pattern(self, description_pattern: str, exact_match: bool = False) -> list:
@@ -228,9 +210,7 @@ class Perforce:
         if not self._is_connected():
             return []
         
-        search_type = "정확히 일치" if exact_match else "패턴 포함"
-        logger.debug(f"설명 패턴으로 체인지 리스트 조회 중 ({search_type}): '{description_pattern}'")
-        
+        self.clear_last_error()
         try:
             pending_changes = self.p4.run_changes("-l", "-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
             matching_changes = []
@@ -252,17 +232,24 @@ class Perforce:
                     change_info = self.get_change_list_by_number(change_number)
                     if change_info:
                         matching_changes.append(change_info)
-                        logger.info(f"패턴 '{description_pattern}'에 매칭되는 체인지 리스트 {change_number} 발견: '{cl_desc}'")
-            
-            if matching_changes:
-                logger.info(f"패턴 '{description_pattern}'에 매칭되는 체인지 리스트 {len(matching_changes)}개 조회 완료.")
-            else:
-                logger.info(f"패턴 '{description_pattern}'에 매칭되는 Pending 체인지 리스트를 찾을 수 없습니다.")
             
             return matching_changes
         except P4Exception as e:
-            self._handle_p4_exception(e, f"설명 패턴으로 체인지 리스트 조회 ('{description_pattern}')")
+            self._handle_p4_exception(e, f"설명 패턴으로 체인지 리스트 조회 실패 ('{description_pattern}')")
             return []
+
+    def disconnect(self):
+        """Perforce 서버와의 연결을 해제합니다."""
+        if self.connected:
+            try:
+                self.p4.disconnect()
+                self.connected = False
+            except P4Exception as e:
+                self._handle_p4_exception(e, "Perforce 서버 연결 해제")
+
+    def __del__(self):
+        """객체가 소멸될 때 자동으로 연결을 해제합니다."""
+        self.disconnect()
 
     def check_files_checked_out(self, file_paths: list) -> dict:
         """파일들의 체크아웃 상태를 확인합니다.
@@ -285,17 +272,15 @@ class Perforce:
         if not self._is_connected():
             return {}
         if not file_paths:
-            logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
             return {}
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
         
-        logger.debug(f"파일 체크아웃 상태 확인 중 (파일 {len(file_paths)}개)")
-        
+        self.clear_last_error()
         result = {}
         try:
             # 각 파일의 상태 확인
@@ -321,25 +306,13 @@ class Perforce:
                         file_status['user'] = file_info.get('user', '')
                         file_status['workspace'] = file_info.get('client', '')
                         
-                        logger.debug(f"파일 '{file_path}' 체크아웃됨: CL {file_status['change_list']}, "
-                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}, "
-                                   f"워크스페이스: {file_status['workspace']}")
-                    else:
-                        # 파일이 체크아웃되지 않음
-                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음")
-                        
                 except P4Exception as e:
                     # 파일이 perforce에 없거나 접근할 수 없는 경우
-                    if any("not opened" in err.lower() or "no such file" in err.lower() 
-                           for err in self.p4.errors):
-                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (perforce에 없거나 접근 불가)")
-                    else:
+                    if not any("not opened" in err.lower() or "no such file" in err.lower() 
+                               for err in self.p4.errors):
                         self._handle_p4_exception(e, f"파일 '{file_path}' 체크아웃 상태 확인")
                 
                 result[file_path] = file_status
-            
-            checked_out_count = sum(1 for status in result.values() if status['is_checked_out'])
-            logger.info(f"파일 체크아웃 상태 확인 완료: 전체 {len(file_paths)}개 중 {checked_out_count}개 체크아웃됨")
             
             return result
             
@@ -372,8 +345,7 @@ class Perforce:
         if not self._is_connected():
             return False
         
-        logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에 있는지 확인 중...")
-        
+        self.clear_last_error()
         try:
             # 해당 체인지 리스트의 파일들 가져오기
             opened_files = self.p4.run_opened("-c", change_list_number)
@@ -386,11 +358,8 @@ class Perforce:
                 normalized_client_file = os.path.normpath(client_file)
                 
                 if normalized_client_file == normalized_file_path:
-                    logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에서 발견됨 "
-                               f"(액션: {file_info.get('action', '')})")
                     return True
             
-            logger.debug(f"파일 '{file_path}'가 체인지 리스트 {change_list_number}에 없음")
             return False
             
         except P4Exception as e:
@@ -411,7 +380,7 @@ class Perforce:
         """
         if not self._is_connected():
             return {}
-        logger.info(f"체인지 리스트 {change_list_number} 편집 시도...")
+        self.clear_last_error()
         try:
             if description is not None:
                 change_spec = self.p4.fetch_change(change_list_number)
@@ -419,13 +388,11 @@ class Perforce:
                 if current_description != description.strip():
                     change_spec['Description'] = description
                     self.p4.save_change(change_spec)
-                    logger.info(f"체인지 리스트 {change_list_number} 설명 변경 완료: '{description}'")
 
             if add_file_paths:
                 for file_path in add_file_paths:
                     try:
                         self.p4.run_reopen("-c", change_list_number, file_path)
-                        logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}로 이동 완료.")
                     except P4Exception as e_reopen:
                         self._handle_p4_exception(e_reopen, f"파일 '{file_path}'을 CL {change_list_number}로 이동")
 
@@ -433,7 +400,6 @@ class Perforce:
                 for file_path in remove_file_paths:
                     try:
                         self.p4.run_revert("-c", change_list_number, file_path)
-                        logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 제거(revert) 완료.")
                     except P4Exception as e_revert:
                         self._handle_p4_exception(e_revert, f"파일 '{file_path}'을 CL {change_list_number}에서 제거(revert)")
 
@@ -457,7 +423,7 @@ class Perforce:
         """
         if not self._is_connected():
             return False
-        logger.info(f"파일 '{file_path}'에 대한 '{op_name}' 작업 시도 (CL: {change_list_number})...")
+        self.clear_last_error()
         try:
             if command == "edit":
                 self.p4.run_edit("-c", change_list_number, file_path)
@@ -466,9 +432,8 @@ class Perforce:
             elif command == "delete":
                 self.p4.run_delete("-c", change_list_number, file_path)
             else:
-                logger.error(f"지원되지 않는 파일 작업: {command}")
+                self.last_error = f"지원되지 않는 파일 작업: {command}"
                 return False
-            logger.info(f"파일 '{file_path}'에 대한 '{op_name}' 작업 성공 (CL: {change_list_number}).")
             return True
         except P4Exception as e:
             self._handle_p4_exception(e, f"파일 '{file_path}' {op_name} (CL: {change_list_number})")
@@ -497,29 +462,20 @@ class Perforce:
             bool: 모든 파일 체크아웃 성공 시 True, 하나라도 실패 시 False
         """
         if not file_paths:
-            logger.debug("체크아웃할 파일 목록이 비어있습니다.")
             return True
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 checkout_file() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
             
-        logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 체크아웃 시도...")
-        
         all_success = True
         for file_path in file_paths:
             success = self.checkout_file(file_path, change_list_number)
             if not success:
                 all_success = False
-                logger.warning(f"파일 '{file_path}' 체크아웃 실패")
                 
-        if all_success:
-            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에 성공적으로 체크아웃했습니다.")
-        else:
-            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에 체크아웃하지 못했습니다.")
-            
         return all_success
 
     def add_file(self, file_path: str, change_list_number: int) -> bool:
@@ -545,29 +501,20 @@ class Perforce:
             bool: 모든 파일 추가 성공 시 True, 하나라도 실패 시 False
         """
         if not file_paths:
-            logger.debug("추가할 파일 목록이 비어있습니다.")
             return True
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 add_file() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
             
-        logger.info(f"체인지 리스트 {change_list_number}에 {len(file_paths)}개 파일 추가 시도...")
-        
         all_success = True
         for file_path in file_paths:
             success = self.add_file(file_path, change_list_number)
             if not success:
                 all_success = False
-                logger.warning(f"파일 '{file_path}' 추가 실패")
                 
-        if all_success:
-            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에 성공적으로 추가했습니다.")
-        else:
-            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에 추가하지 못했습니다.")
-            
         return all_success
 
     def delete_file(self, file_path: str, change_list_number: int) -> bool:
@@ -593,29 +540,20 @@ class Perforce:
             bool: 모든 파일 삭제 성공 시 True, 하나라도 실패 시 False
         """
         if not file_paths:
-            logger.debug("삭제할 파일 목록이 비어있습니다.")
             return True
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 delete_file() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
             
-        logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 삭제 시도...")
-        
         all_success = True
         for file_path in file_paths:
             success = self.delete_file(file_path, change_list_number)
             if not success:
                 all_success = False
-                logger.warning(f"파일 '{file_path}' 삭제 실패")
                 
-        if all_success:
-            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에서 성공적으로 삭제했습니다.")
-        else:
-            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에서 삭제하지 못했습니다.")
-            
         return all_success
 
     def submit_change_list(self, change_list_number: int, auto_revert_unchanged: bool = True) -> bool:
@@ -631,17 +569,16 @@ class Perforce:
         """
         if not self._is_connected():
             return False
-        logger.info(f"체인지 리스트 {change_list_number} 제출 시도...")
+        self.clear_last_error()
         
         submit_success = False
         try:
             self.p4.run_submit("-c", change_list_number)
-            logger.info(f"체인지 리스트 {change_list_number} 제출 성공.")
             submit_success = True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 제출")
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 제출 실패")
             if any("nothing to submit" in err.lower() for err in self.p4.errors):
-                logger.warning(f"체인지 리스트 {change_list_number}에 제출할 파일이 없습니다.")
+                self.last_error = f"체인지 리스트 {change_list_number}에 제출할 파일이 없습니다."
             submit_success = False
         
         # 제출 성공 여부와 관계없이 후속 작업 실행
@@ -654,7 +591,8 @@ class Perforce:
             # 빈 체인지 리스트 삭제
             self.delete_empty_change_list(change_list_number)
         except Exception as e:
-            logger.error(f"체인지 리스트 {change_list_number} 제출 후 후속 작업 중 오류 발생: {e}")
+            if not self.last_error:  # 기존 에러가 없는 경우만 설정
+                self.last_error = f"체인지 리스트 {change_list_number} 제출 후 후속 작업 중 오류 발생: {e}"
         
         return submit_success
 
@@ -664,13 +602,11 @@ class Perforce:
         Args:
             change_list_number (int): 체인지 리스트 번호
         """
-        logger.debug(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일들 자동 리버트 시도...")
         try:
             # 체인지 리스트에서 체크아웃된 파일들 가져오기
             opened_files = self.p4.run_opened("-c", change_list_number)
             
             if not opened_files:
-                logger.debug(f"체인지 리스트 {change_list_number}에 체크아웃된 파일이 없습니다.")
                 return
             
             unchanged_files = []
@@ -687,45 +623,29 @@ class Perforce:
                         # diff 결과가 비어있으면 변경사항이 없음
                         if not diff_result:
                             unchanged_files.append(file_path)
-                            logger.debug(f"파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
-                        else:
-                            logger.debug(f"파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
                             
-                    except P4Exception as e:
+                    except P4Exception:
                         # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
                         unchanged_files.append(file_path)
-                        logger.debug(f"파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
-                else:
-                    logger.debug(f"파일 '{file_path}'는 {action} 액션이므로 리버트하지 않음")
             
             # 변경사항이 없는 파일들을 리버트
             if unchanged_files:
-                logger.info(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 시도...")
                 for file_path in unchanged_files:
                     try:
                         self.p4.run_revert("-c", change_list_number, file_path)
-                        logger.info(f"파일 '{file_path}' 자동 리버트 완료")
-                    except P4Exception as e:
-                        self._handle_p4_exception(e, f"파일 '{file_path}' 자동 리버트")
-                logger.info(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 완료")
-            else:
-                logger.debug(f"체인지 리스트 {change_list_number}에서 변경사항이 없는 파일이 없습니다.")
-            
-            # default change list에서도 변경사항이 없는 파일들 처리
-            self._auto_revert_unchanged_files_in_default_changelist()
+                    except P4Exception:
+                        pass  # 개별 파일 리버트 실패는 무시
                 
-        except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 자동 리버트 처리")
+        except P4Exception:
+            pass  # 자동 리버트 실패는 무시
 
     def _auto_revert_unchanged_files_in_default_changelist(self) -> None:
         """default change list에서 변경사항이 없는 체크아웃된 파일들을 자동으로 리버트합니다."""
-        logger.debug("default change list에서 변경사항이 없는 파일들 자동 리버트 시도...")
         try:
             # get_default_change_list를 사용해서 default change list의 파일들 가져오기
             default_cl_info = self.get_default_change_list()
             
             if not default_cl_info or not default_cl_info.get('Files'):
-                logger.debug("default change list에 체크아웃된 파일이 없습니다.")
                 return
             
             files_list = default_cl_info.get('Files', [])
@@ -739,30 +659,21 @@ class Perforce:
                     # diff 결과가 비어있으면 변경사항이 없음
                     if not diff_result:
                         unchanged_files.append(file_path)
-                        logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 없어 리버트 대상으로 추가")
-                    else:
-                        logger.debug(f"default change list의 파일 '{file_path}'에 변경사항이 있어 리버트하지 않음")
                         
-                except P4Exception as e:
+                except P4Exception:
                     # diff 명령 실패 시에도 리버트 대상으로 추가 (안전하게 처리)
                     unchanged_files.append(file_path)
-                    logger.debug(f"default change list의 파일 '{file_path}' diff 확인 실패, 리버트 대상으로 추가: {e}")
             
             # 변경사항이 없는 파일들을 리버트
             if unchanged_files:
-                logger.info(f"default change list에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 시도...")
                 for file_path in unchanged_files:
                     try:
                         self.p4.run_revert(file_path)
-                        logger.info(f"default change list의 파일 '{file_path}' 자동 리버트 완료")
-                    except P4Exception as e:
-                        self._handle_p4_exception(e, f"default change list의 파일 '{file_path}' 자동 리버트")
-                logger.info(f"default change list에서 변경사항이 없는 파일 {len(unchanged_files)}개 자동 리버트 완료")
-            else:
-                logger.debug("default change list에서 변경사항이 없는 파일이 없습니다.")
+                    except P4Exception:
+                        pass  # 개별 파일 리버트 실패는 무시
                 
-        except P4Exception as e:
-            self._handle_p4_exception(e, "default change list 자동 리버트 처리")
+        except P4Exception:
+            pass  # 자동 리버트 실패는 무시
 
     def revert_change_list(self, change_list_number: int) -> bool:
         """체인지 리스트를 되돌리고 삭제합니다.
@@ -777,24 +688,21 @@ class Perforce:
         """
         if not self._is_connected():
             return False
-        logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 및 삭제 시도...")
+        self.clear_last_error()
         try:
             # 체인지 리스트의 모든 파일 되돌리기
             self.p4.run_revert("-c", change_list_number, "//...")
-            logger.info(f"체인지 리스트 {change_list_number} 전체 되돌리기 성공.")
             
             # 빈 체인지 리스트 삭제
             try:
                 self.p4.run_change("-d", change_list_number)
-                logger.info(f"체인지 리스트 {change_list_number} 삭제 완료.")
             except P4Exception as e_delete:
                 self._handle_p4_exception(e_delete, f"체인지 리스트 {change_list_number} 삭제")
-                logger.warning(f"파일 되돌리기는 성공했으나 체인지 리스트 {change_list_number} 삭제에 실패했습니다.")
                 return False
                 
             return True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 전체 되돌리기")
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 전체 되돌리기 실패")
             return False
     
     def delete_empty_change_list(self, change_list_number: int) -> bool:
@@ -809,22 +717,21 @@ class Perforce:
         if not self._is_connected():
             return False
         
-        logger.info(f"체인지 리스트 {change_list_number} 삭제 시도 중...")
+        self.clear_last_error()
         try:
             # 체인지 리스트 정보 가져오기
             change_spec = self.p4.fetch_change(change_list_number)
             
             # 파일이 있는지 확인
             if change_spec and change_spec.get('Files') and len(change_spec['Files']) > 0:
-                logger.warning(f"체인지 리스트 {change_list_number}에 파일이 {len(change_spec['Files'])}개 있어 삭제할 수 없습니다.")
+                self.last_error = f"체인지 리스트 {change_list_number}에 파일이 {len(change_spec['Files'])}개 있어 삭제할 수 없습니다."
                 return False
             
             # 빈 체인지 리스트 삭제
             self.p4.run_change("-d", change_list_number)
-            logger.info(f"빈 체인지 리스트 {change_list_number} 삭제 완료.")
             return True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 삭제")
+            self._handle_p4_exception(e, f"체인지 리스트 {change_list_number} 삭제 실패")
             return False
 
     def revert_file(self, file_path: str, change_list_number: int) -> bool:
@@ -840,10 +747,9 @@ class Perforce:
         if not self._is_connected():
             return False
             
-        logger.info(f"파일 '{file_path}'을 체인지 리스트 {change_list_number}에서 되돌리기 시도...")
+        self.clear_last_error()
         try:
             self.p4.run_revert("-c", change_list_number, file_path)
-            logger.info(f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기 성공.")
             return True
         except P4Exception as e:
             self._handle_p4_exception(e, f"파일 '{file_path}'를 체인지 리스트 {change_list_number}에서 되돌리기")
@@ -862,29 +768,20 @@ class Perforce:
         if not self._is_connected():
             return False
         if not file_paths:
-            logger.warning("되돌릴 파일 목록이 비어있습니다.")
             return True
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 revert_file() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
             
-        logger.info(f"체인지 리스트 {change_list_number}에서 {len(file_paths)}개 파일 되돌리기 시도...")
-        
         all_success = True
         for file_path in file_paths:
             success = self.revert_file(file_path, change_list_number)
             if not success:
                 all_success = False
-                logger.warning(f"파일 '{file_path}' 되돌리기 실패")
                 
-        if all_success:
-            logger.info(f"모든 파일({len(file_paths)}개)을 체인지 리스트 {change_list_number}에서 성공적으로 되돌렸습니다.")
-        else:
-            logger.warning(f"일부 파일을 체인지 리스트 {change_list_number}에서 되돌리지 못했습니다.")
-            
         return all_success
 
     def check_update_required(self, file_paths: list) -> bool:
@@ -900,13 +797,12 @@ class Perforce:
         if not self._is_connected():
             return False
         if not file_paths:
-            logger.debug("업데이트 필요 여부 확인할 파일/폴더 목록이 비어있습니다.")
             return False
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 경로도 리스트로 감싸서 전달하세요: ['{file_paths}']"
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
         
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
@@ -915,11 +811,10 @@ class Perforce:
             if os.path.isdir(path):
                 # 폴더 경로에 '...'(재귀) 패턴을 추가
                 processed_paths.append(os.path.join(path, '...'))
-                logger.debug(f"폴더 경로를 재귀 패턴으로 변환: {path} -> {os.path.join(path, '...')}")
             else:
                 processed_paths.append(path)
         
-        logger.debug(f"파일/폴더 업데이트 필요 여부 확인 중 (항목 {len(processed_paths)}개): {processed_paths}")
+        self.clear_last_error()
         try:
             sync_preview_results = self.p4.run_sync("-n", processed_paths)
             needs_update = False
@@ -929,22 +824,15 @@ class Perforce:
                        'no such file(s)' not in result.get('depotFile', ''):
                         if result.get('how') and 'syncing' in result.get('how'):
                             needs_update = True
-                            logger.info(f"파일 '{result.get('clientFile', result.get('depotFile'))}' 업데이트 필요: {result.get('how')}")
                             break
                         elif result.get('action') and result.get('action') not in ['checked', 'exists']:
                             needs_update = True
-                            logger.info(f"파일 '{result.get('clientFile', result.get('depotFile'))}' 업데이트 필요 (action: {result.get('action')})")
                             break
                 elif isinstance(result, str):
                     if "up-to-date" not in result and "no such file(s)" not in result:
                         needs_update = True
-                        logger.info(f"파일 업데이트 필요 (문자열 결과): {result}")
                         break
             
-            if needs_update:
-                logger.info(f"지정된 파일/폴더 중 업데이트가 필요한 파일이 있습니다.")
-            else:
-                logger.info(f"지정된 모든 파일/폴더가 최신 상태입니다.")
             return needs_update
         except P4Exception as e:
             # "up-to-date" 메시지는 정상적인 응답이므로 에러로 처리하지 않음
@@ -956,7 +844,6 @@ class Perforce:
             if ("up-to-date" in exception_str or 
                 any("up-to-date" in msg for msg in error_messages) or
                 any("up-to-date" in msg for msg in warning_messages)):
-                logger.debug(f"파일/폴더가 이미 최신 상태입니다: {processed_paths}")
                 return False
             else:
                 self._handle_p4_exception(e, f"파일/폴더 업데이트 필요 여부 확인 ({processed_paths})")
@@ -974,23 +861,20 @@ class Perforce:
         if not self._is_connected():
             return False
             
-        logger.debug(f"파일 '{file_path}'가 Perforce에 속하는지 확인 중...")
+        self.clear_last_error()
         try:
             # p4 files 명령으로 파일 정보 조회
             file_info = self.p4.run_files(file_path)
             
             # 파일 정보가 있고, 'no such file(s)' 오류가 없는 경우
             if file_info and not any("no such file(s)" in str(err).lower() for err in self.p4.errors):
-                logger.info(f"파일 '{file_path}'가 Perforce에 존재합니다.")
                 return True
             else:
-                logger.info(f"파일 '{file_path}'가 Perforce에 존재하지 않습니다.")
                 return False
                 
         except P4Exception as e:
-            # 파일이 존재하지 않는 경우는 일반적인 상황이므로 경고 레벨로 로깅
+            # 파일이 존재하지 않는 경우는 일반적인 상황이므로 False 반환
             if any("no such file(s)" in err.lower() for err in self.p4.errors):
-                logger.info(f"파일 '{file_path}'가 Perforce에 존재하지 않습니다.")
                 return False
             else:
                 self._handle_p4_exception(e, f"파일 '{file_path}' Perforce 존재 여부 확인")
@@ -1009,13 +893,12 @@ class Perforce:
         if not self._is_connected():
             return False
         if not file_paths:
-            logger.debug("싱크할 파일/폴더 목록이 비어있습니다.")
             return True
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 경로도 리스트로 감싸서 전달하세요: ['{file_paths}']"
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
         
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
@@ -1024,34 +907,41 @@ class Perforce:
             if os.path.isdir(path):
                 # 폴더 경로에 '...'(재귀) 패턴을 추가
                 processed_paths.append(os.path.join(path, '...'))
-                logger.debug(f"폴더 경로를 재귀 패턴으로 변환: {path} -> {os.path.join(path, '...')}")
             else:
                 processed_paths.append(path)
         
-        logger.info(f"파일/폴더 싱크 시도 (항목 {len(processed_paths)}개): {processed_paths}")
+        self.clear_last_error()
         try:
             self.p4.run_sync(processed_paths)
-            logger.info(f"파일/폴더 싱크 완료: {processed_paths}")
             return True
         except P4Exception as e:
-            self._handle_p4_exception(e, f"파일/폴더 싱크 ({processed_paths})")
+            self._handle_p4_exception(e, f"파일/폴더 싱크 실패 ({processed_paths})")
             return False
 
-    def disconnect(self):
-        """Perforce 서버와의 연결을 해제합니다."""
-        if self.connected:
-            try:
-                self.p4.disconnect()
-                self.connected = False
-                logger.info("Perforce 서버 연결 해제 완료.")
-            except P4Exception as e:
-                self._handle_p4_exception(e, "Perforce 서버 연결 해제")
-        else:
-            logger.debug("Perforce 서버에 이미 연결되지 않은 상태입니다.")
+    def get_default_change_list(self) -> dict:
+        """default change list의 정보를 가져옵니다.
 
-    def __del__(self):
-        """객체가 소멸될 때 자동으로 연결을 해제합니다."""
-        self.disconnect()
+        Returns:
+            dict: get_change_list_by_number와 동일한 형태의 딕셔너리
+        """
+        if not self._is_connected():
+            return {}
+        self.clear_last_error()
+        try:
+            opened_files = self.p4.run_opened("-c", "default")
+            files_list = [f.get('clientFile', '') for f in opened_files]
+            result = {
+                'Change': 'default',
+                'Description': 'Default change',
+                'User': getattr(self.p4, 'user', ''),
+                'Client': getattr(self.p4, 'client', ''),
+                'Status': 'pending',
+                'Files': files_list
+            }
+            return result
+        except P4Exception as e:
+            self._handle_p4_exception(e, "default change list 정보 조회 실패")
+            return {}
 
     def check_files_checked_out_all_users(self, file_paths: list) -> dict:
         """파일들의 체크아웃 상태를 모든 사용자/워크스페이스에서 확인합니다.
@@ -1074,17 +964,15 @@ class Perforce:
         if not self._is_connected():
             return {}
         if not file_paths:
-            logger.debug("체크아웃 상태 확인할 파일 목록이 비어있습니다.")
             return {}
         
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 get_file_checkout_info_all_users() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
         
-        logger.debug(f"파일 체크아웃 상태 확인 중 - 모든 사용자 (파일 {len(file_paths)}개)")
-        
+        self.clear_last_error()
         result = {}
         try:
             # 각 파일의 상태 확인
@@ -1110,25 +998,13 @@ class Perforce:
                         file_status['user'] = file_info.get('user', '')
                         file_status['client'] = file_info.get('client', '')
                         
-                        logger.debug(f"파일 '{file_path}' 체크아웃됨: CL {file_status['change_list']}, "
-                                   f"액션: {file_status['action']}, 사용자: {file_status['user']}, "
-                                   f"클라이언트: {file_status['client']}")
-                    else:
-                        # 파일이 체크아웃되지 않음
-                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (모든 사용자)")
-                        
                 except P4Exception as e:
                     # 파일이 perforce에 없거나 접근할 수 없는 경우
-                    if any("not opened" in err.lower() or "no such file" in err.lower() 
-                           for err in self.p4.errors):
-                        logger.debug(f"파일 '{file_path}' 체크아웃되지 않음 (perforce에 없거나 접근 불가)")
-                    else:
+                    if not any("not opened" in err.lower() or "no such file" in err.lower() 
+                               for err in self.p4.errors):
                         self._handle_p4_exception(e, f"파일 '{file_path}' 체크아웃 상태 확인 (모든 사용자)")
                 
                 result[file_path] = file_status
-            
-            checked_out_count = sum(1 for status in result.values() if status['is_checked_out'])
-            logger.info(f"파일 체크아웃 상태 확인 완료 (모든 사용자): 전체 {len(file_paths)}개 중 {checked_out_count}개 체크아웃됨")
             
             return result
             
@@ -1223,7 +1099,7 @@ class Perforce:
         # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
             error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out_by_others() 메서드를 사용하세요."
-            logger.error(error_msg)
+            self.last_error = error_msg
             raise TypeError(error_msg)
         
         result = self.check_files_checked_out_all_users(file_paths)
@@ -1247,31 +1123,4 @@ class Perforce:
                         'action': status.get('action', '')
                     })
         
-        logger.info(f"다른 사용자에 의해 체크아웃된 파일: {len(files_by_others)}개")
-        return files_by_others
-
-    def get_default_change_list(self) -> dict:
-        """default change list의 정보를 가져옵니다.
-
-        Returns:
-            dict: get_change_list_by_number와 동일한 형태의 딕셔너리
-        """
-        if not self._is_connected():
-            return {}
-        logger.debug("default change list 정보 조회 중...")
-        try:
-            opened_files = self.p4.run_opened("-c", "default")
-            files_list = [f.get('clientFile', '') for f in opened_files]
-            result = {
-                'Change': 'default',
-                'Description': 'Default change',
-                'User': getattr(self.p4, 'user', ''),
-                'Client': getattr(self.p4, 'client', ''),
-                'Status': 'pending',
-                'Files': files_list
-            }
-            logger.info(f"default change list 정보 조회 완료: {len(files_list)}개 파일")
-            return result
-        except P4Exception as e:
-            self._handle_p4_exception(e, "default change list 정보 조회")
-            return {}
+        return files_by_others 
