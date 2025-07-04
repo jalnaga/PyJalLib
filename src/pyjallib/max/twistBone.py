@@ -126,11 +126,6 @@ class TwistBone:
             BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
         """
         limb = inObj
-        distance = rt.distance(limb, inChild)
-        facingDirVec = inChild.transform.position - inObj.transform.position
-        inObjXAxisVec = inObj.objectTransform.row1
-        distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
-        offssetAmount = (distance / twistNum) * distanceDir
         
         boneChainArray = []
         
@@ -161,14 +156,17 @@ class TwistBone:
         boneChainArray.append(twistBone)
         
         if twistNum > 1:
+            weightVal = 100.0 / (twistNum-1)
+            posWeightVal = 100.0 / twistNum
+            
             lastBone = self.bone.create_nub_bone(boneName, 2)
             lastBone.name = self.name.replace_name_part("Index", boneName, str(twistNum))
             lastBone.name = self.name.remove_name_part("Nub", lastBone.name)
             lastBone.transform = limb.transform
             lastBone.parent = limb
-            self.anim.move_local(lastBone, offssetAmount*(twistNum-1), 0, 0)
-            
-            weightVal = 100.0 / (twistNum-1)
+            lastBonePosConst = self.const.assign_pos_const_multi(lastBone, [limb, inChild])
+            lastBonePosConst.setWeight(1, 100.0 - (posWeightVal*(twistNum-1)))
+            lastBonePosConst.setWeight(2, posWeightVal*(twistNum-1))
             
             if twistNum > 2:
                 for i in range(1, twistNum-1):
@@ -177,7 +175,9 @@ class TwistBone:
                     twistExtraBone.name = self.name.remove_name_part("Nub", twistExtraBone.name)
                     twistExtraBone.transform = limb.transform
                     twistExtraBone.parent = limb
-                    self.anim.move_local(twistExtraBone, offssetAmount*i, 0, 0)
+                    twistExtraBonePosConst = self.const.assign_pos_const_multi(twistExtraBone, [limb, inChild])
+                    twistExtraBonePosConst.setWeight(1, 100.0 - (posWeightVal*i))
+                    twistExtraBonePosConst.setWeight(2, posWeightVal*i)
                     
                     twistExtraBoneRotListController = self.const.assign_rot_list(twistExtraBone)
                     twistExtraBoneController = rt.Rotation_Script()
@@ -225,11 +225,8 @@ class TwistBone:
             BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
         """
         limb = inChild
-        distance = rt.distance(inObj, inChild)
-        facingDirVec = inChild.transform.position - inObj.transform.position
-        inObjXAxisVec = inObj.objectTransform.row1
-        distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
-        offssetAmount = (distance / twistNum) * distanceDir
+        
+        posWeightVal = 100.0 / twistNum
         
         boneChainArray = []
         
@@ -242,7 +239,10 @@ class TwistBone:
         twistBone.name = self.name.remove_name_part("Nub", twistBone.name)
         twistBone.transform = inObj.transform
         twistBone.parent = inObj
-        self.anim.move_local(twistBone, offssetAmount*(twistNum-1), 0, 0)
+        twistBonePosConst = self.const.assign_pos_const_multi(twistBone, [limb, inObj])
+        twistBonePosConst.setWeight(1, posWeightVal*(twistNum-1))
+        twistBonePosConst.setWeight(2, 100.0 - (posWeightVal*(twistNum-1)))
+        
         twistBoneLocalRefTM = limb.transform * rt.inverse(limb.parent.transform)
         
         twistBoneRotListController = self.const.assign_rot_list(twistBone)
@@ -262,14 +262,13 @@ class TwistBone:
         boneChainArray.append(twistBone)
         
         if twistNum > 1:
+            weightVal = 100.0 / (twistNum-1)
+            
             lastBone = self.bone.create_nub_bone(boneName, 2)
             lastBone.name = self.name.replace_name_part("Index", boneName, str(twistNum))
             lastBone.name = self.name.remove_name_part("Nub", lastBone.name)
             lastBone.transform = inObj.transform
             lastBone.parent = inObj
-            self.anim.move_local(lastBone, 0, 0, 0)
-            
-            weightVal = 100.0 / (twistNum-1)
             
             if twistNum > 2:
                 for i in range(1, twistNum-1):
@@ -278,7 +277,9 @@ class TwistBone:
                     twistExtraBone.name = self.name.remove_name_part("Nub", twistExtraBone.name)
                     twistExtraBone.transform = inObj.transform
                     twistExtraBone.parent = inObj
-                    self.anim.move_local(twistExtraBone, offssetAmount*(twistNum-1-i), 0, 0)
+                    twistExtraBonePosConst = self.const.assign_pos_const_multi(twistExtraBone, [limb, inObj])
+                    twistExtraBonePosConst.setWeight(1, 100.0 - (posWeightVal*(i+1)))
+                    twistExtraBonePosConst.setWeight(2, posWeightVal*(i+1))
                     
                     twistExtraBoneRotListController = self.const.assign_rot_list(twistExtraBone)
                     twistExtraBoneController = rt.Rotation_Script()
