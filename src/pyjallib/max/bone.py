@@ -976,8 +976,16 @@ class Bone:
         spineDistance = rt.distance(spine3, neck)/3.0
         rt.setProperty(spine4, "transform", spine3.transform)
         rt.setProperty(spine5, "transform", spine3.transform)
+        
         self.anim.move_local(spine4, spineDistance, 0, 0)
+        spine4PosConst = self.const.assign_pos_const_multi(spine4, [spine3, neck])
+        spine4PosConst.setWeight(1, 100.0*(2.0/3.0))
+        spine4PosConst.setWeight(2, 100.0 - (100.0*(2.0/3.0)))
+        
         self.anim.move_local(spine5, spineDistance * 2, 0, 0)
+        spine5PosConst = self.const.assign_pos_const_multi(spine5, [spine3, neck])
+        spine5PosConst.setWeight(1, 100.0*(1.0/3.0))
+        spine5PosConst.setWeight(2, 100.0 - (100.0*(1.0/3.0)))
         
         returnBones.append(spine4)
         returnBones.append(spine5)
@@ -995,6 +1003,7 @@ class Bone:
         neckDistance = rt.distance(neck, head)/2.0
         rt.setProperty(nekc2, "transform", neck.transform)
         self.anim.move_local(nekc2, neckDistance, 0, 0)
+        neck2PosConst = self.const.assign_pos_const_multi(nekc2, [neck, head])
         
         returnBones.append(nekc2)
         
