@@ -16,3 +16,4 @@ from pyjallib.nameToPath import NameToPath
 from pyjallib.perforce import Perforce
 from pyjallib.reloadModules import reload_modules
 from pyjallib.logger import Logger
+from pyjallib.progressEvent import ProgressEvent
