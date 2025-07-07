@@ -153,9 +153,12 @@ class VolumeBone:  # Updated class name to match the new file name
         volBoneName = inObj.name
         filteringChar = self.name._get_filtering_char(volBoneName)
         volBoneName = self.name.add_suffix_to_real_name(volBoneName, filteringChar + "Vol" + filteringChar + inRotAxis + filteringChar+ inTransAxis)
+        volBoneIndex = self.name.get_name("Index", volBoneName)
         
         volBone = self.bone.create_nub_bone(volBoneName, 2)
         volBone.name = self.name.remove_name_part("Nub", volBone.name)
+        volBone.name = self.name.replace_name_part("Index", volBone.name, volBoneIndex)
+        
         if volBone.name[0].islower():
             volBone.name = volBone.name.lower()
             volBoneName = volBoneName.lower()
@@ -245,7 +248,8 @@ class VolumeBone:  # Updated class name to match the new file name
             if volBoneName[0].islower():
                 volBoneName = volBoneName.lower()
                 
-            volBone = rt.getNodeByName(self.name.remove_name_part("Nub", volBoneName))
+            final_volBoneName = self.name.remove_name_part("Nub", volBoneName)
+            volBone = rt.getNodeByName(final_volBoneName)
             if rt.isValidNode(volBone):
                 bones.append(volBone)
         
