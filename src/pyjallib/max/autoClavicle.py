@@ -48,6 +48,10 @@ class AutoClavicle:
         self.bip = bipService if bipService else Bip(nameService=self.name, animService=self.anim)
         
         self.boneSize = 2.0
+        self.rotTargetUpperArmPosConstExpression = ""
+        self.rotTargetUpperArmPosConstExpression += "local clavicleDistance = distance clavicle upperArm\n"
+        self.rotTargetUpperArmPosConstExpression += "local xPos = clavicleDistance * distanceDir * liftScale\n"
+        self.rotTargetUpperArmPosConstExpression += "[xPos, 0.0, 0.0]\n"
         
         # 초기화된 결과를 저장할 변수들
         self.genBones = []
@@ -106,31 +110,35 @@ class AutoClavicle:
         autoClavicleBone = self.bone.create_nub_bone(autoClavicleName, 2)
         autoClavicleBone.name = self.name.remove_name_part("Nub", autoClavicleBone.name)
         autoClavicleBone.transform = inClavicle.transform
-        self.anim.move_local(autoClavicleBone, clavicleLength/2.0, 0.0, 0.0)
         autoClavicleBone.parent = inClavicle
+        autoClvaiclePosConst = self.const.assign_pos_const_multi(autoClavicleBone, [inClavicle, inUpperArm])
         genBones.append(autoClavicleBone)
         
         # 타겟 헬퍼 포인트 생성 (쇄골과 상완용)
         rotTargetClavicle = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
         rotTargetClavicle.name = self.name.replace_name_part("Index", rotTargetClavicle.name, "0")
         rotTargetClavicle.transform = inClavicle.transform
-        self.anim.move_local(rotTargetClavicle, clavicleLength, 0.0, 0.0)
-        
         rotTargetClavicle.parent = inClavicle
+        rotTargetClaviclePosConst = self.const.assign_pos_const(rotTargetClavicle, inUpperArm)
         genHelpers.append(rotTargetClavicle)
         
         rotTargetUpperArm = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Target")))
         rotTargetUpperArm.name = self.name.add_suffix_to_real_name(rotTargetUpperArm.name, self.name._get_filtering_char(inClavicle.name) + "arm")
         rotTargetUpperArm.transform = inUpperArm.transform
-        self.anim.move_local(rotTargetUpperArm, (clavicleLength/2.0)*liftScale, 0.0, 0.0)
-        
         rotTargetUpperArm.parent = inUpperArm
+        rotTargetUpperArmPosConst = self.const.assign_pos_script_controller(rotTargetUpperArm)
+        rotTargetUpperArmPosConst.addConstant("distanceDir", distanceDir)
+        rotTargetUpperArmPosConst.addConstant("liftScale", liftScale)
+        rotTargetUpperArmPosConst.addNode("clavicle", inClavicle)
+        rotTargetUpperArmPosConst.addNode("upperArm", inUpperArm)
+        rotTargetUpperArmPosConst.setExpression(self.rotTargetUpperArmPosConstExpression)
         genHelpers.append(rotTargetUpperArm)
         
         # 회전 헬퍼 포인트 생성
         autoClavicleRotHelper = self.helper.create_point(self.name.replace_name_part("Type", autoClavicleName, self.name.get_name_part_value_by_description("Type", "Rotation")))
         autoClavicleRotHelper.transform = autoClavicleBone.transform
         autoClavicleRotHelper.parent = inClavicle
+        autoClavicleRotHelperPosConst = self.const.assign_pos_const_multi(autoClavicleRotHelper, [inClavicle, inUpperArm])
         
         lookAtConst = self.const.assign_lookat_multi(autoClavicleRotHelper, [rotTargetClavicle, rotTargetUpperArm])
         
