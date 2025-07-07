@@ -50,7 +50,7 @@ class AutoClavicle:
         self.boneSize = 2.0
         self.rotTargetUpperArmPosConstExpression = ""
         self.rotTargetUpperArmPosConstExpression += "local clavicleDistance = distance clavicle upperArm\n"
-        self.rotTargetUpperArmPosConstExpression += "local xPos = clavicleDistance * distanceDir * liftScale\n"
+        self.rotTargetUpperArmPosConstExpression += "local xPos = (clavicleDistance/2.0) * distanceDir * liftScale\n"
         self.rotTargetUpperArmPosConstExpression += "[xPos, 0.0, 0.0]\n"
         
         # 초기화된 결과를 저장할 변수들
@@ -145,6 +145,8 @@ class AutoClavicle:
         lookAtConst.upnode_world = False
         lookAtConst.pickUpNode = inClavicle
         lookAtConst.lookat_vector_length = 0.0
+        if distanceDir < 0:
+            lookAtConst.target_axisFlip = True
         
         genHelpers.append(autoClavicleRotHelper)
         
