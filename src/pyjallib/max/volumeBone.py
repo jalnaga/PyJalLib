@@ -123,6 +123,7 @@ class VolumeBone:  # Updated class name to match the new file name
         rotHelper.name = self.name.replace_name_part("Type", rotHelper.name, self.name.get_name_part_value_by_description("Type", "Dummy"))
         rt.setProperty(rotHelper, "transform", inObj.transform)
         rotHelper.parent = inParent
+        self.const.assign_pos_const(rotHelper, inObj)
         
         oriConst = self.const.assign_rot_const_multi(rootBone, [inObj, rotHelper])
         oriConst.setWeight(1, inRotScale * 100.0)
