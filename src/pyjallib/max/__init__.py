@@ -35,6 +35,7 @@ from pyjallib.max.autoClavicle import AutoClavicle
 from pyjallib.max.shoulder import Shoulder
 from pyjallib.max.volumeBone import VolumeBone
 from pyjallib.max.elbow import Elbow
+from pyjallib.max.wrist import Wrist
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
 
@@ -70,6 +71,7 @@ __all__ = [
     'Shoulder',
     'VolumeBone',
     'Elbow',
+    'Wrist',
     'KneeBone',
     'Hip',
     'RootMotion',
