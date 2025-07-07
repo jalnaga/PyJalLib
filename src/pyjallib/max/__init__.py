@@ -32,6 +32,7 @@ from pyjallib.max.boneChain import BoneChain
 from pyjallib.max.twistBone import TwistBone
 from pyjallib.max.groinBone import GroinBone
 from pyjallib.max.autoClavicle import AutoClavicle
+from pyjallib.max.shoulder import Shoulder
 from pyjallib.max.volumeBone import VolumeBone
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
@@ -65,6 +66,7 @@ __all__ = [
     'TwistBone',
     'GroinBone',
     'AutoClavicle',
+    'Shoulder',
     'VolumeBone',
     'KneeBone',
     'Hip',
