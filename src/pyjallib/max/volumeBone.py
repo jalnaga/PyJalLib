@@ -225,6 +225,10 @@ class VolumeBone:  # Updated class name to match the new file name
         
         rootBone = self.create_root_bone(inObj, inParent, inRotScale=inRotScale)
         
+        # rootBone이 None이면 실패
+        if not rootBone:
+            return None
+        
         # 볼륨 본들 생성
         bones = []
         for i in range(len(inRotAxises)):
