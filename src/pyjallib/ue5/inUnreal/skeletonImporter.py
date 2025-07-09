@@ -26,7 +26,7 @@ class SkeletonImporter(BaseImporter):
     def asset_type(self) -> str:
         return "Skeleton"
     
-    def _create_import_task(self, inFbxFile: str, inDestinationPath: str):
+    def create_import_task(self, inFbxFile: str, inDestinationPath: str):
         """스켈레톤 임포트를 위한 태스크 생성 - 새 스켈레톤 생성"""
         ue5_logger.debug(f"스켈레톤 임포트 태스크 생성 시작: {inFbxFile}")
         

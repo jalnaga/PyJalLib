@@ -25,7 +25,7 @@ class SkeletalMeshImporter(BaseImporter):
     def asset_type(self) -> str:
         return "SkeletalMesh"
     
-    def _create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
+    def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
         """스켈레탈 메시 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         ue5_logger.debug(f"스켈레탈 메시 임포트 태스크 생성 시작: {inFbxFile}")
         

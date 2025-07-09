@@ -13,7 +13,8 @@ from .templates import (
     get_available_templates,
     ANIM_IMPORT_TEMPLATE,
     SKELETON_IMPORT_TEMPLATE,
-    SKELETAL_MESH_IMPORT_TEMPLATE
+    SKELETAL_MESH_IMPORT_TEMPLATE,
+    BATCH_ANIM_IMPORT_TEMPLATE
 )
 
 
@@ -197,7 +198,39 @@ class TemplateProcessor:
             inOutputPath = self.get_default_output_path(SKELETAL_MESH_IMPORT_TEMPLATE, "skeletalMeshImportScript")
         
         return self.process_template(template_path, inOutputPath, inTemplateData)
-
+    
+    def process_batch_anim_import_template(self, 
+                                        inTemplateData: Dict[str, Any], 
+                                        inOutputPath: Optional[str] = None) -> str:
+        """
+        배치 애니메이션 임포트 전용 템플릿 처리
+        
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inAnimFbxPaths: 애니메이션 FBX 경로들 (리스트)
+                - inSkeletonFbxPaths: 스켈레톤 FBX 경로들 (리스트)
+                - inContentRootPrefix: Content 루트 경로
+                - inFbxRootPrefix: FBX 루트 경로
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+            
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        # 필수 키 검증
+        required_keys = ['inExtPackagePath', 'inAnimFbxPaths', 'inSkeletonFbxPaths', 
+                        'inContentRootPrefix', 'inFbxRootPrefix']
+        if not self.validate_template_data(BATCH_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"배치 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+        
+        template_path = get_template_path(BATCH_ANIM_IMPORT_TEMPLATE)
+        
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(BATCH_ANIM_IMPORT_TEMPLATE, "batchAnimImportScript")
+        
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+    
     # === 유틸리티 메서드 ===
     def validate_template_data(self, template_type: str, template_data: Dict[str, Any], required_keys: list = None) -> bool:
         """

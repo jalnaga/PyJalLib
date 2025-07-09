@@ -153,7 +153,7 @@ class BaseImporter(ABC):
         return destinationPath, assetName
     
     @abstractmethod
-    def _create_import_task(self, inFbxFile: str, inDestinationPath: str):
+    def create_import_task(self, inFbxFile: str, inDestinationPath: str):
         """임포트 태스크를 생성하는 추상 메서드 - 각 임포터에서 구현"""
         pass 
     
@@ -162,6 +162,8 @@ class BaseImporter(ABC):
         
         assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
         assetData = unreal.EditorAssetLibrary.find_asset_data(inAssetPath)
+        
+        ue5_logger.error(f"assetData: {assetData.asset_name}")
         
         depPackages = assetRegistry.get_dependencies(
             assetData.package_name,  
@@ -174,11 +176,12 @@ class BaseImporter(ABC):
             )
         )
         
-        for dep in depPackages:
-            depPathStart = str(dep).split('/')[1]
-            assetPathStart = str(assetData.package_name).split('/')[1]
-            if depPathStart == assetPathStart:
-                if unreal.EditorAssetLibrary.save_asset(dep, only_if_is_dirty=True):
-                    returnList.append(dep)
+        if depPackages is not None:
+            for dep in depPackages:
+                depPathStart = str(dep).split('/')[1]
+                assetPathStart = str(assetData.package_name).split('/')[1]
+                if depPathStart == assetPathStart:
+                    if unreal.EditorAssetLibrary.save_asset(dep, only_if_is_dirty=True):
+                        returnList.append(dep)
         
         return returnList

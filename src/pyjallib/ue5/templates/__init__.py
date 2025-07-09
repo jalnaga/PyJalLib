@@ -14,12 +14,14 @@ from typing import Dict, Optional
 ANIM_IMPORT_TEMPLATE = "animImport"
 SKELETON_IMPORT_TEMPLATE = "skeletonImport" 
 SKELETAL_MESH_IMPORT_TEMPLATE = "skeletalMeshImport"
+BATCH_ANIM_IMPORT_TEMPLATE = "batchAnimImport"
 
 # 템플릿 파일 매핑
 _TEMPLATE_FILE_MAP = {
     ANIM_IMPORT_TEMPLATE: "animImportTemplate.py",
     SKELETON_IMPORT_TEMPLATE: "skeletonImportTemplate.py",
-    SKELETAL_MESH_IMPORT_TEMPLATE: "skeletalMeshImportTemplate.py"
+    SKELETAL_MESH_IMPORT_TEMPLATE: "skeletalMeshImportTemplate.py",
+    BATCH_ANIM_IMPORT_TEMPLATE: "batchAnimImportTemplate.py"
 }
 
 def get_template_path(template_name: str) -> str:
@@ -27,7 +29,7 @@ def get_template_path(template_name: str) -> str:
     템플릿 이름으로 템플릿 파일 경로 반환
     
     Args:
-        template_name (str): 'animImport', 'skeletonImport', 'skeletalMeshImport' 중 하나
+        template_name (str): 'animImport', 'skeletonImport', 'skeletalMeshImport', 'batchAnimImport' 중 하나
     
     Returns:
         str: 템플릿 파일의 절대 경로
@@ -102,5 +104,6 @@ __all__ = [
     'validate_template_name',
     'ANIM_IMPORT_TEMPLATE',
     'SKELETON_IMPORT_TEMPLATE',
-    'SKELETAL_MESH_IMPORT_TEMPLATE'
+    'SKELETAL_MESH_IMPORT_TEMPLATE',
+    'BATCH_ANIM_IMPORT_TEMPLATE'
 ] 
