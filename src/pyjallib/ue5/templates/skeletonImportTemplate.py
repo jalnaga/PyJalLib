@@ -16,6 +16,6 @@ fbxPath = r'{inSkeletonFbxPath}'
 contentRootPrefix = r'{inContentRootPrefix}'
 fbxRootPrefix = r'{inFbxRootPrefix}'
 
-animImporter = SkeletonImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
+skeletonImporter = SkeletonImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
 
-result = animImporter.import_skeleton(fbxPath)
+result = skeletonImporter.import_skeleton(fbxPath)
