@@ -121,7 +121,14 @@ class AnimationImporter(BaseImporter):
         if inDescription is not None:
             checkInDescription = inDescription
         
-        # unreal.SourceControl.check_in_files(allImportRelatedPaths, checkInDescription, silent=True)
+        allImportAbsPaths = []
+        for assetPath in allImportRelatedPaths:
+            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
+            if assetObj is not None:
+                absPath = unreal.SystemLibrary.get_system_path(assetObj)
+                allImportAbsPaths.append(absPath)
+        
+        unreal.SourceControl.check_in_files(allImportAbsPaths, checkInDescription, silent=True)
         
         ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 
@@ -163,6 +170,7 @@ class AnimationImporter(BaseImporter):
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks(tasks)
         
         batchImportedAssetPaths = []
+        batchImporteAbsPaths = []
         for index, task in enumerate(tasks):
             result = task.get_objects()
             if len(result) == 0:
@@ -173,21 +181,26 @@ class AnimationImporter(BaseImporter):
             importedObjectPaths = task.imported_object_paths
             refObjectPaths = self.get_dirty_deps(assetFullPaths[index])
             
+            
             allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
             for assetPath in allImportRelatedPaths:
                 unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
                 batchImportedAssetPaths.append(assetPath)
         
         batchImportedAssetPaths = list(dict.fromkeys(batchImportedAssetPaths))
+        for assetPath in batchImportedAssetPaths:
+            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
+            if assetObj is not None:
+                absPath = unreal.SystemLibrary.get_system_path(assetObj)
+                batchImporteAbsPaths.append(absPath)
             
         # 배치 임포트용 간결한 디스크립션 생성
         if inDescription is not None:
             checkInDescription = inDescription
         else:
             checkInDescription = self._create_batch_import_description(inFbxFiles, assetFullPaths)
-            
-        ue5_logger.info(f"퍼포스 디스크립션: {checkInDescription}")
         
-        # unreal.SourceControl.check_in_files(batchImportedAssetPaths, checkInDescription, silent=True)
+        checkinResult = unreal.SourceControl.check_in_files(batchImporteAbsPaths, checkInDescription, silent=True)
+        ue5_logger.info(f"배치 임포트 체크인 결과: {checkinResult}")
         
         ue5_logger.info(f"애니메이션 임포트 완료: {inFbxFiles}")
