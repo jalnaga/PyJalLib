@@ -2,37 +2,93 @@
 # -*- coding: utf-8 -*-
 
 """
-nameToPath 모듈 - 이름과 경로 변환 관련 기능
-이름 규칙에 따라 경로를 생성하거나 경로에서 이름을 추출하는 기능 제공
+입력된 네이밍 규칙에 따라 경로를 생성하고, 윈도우즈용 폴더명을 안전하게 변환하는 기능을 제공하는 클래스.
 """
 
+from pathlib import PureWindowsPath
 import os
-import json
+import re
 from typing import Optional, Dict, Any, List
 
 from pyjallib.naming import Naming
-from pyjallib.namePart import NamePartType
+from pyjallib.namingConfig import NamingConfig
+
 
 class NameToPath(Naming):
     """
-    NameToPath 클래스는 Naming 클래스를 상속받아 이름을 기반으로 경로를 생성하는 기능을 제공합니다.
+    네이밍 규칙에 따라 경로를 생성하고, 폴더명을 안전하게 변환하는 기능을 제공하는 클래스.
     """
-    def __init__(self, configPath: str, rootPath: str = None, sourceNaming: Naming = None):
+    def __init__(self, inputConfigPath: str, pathConfigPath: str, rootPath: str = None):
         """
-        생성자 메서드입니다.
-        :param configPath: 설정 파일의 경로
-        :param rootPath: 루트 경로 (기본값: None)
-        :param sourceNaming: 소스 이름을 처리하기 위한 Naming 객체 (기본값: None)
+        NameToPath 초기화
+        
+        :param inputConfigPath: 입력 이름 파싱용 설정 파일 경로
+        :param pathConfigPath: 경로 생성용 설정 파일 경로  
+        :param rootPath: 루트 경로 (옵션)
         """
-        # 부모 클래스(Naming) 생성자 호출
-        super().__init__(configPath)
-        self.rootPath = None
-        if rootPath:
-            self.set_root_path(rootPath)
-        # 소스 네이밍 객체 설정
-        self.sourceNaming = sourceNaming
+        super().__init__()
+        self.pathConfig = NamingConfig()
+        self.pathConfig.load(pathConfigPath)
+        
+        # 루트 경로 설정 (pathAndFiles 의존성 제거)
+        if rootPath is not None:
+            self.rootPath = self._normalize_path(rootPath)
+        else:
+            self.rootPath = None
+            
+        self.load_from_config_file(inputConfigPath)
+
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        """경로를 윈도우즈 형식으로 정규화"""
+        if not path:
+            return path
+        return str(PureWindowsPath(path))
+
+    @staticmethod
+    def _sanitize_folder_name(name: str) -> str:
+        """폴더명에서 유효하지 않은 문자를 제거"""
+        invalidChars = r'[<>:"/\\|?*]'
+        return re.sub(invalidChars, '_', name).strip()
+
+    @property
+    def rootPathProp(self) -> str:
+        """루트 경로 속성 getter"""
+        return self.rootPath
+
+    @rootPathProp.setter
+    def rootPathProp(self, path: str) -> None:
+        """루트 경로 속성 setter"""
+        self.rootPath = self._normalize_path(path)
+
+    def generate_path(self, inputName: str, inIncludeRealName: bool = False) -> str:
+        """
+        입력된 이름을 기반으로 경로를 생성
+        
+        :param inputName: 파싱할 입력 이름
+        :param inIncludeRealName: 실제 이름을 경로에 포함할지 여부
+        :return: 생성된 경로
+        """
+        parsedDict = self.parse_name(inputName)
+        nameParts = self.pathConfig.get_part_order()
+        folders = [
+            self._sanitize_folder_name(self.pathConfig.get_part(part).get_description_by_value(parsedDict[part]))
+            for part in nameParts if part in parsedDict and self.pathConfig.get_part(part).get_description_by_value(parsedDict[part])
+        ]
+        if inIncludeRealName:
+            folders.append(self._sanitize_folder_name(parsedDict["RealName"]))
+        
+        if self.rootPath:
+            fullPath = os.path.join(self.rootPath, *folders)
+        else:
+            fullPath = os.path.join(*folders) if folders else ""
+        return self._normalize_path(fullPath)
+
+    def parse_name(self, inName: str):
+        """이름을 파싱하여 딕셔너리로 변환"""
+        return self.convert_to_dictionary(inName)
     
-    def set_root_path(self, inRootPath: str):
+    def set_root_path(self, inRootPath: str) -> str:
         """
         루트 경로를 설정합니다.
         입력된 경로를 정규화하고 유효성을 검증합니다.
@@ -42,25 +98,21 @@ class NameToPath(Naming):
         :raises ValueError: 경로가 존재하지 않는 경우
         """
         if inRootPath:
-            # 경로 정규화 (상대 경로를 절대 경로로 변환, '/' 대신 '\' 사용 등)
-            normalized_path = os.path.normpath(os.path.abspath(inRootPath))
-            
-            # 경로 존재 여부 확인 (선택적)
+            normalized_path = self._normalize_path(inRootPath)
             if not os.path.exists(normalized_path):
                 raise ValueError(f"경로가 존재하지 않습니다: {normalized_path}")
-            
             self.rootPath = normalized_path
             return self.rootPath
         else:
             self.rootPath = None
             return None
-    
+
     def combine(self, inPartsDict={}, inFilChar=os.sep) -> str:
         """
         딕셔너리의 값들을 설정된 순서에 따라 문자열로 결합합니다. (인덱스 제외)
 
         :param inPartsDict: 결합할 키-값 쌍을 포함하는 딕셔너리
-        :param inFilChar: 값들을 구분할 구분자 (기본값: "_")
+        :param inFilChar: 값들을 구분할 구분자 (기본값: os.sep)
         :return: 결합된 문자열
         """
         # 결과 배열 초기화 (빈 문자열로)
@@ -76,38 +128,3 @@ class NameToPath(Naming):
         # 배열을 문자열로 결합
         newName = self._combine(combinedNameArray, inFilChar)
         return newName
-                
-    
-    def gen_path(self, inStr):
-        """
-        입력된 문자열을 기반으로 경로를 생성합니다.
-        
-        :param inStr: 경로를 생성할 문자열 (이름)
-        :return: 생성된 경로 (문자열)
-        :raises ValueError: 루트 경로가 설정되지 않았거나 이름을 변환할 수 없는 경우
-        """
-        if not self.rootPath:
-            raise ValueError("루트 경로가 설정되지 않았습니다.")
-        
-        # 이름을 딕셔너리로 변환
-        nameDict = self.sourceNaming.convert_to_dictionary(inStr)
-        if not nameDict:
-            raise ValueError(f"이름을 변환할 수 없습니다: {inStr}")
-        print(f"Name Dictionary: {nameDict}")
-        
-        pathDict = {}
-        
-        # 선택된 NamePart 값들을 설명으로 변환하여 폴더 이름으로 사용
-        for key, value in nameDict.items():
-            namePart = self.sourceNaming.get_name_part(key)
-            if self.get_name_part(namePart.get_name()):
-                if namePart.get_type().value == NamePartType.REALNAME.value:
-                    # 실제 이름인 경우, 해당 이름을 사용
-                    pathDict[key] = value
-                else:
-                    pathDict[key] = namePart.get_description_by_value(value)
-        
-        combinedPath = self.combine(pathDict)
-        finalPath = os.path.join(self.rootPath, combinedPath)
-        
-        return os.path.normpath(finalPath)
