@@ -81,6 +81,8 @@ class Wrist(VolumeBone):
                 if rt.matchPattern(item.name.lower(), pattern="*root*"):
                     item.name = wristRootDumName
         
+        rt.redrawViews()
+        
         return volumeBoneResult
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):

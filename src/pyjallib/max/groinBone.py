@@ -156,6 +156,8 @@ class GroinBone:
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
+        rt.redrawViews()
+        
         # BoneChain 객체 반환
         return BoneChain.from_result(result)
     

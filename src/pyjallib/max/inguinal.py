@@ -84,6 +84,8 @@ class Inguinal(VolumeBone):
             "Parameters": [inRotScale, inVolumeSize, inFwdRotAxis, inOutRotAxis, inFwdTransAxis, inOutTransAxis, inFwdTransScale, inOutTransScale]
         }
         
+        rt.redrawViews()
+        
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):

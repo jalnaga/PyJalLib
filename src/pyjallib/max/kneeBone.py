@@ -497,6 +497,8 @@ class KneeBone:
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
+        rt.redrawViews()
+        
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):

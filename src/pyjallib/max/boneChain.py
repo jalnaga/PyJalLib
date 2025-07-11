@@ -92,6 +92,8 @@ class BoneChain:
             self.bones = []
             self.helpers = []
             
+            rt.redrawViews()
+            
             return True
         except:
             return False

@@ -139,6 +139,8 @@ class Shoulder:
         
         self.reset()
         
+        rt.redrawViews()
+        
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
