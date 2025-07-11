@@ -35,84 +35,59 @@ class PerforceWithLogging:
         """워크스페이스에 연결하고 결과를 로깅합니다."""
         self.logger.info(f"'{workspace_name}' 워크스페이스 연결 시도 중...")
         
-        success = self.p4.connect(workspace_name)
-        
-        if success:
+        try:
+            success = self.p4.connect(workspace_name)
             self.logger.info(f"'{workspace_name}' 워크스페이스 연결 성공")
             self.logger.info(f"워크스페이스 루트: {self.p4.workspaceRoot}")
-        else:
-            error_msg = self.p4.get_last_error()
-            warnings = self.p4.get_last_warnings()
-            
-            self.logger.error(f"워크스페이스 연결 실패: {error_msg}")
-            for warning in warnings:
-                self.logger.warning(f"경고: {warning}")
-                
-        return success
+            return success
+        except Exception as e:
+            self.logger.error(f"워크스페이스 연결 실패: {e}")
+            return False
     
     def create_change_list(self, description: str) -> dict:
         """체인지 리스트를 생성하고 결과를 로깅합니다."""
         self.logger.info(f"체인지 리스트 생성 시도: '{description}'")
         
-        result = self.p4.create_change_list(description)
-        
-        if result:
+        try:
+            result = self.p4.create_change_list(description)
             change_number = result.get('Change', 'Unknown')
             self.logger.info(f"체인지 리스트 {change_number} 생성 성공: '{description}'")
-        else:
-            error_msg = self.p4.get_last_error()
-            warnings = self.p4.get_last_warnings()
-            
-            self.logger.error(f"체인지 리스트 생성 실패: {error_msg}")
-            for warning in warnings:
-                self.logger.warning(f"경고: {warning}")
-                
-        return result
+            return result
+        except Exception as e:
+            self.logger.error(f"체인지 리스트 생성 실패: {e}")
+            return {}
     
     def checkout_files(self, file_paths: list, change_list_number: int) -> bool:
         """파일들을 체크아웃하고 결과를 로깅합니다."""
         self.logger.info(f"파일 체크아웃 시도: {len(file_paths)}개 파일, CL {change_list_number}")
         self.logger.debug(f"체크아웃 대상 파일들: {file_paths}")
         
-        success = self.p4.checkout_files(file_paths, change_list_number)
-        
-        if success:
+        try:
+            success = self.p4.checkout_files(file_paths, change_list_number)
             self.logger.info(f"모든 파일({len(file_paths)}개) 체크아웃 성공")
-        else:
-            error_msg = self.p4.get_last_error()
-            warnings = self.p4.get_last_warnings()
-            
-            self.logger.error(f"파일 체크아웃 실패: {error_msg}")
-            for warning in warnings:
-                self.logger.warning(f"경고: {warning}")
-                
-        return success
+            return success
+        except Exception as e:
+            self.logger.error(f"파일 체크아웃 실패: {e}")
+            return False
     
     def submit_change_list(self, change_list_number: int) -> bool:
         """체인지 리스트를 제출하고 결과를 로깅합니다."""
         self.logger.info(f"체인지 리스트 {change_list_number} 제출 시도...")
         
-        success = self.p4.submit_change_list(change_list_number)
-        
-        if success:
+        try:
+            success = self.p4.submit_change_list(change_list_number)
             self.logger.info(f"체인지 리스트 {change_list_number} 제출 성공")
-        else:
-            error_msg = self.p4.get_last_error()
-            warnings = self.p4.get_last_warnings()
-            
-            self.logger.error(f"체인지 리스트 제출 실패: {error_msg}")
-            for warning in warnings:
-                self.logger.warning(f"경고: {warning}")
-                
-        return success
+            return success
+        except Exception as e:
+            self.logger.error(f"체인지 리스트 제출 실패: {e}")
+            return False
     
     def check_files_status(self, file_paths: list) -> dict:
         """파일들의 체크아웃 상태를 확인하고 결과를 로깅합니다."""
         self.logger.info(f"파일 상태 확인 시도: {len(file_paths)}개 파일")
         
-        result = self.p4.check_files_checked_out(file_paths)
-        
-        if result:
+        try:
+            result = self.p4.check_files_checked_out(file_paths)
             checked_out_count = sum(1 for status in result.values() if status.get('is_checked_out', False))
             self.logger.info(f"파일 상태 확인 완료: 전체 {len(file_paths)}개 중 {checked_out_count}개 체크아웃됨")
             
@@ -120,15 +95,10 @@ class PerforceWithLogging:
             for file_path, status in result.items():
                 if status.get('is_checked_out', False):
                     self.logger.debug(f"체크아웃됨: {file_path} (CL: {status.get('change_list')}, 사용자: {status.get('user')})")
-        else:
-            error_msg = self.p4.get_last_error()
-            warnings = self.p4.get_last_warnings()
-            
-            self.logger.error(f"파일 상태 확인 실패: {error_msg}")
-            for warning in warnings:
-                self.logger.warning(f"경고: {warning}")
-                
-        return result
+            return result
+        except Exception as e:
+            self.logger.error(f"파일 상태 확인 실패: {e}")
+            return {}
     
     def close(self):
         """리소스 정리"""
@@ -204,8 +174,8 @@ def demonstrate_error_handling():
         p4_logger.logger.info("잘못된 타입으로 파일 체크아웃을 시도합니다...")
         try:
             p4_logger.p4.checkout_files("단일_파일_경로", 123)  # 리스트가 아닌 문자열 전달
-        except TypeError as e:
-            p4_logger.logger.error(f"타입 에러 발생: {e}")
+        except Exception as e:
+            p4_logger.logger.error(f"검증 에러 발생: {e}")
             
     finally:
         p4_logger.logger.end_session()

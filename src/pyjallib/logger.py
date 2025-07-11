@@ -11,11 +11,13 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
+from pyjallib.exceptions import PyJalLibError
+
 
 class Logger:
     """PyJalLib 간단한 로깅 클래스"""
     
-    def __init__(self, inLogPath: Optional[str] = None, inLogFileName: Optional[str] = None, inEnableConsole: bool = True, inEnableUE5: bool = False):
+    def __init__(self, inLogPath: Optional[str] = None, inLogFileName: Optional[str] = None, inEnableConsole: bool = True):
         """로거 인스턴스 초기화
         
         Args:
@@ -25,7 +27,6 @@ class Logger:
                                          None인 경우 기본값 "pyjallib" 사용
                                          실제 파일명은 "YYYYMMDD_파일명.log" 형식으로 생성
             inEnableConsole (bool): 콘솔 출력 활성화 여부 (기본값: True)
-            inEnableUE5 (bool): UE5 출력 활성화 여부 (기본값: False)
         """
         # 기본 로그 경로 설정
         if inLogPath is None:
@@ -42,7 +43,6 @@ class Logger:
         
         # 출력 옵션 설정
         self._enableConsole = inEnableConsole
-        self._enableUE5 = inEnableUE5
         self._sessionName = None  # 초기에는 세션 없음
         
         # 로거 생성 및 설정
@@ -101,7 +101,46 @@ class Logger:
                 self._logger.removeHandler(handler)
             except Exception:
                 pass
-            
+    
+    def log_exception(self, inException: Exception, inCustomMessage: Optional[str] = None) -> None:
+        """예외 정보를 로그에 기록
+        
+        Args:
+            inException (Exception): 기록할 예외 객체
+            inCustomMessage (str, optional): 사용자 정의 메시지. None인 경우 예외 메시지만 기록
+        """
+        if inCustomMessage:
+            message = f"{inCustomMessage}: {inException}"
+        else:
+            message = str(inException)
+        
+        self._logger.error(message)
+    
+    def log_pyjallib_error(self, inError: PyJalLibError, inCustomMessage: Optional[str] = None) -> None:
+        """PyJalLib 예외를 로그에 기록 (함수명 포함)
+        
+        Args:
+            inError (PyJalLibError): PyJalLib 예외 객체
+            inCustomMessage (str, optional): 사용자 정의 메시지
+        """
+        # PyJalLibError는 이미 함수명이 포함된 메시지를 반환
+        if inCustomMessage:
+            message = f"{inCustomMessage}: {inError}"
+        else:
+            message = str(inError)
+        
+        self._logger.error(message)
+    
+    def log_function_error(self, inFunctionName: str, inMessage: str) -> None:
+        """함수명을 포함한 에러 메시지를 로그에 기록
+        
+        Args:
+            inFunctionName (str): 함수명
+            inMessage (str): 에러 메시지
+        """
+        message = f"[{inFunctionName}] {inMessage}"
+        self._logger.error(message)
+        
     def _log_separator(self, inMessage: str) -> None:
         """구분선 메시지를 모든 핸들러에 직접 출력"""
         # 구분선은 INFO 레벨로 출력하되, 특별한 포맷 사용
@@ -125,9 +164,6 @@ class Logger:
                         handler.stream.write(inMessage + "\n")
                         if hasattr(handler, 'flush'):
                             handler.flush()
-                    elif isinstance(handler, _UE5LogHandler):
-                        # UE5 핸들러의 경우 직접 emit 호출
-                        handler.emit(separator_record)
             except Exception:
                 # 핸들러 오류 시 무시
                 pass
@@ -148,54 +184,9 @@ class Logger:
             console_handler.setFormatter(self._get_formatter())
             self._logger.addHandler(console_handler)
             
-        # UE5 핸들러 (선택사항)
-        if self._enableUE5:
-            ue5_handler = self._create_ue5_handler()
-            if ue5_handler:
-                self._logger.addHandler(ue5_handler)
-            
     def _get_formatter(self) -> logging.Formatter:
         """표준 포맷터 반환"""
         return logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
-        )
-        
-    def _create_ue5_handler(self) -> Optional[logging.Handler]:
-        """UE5 핸들러 생성 (기존 UE5LogHandler 코드 활용)"""
-        try:
-            return _UE5LogHandler()
-        except Exception:
-            # UE5 핸들러 생성 실패 시 None 반환
-            return None
-
-
-class _UE5LogHandler(logging.Handler):
-    """UE5 전용 로그 핸들러 - UE5의 로그 시스템과 호환되도록 설계"""
-    
-    def emit(self, record):
-        """로그 레코드를 UE5 로그 시스템으로 전송"""
-        try:
-            # UE5의 unreal.log 함수 사용
-            import unreal
-            
-            # 메시지 포맷팅
-            message = self.format(record) if self.formatter else record.getMessage()
-            
-            # 로그 레벨에 따라 적절한 UE5 로그 함수 호출
-            if record.levelno >= logging.ERROR:
-                unreal.log_error(f"[PyJalLib] {message}")
-            elif record.levelno >= logging.WARNING:
-                unreal.log_warning(f"[PyJalLib] {message}")
-            elif record.levelno >= logging.INFO:
-                unreal.log(f"[PyJalLib] {message}")
-            else:  # DEBUG
-                unreal.log(f"[PyJalLib-DEBUG] {message}")
-                
-        except ImportError:
-            # unreal 모듈이 없는 경우 표준 출력 사용
-            message = self.format(record) if self.formatter else record.getMessage()
-            print(f"[PyJalLib] {message}")
-        except Exception:
-            # 모든 예외를 무시하여 로깅 실패가 애플리케이션을 중단하지 않도록 함
-            pass 
+        ) 
