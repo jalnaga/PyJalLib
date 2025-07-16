@@ -47,8 +47,8 @@ class BoneNameDialog(QtWidgets.QDialog):
         side_group = QtWidgets.QGroupBox("Side:")
         side_layout = QtWidgets.QVBoxLayout()
         self.side_none_radio = QtWidgets.QRadioButton("(None)")
-        self.side_l_radio = QtWidgets.QRadioButton("L")
-        self.side_r_radio = QtWidgets.QRadioButton("R")
+        self.side_l_radio = QtWidgets.QRadioButton(jal.name.get_name_part("Side").get_value_by_description("Left"))
+        self.side_r_radio = QtWidgets.QRadioButton(jal.name.get_name_part("Side").get_value_by_description("Right"))
         self.side_none_radio.setChecked(True)
         side_layout.addWidget(self.side_none_radio)
         side_layout.addWidget(self.side_l_radio)
@@ -59,8 +59,8 @@ class BoneNameDialog(QtWidgets.QDialog):
         front_group = QtWidgets.QGroupBox("Front:")
         front_layout = QtWidgets.QVBoxLayout()
         self.front_none_radio = QtWidgets.QRadioButton("(None)")
-        self.front_f_radio = QtWidgets.QRadioButton("F")
-        self.front_b_radio = QtWidgets.QRadioButton("B")
+        self.front_f_radio = QtWidgets.QRadioButton(jal.name.get_name_part("FrontBack").get_value_by_description("Forward"))
+        self.front_b_radio = QtWidgets.QRadioButton(jal.name.get_name_part("FrontBack").get_value_by_description("Backward"))
         self.front_none_radio.setChecked(True)
         front_layout.addWidget(self.front_none_radio)
         front_layout.addWidget(self.front_f_radio)
@@ -136,16 +136,16 @@ class BoneNameDialog(QtWidgets.QDialog):
         if self.side_none_radio.isChecked():
             self.sideName = ""
         elif self.side_l_radio.isChecked():
-            self.sideName = "L"
+            self.sideName = jal.name.get_name_part("Side").get_value_by_description("Left")
         elif self.side_r_radio.isChecked():
-            self.sideName = "R"
+            self.sideName = jal.name.get_name_part("Side").get_value_by_description("Right")
         
         if self.front_none_radio.isChecked():
             self.frontBackName = ""
         elif self.front_f_radio.isChecked():
-            self.frontBackName = "F"
+            self.frontBackName = jal.name.get_name_part("FrontBack").get_value_by_description("Forward")
         elif self.front_b_radio.isChecked():
-            self.frontBackName = "B"
+            self.frontBackName = jal.name.get_name_part("FrontBack").get_value_by_description("Backward")
         
         RealName = self.name_edit.text() if self.name_edit.text() != "" else "TempBone"
         
