@@ -195,6 +195,133 @@ class BoneSizeDialog(QtWidgets.QDialog):
         self.setWindowTitle("Bone Size")
         self.setMinimumWidth(300)
         
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
+        
+        # UI 변수들 초기화
+        self.fin_on = True
+        self.fin_size = 2.0
+        self.bone_size = 2.0
+        self.bone_taper = 90.0
+        
+        # 원래 본 모양 저장용 변수들
+        self.original_bone_shapes = {}  # {본객체: 원래모양배열}
+        self.original_selection = []    # 원래 선택된 본들
+        
+        # Layouts
+        main_layout = QtWidgets.QVBoxLayout(self)
+        fin_layout = QtWidgets.QHBoxLayout()
+        bone_layout = QtWidgets.QHBoxLayout()
+        button_layout = QtWidgets.QHBoxLayout()
+        
+        # Fin On 체크박스와 Fin Size 스피너 (가로로 배치)
+        self.fin_on_checkbox = QtWidgets.QCheckBox("Fin On")
+        self.fin_on_checkbox.setChecked(self.fin_on)
+        fin_layout.addWidget(self.fin_on_checkbox)
+        
+        fin_layout.addWidget(QtWidgets.QLabel("Fin Size:"))
+        
+        self.fin_size_spinner = QtWidgets.QDoubleSpinBox()
+        self.fin_size_spinner.setRange(0.0, 100.0)
+        self.fin_size_spinner.setValue(self.fin_size)
+        self.fin_size_spinner.setDecimals(1)
+        self.fin_size_spinner.setSingleStep(0.1)
+        fin_layout.addWidget(self.fin_size_spinner)
+        
+        # Bone Size와 Bone Taper 스피너 (가로로 배치)
+        bone_layout.addWidget(QtWidgets.QLabel("Bone Size:"))
+        
+        self.bone_size_spinner = QtWidgets.QDoubleSpinBox()
+        self.bone_size_spinner.setRange(0.0, 100.0)
+        self.bone_size_spinner.setValue(self.bone_size)
+        self.bone_size_spinner.setDecimals(1)
+        self.bone_size_spinner.setSingleStep(0.1)
+        bone_layout.addWidget(self.bone_size_spinner)
+        
+        bone_layout.addWidget(QtWidgets.QLabel("Bone Taper:"))
+        
+        self.bone_taper_spinner = QtWidgets.QDoubleSpinBox()
+        self.bone_taper_spinner.setRange(0.0, 100.0)
+        self.bone_taper_spinner.setValue(self.bone_taper)
+        self.bone_taper_spinner.setDecimals(1)
+        self.bone_taper_spinner.setSingleStep(0.1)
+        bone_layout.addWidget(self.bone_taper_spinner)
+        
+        # OK/Cancel Buttons
+        self.ok_button = QtWidgets.QPushButton("OK")
+        self.cancel_button = QtWidgets.QPushButton("Cancel")
+        
+        # Arrange Buttons
+        button_layout.addStretch()
+        button_layout.addWidget(self.ok_button)
+        button_layout.addWidget(self.cancel_button)
+        
+        # Add layouts to main layout
+        main_layout.addLayout(fin_layout)
+        main_layout.addLayout(bone_layout)
+        main_layout.addStretch()
+        main_layout.addLayout(button_layout)
+        
+        # Connect signals
+        self.ok_button.clicked.connect(self.ok_clicked)
+        self.cancel_button.clicked.connect(self.cancel_clicked)
+        
+        # Connect all relevant UI changes to the update method
+        self.fin_on_checkbox.toggled.connect(self.update_ui)
+        self.fin_size_spinner.valueChanged.connect(self.update_ui)
+        self.bone_size_spinner.valueChanged.connect(self.update_ui)
+        self.bone_taper_spinner.valueChanged.connect(self.update_ui)
+        
+        # 초기 선택된 본들의 원래 모양 저장
+        self.save_original_bone_shapes()
+        
+        self.update_ui()  # Initial update
+        
+    def save_original_bone_shapes(self):
+        """선택된 본들의 원래 모양을 저장합니다."""
+        selObjs = rt.getCurrentSelection()
+        for item in selObjs:
+            if rt.classOf(item) == rt.BoneGeometry:
+                self.original_selection.append(item)
+                self.original_bone_shapes[item] = jal.bone.get_bone_shape(item)
+    
+    def restore_original_bone_shapes(self):
+        """저장된 원래 모양으로 본들을 되돌립니다."""
+        for item, shape_array in self.original_bone_shapes.items():
+            if rt.isValidObj(item):
+                jal.bone.pasete_bone_shape(item, shape_array)
+        rt.redrawViews()
+        
+    def update_ui(self):
+        """UI 값들을 업데이트합니다."""
+        self.fin_on = self.fin_on_checkbox.isChecked()
+        self.fin_size = self.fin_size_spinner.value()
+        self.bone_size = self.bone_size_spinner.value()
+        self.bone_taper = self.bone_taper_spinner.value()
+        
+        # Fin On 상태에 따라 Fin Size 스피너 활성화/비활성화
+        self.fin_size_spinner.setEnabled(self.fin_on)
+        
+        selObjs = rt.getCurrentSelection()
+        for item in selObjs:
+            if self.fin_on:
+                jal.bone.set_fin_on(item, inSize=self.fin_size)
+            else:
+                jal.bone.set_fin_off(item)
+            jal.bone.set_bone_size(item, self.bone_size)
+            jal.bone.set_bone_taper(item, self.bone_taper)
+        
+        rt.redrawViews()
+        
+    def ok_clicked(self):
+        """OK 버튼 클릭 처리"""
+        self.update_ui()
+        self.accept()
+    
+    def cancel_clicked(self):
+        """Cancel 버튼 클릭 처리"""
+        # 원래 모양으로 되돌리기
+        self.restore_original_bone_shapes()
+        self.reject()
         
 
 def jal_bone_on():
@@ -283,6 +410,13 @@ def jal_bone_nub_create():
     else:
         jal.bone.create_nub_bone("Temp", 2)
 
+def jal_bone_size_modify():
+    dialog = BoneSizeDialog()
+    dialog.show()
+    
+    # 다이얼로그가 닫힐 때까지 대기하지 않고 즉시 반환
+    # 사용자가 다이얼로그를 닫으면 자동으로 정리됨
+
 # Register macroscripts
 macroScript_Category = "jalTools"
 
@@ -365,4 +499,13 @@ rt.macros.new(
     "Bone Nub Create",
     "Bone Nub Create",
     "jal_bone_nub_create()"
+)
+
+rt.jal_bone_size_modify = jal_bone_size_modify
+rt.macros.new(
+    macroScript_Category,
+    "jal_boneSizeModify",
+    "Bone Size Modify",
+    "Bone Size Modify",
+    "jal_bone_size_modify()"
 )
