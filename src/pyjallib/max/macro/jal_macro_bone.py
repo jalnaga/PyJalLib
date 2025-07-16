@@ -189,6 +189,14 @@ class BoneNameDialog(QtWidgets.QDialog):
         self.boneNameSetted = False
         self.reject()
 
+class BoneSizeDialog(QtWidgets.QDialog):
+    def __init__(self, parent=QtWidgets.QWidget.find(rt.windows.getMAXHWND())):
+        super().__init__(parent)
+        self.setWindowTitle("Bone Size")
+        self.setMinimumWidth(300)
+        
+        
+
 def jal_bone_on():
     jal.bone.set_bone_on_selection()
 

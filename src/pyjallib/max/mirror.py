@@ -251,18 +251,17 @@ class Mirror:
         elif mAxis == 3:
             axisFactor = [1, 1, -1]  # z축 미러링
         
-        # 새 뼈대와 부모 정보 저장 배열 준비
-        parents = []
+        # 새 뼈대와 원본-미러 매핑 정보 저장
         created = []
+        bone_mapping = {}  # 원본 뼈대 -> 미러 뼈대 매핑
         
         # 시작점 위치 (미러링 중심) 설정
         root = bones[0].transform.translation
         
-        # 정렬된 뼈대 순서대로 처리
+        # 정렬된 뼈대 순서대로 처리 (실제 뼈대만)
         for i in range(len(bones)):
             original = bones[i]
-            if rt.classOf(original) != rt.BoneGeometry:  # 실제 뼈대가 아닌 경우
-                parents.append(None)  # 부모 없음 표시
+            if rt.classOf(original) != rt.BoneGeometry:  # 실제 뼈대가 아닌 경우 건너뛰기
                 continue
             
             # 원본 뼈대의 시작점, 끝점, Z축 방향 가져오기
@@ -310,16 +309,24 @@ class Mirror:
             reflection.wirecolor = original.wirecolor
             
             created.append(reflection)
-            parents.append(reflection)
+            bone_mapping[original] = reflection
         
         # 계층 구조 연결 (자식부터 상위로)
-        for i in range(len(created)-1, 0, -1):
-            pIndex = bones.index(bones[i].parent) if bones[i].parent in bones else 0
-            if pIndex != 0:
-                created[i].parent = parents[pIndex]
-        
-        # 루트 뼈대의 부모 설정
-        created[0].parent = bones[0].parent
+        for i in range(len(created)-1, -1, -1):  # 인덱스 len(created)-1부터 0까지 역순으로 처리
+            original_bone = None
+            # 원본 뼈대 찾기
+            for orig, mirror in bone_mapping.items():
+                if mirror == created[i]:
+                    original_bone = orig
+                    break
+            
+            if original_bone and original_bone.parent:
+                # 부모가 매핑에 있는지 확인
+                if original_bone.parent in bone_mapping:
+                    created[i].parent = bone_mapping[original_bone.parent]
+                else:
+                    # 부모가 미러링된 뼈대 중에 없으면 원본 부모 사용
+                    created[i].parent = original_bone.parent
         
         # 부모가 없는 뼈대는 위치 조정
         for i in range(len(created)):
