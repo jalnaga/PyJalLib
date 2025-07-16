@@ -200,7 +200,7 @@ class BoneSizeDialog(QtWidgets.QDialog):
         # UI 변수들 초기화
         self.fin_on = True
         self.fin_size = 2.0
-        self.bone_size = 2.0
+        self.bone_size = 4.0
         self.bone_taper = 90.0
         
         # 원래 본 모양 저장용 변수들
@@ -322,7 +322,56 @@ class BoneSizeDialog(QtWidgets.QDialog):
         # 원래 모양으로 되돌리기
         self.restore_original_bone_shapes()
         self.reject()
+
+class TurnBoneDialog(QtWidgets.QDialog):
+    def __init__(self, parent=QtWidgets.QWidget.find(rt.windows.getMAXHWND())):
+        super().__init__(parent)
+        self.setWindowTitle("Turn Bone")
+        self.setMinimumWidth(300)
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
+
+        # 다이얼로그 크기 고정 (예: 220x80)
+        self.setFixedSize(220, 80)
+
+        # 메인 레이아웃 생성
+        main_layout = QtWidgets.QVBoxLayout(self)
+
+        # 버튼 레이아웃 (가로)
+        button_layout = QtWidgets.QHBoxLayout()
+
+        # 90, 45, 5 버튼 생성 및 크기 설정
+        self.btn_90 = QtWidgets.QPushButton("90")
+        self.btn_45 = QtWidgets.QPushButton("45")
+        self.btn_5 = QtWidgets.QPushButton("5")
+        for btn in [self.btn_90, self.btn_45, self.btn_5]:
+            btn.setMinimumWidth(50)
+            btn.setMaximumWidth(50)
+            btn.setMinimumHeight(20)
+            btn.setMaximumHeight(20)
+            button_layout.addWidget(btn)
+
+        # 버튼 레이아웃을 메인 레이아웃에 추가
+        main_layout.addLayout(button_layout)
+
+        # 버튼 클릭 이벤트 연결
+        self.btn_90.clicked.connect(lambda: self.turn_bone_by_angle(90))
+        self.btn_45.clicked.connect(lambda: self.turn_bone_by_angle(45))
+        self.btn_5.clicked.connect(lambda: self.turn_bone_by_angle(5))
+
+    def turn_bone_by_angle(self, inAngle):
+        # Ctrl 키가 눌려 있으면 각도를 음수로 변환
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if modifiers & QtCore.Qt.ControlModifier:
+            angle = -inAngle
+        else:
+            angle = inAngle
+        selObjs = rt.getCurrentSelection()
+        for item in selObjs:
+            if rt.classOf(item) == rt.BoneGeometry:
+                jal.bone.turn_bone(item, angle)
         
+        rt.redrawViews()
+
 
 def jal_bone_on():
     jal.bone.set_bone_on_selection()
@@ -417,6 +466,10 @@ def jal_bone_size_modify():
     # 다이얼로그가 닫힐 때까지 대기하지 않고 즉시 반환
     # 사용자가 다이얼로그를 닫으면 자동으로 정리됨
 
+def jal_bone_turn():
+    dialog = TurnBoneDialog()
+    dialog.show()
+
 # Register macroscripts
 macroScript_Category = "jalTools"
 
@@ -508,4 +561,13 @@ rt.macros.new(
     "Bone Size Modify",
     "Bone Size Modify",
     "jal_bone_size_modify()"
+)
+
+rt.jal_bone_turn = jal_bone_turn
+rt.macros.new(
+    macroScript_Category,
+    "jal_boneTurn",
+    "Bone Turn",
+    "Bone Turn",
+    "jal_bone_turn()"
 )

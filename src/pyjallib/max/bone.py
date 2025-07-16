@@ -1348,3 +1348,14 @@ class Bone:
         selArray = list(rt.getCurrentSelection())
         for item in selArray:
             self.set_freeze_length_off(item)
+            
+    def turn_bone(self, inBone, inAngle):
+        """
+        입력된 각도만큼 입력된 본의 로컬 X 축을 회전 합니다.
+        
+        Args:
+            inBone: 회전할 뼈대 객체
+            inAngle: 회전할 각도
+        """
+        if rt.classOf(inBone) == rt.BoneGeometry:
+            self.anim.rotate_local(inBone, inAngle, 0, 0, dontAffectChildren=True)
