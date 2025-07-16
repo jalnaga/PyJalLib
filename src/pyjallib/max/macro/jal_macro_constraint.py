@@ -11,6 +11,12 @@ def jal_collapse_const():
         for selObj in selArray:
             jal.constraint.collapse(selObj)
 
+def jal_collapse_const_with_tcb_rot():
+    if rt.selection.count > 0:
+        selArray = rt.getCurrentSelection()
+        for selObj in selArray:
+            jal.constraint.collapse(selObj, inUseTCBRot=True)
+
 def jal_pos_const():
     if rt.selection.count > 1:
         selArray = rt.getCurrentSelection()
@@ -34,6 +40,12 @@ def jal_ori_const():
             targetObjArray.append(selArray[i])
         
         jal.constraint.assign_rot_const_multi(oriObj, targetObjArray)
+
+def jal_tcb_rot():
+    if rt.selection.count > 1:
+        selArray = rt.getCurrentSelection()
+        for item in selArray:
+            jal.constraint.assign_tcb_rot(item)
 
 def jal_rot_script_const():
     if rt.selection.count == 2:
@@ -87,6 +99,15 @@ rt.macros.new(
     "jal_collapse_const()"
 )
 
+rt.jal_collapse_const_with_tcb_rot = jal_collapse_const_with_tcb_rot
+rt.macros.new(
+    macroScript_Category,
+    "jal_collapse_const_with_tcb_rot",
+    "Collapse Constraints with TCB Rot",
+    "Collapse Constraints with TCB Rot",
+    "jal_collapse_const_with_tcb_rot()"
+)
+
 rt.jal_pos_const = jal_pos_const
 rt.macros.new(
     macroScript_Category,
@@ -103,6 +124,15 @@ rt.macros.new(
     "Constraint Orientation",
     "Constraint Orientation",
     "jal_ori_const()"
+)
+
+rt.jal_tcb_rot = jal_tcb_rot
+rt.macros.new(
+    macroScript_Category,
+    "jal_tcb_rot",
+    "Constraint TCB Rot",
+    "Constraint TCB Rot",
+    "jal_tcb_rot()"
 )
 
 rt.jal_rot_script_const = jal_rot_script_const

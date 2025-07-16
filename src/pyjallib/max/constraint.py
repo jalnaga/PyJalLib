@@ -32,7 +32,7 @@ class Constraint:
         self.name = nameService if nameService else Name()
         self.helper = helperService if helperService else Helper(nameService=self.name) # Pass the potentially newly created nameService
     
-    def collapse(self, inObj):
+    def collapse(self, inObj, inUseTCBRot=False):
         """
         비 Biped 객체의 트랜스폼 컨트롤러를 기본 컨트롤러로 초기화하고 현재 변환 상태 유지.
         
@@ -48,7 +48,10 @@ class Constraint:
             
             # 기본 컨트롤러로 위치, 회전, 스케일 초기화
             rt.setPropertyController(inObj.controller, "Position", rt.Position_XYZ())
-            rt.setPropertyController(inObj.controller, "Rotation", rt.Euler_XYZ())
+            if inUseTCBRot:
+                rt.setPropertyController(inObj.controller, "Rotation", rt.TCB_Rotation())
+            else:
+                rt.setPropertyController(inObj.controller, "Rotation", rt.Euler_XYZ())
             rt.setPropertyController(inObj.controller, "Scale", rt.Bezier_Scale())
             
             # 백업한 변환 상태 복원
@@ -472,6 +475,28 @@ class Constraint:
         rotList.setActive(rotList.count)
         
         return eulerXYZ
+    
+    def assign_tcb_rot(self, inObj):
+        """
+        객체에 TCB 회전 컨트롤러를 할당.
+        
+        Args:
+            inObj: 컨트롤러를 할당할 객체
+        """
+        # 회전 컨트롤러가 리스트 형태가 아니면 변환
+        rot_controller = rt.getPropertyController(inObj.controller, "Rotation")
+        if rt.classOf(rot_controller) != rt.Rotation_list:
+            rt.setPropertyController(inObj.controller, "Rotation", rt.Rotation_list())
+            
+        # 회전 리스트 컨트롤러 가져오기
+        rotList = self.assign_rot_list(inObj)
+        
+        # TCB 회전 컨트롤러 할당
+        tcbRot = rt.TCB_Rotation()
+        rt.setPropertyController(rotList, "Available", tcbRot)
+        rotList.setActive(rotList.count)
+        
+        return tcbRot
     
     def get_lookat(self, inObj):
         """
