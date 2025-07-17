@@ -10,11 +10,23 @@ from PySide2 import QtWidgets, QtCore
 import gc
 
 class ToolManager:
+    """
+    3DS Max에서 실행되는 도구(툴) 인스턴스를 통합 관리하는 클래스입니다.
+    도구의 등록, 닫기, 표시 등 라이프사이클을 관리합니다.
+    """
     def __init__(self):
+        """
+        ToolManager 인스턴스를 초기화합니다.
+        """
         self.tools = {}  # {tool_class_name: [instances]} 형태로 관리
     
     def register_tool(self, tool_instance):
-        """도구 인스턴스를 등록합니다"""
+        """
+        도구 인스턴스를 등록합니다.
+
+        Args:
+            tool_instance: 등록할 도구 인스턴스
+        """
         class_name = tool_instance.__class__.__name__
         
         if class_name not in self.tools:
@@ -23,7 +35,12 @@ class ToolManager:
         self.tools[class_name].append(tool_instance)
     
     def close_tool_by_type(self, tool_class):
-        """특정 유형의 도구를 모두 닫습니다"""
+        """
+        특정 클래스의 모든 도구 인스턴스를 닫고 정리합니다.
+
+        Args:
+            tool_class: 닫을 도구의 클래스
+        """
         class_name = tool_class.__name__
         
         if class_name not in self.tools:
@@ -66,13 +83,12 @@ class ToolManager:
     def show_tool(self, tool_class, **kwargs):
         """
         도구를 표시합니다. 중복 실행을 방지하고 항상 새 인스턴스를 생성합니다.
-        
+
         Args:
-            tool_class: 도구 클래스
+            tool_class: 표시할 도구 클래스
             **kwargs: 도구 클래스 생성자에 전달할 인자들
-            
         Returns:
-            새로 생성된 도구 인스턴스
+            object: 새로 생성된 도구 인스턴스
         """
         # 기존 인스턴스 모두 정리
         self.close_tool_by_type(tool_class)
