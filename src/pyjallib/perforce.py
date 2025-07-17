@@ -850,8 +850,15 @@ class Perforce:
             self.p4.run_sync(processed_paths)
             return True
         except P4Exception as e:
-            error_message = f"파일/폴더 싱크 실패 ({processed_paths}) 중 P4Exception 발생: {e}"
-            raise PerforceError(error_message)
+            # "file(s) up-to-date" 메시지는 정상적인 상황이므로 에러로 처리하지 않음
+            error_str = str(e)
+            if "file(s) up-to-date" in error_str:
+                # 파일이 이미 최신 상태인 경우 성공으로 처리
+                return True
+            else:
+                # 실제 에러인 경우에만 PerforceError 발생
+                error_message = f"파일/폴더 싱크 실패 ({processed_paths}) 중 P4Exception 발생: {e}"
+                raise PerforceError(error_message)
 
     def get_default_change_list(self) -> dict:
         """default change list의 정보를 가져옵니다.

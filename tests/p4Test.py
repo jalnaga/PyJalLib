@@ -19,4 +19,4 @@ testP4 = Perforce()
 
 testP4.connect("DongseokKim_DevStorage")
 
-testP4.submit_change_list(18368)
+testP4.sync_files(["E:\\DevStorage_root\\DevStorage\\Characters\\NormalMonster\\GumhoDistrictBully\\Male\\Animation\\Death\\A_Nm_GHDtBully_M_Death_Fist.max"])
