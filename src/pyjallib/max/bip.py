@@ -645,14 +645,16 @@ class Bip:
             for j in range(1, fingerLinkNum+1):
                 linkIndex = (i-1)*fingerLinkNum + j
                 fingerNode = rt.biped.getNode(bipObj.controller, rt.name("lFingers"), link=linkIndex)
-                fingers.append(fingerNode)
+                if fingerNode is not None:
+                    fingers.append(fingerNode)
             lFingersList.append(fingers)
         for i in range(1, fingerNum+1):
             fingers = []
             for j in range(1, fingerLinkNum+1):
                 linkIndex = (i-1)*fingerLinkNum + j
                 fingerNode = rt.biped.getNode(bipObj.controller, rt.name("rFingers"), link=linkIndex)
-                fingers.append(fingerNode)
+                if fingerNode is not None:
+                    fingers.append(fingerNode)
             rFingersList.append(fingers)
             
         fingerName = ["finger0", "finger1", "finger2", "finger3", "finger4"]
