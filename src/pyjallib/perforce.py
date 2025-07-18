@@ -680,6 +680,9 @@ class Perforce:
             self.p4.run_change("-d", change_list_number)
             return True
         except P4Exception as e:
+            # 이미 제출된 체인지리스트는 삭제할 수 없으므로 정상적인 상황으로 처리
+            if "already committed" in str(e):
+                return True
             error_message = f"체인지 리스트 {change_list_number} 삭제 실패 중 P4Exception 발생: {e}"
             raise PerforceError(error_message)
 
