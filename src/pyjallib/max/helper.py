@@ -130,7 +130,8 @@ class Helper:
         
         # 타겟 이름 생성
         if make_two:
-            targetName = self.name.add_suffix_to_real_name(tempName, self.get_name_by_type("Target"))
+            targetSuffix = self.name.get_filtering_char(tempName) + self.get_name_by_type("Target")
+            targetName = self.name.add_suffix_to_real_name(tempName, targetSuffix)
         
         return [pointName, targetName]
     

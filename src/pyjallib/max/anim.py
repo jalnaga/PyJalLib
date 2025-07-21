@@ -625,7 +625,7 @@ class Anim:
         
         animatedNodes = self.find_animated_nodes(inObjs)
         rt.LoadSaveAnimation.setUpAnimsForSave(animatedNodes, animatedTracks=True, includeContraints=True, keyable=True)
-        rt.LoadSaveAnimation.saveAnimation(
+        animSaveResult = rt.LoadSaveAnimation.saveAnimation(
             inSaveFilePath,
             animatedNodes,
             "tempVal",
@@ -638,7 +638,7 @@ class Anim:
             segKeyPerFrame=True
         )
         
-        return True
+        return animSaveResult
     
     def load_animation(self, inObjs, inLoadFilePath):
         """
@@ -653,9 +653,9 @@ class Anim:
             return False
         
         rt.LoadSaveAnimation.setUpAnimsForLoad(inObjs, includePB2s=True, stripLayers=True)
-        rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True)
+        animLoadResult = rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True)
         
-        return True
+        return animLoadResult
         
     
     def save_xform(self, inObj):
