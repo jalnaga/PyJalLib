@@ -42,7 +42,7 @@ def jal_ori_const():
         jal.constraint.assign_rot_const_multi(oriObj, targetObjArray)
 
 def jal_tcb_rot():
-    if rt.selection.count > 1:
+    if rt.selection.count > 0:
         selArray = rt.getCurrentSelection()
         for item in selArray:
             jal.constraint.assign_tcb_rot(item)
@@ -66,6 +66,17 @@ def jal_lookat_const():
             targetObjArray.append(selArray[i])
         
         jal.constraint.assign_lookat_multi(oriObj, targetObjArray)
+
+def jal_lookat_upnode():
+    if rt.selection.count == 2:
+        selArray = rt.getCurrentSelection()
+        oriObj = selArray[0]
+        targetObj = selArray[1]
+        
+        lookAtConst = jal.constraint.get_lookat(oriObj)
+        if lookAtConst is not None:
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = targetObj
 
 def jal_lookat_flipless_const():
     if rt.selection.count == 2:
@@ -151,6 +162,15 @@ rt.macros.new(
     "Constraint LookAt",
     "Constraint LookAt",
     "jal_lookat_const()"
+)
+
+rt.jal_lookat_upnode = jal_lookat_upnode
+rt.macros.new(
+    macroScript_Category,
+    "jal_lookat_upnode",
+    "Constraint Set LookAt Upnode",
+    "Constraint Set LookAt Upnode",
+    "jal_lookat_upnode()"
 )
 
 rt.jal_lookat_flipless_const = jal_lookat_flipless_const

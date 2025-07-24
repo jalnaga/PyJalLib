@@ -19,4 +19,12 @@ testP4 = Perforce()
 
 testP4.connect("DongseokKim_DevStorage")
 
-testP4.sync_files(["E:\\DevStorage_root\\DevStorage\\Characters\\NormalMonster\\GumhoDistrictBully\\Male\\Animation\\Death\\A_Nm_GHDtBully_M_Death_Fist.max"])
+fileList = [
+    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.json",
+    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.fbx",
+    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.bip"
+]
+
+syncFileList = ['E:\\DevStorage_root\\DevStorage\\Characters\\EliteMonster\\BigGroundRat\\NonBinary\\Animation\\Battle\\Action\\Death\\']
+result = testP4.sync_files(syncFileList)
+print(f"result: {result}")

@@ -10,7 +10,7 @@ P4Python을 사용하는 Perforce 모듈.
 """
 
 from P4 import P4, P4Exception
-import os
+from pathlib import Path
 from .exceptions import PerforceError, ValidationError
 
 
@@ -63,7 +63,7 @@ class Perforce:
                 root_path = client_info.get("Root", "")
                 
                 # Windows 경로 형식으로 변환 (슬래시를 백슬래시로)
-                root_path = os.path.normpath(root_path)
+                root_path = str(Path(root_path).resolve())
                 
                 self.workspaceRoot = root_path
             except (IndexError, KeyError):
@@ -311,11 +311,11 @@ class Perforce:
             opened_files = self.p4.run_opened("-c", change_list_number)
             
             # 파일 경로 정규화
-            normalized_file_path = os.path.normpath(file_path)
+            normalized_file_path = str(Path(file_path).resolve())
             
             for file_info in opened_files:
                 client_file = file_info.get('clientFile', '')
-                normalized_client_file = os.path.normpath(client_file)
+                normalized_client_file = str(Path(client_file).resolve())
                 
                 if normalized_client_file == normalized_file_path:
                     return True
@@ -753,11 +753,15 @@ class Perforce:
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
         processed_paths = []
         for path in file_paths:
-            if os.path.isdir(path):
+            path_obj = Path(path)
+            if path_obj.is_dir() and path_obj.exists():
                 # 폴더 경로에 '...'(재귀) 패턴을 추가
-                processed_paths.append(os.path.join(path, '...'))
+                processed_paths.append(str(path_obj / '...'))
+            elif path_obj.is_file() and path_obj.exists():
+                processed_paths.append(str(path_obj))
             else:
-                processed_paths.append(path)
+                error_msg = f"파일 또는 폴더가 존재하지 않습니다. 경로: {path}"
+                raise PerforceError(error_msg)
         
         try:
             sync_preview_results = self.p4.run_sync("-n", processed_paths)
@@ -815,7 +819,7 @@ class Perforce:
                 
         except P4Exception as e:
             # 파일이 존재하지 않는 경우는 일반적인 상황이므로 False 반환
-            if any("no such file(s)" in err.lower() for err in self.p4.errors):
+            if "no such file(s)" in str(e).lower():
                 return False
             else:
                 error_message = f"파일 '{file_path}' Perforce 존재 여부 확인 중 P4Exception 발생: {e}"
@@ -843,17 +847,22 @@ class Perforce:
         # 폴더 경로에 재귀적 와일드카드 패턴을 추가
         processed_paths = []
         for path in file_paths:
-            if os.path.isdir(path):
+            path_obj = Path(path)
+            if path_obj.is_dir() and path_obj.exists():
                 # 폴더 경로에 '...'(재귀) 패턴을 추가
-                processed_paths.append(os.path.join(path, '...'))
+                processed_paths.append(str(path_obj / '...'))
+            elif path_obj.is_file() and path_obj.exists():
+                processed_paths.append(str(path_obj))
             else:
-                processed_paths.append(path)
+                error_msg = f"파일 또는 폴더가 존재하지 않습니다. 경로: {path}"
+                raise PerforceError(error_msg)
         
         try:
             self.p4.run_sync(processed_paths)
             return True
         except P4Exception as e:
             # "file(s) up-to-date" 메시지는 정상적인 상황이므로 에러로 처리하지 않음
+            print(f"e: {e}")
             error_str = str(e)
             if "file(s) up-to-date" in error_str:
                 # 파일이 이미 최신 상태인 경우 성공으로 처리

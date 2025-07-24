@@ -163,7 +163,7 @@ class BaseImporter(ABC):
         assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
         assetData = unreal.EditorAssetLibrary.find_asset_data(inAssetPath)
         
-        ue5_logger.error(f"assetData: {assetData.asset_name}")
+        ue5_logger.info(f"assetData: {assetData.asset_name}")
         
         depPackages = assetRegistry.get_dependencies(
             assetData.package_name,  
