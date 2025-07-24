@@ -99,6 +99,24 @@ class Layer:
         
         return False
     
+    def get_layer_by_namepattern(self, inLayerNamePattern):
+        """
+        레이어 이름 패턴으로 해당 레이어를 가져옴
+        
+        Args:
+            inLayerNamePattern: 레이어 이름 패턴
+            
+        Returns:
+            레이어 배열
+        """
+        returnVal = []
+        for i in range(rt.LayerManager.count):
+            layer = rt.layerManager.getLayer(i)
+            if rt.matchPattern(layer.name, pattern=inLayerNamePattern):
+                returnVal.append(layer.name)
+        
+        return returnVal
+    
     def get_nodes_by_layername(self, inLayerName):
         """
         레이어 이름으로 해당 레이어의 노드들을 가져옴
