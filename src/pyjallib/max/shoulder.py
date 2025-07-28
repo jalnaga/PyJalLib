@@ -109,8 +109,8 @@ class Shoulder:
         shoulderRotHelperPosConst = self.const.assign_pos_const(shoulderRotHelper, inUpperArm)
         
         shoulderRotHelperRotConst = self.const.assign_rot_const_multi(shoulderRotHelper, [shoulderLookAtHelper, inUpperArmTwist])
-        shoulderRotHelperRotConst.setWeight(1, 100.0-inTwistWeight)
-        shoulderRotHelperRotConst.setWeight(2, inTwistWeight)
+        shoulderRotHelperRotConst.setWeight(1, 100.0-(inTwistWeight*100.0))
+        shoulderRotHelperRotConst.setWeight(2, inTwistWeight*100.0)
         genHelpers.append(shoulderRotHelper)
         
         # 어깨 최종 회전 오프셋 헬퍼 포인트 생성
