@@ -170,45 +170,44 @@ class Anim:
             startFrame = int(rt.animationRange.start)
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
-            
-        # 씬 리드로우(화면 업데이트)를 중단하여 성능 최적화
-        rt.disableSceneRedraw()
         
-        # 진행 상태 표시 시작
-        progressMessage = f"Collapse transform {inObj.name}..."
-        rt.progressStart(progressMessage, allowCancel=True)
+        maxScriptCode = f""
+        maxScriptCode += f"disableSceneRedraw()\n"
+        maxScriptCode += f"progressStart (\"Collapse transform {inObj.name}...\")\n"
+        maxScriptCode += f"inObj = $'{inObj.name}'\n"
+        maxScriptCode += f"p = point()\n"
+        maxScriptCode += f"for k = {startFrame} to {endFrame} do (\n"
+        maxScriptCode += f"    at time k (\n"
+        maxScriptCode += f"        with animate on p.transform = inObj.transform\n"
+        maxScriptCode += f"    )\n"
+        maxScriptCode += f")\n"
+        maxScriptCode += f"\n"
+        maxScriptCode += f"inObj.transform.controller = transform_script()\n"
+        maxScriptCode += f"inObj.transform.controller = prs()\n"
+        maxScriptCode += f"\n"
+        maxScriptCode += f"for k = {startFrame} to {endFrame} do (\n"
+        maxScriptCode += f"    at time k (\n"
+        maxScriptCode += f"        with animate on (\n"
+        maxScriptCode += f"            in coordsys (transmatrix inObj.transform.pos) inObj.rotation = inverse p.transform.rotation\n"
+        maxScriptCode += f"            in coordsys world inObj.position = p.transform.position\n"
+        maxScriptCode += f"            inObj.scale = p.scale\n"
+        maxScriptCode += f"        )\n"
+        maxScriptCode += f"    )\n"
+        maxScriptCode += f"    progressUpdate (100 * k / {endFrame})\n"
+        maxScriptCode += f")\n"
+        maxScriptCode += f"\n"
+        maxScriptCode += f"if {startFrame} != animationRange.start then (\n"
+        maxScriptCode += f"    deselectKeys inObj.transform.controller\n"
+        maxScriptCode += f"    selectKeys inObj.transform.controller animationRange.start\n"
+        maxScriptCode += f"    deleteKeys inObj.transform.controller #selection\n"
+        maxScriptCode += f"    deselectKeys inObj.transform.controller\n"
+        maxScriptCode += f")\n"
+        maxScriptCode += f"\n"
+        maxScriptCode += f"delete p\n"
+        maxScriptCode += f"progressEnd()\n"
+        maxScriptCode += f"enableSceneRedraw()\n"
         
-        # 임시 포인트 객체 생성 (중간 변환값 저장용)
-        p = rt.Point()
-        
-        # 각 프레임에서 대상 객체의 변환 정보를 임시 포인트에 저장
-        for k in range(startFrame, endFrame+1):
-            with attime(k):
-                with animate(True):
-                    rt.setProperty(p, "transform", rt.getProperty(inObj, "transform"))
-                    
-        # 트랜스폼 컨트롤러를 스크립트와 PRS 컨트롤러로 재설정
-        rt.setPropertyController(inObj.controller, "Transform", rt.transform_Script())
-        rt.setPropertyController(inObj.controller, "Transform", rt.prs())
-        
-        # 각 프레임별로 임시 포인트와의 차이를 계산해서 최종 변환 적용
-        for k in range(startFrame, endFrame+1):
-            with attime(k):
-                with animate(True):
-                    tm = inObj.transform * rt.inverse(p.transform)
-                    rt.setProperty(inObj, "rotation", tm.rotation)
-                    rt.setProperty(inObj, "position", p.transform.position)
-                    rt.setProperty(inObj, "scale", p.transform.scale)
-            
-            # 진행 상황 업데이트 (백분율 계산)
-            rt.progressUpdate(100 * k / endFrame)
-        
-        # 임시 포인트 객체 삭제
-        rt.delete(p)
-        
-        # 진행 상태 종료 및 씬 업데이트 재활성화
-        rt.progressEnd()
-        rt.enableSceneRedraw()
+        rt.execute(maxScriptCode)
     
     def match_anim_transform(self, inObj, inTarget, startFrame=None, endFrame=None):
         """
@@ -226,120 +225,80 @@ class Anim:
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
             
-        # 대상 객체와 기준 객체가 유효한지 확인
-        if rt.isValidNode(inObj) and rt.isValidNode(inTarget):
-            # 씬 업데이트 중단
-            rt.disableSceneRedraw()
-            
-            # 진행 상태 표시 시작
-            progressMessage = f"Match transform {inObj.name} to {inTarget.name}"
-            rt.progressStart(progressMessage, allowCancel=True)
-            progressCounter = 0
-            
-            # 임시 포인트 객체 생성 (타겟 변환 저장용)
-            p = rt.Point()
-            
-            # 각 프레임마다 inTarget의 변환을 저장하고 inObj의 기존 키 삭제
-            for k in range(startFrame, endFrame + 1):
-                with attime(k):
-                    with animate(True):
-                        rt.setProperty(p, "transform", rt.getProperty(inTarget, "transform"))
-                
-                # inObj의 위치, 회전, 스케일 컨트롤러에서 기존 키 삭제
-                inObjControllers = []
-                inObjControllers.append(rt.getPropertyController(inObj.controller, "Position"))
-                inObjControllers.append(rt.getPropertyController(inObj.controller, "Rotation"))
-                inObjControllers.append(rt.getPropertyController(inObj.controller, "Scale"))
-                
-                for controller in inObjControllers:
-                    rt.deselectKeys(controller)
-                    rt.selectKeys(controller, k)
-                    rt.deleteKeys(controller, rt.Name("selection"))
-                    rt.deselectKeys(controller)
-                    
-                progressCounter += 1
-                if progressCounter >= 100:
-                    progressCounter = 0
-                rt.progressUpdate(progressCounter)
-                    
-            # 시작 프레임 이전의 불필요한 키 삭제
-            if startFrame != rt.animationRange.start:
-                dumPointControllers = []
-                dumPointControllers.append(rt.getPropertyController(p.controller, "Position"))
-                dumPointControllers.append(rt.getPropertyController(p.controller, "Rotation"))
-                dumPointControllers.append(rt.getPropertyController(p.controller, "Scale"))
-                
-                for controller in dumPointControllers:
-                    rt.deselectKeys(controller)
-                    rt.selectKeys(controller, startFrame)
-                    rt.deleteKeys(controller, rt.Name("selection"))
-                    rt.deselectKeys(controller)
-                
-                progressCounter += 1
-                if progressCounter >= 100:
-                    progressCounter = 0
-                rt.progressUpdate(progressCounter)
-            
-            # inTarget의 각 컨트롤러에서 키 배열을 가져옴
-            inTargetPosController = rt.getPropertyController(inTarget.controller, "Position")
-            inTargetRotController = rt.getPropertyController(inTarget.controller, "Rotation")
-            inTargetScaleController = rt.getPropertyController(inTarget.controller, "Scale")
-            
-            posKeyArray = inTargetPosController.keys
-            rotKeyArray = inTargetRotController.keys
-            scaleKeyArray = inTargetScaleController.keys
-            
-            # 시작 프레임 및 끝 프레임의 변환 적용
-            with attime(startFrame):
-                with animate(True):
-                    rt.setProperty(inObj, "transform", rt.getProperty(p, "transform"))
-            with attime(endFrame):
-                with animate(True):
-                    rt.setProperty(inObj, "transform", rt.getProperty(p, "transform"))
-            
-            # 위치 키프레임 적용
-            for key in posKeyArray:
-                keyTime = int(rt.getProperty(key, "time"))
-                if keyTime >= startFrame and keyTime <= endFrame:
-                    with attime(keyTime):
-                        with animate(True):
-                            rt.setProperty(inObj, "transform", rt.getProperty(p, "transform"))
-                progressCounter += 1
-                if progressCounter >= 100:
-                    progressCounter = 0
-                rt.progressUpdate(progressCounter)
-            
-            # 회전 키프레임 적용
-            for key in rotKeyArray:
-                keyTime = int(rt.getProperty(key, "time"))
-                if keyTime >= startFrame and keyTime <= endFrame:
-                    with attime(keyTime):
-                        with animate(True):
-                            rt.setProperty(inObj, "transform", rt.getProperty(p, "transform"))
-                progressCounter += 1
-                if progressCounter >= 100:
-                    progressCounter = 0
-                rt.progressUpdate(progressCounter)
-                            
-            # 스케일 키프레임 적용
-            for key in scaleKeyArray:
-                keyTime = int(rt.getProperty(key, "time"))
-                if keyTime >= startFrame and keyTime <= endFrame:
-                    with attime(keyTime):
-                        with animate(True):
-                            rt.setProperty(inObj, "transform", rt.getProperty(p, "transform"))
-                progressCounter += 1
-                if progressCounter >= 100:
-                    progressCounter = 0
-                rt.progressUpdate(progressCounter)
-            
-            # 임시 포인트 객체 삭제
-            rt.delete(p)
-            
-            # 진행 상태 100% 업데이트 후 종료
-            rt.progressUpdate(100)
-            rt.progressEnd()
-            rt.enableSceneRedraw()
+        maxscriptCode = f""
+        maxscriptCode += f"inObj = $'{inObj.name}'\n"
+        maxscriptCode += f"inTarget = $'{inTarget.name}'\n"
+        maxscriptCode += f"if (isValidNode inObj) and (isValidNode inTarget) then (\n"
+        maxscriptCode += f"    disableSceneRedraw()\n"
+        maxscriptCode += f"    progressStart (\"Match transform {inObj.name} to {inTarget.name} \")\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    p = point()\n"
+        maxscriptCode += f"    for k = {startFrame} to {endFrame} do (\n"
+        maxscriptCode += f"        at time k (\n"
+        maxscriptCode += f"            with animate on p.transform = inTarget.transform\n"
+        maxscriptCode += f"        )\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"        deselectKeys inObj.transform.controller\n"
+        maxscriptCode += f"        selectKeys inObj.transform.controller k\n"
+        maxscriptCode += f"        deleteKeys inObj.transform.controller #selection\n"
+        maxscriptCode += f"        deselectKeys inObj.transform.controller\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    progressUpdate 20\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    if {startFrame} != animationRange.start then (\n"
+        maxscriptCode += f"        deselectKeys p.transform.controller\n"
+        maxscriptCode += f"        selectKeys p.transform.controller animationRange.start\n"
+        maxscriptCode += f"        deleteKeys p.transform.controller #selection\n"
+        maxscriptCode += f"        deselectKeys p.transform.controller\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    progressUpdate 25\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    local posKeyArray = inTarget.pos.controller.keys\n"
+        maxscriptCode += f"    local rotKeyArray = inTarget.rotation.controller.keys\n"
+        maxscriptCode += f"    local scaleKeyArray = inTarget.scale.controller.keys\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    at time {startFrame} (\n"
+        maxscriptCode += f"        with animate on inObj.transform = p.transform\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"    at time {endFrame} (\n"
+        maxscriptCode += f"        with animate on inObj.transform = p.transform\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    for key in posKeyArray do (\n"
+        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
+        maxscriptCode += f"            at time key.time (\n"
+        maxscriptCode += f"                with animate on inObj.transform = p.transform\n"
+        maxscriptCode += f"            )\n"
+        maxscriptCode += f"        )\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"    progressUpdate 40\n"
+        maxscriptCode += f"    for key in rotKeyArray do (\n"
+        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
+        maxscriptCode += f"            at time key.time (\n"
+        maxscriptCode += f"                with animate on inObj.transform = p.transform\n"
+        maxscriptCode += f"            )\n"
+        maxscriptCode += f"        )\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"    progressUpdate 60\n"
+        maxscriptCode += f"    for key in scaleKeyArray do (\n"
+        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
+        maxscriptCode += f"            at time key.time (\n"
+        maxscriptCode += f"                with animate on inObj.transform = p.transform\n"
+        maxscriptCode += f"            )\n"
+        maxscriptCode += f"        )\n"
+        maxscriptCode += f"    )\n"
+        maxscriptCode += f"    progressUpdate 80\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    delete p\n"
+        maxscriptCode += f"\n"
+        maxscriptCode += f"    progressUpdate 100\n"
+        maxscriptCode += f"    progressEnd()\n"
+        maxscriptCode += f"    enableSceneRedraw()\n"
+        maxscriptCode += f")\n"
+        
+        rt.execute(maxscriptCode)
     
     def create_average_pos_transform(self, inTargetArray):
         """
@@ -408,7 +367,7 @@ class Anim:
         rt.delete(rotConstDum)
         
         return returnTransform
-    
+        
     def get_all_keys_in_controller(self, inController, keys_list):
         """
         주어진 컨트롤러와 그 하위 컨트롤러에서 모든 키프레임을 재귀적으로 수집함.
@@ -420,12 +379,16 @@ class Anim:
         with undo(False):
             # 현재 컨트롤러에 키프레임이 있으면 리스트에 추가
             if rt.isProperty(inController, 'keys'):
-                for k in inController.keys:
-                    keys_list.append(k)
+                if inController.keys:
+                    for k in inController.keys:
+                        keys_list.append(k)
 
             # 하위 컨트롤러에 대해서 재귀적으로 검색
             for i in range(inController.numSubs):
-                sub_controller = inController[i]  # 1부터 시작하는 인덱스
+                try:
+                    sub_controller = inController[i]
+                except:
+                    sub_controller = None
                 if sub_controller:
                     self.get_all_keys_in_controller(sub_controller, keys_list)
                     
@@ -442,7 +405,25 @@ class Anim:
         with undo(False):
             keys_list = []
             if rt.isValidNode(inObj):
-                self.get_all_keys_in_controller(inObj.controller, keys_list)
+                if rt.classOf(inObj) == rt.Biped_Object:
+                    if inObj.controller.rootNode == inObj:
+                        bipComVertKeys = inObj.controller.vertical.controller.keys
+                        bipComHorKeys = inObj.controller.horizontal.controller.keys
+                        bipComTurningKeys = inObj.controller.turning.controller.keys
+                        for key in bipComVertKeys:
+                            if key not in keys_list:
+                                keys_list.append(key)
+                        for key in bipComHorKeys:
+                            if key not in keys_list:
+                                keys_list.append(key)
+                        for key in bipComTurningKeys:
+                            if key not in keys_list:
+                                keys_list.append(key)
+                    else:
+                        keys_list = inObj.controller.keys
+                else:
+                    self.get_all_keys_in_controller(inObj.controller, keys_list)
+            
             return keys_list
     
     def get_start_end_keys(self, inObj):
@@ -459,12 +440,12 @@ class Anim:
             keys = self.get_all_keys(inObj)
             if keys and len(keys) > 0:
                 # 각 키의 시간값을 추출하여 최소, 최대값 확인
-                keyTimes = [key.time for key in keys]
-                minTime = rt.amin(keyTimes)
-                maxTime = rt.amax(keyTimes)
-                minIndex = keyTimes.index(minTime)
-                maxIndex = keyTimes.index(maxTime)
-                return [rt.amin(minIndex), rt.amax(maxIndex)]
+                times = [key.time for key in keys]
+                minTime = rt.amin(times)
+                maxTime = rt.amax(times)
+                minIndex = times.index(minTime)
+                maxIndex = times.index(maxTime)
+                return [keys[minIndex], keys[maxIndex]]
             else:
                 return []
     
@@ -608,7 +589,7 @@ class Anim:
         
         return result
     
-    def save_animation(self, inObjs, inSaveFilePath):
+    def save_animation(self, inObjs, inSaveFilePath, inKeyPerFrame=True):
         """
         객체의 애니메이션을 저장함.
         
@@ -632,15 +613,15 @@ class Anim:
             "tempVal",
             animatedTracks=True,
             includeConstraints=True,
-            keyableTracks=False,
+            keyableTracks=True,
             SaveSegment=True,
             segInterval=rt.animationRange,
-            segKeyPerFrame=True
+            segKeyPerFrame=inKeyPerFrame
         )
         
         return animSaveResult
     
-    def load_animation(self, inObjs, inLoadFilePath):
+    def load_animation(self, inObjs, inLoadFilePath, inMapFilePath=None):
         """
         애니메이션을 로드함.
         
@@ -653,7 +634,12 @@ class Anim:
             return False
         
         rt.LoadSaveAnimation.setUpAnimsForLoad(inObjs, includePB2s=True, stripLayers=True)
-        animLoadResult = rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True)
+        animMapFile = rt.LoadSaveAnimation.getAnimMapFile()
+        animMapFileLoaded = False
+        if inMapFilePath is not None:
+            animMapFile = inMapFilePath
+            animMapFileLoaded = True
+        animLoadResult = rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True, useMapFile=animMapFileLoaded, mapFileName=animMapFile)
         
         return animLoadResult
         

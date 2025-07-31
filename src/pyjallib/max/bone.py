@@ -303,7 +303,7 @@ class Bone:
         
         return newBone
     
-    def create_bone(self, inPointArray, inName, end=True, delPoint=False, parent=False, size=2, normals=None):
+    def create_bone(self, inPointArray, inName, end=True, delPoint=False, parent=False, size=2, normals=None, inBoneScaleType=rt.Name("none")):
         """
         포인트 배열을 따라 뼈대 체인 생성.
         
@@ -315,7 +315,7 @@ class Bone:
             parent: 부모 Nub 포인트 생성 여부 (기본값: False)
             size: 뼈대 크기 (기본값: 2)
             normals: 법선 벡터 배열 (기본값: None)
-            
+            inBoneScaleType: 뼈대 스케일 타입 (기본값: rt.Name("none"))
         Returns:
             생성된 뼈대 배열 또는 False (실패 시)
         """
@@ -339,6 +339,7 @@ class Bone:
                     newBone = rt.BoneSys.createBone(inPointArray[i].transform.position, inPointArray[i+1].transform.position, rt.Point3(0, -1, 0))
                 
                 newBone.boneFreezeLength = True
+                newBone.boneScaleType = inBoneScaleType
                 newBone.name = self.name.replace_name_part("Index", inName, str(boneNum))
                 newBone.height = size
                 newBone.width = size
