@@ -240,7 +240,8 @@ class Bone:
         nubBone.sidefins = False
         nubBone.name = self.name.remove_name_part("Index", inName)
         nubBone.name = self.name.remove_name_part("Nub", nubBone.name)
-        nubBone.name = self.name.replace_name_part("Nub", nubBone.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        # nubBone.name = self.name.replace_name_part("Nub", nubBone.name, self.name.get_name_part_value_by_description("Nub", "Nub"))
+        nubBone.name = self.name.gen_unique_name(nubBone.name)
         
         nubBone.boneScaleType = inBoneScaleType
         
@@ -282,6 +283,10 @@ class Bone:
         parentPos = parentTrans.translation
         boneName = self.name.get_string(parentBone.name)
         newBone = self.create_nub_bone(boneName, parentBone.width)
+        
+        parentBoneIndex = self.name.get_name("Index", parentBone.name)
+        if parentBoneIndex != "":
+            newBone.name = self.name.increase_index(parentBone.name, 1)
         
         newBone.transform = parentTrans
         

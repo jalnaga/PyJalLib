@@ -128,31 +128,31 @@ class Hip:
         filteringChar = self.name._get_filtering_char(inThigh.name)
         isLower = inThigh.name[0].islower()
         
-        pelvisHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_RealName(inPelvis.name)+filteringChar+"Hip")
+        pelvisHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inPelvis.name)+filteringChar+"Hip")
         pelvisHelperName = self.name.replace_name_part("Type", pelvisHelperName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         pelvisHelper = self.helper.create_point(pelvisHelperName)
         rt.setProperty(pelvisHelper, "transform", inThigh.transform)
         pelvisHelper.parent = inPelvis
         
-        tihgTwistHeleprName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_RealName(inThighTwist.name)+filteringChar+"Hip")
+        tihgTwistHeleprName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inThighTwist.name)+filteringChar+"Hip")
         tihgTwistHeleprName = self.name.replace_name_part("Type", tihgTwistHeleprName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         thighTwistHelper = self.helper.create_point(tihgTwistHeleprName)
         rt.setProperty(thighTwistHelper, "transform", inThighTwist.transform)
         thighTwistHelper.parent = inThighTwist
         
-        tihghRotHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_RealName(inThigh.name)+filteringChar+"Hip")
+        tihghRotHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inThigh.name)+filteringChar+"Hip")
         tihghRotHelperName = self.name.replace_name_part("Type", tihghRotHelperName, self.name.get_name_part_value_by_description("Type", "Rotation"))
         thighRotHelper = self.helper.create_point(tihghRotHelperName)
         rt.setProperty(thighRotHelper, "transform", inThighTwist.transform)
         thighRotHelper.parent = inThigh
         
-        thighPosHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_RealName(inThigh.name)+filteringChar+"Hip")
+        thighPosHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inThigh.name)+filteringChar+"Hip")
         thighPosHelperName = self.name.replace_name_part("Type", thighPosHelperName, self.name.get_name_part_value_by_description("Type", "Position"))
         thighPosHelper = self.helper.create_point(thighPosHelperName)
         rt.setProperty(thighPosHelper, "transform", inThighTwist.transform)
         thighPosHelper.parent = thighRotHelper
         
-        thighRotRootHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_RealName(inThigh.name)+filteringChar+"Hip")
+        thighRotRootHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inThigh.name)+filteringChar+"Hip")
         thighRotRootHelperName = self.name.replace_name_part("Type", thighRotRootHelperName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         thighRotRootHelper = self.helper.create_point(thighRotRootHelperName)
         rt.setProperty(thighRotRootHelper, "transform", thighRotHelper.transform)

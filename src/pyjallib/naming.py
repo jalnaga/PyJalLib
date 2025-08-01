@@ -501,7 +501,7 @@ class Naming:
         
         return newName
     
-    def get_RealName(self, inStr):
+    def get_realName(self, inStr):
         """
         문자열에서 실제 이름 부분 추출
         
@@ -530,7 +530,7 @@ class Naming:
         # 구분자로 결합
         return self._combine(nameArray, filChar)
 
-    def get_non_RealName(self, inStr):
+    def get_non_realName(self, inStr):
         """
         실제 이름 부분을 제외한 이름 가져오기
         
@@ -580,7 +580,7 @@ class Naming:
         
         # 마지막으로 RealName 처리 (다른 모든 부분을 찾은 후에 수행해야 함)
         if 'realNameIndex' in locals():
-            realNameStr = self.get_RealName(inStr)
+            realNameStr = self.get_realName(inStr)
             returnArray[realNameIndex] = realNameStr
         
         return returnArray
@@ -611,7 +611,7 @@ class Naming:
             returnDict[partName] = partValue
         
         # 마지막으로 RealName 처리 (다른 모든 부분을 찾은 후에 수행해야 함)
-        realNameStr = self.get_RealName(inStr)
+        realNameStr = self.get_realName(inStr)
         returnDict["RealName"] = realNameStr
         
         return returnDict
@@ -1092,3 +1092,28 @@ class Naming:
             설정 파일 경로 (없으면 빈 문자열)
         """
         return self._configPath or ""
+    
+    def split_to_array(self, inStr):
+        """
+        이름을 배열로 분리
+        
+        Args:
+            inStr: 처리할 이름 문자열
+            
+        Returns:
+            분리된 이름 배열
+        """
+        return self._split_to_array(inStr)
+    
+    def combine_array(self, inArray, inFilChar=" "):
+        """
+        배열을 이름으로 결합
+        
+        Args:
+            inArray: 처리할 이름 배열
+            inFilChar: 구분자 문자
+            
+        Returns:
+            결합된 이름 문자열
+        """
+        return self._combine(inArray, inFilChar)

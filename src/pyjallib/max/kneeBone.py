@@ -313,7 +313,7 @@ class KneeBone:
         result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=inKneeVolumeSize, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
         filteringChar = self.name._get_filtering_char(inCalf.name)
-        calfName = self.name.get_RealName(inCalf.name)
+        calfName = self.name.get_realName(inCalf.name)
         calfName = calfName + filteringChar + "Vol"
         isLower = calfName[0].islower()
         replaceName = "Knee"
