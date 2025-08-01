@@ -15,6 +15,11 @@ def jal_selFilter_bone():
     if rt.selection.count > 0:
         jal.sel.filter_bone()
 
+def jal_selFilter_end_bone():
+    jal.sel.set_selectionSet_to_bone()
+    if rt.selection.count > 0:
+        jal.sel.filter_end_bone()
+
 def jal_selFilter_bip():
     jal.sel.set_selectionSet_to_bone()
     if rt.selection.count > 0:
@@ -54,6 +59,15 @@ rt.macros.new(
     "Selection filter Bone",
     "Selection filter Bone", 
     "jal_selFilter_bone()"
+)
+
+rt.jal_selFilter_end_bone = jal_selFilter_end_bone
+rt.macros.new(
+    macroScript_Category,
+    "jal_selFilter_end_bone",
+    "Selection filter End Bone",
+    "Selection filter End Bone",
+    "jal_selFilter_end_bone()"
 )
 
 rt.jal_selFilter_bip = jal_selFilter_bip

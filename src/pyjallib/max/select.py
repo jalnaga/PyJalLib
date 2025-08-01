@@ -92,6 +92,16 @@ class Select:
             filtered_sel = [item for item in sel_array if rt.classOf(item) == rt.BoneGeometry]
             rt.clearSelection()
             rt.select(filtered_sel)
+            
+    def filter_end_bone(self):
+        """
+        현재 선택 항목에서 뼈대 객체만 필터링하여 선택
+        """
+        sel_array = rt.getCurrentSelection()
+        if len(sel_array) > 0:
+            filtered_sel = [item for item in sel_array if self.bone.is_end_bone(item)]
+            rt.clearSelection()
+            rt.select(filtered_sel)
     
     def filter_helper(self):
         """
