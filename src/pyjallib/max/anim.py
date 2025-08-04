@@ -519,11 +519,14 @@ class Anim:
                 if animated:
                     break
         
+        try:
         # 하위 애니메이션에 대해 재귀적으로 검사
-        for i in range(node.numSubs):
-            animated = self.is_node_animated(node[i])
-            if animated:
-                break
+            for i in range(node.numSubs):
+                animated = self.is_node_animated(node[i])
+                if animated:
+                    break
+        except:
+            animated = False
         
         return animated
     
@@ -629,17 +632,34 @@ class Anim:
             inObjs : 애니메이션을 로드할 객체
             inLoadFilePath : 애니메이션을 로드할 파일 경로
         """
-        
+        animLoadResult = False
         if not(rt.doesFileExist(inLoadFilePath)):
             return False
         
         rt.LoadSaveAnimation.setUpAnimsForLoad(inObjs, includePB2s=True, stripLayers=True)
-        animMapFile = rt.LoadSaveAnimation.getAnimMapFile()
+        animMapFile = None
         animMapFileLoaded = False
         if inMapFilePath is not None:
-            animMapFile = inMapFilePath
+            animMapFile = rt.LoadSaveAnimation.getAnimMapFile()
             animMapFileLoaded = True
-        animLoadResult = rt.LoadSaveAnimation.loadAnimation(inLoadFilePath, inObjs, insert=False, relative=False, insertTime=0, stripLayers=True, useMapFile=animMapFileLoaded, mapFileName=animMapFile)
+            animLoadResult = rt.LoadSaveAnimation.loadAnimation(
+                inLoadFilePath, inObjs, 
+                insert=False, 
+                relative=False, 
+                insertTime=0, 
+                stripLayers=True, 
+                useMapFile=animMapFileLoaded, 
+                mapFileName=animMapFile
+            )
+        else:
+            animLoadResult = rt.LoadSaveAnimation.loadAnimation(
+                inLoadFilePath, 
+                inObjs, 
+                insert=False, 
+                relative=False, 
+                insertTime=0, 
+                stripLayers=True
+            )
         
         return animLoadResult
         
