@@ -128,9 +128,12 @@ class AnimationImporter(BaseImporter):
                 absPath = unreal.SystemLibrary.get_system_path(assetObj)
                 allImportAbsPaths.append(absPath)
         
-        unreal.SourceControl.check_in_files(allImportAbsPaths, checkInDescription, silent=True)
+        if self.is_development_mode():
+            ue5_logger.info(f"개발 모드 - 애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
+        else:
+            unreal.SourceControl.check_in_files(allImportAbsPaths, checkInDescription, silent=True)
+            ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         
-        ue5_logger.info(f"애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True) 
     
     def import_animations(self, inFbxFiles: list[str], inFbxSkeletonPaths: list[str], inAssetNames: list[str] = None, inDescription: str = None):
@@ -200,7 +203,10 @@ class AnimationImporter(BaseImporter):
         else:
             checkInDescription = self._create_batch_import_description(inFbxFiles, assetFullPaths)
         
-        checkinResult = unreal.SourceControl.check_in_files(batchImporteAbsPaths, checkInDescription, silent=True)
-        ue5_logger.info(f"배치 임포트 체크인 결과: {checkinResult}")
+        if self.is_development_mode():
+            ue5_logger.info(f"개발 모드 - 배치 임포트 체크인 결과: {checkInDescription}")    
+        else:
+            checkinResult = unreal.SourceControl.check_in_files(batchImporteAbsPaths, checkInDescription, silent=True)
+            ue5_logger.info(f"배치 임포트 체크인 결과: {checkinResult}")
         
         ue5_logger.info(f"애니메이션 임포트 완료: {inFbxFiles}")

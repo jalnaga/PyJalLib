@@ -12,6 +12,8 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 
+import configparser
+
 from pyjallib.naming import Naming
 
 import unreal
@@ -34,6 +36,18 @@ class BaseImporter(ABC):
         config_path = str(Path(__file__).parent.parent / "ConfigFiles" / "UE5NamingConfig.json")
         self.naming = Naming(configPath=config_path)
         ue5_logger.debug(f"BaseImporter 초기화: ContentRoot={inContentRootPrefix}, FbxRoot={inFbxRootPrefix}, Preset={inPresetName}")
+    
+    def is_development_mode(self) -> bool:
+        homeDir = Path.home()
+        documentsFolder = homeDir / "Documents"
+        userIniFile = documentsFolder / "ORV" / "ORV_Setting.ini"
+        
+        # 기존 파일이 있다면 먼저 읽어오기
+        config = configparser.ConfigParser()
+        if userIniFile.exists():
+            config.read(userIniFile, encoding='utf-8')
+        
+        return config.get("Development", "mode")
     
     @property
     @abstractmethod
