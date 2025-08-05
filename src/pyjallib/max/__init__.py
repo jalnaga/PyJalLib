@@ -39,6 +39,7 @@ from pyjallib.max.wrist import Wrist
 from pyjallib.max.inguinal import Inguinal
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
+from pyjallib.max.ue5Skeleton import UE5Skeleton
 
 from pyjallib.max.rootMotion import RootMotion
 
@@ -76,6 +77,7 @@ __all__ = [
     'Inguinal',
     'KneeBone',
     'Hip',
+    'UE5Skeleton',
     'RootMotion',
     'FBXHandler',
     'ToolManager',

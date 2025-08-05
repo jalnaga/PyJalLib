@@ -46,16 +46,11 @@ class Constraint:
             # 현재 변환 상태 백업
             tempTransform = rt.getProperty(inObj, "transform")
             
-            # 기본 컨트롤러로 위치, 회전, 스케일 초기화
-            rt.setPropertyController(inObj.controller, "Position", rt.Position_XYZ())
+            inObj.controller = rt.prs()
             if inUseTCBRot:
                 rt.setPropertyController(inObj.controller, "Rotation", rt.TCB_Rotation())
-            else:
-                rt.setPropertyController(inObj.controller, "Rotation", rt.Euler_XYZ())
-            rt.setPropertyController(inObj.controller, "Scale", rt.Bezier_Scale())
             
-            # 백업한 변환 상태 복원
-            rt.setProperty(inObj, "transform", tempTransform)
+            inObj.transform = tempTransform
     
     def set_active_last(self, inObj):
         """

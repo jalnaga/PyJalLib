@@ -76,6 +76,18 @@ class Naming:
             return match.group(1), match.group(2)
         return inStr, ""
 
+    def split_into_string_and_digit(self, inStr):
+        """
+        문자열을 문자부분과 숫자부분으로 분리 (퍼블릭 API)
+        
+        Args:
+            inStr: 분리할 문자열
+            
+        Returns:
+            튜플 (문자부분, 숫자부분)
+        """
+        return self._split_into_string_and_digit(inStr)
+
     def _compare_string(self, inStr1, inStr2):
         """
         대소문자 구분 없이 문자열 비교
@@ -433,6 +445,30 @@ class Naming:
         Returns:
             지정된 namePart에 해당하는 문자열
         """
+        # RealName 타입 처리
+        if inNamePartName == "RealName":
+            filChar = self._get_filtering_char(inStr)
+            nameArray = self._split_to_array(inStr)
+            
+            # 모든 nameParts 중 RealName이 아닌 것들의 값을 수집
+            nonRealNameArray = []
+            for part in self._nameParts:
+                partName = part.get_name()
+                partType = part.get_type()
+                if partType.value != NamePartType.REALNAME.value:
+                    foundName = self.pick_name(partName, inStr)
+                    if foundName != "":
+                        nonRealNameArray.append(foundName)
+            
+            # RealName이 아닌 부분들을 nameArray에서 제거
+            for item in nonRealNameArray:
+                if item in nameArray:
+                    nameArray.remove(item)
+                    
+            # 구분자로 결합하여 반환
+            return self._combine(nameArray, filChar)
+        
+        # 기존 로직 (PREFIX, SUFFIX, INDEX 처리)
         nameArray = self._split_to_array(inStr)
         returnStr = ""
         
@@ -511,24 +547,7 @@ class Naming:
         Returns:
             실제 이름 부분 문자열
         """
-        filChar = self._get_filtering_char(inStr)
-        nameArray = self._split_to_array(inStr)
-        
-        # 모든 nameParts 중 RealName이 아닌 것들의 값을 수집
-        nonRealNameArray = []
-        for part in self._nameParts:
-            partName = part.get_name()
-            partType = part.get_type()
-            if partType.value != NamePartType.REALNAME.value:
-                foundName = self.get_name(partName, inStr)
-                nonRealNameArray.append(foundName)
-        
-        for item in nonRealNameArray:
-            if item in nameArray:
-                nameArray.remove(item)
-                
-        # 구분자로 결합
-        return self._combine(nameArray, filChar)
+        return self.get_name("RealName", inStr)
 
     def get_non_realName(self, inStr):
         """

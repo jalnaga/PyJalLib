@@ -787,7 +787,95 @@ class Bone:
         
         return True
     
-    def create_skin_bone(self, inBoneArray, skipNub=True, mesh=True, link=True, skinBoneBaseName=""):
+    def gen_skin_bone_name(self, inName, inSkinBoneBaseName=None):
+        skinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
+        if inSkinBoneBaseName is not None:
+            skinBoneBaseName = inSkinBoneBaseName
+        
+        skinBoneName = self.name.replace_name_part("Base", inName, skinBoneBaseName)
+        skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
+        return skinBoneName
+    
+    def set_skin_bone_property(self, inSkinBone, inSkinBoneBool):
+        rt.setUserProp(inSkinBone, rt.Name("IsSkinBone"), str(inSkinBoneBool))
+        return inSkinBone
+    
+    def is_skin_bone(self, inSkinBone):
+        result = rt.getUserProp(inSkinBone, rt.Name("IsSkinBone"))
+        if result == True:
+            return True
+        else:
+            return False
+    
+    def set_skin_bone_ori_bone(self, inSkinBone, inOriBone=None):
+        oriBoneName = "undefined"
+        if inOriBone is not None:
+            oriBoneName = f"$'{inOriBone.name}'"
+        
+        rt.setUserProp(inSkinBone, rt.Name("OriBone"), oriBoneName)
+        return inSkinBone
+    
+    def get_skin_bone_ori_bone(self, inSkinBone):
+        return rt.execute(rt.getUserProp(inSkinBone, rt.Name("OriBone")))
+    
+    def set_skin_bone_parent(self, inSkinBone, inParentBone=None):
+        parentName = "undefined"
+        if inParentBone is not None and rt.isValidNode(inParentBone):
+            inSkinBone.parent = inParentBone
+            parentName = f"$'{inParentBone.name}'"
+        if inParentBone is None and inSkinBone.parent is not None and rt.isValidNode(inSkinBone.parent):
+            parentName = f"$'{inSkinBone.parent.name}'"
+        
+        rt.setUserProp(inSkinBone, rt.Name("Parent"), parentName)
+        return inSkinBone
+    
+    def get_skin_bone_parent(self, inSkinBone):
+        return rt.execute(rt.getUserProp(inSkinBone, rt.Name("Parent")))
+    
+    def create_skin_bone(self, inBone, inMesh=True, inLink=True, inSkinBoneBaseName=None):
+        """
+        스킨 뼈대 생성.
+        
+        Args:
+            inBoneArray: 원본 뼈대 배열
+        """
+        skinBoneFilteringChar = "_"
+        skinBonePushAmount = -0.02
+        
+        skinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
+        if inSkinBoneBaseName is not None:
+            skinBoneBaseName = inSkinBoneBaseName
+        
+        skinBoneName = self.name.replace_name_part("Base", inBone.name, skinBoneBaseName)
+        skinBoneName = self.name.replace_filtering_char(skinBoneName, skinBoneFilteringChar)
+        
+        skinBone = self.create_nub_bone(f"{skinBoneBaseName}_TempSkin", 2)
+        skinBone.name = skinBoneName
+        skinBone.wireColor = rt.Color(255, 88, 199)
+        skinBone.transform = inBone.transform
+        skinBone.boneEnable = True
+        skinBone.renderable = False
+        skinBone.boneScaleType = rt.Name("None")
+        
+        if inMesh:
+            snapShotObj = rt.snapshot(inBone)
+            rt.addModifier(snapShotObj, rt.Push())
+            snapShotObj.modifiers[rt.Name("Push")].Push_Value = skinBonePushAmount
+            rt.collapseStack(snapShotObj)
+            
+            rt.addModifier(skinBone, rt.Edit_Poly())
+        
+        if inLink:
+            self.set_skin_bone_ori_bone(skinBone, inBone)
+            self.link_skin_bone(skinBone, inBone)
+        
+        self.set_skin_bone_property(skinBone, True)
+        self.set_skin_bone_parent(skinBone)
+        
+        return skinBone
+        
+    
+    def create_skin_bones(self, inBoneArray, inSkipNub=True, inMesh=True, inLink=True, inSkinBoneBaseName=None):
         """
         스킨 뼈대 생성.
         
@@ -801,72 +889,30 @@ class Bone:
         Returns:
             생성된 스킨 뼈대 배열
         """
-        bones = []
-        skinBoneFilteringChar = "_"
-        skinBonePushAmount = -0.02
         returnBones = []
+        targetBones = self.sort_bones_as_hierarchy(inBoneArray)
         
-        definedSkinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
+        for i in range(len(targetBones)):
+            if inSkipNub:
+                if self.is_end_bone(targetBones[i]):
+                    continue
+            skinBone = self.create_skin_bone(targetBones[i], inMesh=inMesh, inLink=inLink, inSkinBoneBaseName=inSkinBoneBaseName)
+            skinBoneParentName = None
+            skinBoneParent = None
+            if targetBones[i].parent is not None:
+                skinBoneParentName = self.gen_skin_bone_name(targetBones[i].parent.name, inSkinBoneBaseName=inSkinBoneBaseName)
+                skinBoneParent = rt.getNodeByName(skinBoneParentName)
+                if rt.isValidNode(skinBoneParent):
+                    self.set_skin_bone_parent(skinBone, inParentBone=skinBoneParent)
+            returnBones.append(skinBone)
         
-        for i in range(len(inBoneArray)):
-            skinBoneName = self.name.replace_name_part("Base", inBoneArray[i].name, definedSkinBoneBaseName)
-            skinBoneName = self.name.replace_filtering_char(skinBoneName, skinBoneFilteringChar)
-            
-            skinBone = self.create_nub_bone(f"{definedSkinBoneBaseName}_TempSkin", 2)
-            skinBone.name = skinBoneName
-            skinBone.wireColor = rt.Color(255, 88, 199)
-            skinBone.transform = inBoneArray[i].transform
-            
-            if mesh:
-                snapShotObj = rt.snapshot(inBoneArray[i])
-                rt.addModifier(snapShotObj, rt.Push())
-                snapShotObj.modifiers[rt.Name("Push")].Push_Value = skinBonePushAmount
-                rt.collapseStack(snapShotObj)
-                
-                rt.addModifier(skinBone, rt.Edit_Poly())
-                rt.execute("max modify mode")
-                rt.modPanel.setCurrentObject(skinBone.modifiers[rt.Name("Edit_Poly")])
-                skinBone.modifiers[rt.Name("Edit_Poly")].Attach(snapShotObj, editPolyNode=skinBone)
-            
-            skinBone.boneEnable = True
-            skinBone.renderable = False
-            skinBone.boneScaleType = rt.Name("None")
-            
-            bones.append(skinBone)
-        
-        for i in range(len(inBoneArray)):
-            oriParentObj = inBoneArray[i].parent
-            if oriParentObj is not None:
-                skinBoneParentObjName = self.name.replace_name_part("Base", oriParentObj.name, definedSkinBoneBaseName)
-                skinBoneParentObjName = self.name.replace_filtering_char(skinBoneParentObjName, skinBoneFilteringChar)
-                bones[i].parent = rt.getNodeByName(skinBoneParentObjName)
-            else:
-                bones[i].parent = None
-        
-        for item in bones:
+        for item in returnBones:
             item.showLinks = True
             item.showLinksOnly = True
         
-        for item in bones:
-            item.name = self.name.replace_name_part("Base", item.name, skinBoneBaseName)
-        
-        if link:
-            self.link_skin_bones(bones, inBoneArray)
-        
-        if skipNub:
-            for item in bones:
-                if not rt.matchPattern(item.name, pattern=("*" + self.name.get_name_part_value_by_description("Nub", "Nub"))):
-                    returnBones.append(item)
-                else:
-                    rt.delete(item)
-        else:
-            returnBones = bones.copy()
-        
-        bones.clear()
-        
         return returnBones
     
-    def create_skin_bone_from_bip(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName=""):
+    def create_skin_bone_from_bip(self, inBoneArray, inSkipNub=True, inMesh=False, inLink=True, inSkinBoneBaseName=None):
         """
         바이페드 객체에서 스킨 뼈대 생성.
         
@@ -883,12 +929,25 @@ class Bone:
         # 바이페드 객체만 필터링, Twist 뼈대 제외, 루트 노드 제외
         targetBones = [item for item in inBoneArray 
                       if (rt.classOf(item) == rt.Biped_Object) 
-                      and (not rt.matchPattern(item.name, pattern="*Twist*")) 
+                      and (not rt.matchPattern(item.name.lower, pattern="*twist*")) 
                       and (item != item.controller.rootNode)]
         
-        returnSkinBones = self.create_skin_bone(targetBones, skipNub=skipNub, mesh=mesh, link=link, skinBoneBaseName=skinBoneBaseName)
+        returnSkinBones = self.create_skin_bones(targetBones, inSkipNub=inSkipNub, inMesh=inMesh, inLink=inLink, inSkinBoneBaseName=inSkinBoneBaseName)
         
         return returnSkinBones
+    
+    def is_bip_skin_bone(self, inSkinBone):
+        if self.is_skin_bone(inSkinBone):
+            oriObj = self.get_skin_bone_ori_bone(inSkinBone)
+            if not rt.isValidNode(oriObj):
+                return False
+            
+            if (rt.classOf(oriObj.controller) == rt.BipSlave_control or 
+                rt.classOf(oriObj.controller) == rt.Footsteps or 
+                rt.classOf(oriObj.controller) == rt.Vertical_Horizontal_Turn):
+                return True
+        
+        return False
     
     def create_skin_bone_from_bip_for_unreal(self, inBoneArray, skipNub=True, mesh=False, link=True, skinBoneBaseName=""):
         """
