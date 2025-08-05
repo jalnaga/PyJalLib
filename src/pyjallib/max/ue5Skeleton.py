@@ -21,6 +21,9 @@ class UE5Skeleton:
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.bip = bipService if bipService else Bip(nameService=self.name)
         
+        self.ue5SpineNum = 5
+        self.ue5NeckNum = 2
+        
         self.bipRotDict = {
             "pelvis": [180,0,0],
             "spine": [180,0,0],
@@ -238,22 +241,29 @@ class UE5Skeleton:
         
         bipLimbBones = []
         
-        for bipGroupName in bipNodes:
-            bipNodeInGroup = bipNodes[bipGroupName]
-            if bipGroupName not in self.bipNameDict.keys():
-                continue
-            for index, bipNode in enumerate(bipNodeInGroup):
-                for skinBone in bipSkinBones:
-                    targetOriBone = self.bone.get_skin_bone_ori_bone(skinBone)
-                    if targetOriBone == bipNode:
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            for bipGroupName in bipNodes:
+                if bipGroupName not in self.bipNameDict.keys():
+                    continue
+                
+                bipNodeInGroup = bipNodes[bipGroupName]
+                for index, bipNode in enumerate(bipNodeInGroup):
+                    if oriBone == bipNode:
                         newSkinBoneRealName = ""
                         newSkinBoneIndex = ""
                         
-                        if bipGroupName == "spine" or bipGroupName == "neck" or bipGroupName == "tail" or bipGroupName == "head" or bipGroupName == "pelvis":
+                        if bipGroupName == "spine" or bipGroupName == "neck" or bipGroupName == "tail":
                             newSkinBoneRealName = self.bipNameDict[bipGroupName][0]
-                            if len(bipNodeInGroup) > 1:
-                                newSkinBoneIndex = str(index+1)
+                            newSkinBoneIndex = self.name.get_name("Index", skinBone.name)
+                            if newSkinBoneIndex == "":
+                                newSkinBoneIndex = "0"
+                            newSkinBoneIndex = str(int(newSkinBoneIndex)+1)
                         
+                        elif bipGroupName == "head" or bipGroupName == "pelvis":
+                            newSkinBoneRealName = self.bipNameDict[bipGroupName][0]
+                            newSkinBoneIndex = ""
+                                
                         elif bipGroupName == "lLeg" or bipGroupName == "rLeg":
                             newSkinBoneIndex = ""
                             if len(bipNodeInGroup) != 4:
@@ -283,4 +293,151 @@ class UE5Skeleton:
         
         return returnBones
     
+    def match_spine_skin_bone_numbers_to_ue5(self, inSkinBones):
+        bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
+        if len(bipSkinBones) == 0:
+            return []
+        
+        bipOriBone = self.bone.get_skin_bone_ori_bone(bipSkinBones[0])
+        bipSpines = self.bip.get_grouped_nodes(bipOriBone, "spine")
+        if len(bipSpines) >= self.ue5SpineNum:
+            return []
+        
+        bipNeck = self.bip.get_grouped_nodes(bipOriBone, "neck")[0]
+        bipLClavicle = self.bip.get_grouped_nodes(bipOriBone, "lArm")[0]
+        bipRClavicle = self.bip.get_grouped_nodes(bipOriBone, "rArm")[0]
+        
+        skinSpines = []
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            if oriBone in bipSpines:
+                skinSpines.append(skinBone)
+        
+        skinNeck = None
+        skinLClavicle = None
+        skinRClavicle = None
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            if oriBone == bipLClavicle:
+                skinLClavicle = skinBone
+            elif oriBone == bipRClavicle:
+                skinRClavicle = skinBone
+            elif oriBone == bipNeck:
+                skinNeck = skinBone
+        
+        spineDistance = rt.distance(skinSpines[-1], skinNeck)
+        spineDistanceOffset = spineDistance / (self.ue5SpineNum - len(skinSpines) + 1)
+        
+        genSpineSkinBones = []
+        
+        skinBoneName = skinSpines[-1].name
+        skinBoneRealName = self.name.get_name("RealName", skinBoneName)
+        skinBoneIndex = self.name.get_name("Index", skinBoneName)
+        if skinBoneIndex == "":
+            skinBoneIndex = "0"
+        
+        parentSkinBone = skinSpines[-1]
+        for i in range(int(skinBoneIndex), self.ue5SpineNum-1):
+            skinBone = self.bone.create_nub_bone(skinBoneRealName, 2)
+            skinBoneName = self.name.replace_name_part("Index", skinBoneName, str(i+1))
+            skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
+            skinBone.name = skinBoneName
+            skinBone.wireColor = rt.Color(255, 88, 199)
+            skinBone.transform = parentSkinBone.transform
+            skinBone.boneEnable = True
+            skinBone.renderable = False
+            skinBone.boneScaleType = rt.Name("None")
+            
+            self.anim.move_local(skinBone, spineDistanceOffset, 0, 0)
+            
+            skinBone.parent = parentSkinBone
+            
+            self.bone.set_skin_bone_property(skinBone, True)
+            self.bone.set_skin_bone_ori_bone(skinBone, inOriBone=bipSpines[-1])
+            self.bone.set_skin_bone_parent(skinBone, inParentBone=parentSkinBone)
+            
+            parentSkinBone = skinBone
+            
+            skinBone.showLinks = True
+            skinBone.showLinksOnly = True
+            
+            genSpineSkinBones.append(skinBone)
+            
+        
+        skinNeck.parent = genSpineSkinBones[-1]
+        skinLClavicle.parent = genSpineSkinBones[-1]
+        skinRClavicle.parent = genSpineSkinBones[-1]
+        
+        self.bone.set_skin_bone_parent(skinNeck)
+        self.bone.set_skin_bone_parent(skinLClavicle)
+        self.bone.set_skin_bone_parent(skinRClavicle)
+        
+        return genSpineSkinBones
     
+    def match_neck_skin_bone_numbers_to_ue5(self, inSkinBones):
+        bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
+        if len(bipSkinBones) == 0:
+            return []
+        
+        bipOriBone = self.bone.get_skin_bone_ori_bone(bipSkinBones[0])
+        bipNecks = self.bip.get_grouped_nodes(bipOriBone, "neck")
+        if len(bipNecks) >= self.ue5NeckNum:
+            return []
+        
+        bipHead = self.bip.get_grouped_nodes(bipOriBone, "head")[0]
+        
+        skinNecks = []
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            if oriBone in bipNecks:
+                skinNecks.append(skinBone)
+        
+        skinHead = None
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            if oriBone == bipHead:
+                skinHead = skinBone
+        
+        neckDistance = rt.distance(skinNecks[-1], skinHead)
+        neckDistanceOffset = neckDistance / (self.ue5NeckNum - len(skinNecks) + 1)
+        
+        genNeckSkinBones = []
+        
+        skinBoneName = skinNecks[-1].name
+        skinBoneRealName = self.name.get_name("RealName", skinBoneName)
+        skinBoneIndex = self.name.get_name("Index", skinBoneName)
+        if skinBoneIndex == "":
+            skinBoneIndex = "0"
+        
+        parentSkinBone = skinNecks[-1]
+        for i in range(int(skinBoneIndex), self.ue5NeckNum-1):
+            skinBone = self.bone.create_nub_bone(skinBoneRealName, 2)
+            skinBoneName = self.name.replace_name_part("Index", skinBoneName, str(i+1))
+            skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
+            skinBone.name = skinBoneName
+            skinBone.wireColor = rt.Color(255, 88, 199)
+            skinBone.transform = parentSkinBone.transform
+            skinBone.boneEnable = True
+            skinBone.renderable = False
+            skinBone.boneScaleType = rt.Name("None")
+            
+            self.anim.move_local(skinBone, neckDistanceOffset, 0, 0)
+            
+            skinBone.parent = parentSkinBone
+            
+            self.bone.set_skin_bone_property(skinBone, True)
+            self.bone.set_skin_bone_ori_bone(skinBone, inOriBone=bipNecks[-1])
+            self.bone.set_skin_bone_parent(skinBone, inParentBone=parentSkinBone)
+            
+            parentSkinBone = skinBone
+            
+            skinBone.showLinks = True
+            skinBone.showLinksOnly = True
+            
+            genNeckSkinBones.append(skinBone)
+            
+        skinHead.parent = genNeckSkinBones[-1]
+        
+        self.bone.set_skin_bone_parent(skinHead)
+        
+        return genNeckSkinBones

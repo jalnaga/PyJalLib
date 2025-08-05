@@ -816,7 +816,11 @@ class Bone:
         return inSkinBone
     
     def get_skin_bone_ori_bone(self, inSkinBone):
-        return rt.execute(rt.getUserProp(inSkinBone, rt.Name("OriBone")))
+        result = rt.getUserProp(inSkinBone, rt.Name("OriBone"))
+        if result:
+            return rt.execute(rt.getUserProp(inSkinBone, rt.Name("OriBone")))
+        else:
+            return None
     
     def set_skin_bone_parent(self, inSkinBone, inParentBone=None):
         parentName = "undefined"
@@ -830,7 +834,11 @@ class Bone:
         return inSkinBone
     
     def get_skin_bone_parent(self, inSkinBone):
-        return rt.execute(rt.getUserProp(inSkinBone, rt.Name("Parent")))
+        result = rt.getUserProp(inSkinBone, rt.Name("Parent"))
+        if result:
+            return rt.execute(rt.getUserProp(inSkinBone, rt.Name("Parent")))
+        else:
+            return None
     
     def create_skin_bone(self, inBone, inMesh=True, inLink=True, inSkinBoneBaseName=None):
         """
