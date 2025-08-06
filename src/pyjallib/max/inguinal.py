@@ -77,6 +77,14 @@ class Inguinal(VolumeBone):
                 if rt.matchPattern(item.name.lower(), pattern="*root*"):
                     item.name = inguinalRootDumName
         
+        if self.bone.is_skin_bone(inThighTwist) or self.bone.is_skin_bone(inPelvis) or self.bone.is_skin_bone(inCalf):
+            for item in volumeBoneResult.bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in volumeBoneResult.helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         result = {
             "Bones": volumeBoneResult.bones,
             "Helpers": volumeBoneResult.helpers,

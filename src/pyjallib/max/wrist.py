@@ -81,6 +81,14 @@ class Wrist(VolumeBone):
                 if rt.matchPattern(item.name.lower(), pattern="*root*"):
                     item.name = wristRootDumName
         
+        if self.bone.is_skin_bone(inHand) or self.bone.is_skin_bone(inForeArm):
+            for item in volumeBoneResult.bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in volumeBoneResult.helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         rt.redrawViews()
         
         return volumeBoneResult

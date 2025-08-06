@@ -195,6 +195,11 @@ class TwistBone:
             
             boneChainArray.append(lastBone)
         
+        if self.bone.is_skin_bone(inObj) or self.bone.is_skin_bone(inChild):
+            for item in boneChainArray:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         # 결과를 BoneChain 형태로 준비
         result = {
             "Bones": boneChainArray,
@@ -296,6 +301,11 @@ class TwistBone:
                     boneChainArray.append(twistExtraBone)
             
             boneChainArray.append(lastBone)
+        
+        if self.bone.is_skin_bone(inObj) or self.bone.is_skin_bone(inChild):
+            for item in boneChainArray:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
         
         # 결과를 BoneChain 형태로 준비
         result = {

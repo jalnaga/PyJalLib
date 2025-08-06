@@ -167,6 +167,14 @@ class AutoClavicle:
         autClavicleLookAtConst.lookat_vector_length = 0.0
         genHelpers.append(ikGoal)
         
+        if self.bone.is_skin_bone(inClavicle) or self.bone.is_skin_bone(inUpperArm):
+            for item in genBones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in genHelpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         # 결과를 멤버 변수에 저장
         self.genBones = genBones
         self.genHelpers = genHelpers

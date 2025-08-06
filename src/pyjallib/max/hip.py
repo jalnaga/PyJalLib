@@ -222,6 +222,14 @@ class Hip:
         
         self.bones.append(hipBone)
         
+        if self.bone.is_skin_bone(inPelvis) or self.bone.is_skin_bone(inThigh) or self.bone.is_skin_bone(inThighTwist) or self.bone.is_skin_bone(inCalf):
+            for item in self.bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in self.helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         # 결과를 딕셔너리 형태로 준비
         result = {
             "Bones": self.bones,

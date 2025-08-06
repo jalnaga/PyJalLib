@@ -74,6 +74,14 @@ class Elbow(VolumeBone):
                 if rt.matchPattern(item.name.lower(), pattern="*root*"):
                     item.name = elbowRootDumName
         
+        if self.bone.is_skin_bone(inForeArm) or self.bone.is_skin_bone(inUpperArm):
+            for item in volumeBoneResult.bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in volumeBoneResult.helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         rt.redrawViews()
         
         return volumeBoneResult

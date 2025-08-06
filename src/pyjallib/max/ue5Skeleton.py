@@ -247,7 +247,7 @@ class UE5Skeleton:
     def convert_bip_skin_bone_name_to_ue5(self, inSkinBones):
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
-            return
+            return []
         
         returnBones = []
         

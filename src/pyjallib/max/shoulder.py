@@ -122,6 +122,14 @@ class Shoulder:
         # 어깨 본 회전 설정
         shoulderBoneRotConst = self.const.assign_rot_const(shoulderBone, shoulderRotOffsetHelepr)
         
+        if self.bone.is_skin_bone(inClavicle) or self.bone.is_skin_bone(inUpperArm) or self.bone.is_skin_bone(inAutoClavicle) or self.bone.is_skin_bone(inUpperArmTwist):
+            for item in genBones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in genHelpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         self.genBones = genBones
         self.genHelpers = genHelpers
         self.clavicle = inClavicle

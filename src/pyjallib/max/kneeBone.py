@@ -486,6 +486,14 @@ class KneeBone:
         for helper in self.calfTwistHelpers:
             all_helpers.append(helper)
         
+        if self.bone.is_skin_bone(inThigh) or self.bone.is_skin_bone(inCalf) or self.bone.is_skin_bone(inFoot):
+            for item in all_bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in all_helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         # 결과를 BoneChain 형태로 준비
         result = {
             "Bones": all_bones,

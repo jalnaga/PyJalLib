@@ -136,6 +136,14 @@ class GroinBone:
         rotConst.setWeight(2, inThighWeight/2.0)
         rotConst.setWeight(3, inThighWeight/2.0)
         
+        if self.bone.is_skin_bone(inPelvis) or self.bone.is_skin_bone(inLThighTwist) or self.bone.is_skin_bone(inRThighTwist):
+            for item in self.bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            for item in self.helpers:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+        
         # 결과를 멤버 변수에 저장
         self.pelvis = inPelvis
         self.lThighTwist = inLThighTwist

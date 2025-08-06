@@ -257,6 +257,13 @@ class VolumeBone:  # Updated class name to match the new file name
         all_bones = [rootBone] + bones
         rotHelper = self.rotHelper
         
+        if self.bone.is_skin_bone(inObj) or self.bone.is_skin_bone(inParent):
+            for item in all_bones:
+                self.bone.set_skin_bone_property(item, True)
+                self.bone.set_skin_bone_parent(item)
+            self.bone.set_skin_bone_property(rotHelper, True)
+            self.bone.set_skin_bone_parent(rotHelper)
+        
         # BoneChain에 필요한 형태의 결과 딕셔너리 생성
         result = {
             "Bones": all_bones,
