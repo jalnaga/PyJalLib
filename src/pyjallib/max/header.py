@@ -92,7 +92,7 @@ class Header:
         self.inguinal = Inguinal(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.kneeBone = KneeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper, volumeBoneService=self.volumeBone)
         self.hip = Hip(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint)
-        self.ue5Skeleton = UE5Skeleton(nameService=self.name, animService=self.anim, boneService=self.bone, bipService=self.bip)
+        self.ue5Skeleton = UE5Skeleton(nameService=self.name, animService=self.anim, boneService=self.bone, bipService=self.bip, constraintService=self.constraint)
         
         self.morph = Morph()
         

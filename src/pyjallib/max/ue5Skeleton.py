@@ -13,13 +13,15 @@ from .name import Name
 from .anim import Anim
 from .bone import Bone
 from .bip import Bip
+from .constraint import Constraint
 
 class UE5Skeleton:
-    def __init__(self, nameService=None, animService=None, boneService=None, bipService=None):
+    def __init__(self, nameService=None, animService=None, boneService=None, bipService=None, constraintService=None):
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.bip = bipService if bipService else Bip(nameService=self.name)
+        self.constraint = constraintService if constraintService else Constraint()
         
         self.ue5SpineNum = 5
         self.ue5NeckNum = 2
@@ -65,6 +67,7 @@ class UE5Skeleton:
         self.toeNameDict = {
             "Toe": "Ball"
         }
+        self.knuckleName = "Metacarpal"
         
     def rotate_bip_skin_bones(self, inSkinBones):
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
@@ -134,6 +137,18 @@ class UE5Skeleton:
                         skinBone.name = self.name.replace_name_part("Index", skinBone.name, str(j+1))
                         fingerSkinBones.append(skinBone)
                         break
+        
+        for item in fingerSkinBones:
+            if item.parent is not None and rt.matchPattern(item.parent.name, pattern=f"*{self.knuckleName.lower()}*"):
+                fingerRealName = self.name.get_name("RealName", item.name)
+                metacarpalName = item.parent.name
+                metacarpalName = self.name.replace_name_part("RealName", metacarpalName, fingerRealName+"_"+self.knuckleName)
+                metacarpalName = self.name.remove_name_part("Index", metacarpalName)
+                metacarpalName = self.name.replace_filtering_char(metacarpalName, "_")
+                item.parent.name = metacarpalName
+                
+                self.bone.set_skin_bone_parent(item)
+                fingerSkinBones.append(item.parent)
         
         return fingerSkinBones
     
@@ -361,6 +376,8 @@ class UE5Skeleton:
             skinBone.showLinks = True
             skinBone.showLinksOnly = True
             
+            self.anim.save_xform(skinBone)
+            
             genSpineSkinBones.append(skinBone)
             
         
@@ -434,6 +451,8 @@ class UE5Skeleton:
             skinBone.showLinks = True
             skinBone.showLinksOnly = True
             
+            self.anim.save_xform(skinBone)
+            
             genNeckSkinBones.append(skinBone)
             
         skinHead.parent = genNeckSkinBones[-1]
@@ -441,3 +460,157 @@ class UE5Skeleton:
         self.bone.set_skin_bone_parent(skinHead)
         
         return genNeckSkinBones
+    
+    def create_knuckles_skin_bones(self, inSkinBones):
+        bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
+        if len(bipSkinBones) == 0:
+            return []
+        
+        bipOriBone = self.bone.get_skin_bone_ori_bone(bipSkinBones[0])
+        
+        bipObj = self.bip.get_com(bipOriBone)
+        fingerNum = bipObj.controller.fingers
+        fingerLinkNum = bipObj.controller.fingerLinks
+        if fingerNum < 2:
+            return []
+        
+        lFingers = []
+        rFingers = []
+        
+        for i in range(1, fingerNum+1):
+            if i == 1:
+                continue
+            for j in range(1, fingerLinkNum+1):
+                if j == 1:
+                    linkIndex = (i-1)*fingerLinkNum + j
+                    fingerNode = rt.biped.getNode(bipObj.controller, rt.name("lFingers"), link=linkIndex)
+                    if fingerNode is not None:
+                        lFingers.append(fingerNode)
+                    break
+        
+        for i in range(1, fingerNum+1):
+            if i == 1:
+                continue
+            for j in range(1, fingerLinkNum+1):
+                if j == 1:
+                    linkIndex = (i-1)*fingerLinkNum + j
+                    fingerNode = rt.biped.getNode(bipObj.controller, rt.name("rFingers"), link=linkIndex)
+                    if fingerNode is not None:
+                        rFingers.append(fingerNode)
+                    break
+        
+        bipLHand = self.bip.get_grouped_nodes(bipOriBone, "lArm")[3]
+        bipRHand = self.bip.get_grouped_nodes(bipOriBone, "rArm")[3]
+        lHandSkinBone = None
+        rHandSkinBone = None
+        
+        lFingerSkinBones = []
+        rFingerSkinBones = []
+        
+        lFingersSet = set(lFingers)
+        rFingersSet = set(rFingers)
+        
+        # lFingers와 rFingers에 해당하는 bipSkinBones를 각각 수집
+        for skinBone in bipSkinBones:
+            oriBone = self.bone.get_skin_bone_ori_bone(skinBone)
+            if oriBone in lFingersSet:
+                lFingerSkinBones.append(skinBone)
+            elif oriBone in rFingersSet:
+                rFingerSkinBones.append(skinBone)
+            elif oriBone == bipLHand:
+                lHandSkinBone = skinBone
+            elif oriBone == bipRHand:
+                rHandSkinBone = skinBone
+        
+        # knuckle 뼈들을 저장할 새 리스트
+        lKnuckleSkinBones = []
+        rKnuckleSkinBones = []
+        
+        for finger in lFingerSkinBones:
+            knuckleDistance = rt.distance(finger, lHandSkinBone)*0.8
+            
+            knuckleBoneName = self.name.add_suffix_to_real_name(finger.name, "_"+self.knuckleName)
+            knuckleBoneName = self.name.remove_name_part("Index", knuckleBoneName)
+            knuckleBoneName = self.name.replace_filtering_char(knuckleBoneName, "_")
+            
+            knuckleBone = self.bone.create_nub_bone(knuckleBoneName, 2)
+            knuckleBone.name = knuckleBoneName
+            knuckleBone.wireColor = rt.Color(255, 88, 199)
+            knuckleBone.renderable = False
+            knuckleBone.boneEnable = True
+            knuckleBone.boneScaleType = rt.Name("None")
+            
+            knuckleBone.transform = finger.transform
+            lookAtConst = self.constraint.assign_lookat(knuckleBone, lHandSkinBone)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = lHandSkinBone
+            lookAtConst.lookat_vector_length = 0.0
+            self.constraint.collapse(knuckleBone)
+            
+            self.anim.move_local(knuckleBone, knuckleDistance, 0, 0)
+            lookAtConst = self.constraint.assign_lookat(knuckleBone, finger)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = lHandSkinBone
+            lookAtConst.lookat_vector_length = 0.0
+            self.constraint.collapse(knuckleBone)
+            
+            knuckleBone.parent = lHandSkinBone
+            self.bone.set_skin_bone_property(knuckleBone, True)
+            self.bone.set_skin_bone_ori_bone(knuckleBone, inOriBone=lHandSkinBone)
+            self.bone.set_skin_bone_parent(knuckleBone)
+            
+            finger.parent = knuckleBone
+            self.bone.set_skin_bone_parent(finger)
+            
+            knuckleBone.showLinks = True
+            knuckleBone.showLinksOnly = True
+            
+            self.anim.save_xform(knuckleBone)
+            
+            lKnuckleSkinBones.append(knuckleBone)
+        
+        for finger in rFingerSkinBones:
+            knuckleDistance = rt.distance(finger, rHandSkinBone)*0.8
+            
+            knuckleBoneName = self.name.add_suffix_to_real_name(finger.name, "_"+self.knuckleName)
+            knuckleBoneName = self.name.remove_name_part("Index", knuckleBoneName)
+            knuckleBoneName = self.name.replace_filtering_char(knuckleBoneName, "_")
+            
+            knuckleBone = self.bone.create_nub_bone(knuckleBoneName, 2)
+            knuckleBone.name = knuckleBoneName
+            knuckleBone.wireColor = rt.Color(255, 88, 199)
+            knuckleBone.renderable = False
+            knuckleBone.boneEnable = True
+            knuckleBone.boneScaleType = rt.Name("None")
+            
+            knuckleBone.transform = finger.transform
+            lookAtConst = self.constraint.assign_lookat(knuckleBone, rHandSkinBone)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = rHandSkinBone
+            lookAtConst.lookat_vector_length = 0.0
+            self.constraint.collapse(knuckleBone)
+            
+            self.anim.move_local(knuckleBone, knuckleDistance, 0, 0)
+            lookAtConst = self.constraint.assign_lookat(knuckleBone, finger)
+            lookAtConst.upnode_world = False
+            lookAtConst.pickUpNode = rHandSkinBone
+            lookAtConst.lookat_vector_length = 0.0
+            lookAtConst.target_axisFlip = True
+            self.constraint.collapse(knuckleBone)
+            
+            knuckleBone.parent = rHandSkinBone
+            self.bone.set_skin_bone_property(knuckleBone, True)
+            self.bone.set_skin_bone_ori_bone(knuckleBone, inOriBone=rHandSkinBone)
+            self.bone.set_skin_bone_parent(knuckleBone)
+            
+            finger.parent = knuckleBone
+            self.bone.set_skin_bone_parent(finger)
+            
+            knuckleBone.showLinks = True
+            knuckleBone.showLinksOnly = True
+            
+            self.anim.save_xform(knuckleBone)
+            
+            rKnuckleSkinBones.append(knuckleBone)
+        
+        return lKnuckleSkinBones + rKnuckleSkinBones

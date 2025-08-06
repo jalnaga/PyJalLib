@@ -42,15 +42,17 @@ class Constraint:
         Returns:
             None
         """
-        if rt.classOf(inObj) != rt.Biped_Object:
-            # 현재 변환 상태 백업
-            tempTransform = rt.getProperty(inObj, "transform")
-            
-            inObj.controller = rt.prs()
-            if inUseTCBRot:
-                rt.setPropertyController(inObj.controller, "Rotation", rt.TCB_Rotation())
-            
-            inObj.transform = tempTransform
+        if rt.isValidNode(inObj):
+            obj = inObj
+            source = ""
+            source += f"if classof $'{obj.name}' != Biped_Object then (\n"
+            source += f"    tempTransform = $'{obj.name}'.transform\n"
+            source += f"    $'{obj.name}'.position.controller = Position_XYZ()\n"
+            source += f"    $'{obj.name}'.rotation.controller = Euler_XYZ()\n"
+            source += f"    $'{obj.name}'.scale.controller = Bezier_Scale()\n"
+            source += f"    $'{obj.name}'.transform = tempTransform\n"
+            source += f")\n"
+            rt.execute(source)
     
     def set_active_last(self, inObj):
         """
