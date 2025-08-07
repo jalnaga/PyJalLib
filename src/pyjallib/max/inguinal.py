@@ -27,8 +27,8 @@ class Inguinal(VolumeBone):
         inguinalName = self.name.remove_name_part("Index", inguinalName)
         inguinalRootName = self.name.replace_name_part("RealName", inguinalName, "Inguinal" + filteringChar + "Root")
         inguinalRootDumName = self.name.replace_name_part("Type", inguinalRootName, self.name.get_name_part_value_by_description("Type", "Dummy"))
-        inguinalFwdName = self.name.replace_name_part("RealName", inguinalName, "Inguinal" + filteringChar + "Fwd")
-        inguinalOutName = self.name.replace_name_part("RealName", inguinalName, "Inguinal" + filteringChar + "Out")
+        inguinalFwdName = self.name.replace_name_part("FrontBack", inguinalName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
+        inguinalOutName = self.name.replace_name_part("InOut", inguinalName, self.name.get_name_part_value_by_description("InOut", "Out"))
         
         # 소문자 처리
         if inThighTwist.name[0].islower():

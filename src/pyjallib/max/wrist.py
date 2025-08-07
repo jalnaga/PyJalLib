@@ -25,10 +25,10 @@ class Wrist(VolumeBone):
         wristName = self.name.replace_name_part("RealName", inForeArm.name, "Wrist")
         wristRootName = self.name.replace_name_part("RealName", wristName, "Wrist" + filteringChar + "Root")
         wristRootDumName = self.name.replace_name_part("Type", wristRootName, self.name.get_name_part_value_by_description("Type", "Dummy"))
-        wristFwdName = self.name.replace_name_part("RealName", wristName, "Wrist" + filteringChar + "Fwd")
-        wristBckName = self.name.replace_name_part("RealName", wristName, "Wrist" + filteringChar + "Bck")
-        wristInName = self.name.replace_name_part("RealName", wristName, "Wrist" + filteringChar + "In")
-        wristOutName = self.name.replace_name_part("RealName", wristName, "Wrist" + filteringChar + "Out")
+        wristFwdName = self.name.replace_name_part("FrontBack", wristName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
+        wristBckName = self.name.replace_name_part("FrontBack", wristName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
+        wristInName = self.name.replace_name_part("InnerOuter", wristName, self.name.get_name_part_value_by_description("InOut", "In"))
+        wristOutName = self.name.replace_name_part("InnerOuter", wristName, self.name.get_name_part_value_by_description("InOut", "Out"))
         
         # 소문자 처리
         if inForeArm.name[0].islower():

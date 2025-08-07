@@ -21,12 +21,12 @@ class Elbow(VolumeBone):
             return False
         
         # 이름 생성 (로컬 변수로 처리)
-        filteringChar = self.name._get_filtering_char(inUpperArm.name)
+        filteringChar = self.name.get_filtering_char(inUpperArm.name)
         elbowName = self.name.replace_name_part("RealName", inUpperArm.name, "Elbow")
         elbowRootName = self.name.replace_name_part("RealName", elbowName, "Elbow" + filteringChar + "Root")
         elbowRootDumName = self.name.replace_name_part("Type", elbowRootName, self.name.get_name_part_value_by_description("Type", "Dummy"))
-        elbowFwdName = self.name.replace_name_part("RealName", elbowName, "Elbow" + filteringChar + "Fwd")
-        elbowBckName = self.name.replace_name_part("RealName", elbowName, "Elbow" + filteringChar + "Bck")
+        elbowFwdName = self.name.replace_name_part("FrontBack", elbowName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
+        elbowBckName = self.name.replace_name_part("FrontBack", elbowName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         
         # 소문자 처리
         if inUpperArm.name[0].islower():
