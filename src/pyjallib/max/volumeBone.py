@@ -240,7 +240,7 @@ class VolumeBone:  # Updated class name to match the new file name
             
             # 생성된 본의 이름 패턴으로 찾기
             volBoneName = inObj.name
-            filteringChar = self.name._get_filtering_char(volBoneName)
+            filteringChar = self.name.get_filtering_char(volBoneName)
             volBoneName = self.name.add_suffix_to_real_name(volBoneName, 
                           filteringChar + "Vol" + filteringChar + inRotAxises[i] + 
                           filteringChar + inTransAxises[i])

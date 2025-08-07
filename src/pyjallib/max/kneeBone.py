@@ -295,6 +295,20 @@ class KneeBone:
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf):
             return None
         
+        filteringChar = self.name.get_filtering_char(inCalf.name)
+        kneeName = self.name.replace_name_part("RealName", inCalf.name, "Knee")
+        kneeRootName = self.name.replace_name_part("RealName", kneeName, "Knee" + filteringChar + "Root")
+        kneeRootDumName = self.name.replace_name_part("Type", kneeRootName, self.name.get_name_part_value_by_description("Type", "Dummy"))
+        kneeFwdName = self.name.replace_name_part("FrontBack", kneeName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
+        kneeBckName = self.name.replace_name_part("FrontBack", kneeName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
+        
+        if inCalf.name.islower():
+            kneeName = kneeName.lower()
+            kneeRootName = kneeRootName.lower()
+            kneeRootDumName = kneeRootDumName.lower()
+            kneeFwdName = kneeFwdName.lower()
+            kneeBckName = kneeBckName.lower()
+        
         facingDirVec = inCalf.transform.position - inThigh.transform.position
         inObjXAxisVec = inCalf.objectTransform.row1
         distanceDir = 1.0 if rt.dot(inObjXAxisVec, facingDirVec) > 0 else -1.0
@@ -303,29 +317,29 @@ class KneeBone:
         self.calf = inCalf
         
         transScales = []
+        transAxisNames = ["PosY", "NegY"]
         if distanceDir > 0:
             transScales.append(inKneePopScale)
             transScales.append(inKneeBackScale)
+            transAxisNames = ["PosY", "NegY"]
         else:
             transScales.append(inKneeBackScale)
             transScales.append(inKneePopScale)
+            transAxisNames = ["NegY", "PosY"]
         
         result = self.volumeBone.create_bones(self.calf, self.thigh, inVolumeSize=inKneeVolumeSize, inRotAxises=["Z", "Z"], inTransAxises=["PosY", "NegY"], inTransScales=transScales)
         
-        filteringChar = self.name._get_filtering_char(inCalf.name)
-        calfName = self.name.get_realName(inCalf.name)
-        calfName = calfName + filteringChar + "Vol"
-        isLower = calfName[0].islower()
-        replaceName = "Knee"
-        if isLower:
-            replaceName = replaceName.lower()
-            calfName = calfName.lower()
-        
         for item in result.bones:
-            item.name = item.name.replace(calfName, replaceName)
+            if rt.matchPattern(item.name.lower(), pattern="*root*"):
+                    item.name = kneeRootName
+            elif rt.matchPattern(item.name.lower(), pattern="*"+transAxisNames[0].lower()+"*"):
+                item.name = kneeFwdName
+            elif rt.matchPattern(item.name.lower(), pattern="*"+transAxisNames[1].lower()+"*"):
+                item.name = kneeBckName
         
-        result.bones[0].name = result.bones[0].name.replace(calfName, replaceName)
-        result.helpers[0].name = result.helpers[0].name.replace(calfName, replaceName)
+        for item in result.helpers:
+            if rt.matchPattern(item.name.lower(), pattern="*root*"):
+                item.name = kneeRootDumName
         
         # 결과 저장 - 기존 확장 방식에서 직접 할당으로 변경
         if result.bones:

@@ -85,7 +85,7 @@ class Hip:
             "pushScaleZ = amax 0.0 saturatedTwistY\n"
             "\n"
             "\n"
-            "[0, pushAmount * pushScaleY, -pushAmount * pushScaleZ]\n"
+            "[0, pushAmount * pushScaleY, -pushAmount * 0.1 * pushScaleZ]\n"
         )
         
     def reset(self):

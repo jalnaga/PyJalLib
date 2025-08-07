@@ -72,7 +72,8 @@ class BaseImporter(ABC):
 
         if str(fbxPath).startswith(str(fbxRoot)):
             relative_path = fbxPath.relative_to(fbxRoot)
-            result_path = str(contentRoot / relative_path)
+            resultPath = relative_path.with_suffix(".uasset")
+            result_path = str(contentRoot / resultPath)
             ue5_logger.debug(f"경로 변환 완료: {inFbxPath} -> {result_path}")
             return result_path
         else:
@@ -120,7 +121,10 @@ class BaseImporter(ABC):
         
         destinationPath = unreal.Paths.get_path(skeletonPath)
         assetName = unreal.Paths.get_base_filename(skeletonPath)
-        assetName = self.naming.replace_name_part("AssetType", assetName, self.naming.get_name_part("AssetType").get_value_by_description("Skeleton"))
+        skeletonPrefix = self.naming.get_name_part("AssetType").get_value_by_description("Skeleton")
+        skeletalPrefix = self.naming.get_name_part("AssetType").get_value_by_description("SkeletalMesh")
+        ue5_logger.debug(f"skeletonPrefix: {skeletonPrefix}, skeletalPrefix: {skeletalPrefix}")
+        assetName = str(assetName).replace(skeletalPrefix, skeletonPrefix)
         skeletonFullPath = f"{destinationPath}/{assetName}"
         return skeletonFullPath
     
