@@ -126,7 +126,7 @@ class Hip:
         self.thighTwist = inThighTwist
         
         filteringChar = self.name._get_filtering_char(inThigh.name)
-        isLower = inThigh.name[0].islower()
+        isLower = self.name.get_name("RealName", inThigh.name)[0].islower()
         
         pelvisHelperName = self.name.replace_name_part("RealName", inThigh.name, self.name.get_realName(inPelvis.name)+filteringChar+"Hip")
         pelvisHelperName = self.name.replace_name_part("Type", pelvisHelperName, self.name.get_name_part_value_by_description("Type", "Dummy"))
@@ -207,7 +207,7 @@ class Hip:
         self.create_helper(inPelvis, inThigh, inThighTwist)
         self.assing_constraint(inCalf, inPelvisWeight, inThighWeight, inPushAmount=pushAmount)
         
-        isLower = inThigh.name[0].islower()
+        isLower = self.name.get_name("RealName", inThigh.name)[0].islower()
         hipBoneName = self.name.replace_name_part("RealName", inThigh.name, "Hip")
         hipBone = self.bone.create_nub_bone(hipBoneName, 2)
         hipBone.name = self.name.remove_name_part("Nub", hipBone.name)

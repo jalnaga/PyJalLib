@@ -29,7 +29,7 @@ class Elbow(VolumeBone):
         elbowBckName = self.name.replace_name_part("FrontBack", elbowName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         
         # 소문자 처리
-        if inUpperArm.name[0].islower():
+        if self.name.get_name("RealName", inUpperArm.name)[0].islower():
             elbowName = elbowName.lower()
             elbowRootName = elbowRootName.lower()
             elbowRootDumName = elbowRootDumName.lower()

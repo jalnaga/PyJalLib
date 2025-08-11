@@ -91,7 +91,7 @@ class GroinBone:
             return False
         
         groinName = "Groin"
-        if inPelvis.name[0].islower():
+        if self.name.get_name("RealName", inPelvis.name)[0].islower():
             groinName = groinName.lower()
         
         groinBaseName = self.name.replace_name_part("RealName", inLThighTwist.name, groinName)

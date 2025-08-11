@@ -112,7 +112,7 @@ class VolumeBone:  # Updated class name to match the new file name
         
         rootBone = self.bone.create_nub_bone(rootBoneName, 2)
         rootBone.name = self.name.remove_name_part("Nub", rootBone.name)
-        if rootBone.name[0].islower():
+        if self.name.get_name("RealName", rootBone.name)[0].islower():
             rootBone.name = rootBone.name.lower()
             rootBoneName = rootBoneName.lower()
             
@@ -159,7 +159,7 @@ class VolumeBone:  # Updated class name to match the new file name
         volBone.name = self.name.remove_name_part("Nub", volBone.name)
         volBone.name = self.name.replace_name_part("Index", volBone.name, volBoneIndex)
         
-        if volBone.name[0].islower():
+        if self.name.get_name("RealName", volBone.name)[0].islower():
             volBone.name = volBone.name.lower()
             volBoneName = volBoneName.lower()
         rt.setProperty(volBone, "transform", self.rootBone.transform)
@@ -245,7 +245,7 @@ class VolumeBone:  # Updated class name to match the new file name
                           filteringChar + "Vol" + filteringChar + inRotAxises[i] + 
                           filteringChar + inTransAxises[i])
             
-            if volBoneName[0].islower():
+            if self.name.get_name("RealName", volBoneName)[0].islower():
                 volBoneName = volBoneName.lower()
                 
             final_volBoneName = self.name.remove_name_part("Nub", volBoneName)

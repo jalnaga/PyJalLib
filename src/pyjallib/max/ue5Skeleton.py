@@ -270,7 +270,8 @@ class UE5Skeleton:
                         
                         if bipGroupName == "spine" or bipGroupName == "neck" or bipGroupName == "tail":
                             newSkinBoneRealName = self.bipNameDict[bipGroupName][0]
-                            newSkinBoneIndex = self.name.get_name("Index", skinBone.name)
+                            splitedArray = self.name.split_into_string_and_digit(skinBone.name)
+                            newSkinBoneIndex = splitedArray[1]
                             if newSkinBoneIndex == "":
                                 newSkinBoneIndex = "0"
                             newSkinBoneIndex = str(int(newSkinBoneIndex)+1)
@@ -347,14 +348,19 @@ class UE5Skeleton:
         
         skinBoneName = skinSpines[-1].name
         skinBoneRealName = self.name.get_name("RealName", skinBoneName)
-        skinBoneIndex = self.name.get_name("Index", skinBoneName)
+        skinBoneSplitedArray = self.name.split_into_string_and_digit(skinBoneRealName)
+        skinBoneRealName = skinBoneSplitedArray[0]
+        skinBoneIndex = skinBoneSplitedArray[1]
         if skinBoneIndex == "":
             skinBoneIndex = "0"
         
+        skinBoneName = self.name.replace_name_part("RealName", skinBoneName, skinBoneRealName)
+        
         parentSkinBone = skinSpines[-1]
         for i in range(int(skinBoneIndex), self.ue5SpineNum-1):
-            skinBone = self.bone.create_nub_bone(skinBoneRealName, 2)
-            skinBoneName = self.name.replace_name_part("Index", skinBoneName, str(i+1))
+            skinBone = self.bone.create_nub_bone(skinBoneName, 2)
+            skinBoneName = self.name.replace_name_part("RealName", skinBoneName, skinBoneRealName+str(i+1))
+            skinBoneName = self.name.replace_name_part("Index", skinBoneName, "")
             skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
             skinBone.name = skinBoneName
             skinBone.wireColor = rt.Color(255, 88, 199)
@@ -422,14 +428,19 @@ class UE5Skeleton:
         
         skinBoneName = skinNecks[-1].name
         skinBoneRealName = self.name.get_name("RealName", skinBoneName)
-        skinBoneIndex = self.name.get_name("Index", skinBoneName)
+        skinBoneSplitedArray = self.name.split_into_string_and_digit(skinBoneRealName)
+        skinBoneRealName = skinBoneSplitedArray[0]
+        skinBoneIndex = skinBoneSplitedArray[1]
         if skinBoneIndex == "":
             skinBoneIndex = "0"
         
+        skinBoneName = self.name.replace_name_part("RealName", skinBoneName, skinBoneRealName)
+        
         parentSkinBone = skinNecks[-1]
         for i in range(int(skinBoneIndex), self.ue5NeckNum-1):
-            skinBone = self.bone.create_nub_bone(skinBoneRealName, 2)
-            skinBoneName = self.name.replace_name_part("Index", skinBoneName, str(i+1))
+            skinBone = self.bone.create_nub_bone(skinBoneName, 2)
+            skinBoneName = self.name.replace_name_part("RealName", skinBoneName, skinBoneRealName+str(i+1))
+            skinBoneName = self.name.replace_name_part("Index", skinBoneName, "")
             skinBoneName = self.name.replace_filtering_char(skinBoneName, "_")
             skinBone.name = skinBoneName
             skinBone.wireColor = rt.Color(255, 88, 199)

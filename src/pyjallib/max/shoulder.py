@@ -68,7 +68,7 @@ class Shoulder:
         
         # 자동 쇄골 이름 생성 및 뼈대 생성
         shoulderName = self.name.replace_name_part("RealName", inClavicle.name, "Shoulder")
-        if inClavicle.name[0].islower():
+        if self.name.get_name("RealName", inClavicle.name)[0].islower():
             shoulderName = shoulderName.lower()
             
         shoulderBone = self.bone.create_nub_bone(shoulderName, self.boneSize)

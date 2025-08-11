@@ -104,7 +104,7 @@ class AutoClavicle:
         
         # 자동 쇄골 이름 생성 및 뼈대 생성
         autoClavicleName = self.name.replace_name_part("RealName", inClavicle.name, "Auto" + self.name._get_filtering_char(inClavicle.name) + "Clavicle")
-        if inClavicle.name[0].islower():
+        if self.name.get_name("RealName", inClavicle.name)[0].islower():
             autoClavicleName = autoClavicleName.lower()
         
         autoClavicleBone = self.bone.create_nub_bone(autoClavicleName, 2)

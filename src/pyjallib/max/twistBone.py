@@ -131,7 +131,7 @@ class TwistBone:
         
         # 첫 번째 트위스트 뼈대 생성
         boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "Twist")
-        if inObj.name[0].islower():
+        if self.name.get_name("RealName", inObj.name)[0].islower():
             boneName = boneName.lower()
         twistBone = self.bone.create_nub_bone(boneName, 2)
         twistBone.name = self.name.replace_name_part("Index", boneName, "1")
@@ -237,7 +237,7 @@ class TwistBone:
         
         # 첫 번째 트위스트 뼈대 생성
         boneName = self.name.add_suffix_to_real_name(inObj.name, self.name._get_filtering_char(inObj.name) + "Twist")
-        if inObj.name[0].islower():
+        if self.name.get_name("RealName", inObj.name)[0].islower():
             boneName = boneName.lower()
         twistBone = self.bone.create_nub_bone(boneName, 2)
         twistBone.name = self.name.replace_name_part("Index", boneName, "1")

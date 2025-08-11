@@ -118,7 +118,7 @@ class KneeBone:
             return False
         
         filteringChar = self.name._get_filtering_char(inThigh.name)
-        isLowerName = inThigh.name.islower()
+        isLowerName = self.name.get_name("RealName", inThigh.name)[0].islower()
         
         # 서비스 인스턴스 설정 또는 생성
         self.thigh = inThigh
@@ -157,7 +157,7 @@ class KneeBone:
             return False
         
         filteringChar = self.name._get_filtering_char(inThigh.name)
-        isLowerName = inThigh.name.islower()
+        isLowerName = self.name.get_name("RealName", inThigh.name)[0].islower()
         
         # 서비스 인스턴스 설정 또는 생성
         self.thigh = inThigh
@@ -202,7 +202,7 @@ class KneeBone:
             return False
         
         filteringChar = self.name._get_filtering_char(inThigh.name)
-        isLowerName = inThigh.name.islower()
+        isLowerName = self.name.get_name("RealName", inThigh.name)[0].islower()
         
         # 서비스 인스턴스 설정 또는 생성
         self.thigh = inThigh
@@ -302,7 +302,7 @@ class KneeBone:
         kneeFwdName = self.name.replace_name_part("FrontBack", kneeName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
         kneeBckName = self.name.replace_name_part("FrontBack", kneeName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         
-        if inCalf.name.islower():
+        if self.name.get_name("RealName", inCalf.name)[0].islower():
             kneeName = kneeName.lower()
             kneeRootName = kneeRootName.lower()
             kneeRootDumName = kneeRootDumName.lower()
@@ -366,7 +366,7 @@ class KneeBone:
             return False
         
         filteringChar = self.name._get_filtering_char(inThigh.name)
-        isLowerName = inThigh.name.islower()
+        isLowerName = self.name.get_name("RealName", inThigh.name)[0].islower()
         
         # 서비스 인스턴스 설정 또는 생성
         self.thigh = inThigh
