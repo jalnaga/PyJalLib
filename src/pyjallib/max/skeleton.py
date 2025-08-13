@@ -150,7 +150,7 @@ class Skeleton:
         rt.execute(maxcriptCode)
         return rt.pyjallib_max_skeleton_get_dependencies(targetObjs)
     
-    def get_all_dependencies(self, inObjs, inAddonLayerName="Rig_Addon"):
+    def get_all_dependencies(self, inObjs, inAddonLayerName="Rig_AddOn"):
         """
         객체의 모든 의존성을 가져옴 (애드온 레이어 포함)
         
@@ -167,7 +167,7 @@ class Skeleton:
         # 애드온 레이어의 노드들만 필터링
         addOnArray = []
         for item in nodeArray:
-            if item.layer.name == inAddonLayerName:
+            if rt.matchPattern(item.layer.name, pattern=(inAddonLayerName+"*")):
                 addOnArray.append(item)
         
         # 애드온 노드들의 의존성 가져오기
