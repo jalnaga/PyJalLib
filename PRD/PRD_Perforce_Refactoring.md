@@ -194,3 +194,85 @@ graph TD
 - 배치 최대 크기/타임아웃 정책(서버 설정 의존) 결정 필요.
 - `auto_revert_unchanged` 기본값 유지 여부.
 - 이벤트 훅(콜러블 vs 시그널) 구체 인터페이스.
+
+
+### 파일/클래스 구성(제안)
+```
+PyJalLib/src/pyjallib/
+  perforce.py                            # LegacyPerforceFacade (레거시 호환 API)
+  perforce/
+    __init__.py
+    adapter.py                           # class P4Adapter
+    service.py                           # class PerforceService
+    dtos.py                              # ChangeListInfo, FileCheckoutInfo
+    utils.py                             # normalize_win_path, map_p4_exception, chunk_batch
+    constants.py                         # DEFAULT_BATCH_MAX, DEFAULT_AUTO_REVERT_UNCHANGED
+    types.py                             # 타입 힌트(옵션)
+
+# 재사용 파일(신규 생성 아님)
+PyJalLib/src/pyjallib/exceptions.py      # PerforceError, ValidationError
+PyJalLib/src/pyjallib/logger.py          # 구조화 로깅
+
+# 테스트 (제안)
+PyJalLib/tests/perforce/
+  test_service_basic.py
+  test_adapter_calls.py
+  test_status_determination.py
+  test_submit_and_revert.py
+```
+
+### 부록 A. 어댑터/서비스 API 계약(요약)
+- P4Adapter
+  - 설정: `exception_level=1`, 서버/클라이언트/유저 속성 노출(readonly)
+  - 메소드: `run_edit(paths, cl)`, `run_add(paths, cl)`, `run_delete(paths, cl)`, `run_revert(paths, cl?)`, `run_opened(pathsOrFilter, allUsers=False)`, `run_files(pathOrPaths)`, `run_sync(pathsOrDirs, preview=False)`, `run_change_fetch(id)`, `run_change_create(spec)`, `run_change_save(spec)`, `run_change_delete(id)`, `run_submit(cl)`
+  - 경로: 모든 인수는 Windows 절대경로, 내부에서 `normalize_win_path()` 적용
+
+- PerforceService
+  - 가드: 모든 공개 메소드 시작부 `require_connected()`
+  - 상태 조회: `get_checkout_status(paths, scope='current|all')`, `is_in_perforce(paths)`
+  - 파일: `checkout/add/delete/revert` (모두 배치)
+  - CL: `create/edit/submit/revert/delete_empty/get_pending/get_default`
+  - 동기화: `sync(pathsOrDirs, preview=False)`, `check_update_required(pathsOrDirs)`
+
+### 부록 B. DTO 상세
+- ChangeListInfo: `{ id, description, status, user, client, files[] }`
+- FileCheckoutInfo: `{ isCheckedOut, changeList?, action?, user?, client?, isCurrentUser, isOthers }`
+- SyncResult(옵션): `{ updated: [path], skipped: [path], warnings: [str] }`
+
+### 부록 C. 에러 코드 설명(요약)
+- NOT_CONNECTED: 연결 전 API 호출
+- INVALID_ARGUMENT: 경로/입력 타입/상태 불일치
+- ALREADY_UP_TO_DATE: 동기화 프리뷰 결과 업데이트 불필요
+- NOTHING_TO_SUBMIT: 제출할 파일 없음
+- FILE_NOT_FOUND: Perforce 상의 파일 미존재
+- ACCESS_DENIED: 권한/락/보안 정책 위반
+- P4_SERVER_ERROR: 서버/네트워크 오류
+- CONFLICT: 충돌/다중 체크아웃 정책 위반 등
+
+### 부록 D. 로깅 필드(권장)
+- `event`, `changelistId`, `numFiles`, `pathsSample`(최대 5개), `scope`(current|all), `preview`(bool), `durationMs`, `resultCode`, `warningCount`, `errorCount`
+
+### 부록 E. 레거시→신규 매핑
+- `checkout_file(s)` → `service.checkout(paths, cl)`
+- `add_file(s)` → `service.add(paths, cl)`
+- `delete_file(s)` → `service.delete(paths, cl)`
+- `revert_file(s)` → `service.revert(paths, cl)`
+- `is_file_in_perforce` → `service.is_in_perforce([path])`
+- `check_files_checked_out(_all_users)` → `service.get_checkout_status(paths, scope)`
+- `submit_change_list` → `service.submit_changelist(id, autoRevertUnchanged=True)`
+- `check_update_required` → `service.check_update_required(pathsOrDirs)`
+- `sync_files` → `service.sync(pathsOrDirs, preview=False)`
+
+### 부록 F. 플래그/환경 설정(권장 값)
+- `autoRevertUnchanged=True`
+- `exception_level=1`
+- `batchMax=200`(서버에 따라 조정)
+- `sync.preview=true`(상태 판단 시)
+
+### 부록 G. 테스트 케이스 체크리스트(추가)
+- opened: current/all 구분, 다중 사용자 체크아웃 포함
+- sync -n: 업데이트 필요/불필요/부분 업데이트 혼합
+- files: 존재/미존재/경로 정규화 케이스(대소문자/슬래시)
+- submit: nothing-to-submit/성공 후 `revert -a` default 동작
+- revert: 특정 CL/기본 CL 동시 처리
+- 오류: 네트워크 일시 오류 재시도, 권한 오류 즉시 실패
