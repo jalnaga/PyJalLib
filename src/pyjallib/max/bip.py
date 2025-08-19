@@ -342,6 +342,43 @@ class Bip:
         
         return bipNodeArray
     
+    def add_offset_time_to_selected_nodes(self, inBipNodes, inOffset):
+        """
+        애니메이션에 오프셋을 추가함.
+        
+        Args:
+            inBipNodes: 오프셋을 추가할 Biped 노드 리스트
+            inOffset: 오프셋 값
+        """
+        if not inBipNodes:
+            return False
+        
+        if not self.is_biped_object(inBipNodes[0]):
+            return False
+        
+        for item in inBipNodes:
+            if item == item.controller.rootNode:
+                horizontalController = rt.getPropertyController(item.controller, "horizontal")
+                verticalController = rt.getPropertyController(item.controller, "vertical")
+                turningController = rt.getPropertyController(item.controller, "turning")
+                
+                rt.biped.deselectKeys(horizontalController)
+                rt.biped.selectKeys(horizontalController)
+                rt.biped.moveKeys(horizontalController, inOffset)
+                
+                rt.biped.deselectKeys(verticalController)
+                rt.biped.selectKeys(verticalController)
+                rt.biped.moveKeys(verticalController, inOffset)
+                
+                rt.biped.deselectKeys(turningController)
+                rt.biped.selectKeys(turningController)
+                rt.biped.moveKeys(turningController, inOffset)
+            else:
+                rt.biped.deselectKeys(item.controller)
+                rt.biped.selectKeys(item.controller)
+                rt.biped.moveKeys(item.controller, inOffset)
+        return True
+    
     def load_bip_file(self, inBipRoot, inFile):
         """
         Biped BIP 파일 로드
