@@ -483,22 +483,25 @@ class Bip:
         minFrame = 0.0
         maxFrame = 0.0
         allTargetBipedObjs = self.get_nodes(inBipRoot)
+        keyTimes = []
         for item in allTargetBipedObjs:
             if item == item.controller.rootNode:
                 horizontalController = rt.getPropertyController(item.controller, "horizontal")
                 verticalController = rt.getPropertyController(item.controller, "vertical")
                 turningController = rt.getPropertyController(item.controller, "turning")
                 
-                minFrame = min(float(horizontalController.keys[0].time), minFrame)
-                minFrame = min(float(verticalController.keys[0].time), minFrame)
-                minFrame = min(float(turningController.keys[0].time), minFrame)
-                
-                maxFrame = max(float(horizontalController.keys[-1].time), maxFrame)
-                maxFrame = max(float(verticalController.keys[-1].time), maxFrame)
-                maxFrame = max(float(turningController.keys[-1].time), maxFrame)
+                for key in horizontalController.keys:
+                    keyTimes.append(float(key.time))
+                for key in verticalController.keys:
+                    keyTimes.append(float(key.time))
+                for key in turningController.keys:
+                    keyTimes.append(float(key.time))
             else:
-                minFrame = min(float(item.controller.keys[0].time), minFrame)
-                maxFrame = max(float(item.controller.keys[-1].time), maxFrame)
+                for key in item.controller.keys:
+                    keyTimes.append(float(key.time))
+        if keyTimes:
+            minFrame = min(keyTimes)
+            maxFrame = max(keyTimes)
         
         bakeStartFrame = minFrame
         bakeEndFrame = maxFrame
