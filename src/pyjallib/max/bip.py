@@ -491,6 +491,42 @@ class Bip:
             rt.biped.collapseAtLayer(inBipRoot.controller, 0)
             layerNum = rt.biped.numLayers(inBipRoot.controller)
     
+    def get_animation_range(self, inBipNodes):
+        """
+        Biped 애니메이션 범위 반환
+        
+        Args:
+            inBipNodes: 대상 Biped 노드 리스트
+        """
+        for item in inBipNodes:
+            if not self.is_biped_object(item):
+                return False
+        
+        minFrame = 0
+        maxFrame = 1
+        allTargetBipedObjs = inBipNodes
+        keyTimes = []
+        for item in allTargetBipedObjs:
+            if item == item.controller.rootNode:
+                horizontalController = rt.getPropertyController(item.controller, "horizontal")
+                verticalController = rt.getPropertyController(item.controller, "vertical")
+                turningController = rt.getPropertyController(item.controller, "turning")
+                
+                for key in horizontalController.keys:
+                    keyTimes.append(float(key.time))
+                for key in verticalController.keys:
+                    keyTimes.append(float(key.time))
+                for key in turningController.keys:
+                    keyTimes.append(float(key.time))
+            else:
+                for key in item.controller.keys:
+                    keyTimes.append(float(key.time))
+        if keyTimes:
+            minFrame = min(keyTimes)
+            maxFrame = max(keyTimes)
+        
+        return rt.interval(minFrame, maxFrame)
+    
     def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True, inUseAnimationRangeOnly=True, progress_callback=None):
         """
         Biped BIP 파일 저장
@@ -517,34 +553,13 @@ class Bip:
         if inCollapseLayers:
             self.collapse_layers(inBipRoot)
                     
-        minFrame = 0.0
-        maxFrame = 0.0
         allTargetBipedObjs = self.get_nodes(inBipRoot)
-        keyTimes = []
-        for item in allTargetBipedObjs:
-            if item == item.controller.rootNode:
-                horizontalController = rt.getPropertyController(item.controller, "horizontal")
-                verticalController = rt.getPropertyController(item.controller, "vertical")
-                turningController = rt.getPropertyController(item.controller, "turning")
-                
-                for key in horizontalController.keys:
-                    keyTimes.append(float(key.time))
-                for key in verticalController.keys:
-                    keyTimes.append(float(key.time))
-                for key in turningController.keys:
-                    keyTimes.append(float(key.time))
-            else:
-                for key in item.controller.keys:
-                    keyTimes.append(float(key.time))
-        if keyTimes:
-            minFrame = min(keyTimes)
-            maxFrame = max(keyTimes)
+        bipAnimRange = self.get_animation_range(allTargetBipedObjs)
         
-        bakeStartFrame = minFrame
-        bakeEndFrame = maxFrame
+        bakeStartFrame = bipAnimRange.start
+        bakeEndFrame = bipAnimRange.end
         
         if inUseAnimationRangeOnly:
-            allTargetBipedObjs = self.get_nodes(inBipRoot)
             startFrame = rt.execute("(animationRange.start as integer) / TicksPerFrame")
             endFrame = rt.execute("(animationRange.end as integer) / TicksPerFrame")
             bakeStartFrame = startFrame
