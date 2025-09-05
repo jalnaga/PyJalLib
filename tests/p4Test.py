@@ -17,14 +17,17 @@ from pyjallib.perforce import Perforce
 
 testP4 = Perforce()
 
-testP4.connect("DongseokKim_DevStorage")
+connectResult = testP4.connect("DongseokKim_DevStorage")
+print(f"connectResult: {connectResult}")
+print(f"  - connected: {testP4.connected}")
+print(f"  - workspaceRoot: {testP4.workspaceRoot}")
 
-fileList = [
-    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.json",
-    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.fbx",
-    r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Death\Gesture\A_Nm_GHDtBully_M_Death_Gesture_Fist.bip"
-]
-
-syncFileList = ['E:\\DevStorage_root\\DevStorage\\Characters\\EliteMonster\\BigGroundRat\\NonBinary\\Animation\\Battle\\Action\\Death\\']
-result = testP4.sync_files(syncFileList)
+result = testP4.create_change_list("Test")
 print(f"result: {result}")
+
+from orvlib.p4Sync import P4Sync
+
+orvP4 = P4Sync()
+print(f"orvP4: {orvP4}")
+print(f"orvP4.devStorageP4: {orvP4.devStorageP4}")
+print(f"orvP4.omniP4: {orvP4.omniP4}")
