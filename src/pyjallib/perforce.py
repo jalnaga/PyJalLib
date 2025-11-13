@@ -1,732 +1,968 @@
 """
-P4Python을 사용하는 Perforce 모듈.
-
-이 모듈은 P4Python을 사용하여 Perforce 서버와 상호작용하는 기능을 제공합니다.
-주요 기능:
-- 워크스페이스 연결
-- 체인지리스트 관리 (생성, 조회, 편집, 제출, 되돌리기)
-- 파일 작업 (체크아웃, 추가, 삭제)
-- 파일 동기화 및 업데이트 확인
+Perforce 모듈 - 단순화된 버전
+P4Python을 사용하여 Perforce 작업을 수행하는 단일 클래스
 """
 
 from P4 import P4, P4Exception
 from pathlib import Path
-from .exceptions import PerforceError, ValidationError
-from .perforceCore import P4Adapter, PerforceService
+from typing import List, Optional, Dict, Union
 
 
 class Perforce:
-    """P4Python을 사용하여 Perforce 작업을 수행하는 클래스."""
+    """
+    Perforce 작업을 위한 단순화된 클래스
+    각 메서드는 독립적으로 P4 인스턴스를 생성하고 연결/실행/종료합니다.
+    """
 
     def __init__(self):
-        """Perforce 인스턴스를 초기화합니다."""
-        # 코어 서비스 구성
-        self._adapter = P4Adapter()
-        self._service = PerforceService(self._adapter, in_auto_revert_unchanged=True)
-        # 레거시 호환: p4 핸들 노출 유지
-        self.p4 = self._adapter.p4
-        self.connected = False
-        self.workspaceRoot = r""
-
-    def _is_connected(self) -> bool:
-        """Perforce 서버 연결 상태를 확인합니다.
-
-        Returns:
-            bool: 연결되어 있으면 True, 아니면 False
-        """
-        if not self.connected:
-            return False
-        return True
-    
-    def _ensure_connected(self) -> None:
-        """Perforce 서버 연결 상태를 확인하고 연결되지 않은 경우 예외를 발생시킵니다."""
-        if not self._service.is_connected:
-            raise PerforceError("Perforce 서버에 연결되지 않았습니다.")
+        """Perforce 객체 초기화"""
+        self.workspace_name = None
+        self.workspaceRoot = None
 
     def connect(self, workspace_name: str) -> bool:
-        """지정된 워크스페이스에 연결합니다.
+        """
+        워크스페이스 이름 저장
 
         Args:
-            workspace_name (str): 연결할 워크스페이스 이름
+            workspace_name: Perforce 워크스페이스 이름
 
         Returns:
-            bool: 연결 성공 시 True, 실패 시 False
+            bool: 성공 여부
         """
+        self.workspace_name = workspace_name
+
+        # 워크스페이스 루트 경로 가져오기
+        p4 = P4()
+        p4.client = workspace_name
         try:
-            self._service.connect(workspace_name)
-            self.connected = True
-            self.workspaceRoot = self._adapter.workspaceRoot or ""
+            p4.connect()
+            client_spec = p4.fetch_client(workspace_name)
+            self.workspaceRoot = client_spec.get('Root', '')
             return True
-        except PerforceError as e:
-            self.connected = False
+        except P4Exception as e:
+            print(f"워크스페이스 연결 실패: {e}")
             raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
 
-    def get_pending_change_list(self) -> list:
-        """워크스페이스의 Pending된 체인지 리스트를 가져옵니다.
+    def disconnect(self) -> None:
+        """저장된 워크스페이스 정보 초기화"""
+        self.workspace_name = None
+        self.workspaceRoot = None
+
+    def _normalize_path(self, path: Union[str, Path]) -> str:
+        """
+        경로를 Windows 절대경로로 정규화
+
+        Args:
+            path: 정규화할 경로
 
         Returns:
-            list: 체인지 리스트 정보 딕셔너리들의 리스트
+            str: 정규화된 절대경로
         """
-        self._ensure_connected()
+        return str(Path(path).resolve())
+
+    def _normalize_paths(self, paths: Union[str, Path, List[Union[str, Path]]]) -> List[str]:
+        """
+        경로 리스트를 정규화
+
+        Args:
+            paths: 정규화할 경로 또는 경로 리스트
+
+        Returns:
+            List[str]: 정규화된 경로 리스트
+        """
+        if isinstance(paths, (str, Path)):
+            return [self._normalize_path(paths)]
+        return [self._normalize_path(p) for p in paths]
+
+    # ============================================================================
+    # 체인지리스트 생성/관리
+    # ============================================================================
+
+    def create_change_list(self, description: str) -> Dict:
+        """
+        새 체인지리스트 생성
+
+        Args:
+            description: 체인지리스트 설명
+
+        Returns:
+            Dict: 생성된 체인지리스트 정보 {'id', 'description', 'status', 'user', 'client'}
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
         try:
-            dtos = self._service.get_pending_changelists()
-            return [dto.to_dict() for dto in dtos]
-        except PerforceError:
+            p4.connect()
+
+            # 새 체인지 스펙 가져오기
+            change_spec = p4.run("change", "-o")[0]
+            change_spec["Description"] = description
+
+            # 저장
+            result = p4.save_change(change_spec)[0]
+
+            # 생성된 번호 파싱 ("Change 12345 created")
+            cl_number = int(result.split()[1])
+
+            # 상세정보 조회
+            cl_info = p4.fetch_change(cl_number)
+
+            return {
+                'id': cl_number,
+                'description': cl_info.get('Description', '').strip(),
+                'status': cl_info.get('Status', ''),
+                'user': cl_info.get('User', ''),
+                'client': cl_info.get('Client', '')
+            }
+        except P4Exception as e:
+            print(f"체인지리스트 생성 실패: {e}")
             raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
 
-    def create_change_list(self, description: str) -> dict:
-        """새로운 체인지 리스트를 생성합니다.
+    def delete_empty_change_list(self, change_list_number: int) -> bool:
+        """
+        빈 체인지리스트 삭제
 
         Args:
-            description (str): 체인지 리스트 설명
+            change_list_number: 삭제할 체인지리스트 번호
 
         Returns:
-            dict: 생성된 체인지 리스트 정보. 실패 시 빈 딕셔너리
+            bool: 성공 여부
         """
-        self._ensure_connected()
-        dto = self._service.create_changelist(description)
-        return dto.to_dict()
-
-    def get_change_list_by_number(self, change_list_number: int) -> dict:
-        """체인지 리스트 번호로 체인지 리스트를 가져옵니다.
-
-        Args:
-            change_list_number (int): 체인지 리스트 번호
-
-        Returns:
-            dict: 체인지 리스트 정보. 실패 시 빈 딕셔너리
-        """
-        self._ensure_connected()
-        dto = self._service.get_changelist_by_number(change_list_number)
-        return dto.to_dict()
-
-    def get_change_list_by_description(self, description: str) -> dict:
-        """체인지 리스트 설명으로 체인지 리스트를 가져옵니다.
-
-        Args:
-            description (str): 체인지 리스트 설명
-
-        Returns:
-            dict: 체인지 리스트 정보 (일치하는 첫 번째 체인지 리스트)
-        """
-        self._ensure_connected()
+        p4 = P4()
+        p4.client = self.workspace_name
         try:
-            pending_changes = self.p4.run_changes("-l", "-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
-            for cl in pending_changes:
-                cl_desc = cl.get('Description', b'').decode('utf-8', 'replace').strip()
-                if cl_desc == description.strip():
-                    return self.get_change_list_by_number(int(cl['change']))
-            return {}
-        except P4Exception as e:
-            error_message = f"설명으로 체인지 리스트 조회 실패 ('{description}') 중 P4Exception 발생: {e}"
-            raise PerforceError(error_message)
+            p4.connect()
 
-    def get_change_list_by_description_pattern(self, description_pattern: str, exact_match: bool = False) -> list:
-        """설명 패턴과 일치하는 Pending 체인지 리스트들을 가져옵니다.
-
-        Args:
-            description_pattern (str): 검색할 설명 패턴
-            exact_match (bool, optional): True면 정확히 일치하는 설명만, 
-                                        False면 패턴이 포함된 설명도 포함. 기본값 False
-
-        Returns:
-            list: 패턴과 일치하는 체인지 리스트 정보들의 리스트
-        """
-        self._ensure_connected()
-        try:
-            pending_changes = self.p4.run_changes("-l", "-s", "pending", "-u", self.p4.user, "-c", self.p4.client)
-            matching_changes = []
-            
-            for cl in pending_changes:
-                cl_desc = cl.get('Description', b'').decode('utf-8', 'replace').strip()
-                
-                # 패턴 매칭 로직
-                is_match = False
-                if exact_match:
-                    # 정확한 일치
-                    is_match = (cl_desc == description_pattern.strip())
-                else:
-                    # 패턴이 포함되어 있는지 확인 (대소문자 구분 없음)
-                    is_match = (description_pattern.lower().strip() in cl_desc.lower())
-                
-                if is_match:
-                    change_number = int(cl['change'])
-                    change_info = self.get_change_list_by_number(change_number)
-                    if change_info:
-                        matching_changes.append(change_info)
-            
-            return matching_changes
-        except P4Exception as e:
-            error_message = f"설명 패턴으로 체인지 리스트 조회 실패 ('{description_pattern}') 중 P4Exception 발생: {e}"
-            raise PerforceError(error_message)
-
-    def disconnect(self):
-        """Perforce 서버와의 연결을 해제합니다."""
-        if self.connected:
-            try:
-                self.p4.disconnect()
-                self.connected = False
-            except P4Exception as e:
-                error_message = f"Perforce 서버 연결 해제 중 P4Exception 발생: {e}"
-                raise PerforceError(error_message)
-
-    def __del__(self):
-        """객체가 소멸될 때 자동으로 연결을 해제합니다."""
-        self.disconnect()
-
-    def check_files_checked_out(self, file_paths: list) -> dict:
-        """파일들의 체크아웃 상태를 확인합니다.
-
-        Args:
-            file_paths (list): 확인할 파일 경로 리스트
-
-        Returns:
-            dict: 파일별 체크아웃 상태 정보
-                 {
-                     'file_path': {
-                         'is_checked_out': bool,
-                         'change_list': int or None,
-                         'action': str or None,
-                         'user': str or None,
-                         'workspace': str or None
-                     }
-                 }
-        """
-        self._ensure_connected()
-        if not file_paths:
-            return {}
-        
-        # 타입 검증: 리스트가 아닌 경우 에러 발생
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-        
-        result = {}
-        try:
-            # 각 파일의 상태 확인
-            for file_path in file_paths:
-                file_status = {
-                    'is_checked_out': False,
-                    'change_list': None,
-                    'action': None,
-                    'user': None,
-                    'workspace': None
-                }
-                
-                try:
-                    # p4 opened 명령으로 파일이 열려있는지 확인
-                    opened_files = self.p4.run_opened(file_path)
-                    
-                    if opened_files:
-                        # 파일이 체크아웃되어 있음
-                        file_info = opened_files[0]
-                        file_status['is_checked_out'] = True
-                        file_status['change_list'] = int(file_info.get('change', 0))
-                        file_status['action'] = file_info.get('action', '')
-                        file_status['user'] = file_info.get('user', '')
-                        file_status['workspace'] = file_info.get('client', '')
-                        
-                except P4Exception as e:
-                    # 파일이 perforce에 없거나 접근할 수 없는 경우
-                    if not any("not opened" in err.lower() or "no such file" in err.lower() 
-                               for err in self.p4.errors):
-                        error_message = f"파일 '{file_path}' 체크아웃 상태 확인 중 P4Exception 발생: {e}"
-                        raise PerforceError(error_message)
-                
-                result[file_path] = file_status
-            
-            return result
-            
-        except P4Exception as e:
-            error_message = f"파일들 체크아웃 상태 확인 ({file_paths}) 중 P4Exception 발생: {e}"
-            raise PerforceError(error_message)
-
-    def is_file_checked_out(self, file_path: str) -> bool:
-        """단일 파일의 체크아웃 상태를 간단히 확인합니다.
-
-        Args:
-            file_path (str): 확인할 파일 경로
-
-        Returns:
-            bool: 체크아웃되어 있으면 True, 아니면 False
-        """
-        result = self.check_files_checked_out([file_path])
-        return result.get(file_path, {}).get('is_checked_out', False)
-
-    def is_file_in_pending_changelist(self, file_path: str, change_list_number: int) -> bool:
-        """특정 파일이 지정된 pending 체인지 리스트에 있는지 확인합니다.
-
-        Args:
-            file_path (str): 확인할 파일 경로
-            change_list_number (int): 확인할 체인지 리스트 번호
-
-        Returns:
-            bool: 파일이 해당 체인지 리스트에 있으면 True, 아니면 False
-        """
-        self._ensure_connected()
-        try:
-            # 해당 체인지 리스트의 파일들 가져오기
-            opened_files = self.p4.run_opened("-c", change_list_number)
-            
-            # 파일 경로 정규화
-            normalized_file_path = str(Path(file_path).resolve())
-            
-            for file_info in opened_files:
-                client_file = file_info.get('clientFile', '')
-                normalized_client_file = str(Path(client_file).resolve())
-                
-                if normalized_client_file == normalized_file_path:
-                    return True
-            
-            return False
-            
-        except P4Exception as e:
-            error_message = f"파일 '{file_path}' 체인지 리스트 {change_list_number} 포함 여부 확인 중 P4Exception 발생: {e}"
-            raise PerforceError(error_message)
-
-    def edit_change_list(self, change_list_number: int, description: str = None, add_file_paths: list = None, remove_file_paths: list = None) -> dict:
-        """체인지 리스트를 편집합니다.
-
-        Args:
-            change_list_number (int): 체인지 리스트 번호
-            description (str, optional): 변경할 설명
-            add_file_paths (list, optional): 추가할 파일 경로 리스트
-            remove_file_paths (list, optional): 제거할 파일 경로 리스트
-
-        Returns:
-            dict: 업데이트된 체인지 리스트 정보
-        """
-        self._ensure_connected()
-        dto = self._service.edit_changelist(change_list_number, description, add_file_paths, remove_file_paths)
-        return dto.to_dict()
-
-    def _file_op(self, command: str, file_path: str, change_list_number: int, op_name: str) -> bool:
-        """파일 작업을 수행하는 내부 헬퍼 함수입니다.
-
-        Args:
-            command (str): 실행할 명령어 (edit/add/delete)
-            file_path (str): 대상 파일 경로
-            change_list_number (int): 체인지 리스트 번호
-            op_name (str): 작업 이름 (로깅용)
-
-        Returns:
-            bool: 작업 성공 시 True, 실패 시 False
-        """
-        self._ensure_connected()
-        if command == "edit":
-            self._service.checkout([file_path], change_list_number)
-        elif command == "add":
-            self._service.add([file_path], change_list_number)
-        elif command == "delete":
-            self._service.delete([file_path], change_list_number)
-        else:
-            error_message = f"지원되지 않는 파일 작업: {command}"
-            raise ValidationError(error_message)
-        return True
-
-    def checkout_file(self, file_path: str, change_list_number: int) -> bool:
-        """파일을 체크아웃합니다.
-
-        Args:
-            file_path (str): 체크아웃할 파일 경로
-            change_list_number (int): 체인지 리스트 번호
-
-        Returns:
-            bool: 체크아웃 성공 시 True, 실패 시 False
-        """
-        return self._file_op("edit", file_path, change_list_number, "체크아웃")
-        
-    def checkout_files(self, file_paths: list, change_list_number: int) -> bool:
-        """여러 파일을 한 번에 체크아웃합니다.
-        
-        Args:
-            file_paths (list): 체크아웃할 파일 경로 리스트
-            change_list_number (int): 체인지 리스트 번호
-            
-        Returns:
-            bool: 모든 파일 체크아웃 성공 시 True, 하나라도 실패 시 False
-        """
-        if not file_paths:
+            # 체인지리스트 삭제
+            p4.run("change", "-d", str(change_list_number))
             return True
-        
-        # 타입 검증: 리스트가 아닌 경우 에러 발생
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 checkout_file() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-            
-        all_success = True
-        for file_path in file_paths:
-            success = self.checkout_file(file_path, change_list_number)
-            if not success:
-                all_success = False
-                
-        return all_success
-
-    def add_file(self, file_path: str, change_list_number: int) -> bool:
-        """파일을 추가합니다.
-
-        Args:
-            file_path (str): 추가할 파일 경로
-            change_list_number (int): 체인지 리스트 번호
-
-        Returns:
-            bool: 추가 성공 시 True, 실패 시 False
-        """
-        return self._file_op("add", file_path, change_list_number, "추가")
-        
-    def add_files(self, file_paths: list, change_list_number: int) -> bool:
-        """여러 파일을 한 번에 추가합니다.
-        
-        Args:
-            file_paths (list): 추가할 파일 경로 리스트
-            change_list_number (int): 체인지 리스트 번호
-            
-        Returns:
-            bool: 모든 파일 추가 성공 시 True, 하나라도 실패 시 False
-        """
-        if not file_paths:
-            return True
-        
-        # 타입 검증: 리스트가 아닌 경우 에러 발생
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 add_file() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-            
-        all_success = True
-        for file_path in file_paths:
-            success = self.add_file(file_path, change_list_number)
-            if not success:
-                all_success = False
-                
-        return all_success
-
-    def delete_file(self, file_path: str, change_list_number: int) -> bool:
-        """파일을 삭제합니다.
-
-        Args:
-            file_path (str): 삭제할 파일 경로
-            change_list_number (int): 체인지 리스트 번호
-
-        Returns:
-            bool: 삭제 성공 시 True, 실패 시 False
-        """
-        return self._file_op("delete", file_path, change_list_number, "삭제")
-        
-    def delete_files(self, file_paths: list, change_list_number: int) -> bool:
-        """여러 파일을 한 번에 삭제합니다.
-        
-        Args:
-            file_paths (list): 삭제할 파일 경로 리스트
-            change_list_number (int): 체인지 리스트 번호
-            
-        Returns:
-            bool: 모든 파일 삭제 성공 시 True, 하나라도 실패 시 False
-        """
-        if not file_paths:
-            return True
-        
-        # 타입 검증: 리스트가 아닌 경우 에러 발생
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 delete_file() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-            
-        all_success = True
-        for file_path in file_paths:
-            success = self.delete_file(file_path, change_list_number)
-            if not success:
-                all_success = False
-                
-        return all_success
+        except P4Exception as e:
+            print(f"체인지리스트 삭제 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
 
     def submit_change_list(self, change_list_number: int, auto_revert_unchanged: bool = True) -> bool:
-        """체인지 리스트를 제출합니다.
+        """
+        체인지리스트 제출
 
         Args:
-            change_list_number (int): 제출할 체인지 리스트 번호
-            auto_revert_unchanged (bool, optional): 제출 후 변경사항이 없는 체크아웃된 파일들을 
-                                                  자동으로 리버트할지 여부. 기본값 True
+            change_list_number: 제출할 체인지리스트 번호
+            auto_revert_unchanged: 변경되지 않은 파일 자동 리버트 여부
 
         Returns:
-            bool: 제출 성공 시 True, 실패 시 False
+            bool: 제출 성공 여부 (False인 경우 빈 체인지리스트로 삭제됨)
         """
-        self._ensure_connected()
-        self._service.submit_changelist(change_list_number, auto_revert_unchanged)
-        
-        # 제출 후 체인지리스트가 여전히 pending 상태로 남아있는 경우만 삭제 시도
+        p4 = P4()
+        p4.client = self.workspace_name
         try:
-            cl_info = self._service.get_changelist_by_number(change_list_number)
-            # pending 상태이고 파일이 없으면 빈 체인지리스트이므로 삭제
-            if cl_info.status == "pending" and not cl_info.files:
-                self.delete_empty_change_list(change_list_number)
-        except PerforceError:
-            # 체인지리스트를 찾을 수 없으면 이미 제출되었거나 삭제된 것이므로 무시
-            pass
-        
-        return True
+            p4.connect()
 
-    
+            # 1. 변경 없는 파일 리버트
+            if auto_revert_unchanged:
+                try:
+                    p4.run("revert", "-a", "-c", str(change_list_number))
+                except P4Exception:
+                    # 리버트 실패는 무시 (파일이 없을 수 있음)
+                    pass
+
+            # 2. 제출할 파일 확인
+            opened = p4.run("opened", "-c", str(change_list_number))
+            if not opened:
+                # 빈 체인지리스트 삭제
+                p4.run("change", "-d", str(change_list_number))
+                return False
+
+            # 3. 제출
+            p4.run("submit", "-c", str(change_list_number))
+            return True
+        except P4Exception as e:
+            print(f"체인지리스트 제출 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
 
     def revert_change_list(self, change_list_number: int) -> bool:
-        """체인지 리스트를 되돌리고 삭제합니다.
-
-        체인지 리스트 내 모든 파일을 되돌린 후 빈 체인지 리스트를 삭제합니다.
+        """
+        체인지리스트의 모든 파일 리버트 및 체인지리스트 삭제
 
         Args:
-            change_list_number (int): 되돌릴 체인지 리스트 번호
+            change_list_number: 리버트할 체인지리스트 번호
 
         Returns:
-            bool: 되돌리기 및 삭제 성공 시 True, 실패 시 False
+            bool: 성공 여부
         """
-        self._ensure_connected()
-        self._service.revert_changelist(change_list_number)
-        return True
-    
-    def delete_empty_change_list(self, change_list_number: int) -> bool:
-        """빈 체인지 리스트를 삭제합니다.
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
 
-        Args:
-            change_list_number (int): 삭제할 체인지 리스트 번호
+            # 1. 파일 리버트
+            try:
+                p4.run("revert", "-c", str(change_list_number), "//...")
+            except P4Exception:
+                # 리버트할 파일이 없을 수 있음
+                pass
 
-        Returns:
-            bool: 삭제 성공 시 True, 실패 시 False
-        """
-        self._ensure_connected()
-        self._service.delete_empty_changelist(change_list_number)
-        return True
-
-    def revert_file(self, file_path: str, change_list_number: int) -> bool:
-        """체인지 리스트에서 특정 파일을 되돌립니다.
-
-        Args:
-            file_path (str): 되돌릴 파일 경로
-            change_list_number (int): 체인지 리스트 번호
-
-        Returns:
-            bool: 되돌리기 성공 시 True, 실패 시 False
-        """
-        self._ensure_connected()
-        self._service.revert([file_path], change_list_number)
-        return True
-
-    def revert_files(self, change_list_number: int, file_paths: list) -> bool:
-        """체인지 리스트 내의 특정 파일들을 되돌립니다.
-
-        Args:
-            change_list_number (int): 체인지 리스트 번호
-            file_paths (list): 되돌릴 파일 경로 리스트
-
-        Returns:
-            bool: 모든 파일 되돌리기 성공 시 True, 하나라도 실패 시 False
-        """
-        self._ensure_connected()
-        if not file_paths:
+            # 2. 빈 체인지리스트 삭제
+            p4.run("change", "-d", str(change_list_number))
             return True
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 revert_file() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-        self._service.revert(file_paths, change_list_number)
-        return True
+        except P4Exception as e:
+            print(f"체인지리스트 리버트 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
 
-    def check_update_required(self, file_paths: list) -> bool:
-        """파일이나 폴더의 업데이트 필요 여부를 확인합니다.
+    def edit_change_list(self, change_list_number: int, description: Optional[str] = None,
+                        add_file_paths: Optional[List[str]] = None,
+                        remove_file_paths: Optional[List[str]] = None) -> Dict:
+        """
+        체인지리스트 수정
 
         Args:
-            file_paths (list): 확인할 파일 또는 폴더 경로 리스트. 
-                              폴더 경로는 자동으로 재귀적으로 처리됩니다.
+            change_list_number: 수정할 체인지리스트 번호
+            description: 새 설명 (None이면 변경하지 않음)
+            add_file_paths: 추가할 파일 경로 리스트
+            remove_file_paths: 제거할 파일 경로 리스트
 
         Returns:
-            bool: 업데이트가 필요한 파일이 있으면 True, 없으면 False
+            Dict: 수정된 체인지리스트 정보
         """
-        self._ensure_connected()
-        return self._service.check_update_required(file_paths)
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
 
-    def is_file_in_perforce(self, file_path: str) -> bool:
-        """파일이 Perforce에 속하는지 확인합니다.
+            # Description 변경
+            if description is not None:
+                change_spec = p4.fetch_change(change_list_number)
+                change_spec["Description"] = description
+                p4.save_change(change_spec)
 
-        Args:
-            file_path (str): 확인할 파일 경로
+            # 파일 추가 (reopen)
+            if add_file_paths:
+                normalized = self._normalize_paths(add_file_paths)
+                p4.run("reopen", "-c", str(change_list_number), *normalized)
 
-        Returns:
-            bool: 파일이 Perforce에 속하면 True, 아니면 False
-        """
-        self._ensure_connected()
-        res = self._service.is_in_perforce([file_path])
-        # 어떤 키로 들어오든 하나라도 True이면 True 처리
-        return any(res.values())
+            # 파일 제거 (default CL로 reopen)
+            if remove_file_paths:
+                normalized = self._normalize_paths(remove_file_paths)
+                p4.run("reopen", "-c", "default", *normalized)
 
-    def sync_files(self, file_paths: list) -> bool:
-        """파일이나 폴더를 동기화합니다.
-
-        Args:
-            file_paths (list): 동기화할 파일 또는 폴더 경로 리스트.
-                              폴더 경로는 자동으로 재귀적으로 처리됩니다.
-
-        Returns:
-            bool: 동기화 성공 시 True, 실패 시 False
-        """
-        self._ensure_connected()
-        if not file_paths:
-            return True
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 경로도 리스트로 감싸서 전달하세요: ['{file_paths}']"
-            raise ValidationError(error_msg)
-        self._service.sync(file_paths)
-        return True
-
-    def get_default_change_list(self) -> dict:
-        """default change list의 정보를 가져옵니다.
-
-        Returns:
-            dict: get_change_list_by_number와 동일한 형태의 딕셔너리
-        """
-        self._ensure_connected()
-        dto = self._service.get_default_changelist()
-        return dto.to_dict()
-
-    def check_files_checked_out_all_users(self, file_paths: list) -> dict:
-        """파일들의 체크아웃 상태를 모든 사용자/워크스페이스에서 확인합니다.
-
-        Args:
-            file_paths (list): 확인할 파일 경로 리스트
-
-        Returns:
-            dict: 파일별 체크아웃 상태 정보
-                 {
-                     'file_path': {
-                         'is_checked_out': bool,
-                         'change_list': int or None,
-                         'action': str or None,
-                         'user': str or None,
-                         'client': str or None
-                     }
-                 }
-        """
-        self._ensure_connected()
-        if not file_paths:
-            return {}
-        if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 get_file_checkout_info_all_users() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-        status = self._service.get_checkout_status(file_paths, in_scope="all")
-        result = {}
-        for path in file_paths:
-            norm = str(Path(path).resolve())
-            fi = status.get(norm)
-            if fi and fi.isCheckedOut:
-                result[path] = {
-                    'is_checked_out': True,
-                    'change_list': fi.changeList,
-                    'action': fi.action or '',
-                    'user': fi.user or '',
-                    'client': fi.client or '',
-                }
-            else:
-                result[path] = {
-                    'is_checked_out': False,
-                    'change_list': None,
-                    'action': None,
-                    'user': None,
-                    'client': None,
-                }
-        return result
-
-    def is_file_checked_out_by_others(self, file_path: str) -> bool:
-        """단일 파일이 다른 사용자/워크스페이스에 의해 체크아웃되어 있는지 확인합니다.
-
-        Args:
-            file_path (str): 확인할 파일 경로
-
-        Returns:
-            bool: 다른 사용자에 의해 체크아웃되어 있으면 True, 아니면 False
-        """
-        status = self._service.get_checkout_status([file_path], in_scope="all")
-        norm = str(Path(file_path).resolve())
-        fi = status.get(norm)
-        return bool(fi and fi.isCheckedOut and fi.isOthers)
-
-    def get_file_checkout_info_all_users(self, file_path: str) -> dict:
-        """단일 파일의 상세 체크아웃 정보를 모든 사용자에서 가져옵니다.
-
-        Args:
-            file_path (str): 확인할 파일 경로
-
-        Returns:
-            dict: 체크아웃 정보 또는 빈 딕셔너리
-                 {
-                     'is_checked_out': bool,
-                     'change_list': int or None,
-                     'action': str or None,
-                     'user': str or None,
-                     'client': str or None,
-                     'is_checked_out_by_current_user': bool,
-                     'is_checked_out_by_others': bool
-                 }
-        """
-        status = self._service.get_checkout_status([file_path], in_scope="all")
-        norm = str(Path(file_path).resolve())
-        fi = status.get(norm)
-        if not fi:
+            # 수정된 정보 반환
+            cl_info = p4.fetch_change(change_list_number)
             return {
-                'is_checked_out': False,
-                'change_list': None,
-                'action': None,
-                'user': None,
-                'client': None,
-                'is_checked_out_by_current_user': False,
-                'is_checked_out_by_others': False,
+                'id': change_list_number,
+                'description': cl_info.get('Description', '').strip(),
+                'status': cl_info.get('Status', ''),
+                'user': cl_info.get('User', ''),
+                'client': cl_info.get('Client', '')
             }
+        except P4Exception as e:
+            print(f"체인지리스트 수정 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    # ============================================================================
+    # 체인지리스트 조회
+    # ============================================================================
+
+    def get_pending_change_list(self) -> List[Dict]:
+        """
+        대기 중인 체인지리스트 목록 조회
+
+        Returns:
+            List[Dict]: 체인지리스트 정보 리스트
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            user = p4.user
+            client = self.workspace_name
+
+            # 대기 중인 체인지리스트 조회 (설명 포함)
+            changes = p4.run("changes", "-l", "-s", "pending", "-u", user, "-c", client)
+
+            result = []
+            for change in changes:
+                result.append({
+                    'id': int(change.get('change', 0)),
+                    'description': change.get('desc', '').strip(),
+                    'status': change.get('status', ''),
+                    'user': change.get('user', ''),
+                    'client': change.get('client', '')
+                })
+
+            return result
+        except P4Exception as e:
+            print(f"체인지리스트 조회 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def get_change_list_by_number(self, change_list_number: int) -> Dict:
+        """
+        번호로 체인지리스트 조회
+
+        Args:
+            change_list_number: 조회할 체인지리스트 번호
+
+        Returns:
+            Dict: 체인지리스트 정보
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            cl_info = p4.fetch_change(change_list_number)
+
+            return {
+                'id': change_list_number,
+                'description': cl_info.get('Description', '').strip(),
+                'status': cl_info.get('Status', ''),
+                'user': cl_info.get('User', ''),
+                'client': cl_info.get('Client', '')
+            }
+        except P4Exception as e:
+            print(f"체인지리스트 조회 실패 (번호: {change_list_number}): {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def get_change_list_by_description(self, description: str) -> Dict:
+        """
+        설명으로 체인지리스트 조회 (정확히 일치하는 첫 번째 항목)
+
+        Args:
+            description: 찾을 설명
+
+        Returns:
+            Dict: 체인지리스트 정보 (없으면 빈 딕셔너리)
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            user = p4.user
+            client = self.workspace_name
+
+            changes = p4.run("changes", "-l", "-s", "pending", "-u", user, "-c", client)
+
+            for change in changes:
+                desc = change.get('desc', '').strip()
+                if desc == description:
+                    return {
+                        'id': int(change.get('change', 0)),
+                        'description': desc,
+                        'status': change.get('status', ''),
+                        'user': change.get('user', ''),
+                        'client': change.get('client', '')
+                    }
+
+            return {}
+        except P4Exception as e:
+            print(f"체인지리스트 조회 실패 (설명: {description}): {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def get_change_list_by_description_pattern(self, description_pattern: str,
+                                               exact_match: bool = False) -> List[Dict]:
+        """
+        설명 패턴으로 체인지리스트 검색
+
+        Args:
+            description_pattern: 검색할 패턴
+            exact_match: True면 정확히 일치, False면 부분 일치
+
+        Returns:
+            List[Dict]: 매칭되는 체인지리스트 리스트
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            user = p4.user
+            client = self.workspace_name
+
+            changes = p4.run("changes", "-l", "-s", "pending", "-u", user, "-c", client)
+
+            result = []
+            for change in changes:
+                desc = change.get('desc', '').strip()
+
+                if exact_match:
+                    if desc == description_pattern:
+                        result.append({
+                            'id': int(change.get('change', 0)),
+                            'description': desc,
+                            'status': change.get('status', ''),
+                            'user': change.get('user', ''),
+                            'client': change.get('client', '')
+                        })
+                else:
+                    if description_pattern in desc:
+                        result.append({
+                            'id': int(change.get('change', 0)),
+                            'description': desc,
+                            'status': change.get('status', ''),
+                            'user': change.get('user', ''),
+                            'client': change.get('client', '')
+                        })
+
+            return result
+        except P4Exception as e:
+            print(f"체인지리스트 검색 실패 (패턴: {description_pattern}): {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def get_default_change_list(self) -> Dict:
+        """
+        기본 체인지리스트 정보 반환
+
+        Returns:
+            Dict: 기본 체인지리스트 정보 (id는 'default')
+        """
         return {
-            'is_checked_out': fi.isCheckedOut,
-            'change_list': fi.changeList,
-            'action': fi.action,
-            'user': fi.user,
-            'client': fi.client,
-            'is_checked_out_by_current_user': fi.isCurrentUser,
-            'is_checked_out_by_others': fi.isOthers,
+            'id': 'default',
+            'description': 'Default Change',
+            'status': 'pending',
+            'user': '',
+            'client': self.workspace_name or ''
         }
 
-    def get_files_checked_out_by_others(self, file_paths: list) -> list:
-        """파일 목록에서 다른 사용자/워크스페이스에 의해 체크아웃된 파일들을 찾습니다.
+    # ============================================================================
+    # 파일 작업 (배치)
+    # ============================================================================
+
+    def checkout_files(self, file_paths: List[str], change_list_number: int) -> bool:
+        """
+        파일들을 체크아웃
 
         Args:
-            file_paths (list): 확인할 파일 경로 리스트
+            file_paths: 체크아웃할 파일 경로 리스트
+            change_list_number: 체인지리스트 번호
 
         Returns:
-            list: 다른 사용자에 의해 체크아웃된 파일 정보 리스트
-                  [
-                      {
-                          'file_path': str,
-                          'user': str,
-                          'client': str,
-                          'change_list': int,
-                          'action': str
-                      }
-                  ]
+            bool: 성공 여부
         """
-        if not file_paths:
-            return []
-        
-        # 타입 검증: 리스트가 아닌 경우 에러 발생
         if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out_by_others() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-        
-        if not file_paths:
-            return []
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+
+            # 다른 체인지리스트에 이미 열려있는지 체크
+            try:
+                opened = p4.run("opened", *normalized)
+                for file_info in opened:
+                    existing_cl = file_info.get('change')
+                    if existing_cl != str(change_list_number) and existing_cl != 'default':
+                        depotFile = file_info.get('depotFile', 'unknown')
+                        print(f"파일이 다른 체인지리스트에 열려있음: {depotFile} (CL: {existing_cl})")
+                        raise P4Exception(f"파일이 체인지리스트 {existing_cl}에 이미 열려있습니다")
+            except P4Exception as e:
+                # 파일이 열려있지 않으면 에러가 발생할 수 있음 (정상)
+                if "not opened" not in str(e):
+                    raise
+
+            # 체크아웃 실행
+            p4.run("edit", "-c", str(change_list_number), *normalized)
+            return True
+        except P4Exception as e:
+            print(f"체크아웃 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def add_files(self, file_paths: List[str], change_list_number: int) -> bool:
+        """
+        파일들을 추가
+
+        Args:
+            file_paths: 추가할 파일 경로 리스트
+            change_list_number: 체인지리스트 번호
+
+        Returns:
+            bool: 성공 여부
+        """
         if not isinstance(file_paths, list):
-            error_msg = f"file_paths는 리스트여야 합니다. 전달된 타입: {type(file_paths).__name__}. 단일 파일은 is_file_checked_out_by_others() 메서드를 사용하세요."
-            raise ValidationError(error_msg)
-        status = self._service.get_checkout_status(file_paths, in_scope="all")
-        files_by_others = []
-        for path in file_paths:
-            norm = str(Path(path).resolve())
-            fi = status.get(norm)
-            if fi and fi.isCheckedOut and fi.isOthers:
-                files_by_others.append({
-                    'file_path': path,
-                    'user': fi.user or '',
-                    'client': fi.client or '',
-                    'change_list': fi.changeList,
-                    'action': fi.action or '',
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+
+            # 다른 체인지리스트에 이미 열려있는지 체크
+            try:
+                opened = p4.run("opened", *normalized)
+                for file_info in opened:
+                    existing_cl = file_info.get('change')
+                    if existing_cl != str(change_list_number) and existing_cl != 'default':
+                        depotFile = file_info.get('depotFile', 'unknown')
+                        print(f"파일이 다른 체인지리스트에 열려있음: {depotFile} (CL: {existing_cl})")
+                        raise P4Exception(f"파일이 체인지리스트 {existing_cl}에 이미 열려있습니다")
+            except P4Exception as e:
+                # 파일이 열려있지 않으면 에러가 발생할 수 있음 (정상)
+                if "not opened" not in str(e):
+                    raise
+
+            # 추가 실행
+            p4.run("add", "-c", str(change_list_number), *normalized)
+            return True
+        except P4Exception as e:
+            print(f"파일 추가 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def delete_files(self, file_paths: List[str], change_list_number: int) -> bool:
+        """
+        파일들을 삭제 마킹
+
+        Args:
+            file_paths: 삭제할 파일 경로 리스트
+            change_list_number: 체인지리스트 번호
+
+        Returns:
+            bool: 성공 여부
+        """
+        if not isinstance(file_paths, list):
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+
+            # 다른 체인지리스트에 이미 열려있는지 체크
+            try:
+                opened = p4.run("opened", *normalized)
+                for file_info in opened:
+                    existing_cl = file_info.get('change')
+                    if existing_cl != str(change_list_number) and existing_cl != 'default':
+                        depotFile = file_info.get('depotFile', 'unknown')
+                        print(f"파일이 다른 체인지리스트에 열려있음: {depotFile} (CL: {existing_cl})")
+                        raise P4Exception(f"파일이 체인지리스트 {existing_cl}에 이미 열려있습니다")
+            except P4Exception as e:
+                # 파일이 열려있지 않으면 에러가 발생할 수 있음 (정상)
+                if "not opened" not in str(e):
+                    raise
+
+            # 삭제 실행
+            p4.run("delete", "-c", str(change_list_number), *normalized)
+            return True
+        except P4Exception as e:
+            print(f"파일 삭제 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def revert_files(self, change_list_number: int, file_paths: Optional[List[str]] = None) -> bool:
+        """
+        파일들을 리버트
+
+        Args:
+            change_list_number: 체인지리스트 번호
+            file_paths: 리버트할 파일 경로 리스트 (None이면 체인지리스트의 모든 파일)
+
+        Returns:
+            bool: 성공 여부
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            if file_paths:
+                if not isinstance(file_paths, list):
+                    raise ValueError("file_paths must be a list or None")
+                normalized = self._normalize_paths(file_paths)
+                p4.run("revert", "-c", str(change_list_number), *normalized)
+            else:
+                # 모든 파일 리버트
+                p4.run("revert", "-c", str(change_list_number), "//...")
+
+            return True
+        except P4Exception as e:
+            print(f"파일 리버트 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    # ============================================================================
+    # 파일 작업 (단일 파일 - 배치 메서드 위임)
+    # ============================================================================
+
+    def checkout_file(self, file_path: str, change_list_number: int) -> bool:
+        """단일 파일 체크아웃 (배치 메서드 위임)"""
+        return self.checkout_files([file_path], change_list_number)
+
+    def add_file(self, file_path: str, change_list_number: int) -> bool:
+        """단일 파일 추가 (배치 메서드 위임)"""
+        return self.add_files([file_path], change_list_number)
+
+    def delete_file(self, file_path: str, change_list_number: int) -> bool:
+        """단일 파일 삭제 (배치 메서드 위임)"""
+        return self.delete_files([file_path], change_list_number)
+
+    def revert_file(self, file_path: str, change_list_number: int) -> bool:
+        """단일 파일 리버트 (배치 메서드 위임)"""
+        return self.revert_files(change_list_number, [file_path])
+
+    # ============================================================================
+    # 파일 상태 조회
+    # ============================================================================
+
+    def is_file_checked_out(self, file_path: str) -> bool:
+        """
+        파일이 현재 사용자에 의해 체크아웃되었는지 확인
+
+        Args:
+            file_path: 확인할 파일 경로
+
+        Returns:
+            bool: 체크아웃 여부
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_path(file_path)
+            opened = p4.run("opened", normalized)
+
+            return len(opened) > 0
+        except P4Exception:
+            # 파일이 열려있지 않으면 에러 발생
+            return False
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def check_files_checked_out(self, file_paths: List[str]) -> Dict[str, bool]:
+        """
+        여러 파일의 체크아웃 상태 확인
+
+        Args:
+            file_paths: 확인할 파일 경로 리스트
+
+        Returns:
+            Dict[str, bool]: 파일 경로별 체크아웃 여부
+        """
+        if not isinstance(file_paths, list):
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+            result = {path: False for path in normalized}
+
+            try:
+                opened = p4.run("opened", *normalized)
+                for file_info in opened:
+                    client_file = file_info.get('clientFile', '')
+                    if client_file:
+                        # 경로 정규화 후 매칭
+                        norm_client = self._normalize_path(client_file)
+                        if norm_client in result:
+                            result[norm_client] = True
+            except P4Exception:
+                # 파일이 하나도 열려있지 않으면 에러 발생
+                pass
+
+            return result
+        except P4Exception as e:
+            print(f"파일 상태 확인 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def is_file_checked_out_by_others(self, file_path: str) -> bool:
+        """
+        파일이 다른 사용자에 의해 체크아웃되었는지 확인
+
+        Args:
+            file_path: 확인할 파일 경로
+
+        Returns:
+            bool: 다른 사용자가 체크아웃한 경우 True
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            current_user = p4.user
+            normalized = self._normalize_path(file_path)
+
+            # 모든 사용자의 열린 파일 확인
+            opened = p4.run("opened", "-a", normalized)
+
+            for file_info in opened:
+                user = file_info.get('user', '')
+                if user and user != current_user:
+                    return True
+
+            return False
+        except P4Exception:
+            # 파일이 열려있지 않으면 에러 발생
+            return False
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def check_files_checked_out_all_users(self, file_paths: List[str]) -> Dict[str, Dict]:
+        """
+        여러 파일의 모든 사용자 체크아웃 상태 확인
+
+        Args:
+            file_paths: 확인할 파일 경로 리스트
+
+        Returns:
+            Dict[str, Dict]: 파일 경로별 상태 정보
+        """
+        if not isinstance(file_paths, list):
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            current_user = p4.user
+            normalized = self._normalize_paths(file_paths)
+            result = {}
+
+            for path in normalized:
+                result[path] = {
+                    'checked_out': False,
+                    'by_current_user': False,
+                    'by_others': False,
+                    'user': None,
+                    'client': None
+                }
+
+            try:
+                opened = p4.run("opened", "-a", *normalized)
+                for file_info in opened:
+                    client_file = file_info.get('clientFile', '')
+                    if client_file:
+                        norm_client = self._normalize_path(client_file)
+                        if norm_client in result:
+                            user = file_info.get('user', '')
+                            result[norm_client]['checked_out'] = True
+                            result[norm_client]['user'] = user
+                            result[norm_client]['client'] = file_info.get('client', '')
+
+                            if user == current_user:
+                                result[norm_client]['by_current_user'] = True
+                            else:
+                                result[norm_client]['by_others'] = True
+            except P4Exception:
+                # 파일이 하나도 열려있지 않으면 에러 발생
+                pass
+
+            return result
+        except P4Exception as e:
+            print(f"파일 상태 확인 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def get_file_checkout_info_all_users(self, file_path: str) -> Dict:
+        """
+        파일의 체크아웃 정보 조회 (모든 사용자)
+
+        Args:
+            file_path: 확인할 파일 경로
+
+        Returns:
+            Dict: 체크아웃 정보
+        """
+        result = self.check_files_checked_out_all_users([file_path])
+        normalized = self._normalize_path(file_path)
+        return result.get(normalized, {})
+
+    def get_files_checked_out_by_others(self, file_paths: List[str]) -> List[Dict]:
+        """
+        다른 사용자가 체크아웃한 파일 목록 조회
+
+        Args:
+            file_paths: 확인할 파일 경로 리스트
+
+        Returns:
+            List[Dict]: 다른 사용자가 체크아웃한 파일 정보 리스트
+        """
+        all_status = self.check_files_checked_out_all_users(file_paths)
+
+        result = []
+        for path, info in all_status.items():
+            if info['by_others']:
+                result.append({
+                    'path': path,
+                    'user': info['user'],
+                    'client': info['client']
                 })
-        return files_by_others 
+
+        return result
+
+    def is_file_in_pending_changelist(self, file_path: str, change_list_number: int) -> bool:
+        """
+        파일이 특정 체인지리스트에 있는지 확인
+
+        Args:
+            file_path: 확인할 파일 경로
+            change_list_number: 체인지리스트 번호
+
+        Returns:
+            bool: 체인지리스트에 포함 여부
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_path(file_path)
+
+            try:
+                opened = p4.run("opened", "-c", str(change_list_number), normalized)
+                return len(opened) > 0
+            except P4Exception:
+                return False
+        except P4Exception as e:
+            print(f"파일 상태 확인 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    # ============================================================================
+    # 싱크 작업
+    # ============================================================================
+
+    def is_file_in_perforce(self, file_path: str) -> bool:
+        """
+        파일이 Perforce에 존재하는지 확인
+
+        Args:
+            file_path: 확인할 파일 경로
+
+        Returns:
+            bool: Perforce에 존재 여부
+        """
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_path(file_path)
+            files = p4.run("files", normalized)
+
+            return len(files) > 0
+        except P4Exception:
+            # 파일이 없으면 에러 발생
+            return False
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def check_update_required(self, file_paths: List[str]) -> bool:
+        """
+        파일들의 싱크 필요 여부 확인
+
+        Args:
+            file_paths: 확인할 파일 경로 리스트
+
+        Returns:
+            bool: 싱크가 필요하면 True
+        """
+        if not isinstance(file_paths, list):
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+
+            # 프리뷰 모드로 싱크 확인
+            sync_result = p4.run("sync", "-n", *normalized)
+
+            # 결과가 있으면 싱크 필요
+            return len(sync_result) > 0
+        except P4Exception as e:
+            print(f"싱크 확인 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def sync_files(self, file_paths: List[str]) -> bool:
+        """
+        파일들을 싱크
+
+        Args:
+            file_paths: 싱크할 파일 경로 리스트
+
+        Returns:
+            bool: 성공 여부
+        """
+        if not isinstance(file_paths, list):
+            raise ValueError("file_paths must be a list")
+
+        p4 = P4()
+        p4.client = self.workspace_name
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(file_paths)
+
+            # 싱크 실행
+            p4.run("sync", *normalized)
+            return True
+        except P4Exception as e:
+            print(f"싱크 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
