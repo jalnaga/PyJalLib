@@ -14,10 +14,20 @@ class Perforce:
     각 메서드는 독립적으로 P4 인스턴스를 생성하고 연결/실행/종료합니다.
     """
 
-    def __init__(self):
-        """Perforce 객체 초기화"""
+    def __init__(self, port: str, user: str):
+        """
+        Perforce 객체 초기화
+
+        Args:
+            port: Perforce 서버 주소 (예: "localhost:1666")
+            user: Perforce 사용자 이름
+        """
+        self.port = port
+        self.user = user
         self.workspace_name = None
         self.workspaceRoot = None
+        self.charset = "utf8"
+        self.exception_level = 1
 
     def connect(self, workspace_name: str) -> bool:
         """
@@ -33,10 +43,14 @@ class Perforce:
 
         # 워크스페이스 루트 경로 가져오기
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
-            client_spec = p4.fetch_client(workspace_name)
+            client_spec = p4.run("client", "-o", workspace_name)[0]
             self.workspaceRoot = client_spec.get('Root', '')
             return True
         except P4Exception as e:
@@ -48,8 +62,22 @@ class Perforce:
 
     def disconnect(self) -> None:
         """저장된 워크스페이스 정보 초기화"""
-        self.workspace_name = None
-        self.workspaceRoot = None
+        p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
+        p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
+        try:
+            p4.connect()
+            p4.disconnect()
+        except P4Exception:
+            # 연결 실패해도 무시하고 정리 진행
+            pass
+        finally:
+            # Instance 변수 초기화
+            self.workspace_name = None
+            self.workspaceRoot = None
 
     def _normalize_path(self, path: Union[str, Path]) -> str:
         """
@@ -92,7 +120,11 @@ class Perforce:
             Dict: 생성된 체인지리스트 정보 {'id', 'description', 'status', 'user', 'client'}
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -123,9 +155,9 @@ class Perforce:
             if p4.connected():
                 p4.disconnect()
 
-    def delete_empty_change_list(self, change_list_number: int) -> bool:
+    def delete_change_list(self, change_list_number: int) -> bool:
         """
-        빈 체인지리스트 삭제
+        체인지리스트 삭제 (파일이 있으면 리버트 후 삭제)
 
         Args:
             change_list_number: 삭제할 체인지리스트 번호
@@ -134,15 +166,83 @@ class Perforce:
             bool: 성공 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
-            # 체인지리스트 삭제
+            # 1. 체인지리스트의 파일 리버트
+            try:
+                p4.run("revert", "-c", str(change_list_number), "//...")
+                print(f"체인지리스트 {change_list_number}의 파일 리버트 완료")
+            except P4Exception:
+                # 리버트할 파일이 없을 수 있음
+                pass
+
+            # 2. 체인지리스트 삭제
             p4.run("change", "-d", str(change_list_number))
+            print(f"체인지리스트 {change_list_number} 삭제 완료")
             return True
         except P4Exception as e:
-            print(f"체인지리스트 삭제 실패: {e}")
+            print(f"체인지리스트 삭제 실패 (CL {change_list_number}): {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def delete_empty_change_list(self) -> List[int]:
+        """
+        현재 클라이언트의 모든 빈 펜딩 체인지리스트 삭제
+
+        Returns:
+            List[int]: 삭제된 체인지리스트 번호 리스트
+        """
+        p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
+        p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
+        try:
+            p4.connect()
+
+            user = p4.user
+            client = self.workspace_name
+            deleted_cls = []
+
+            # 대기 중인 체인지리스트 조회
+            changes = p4.run("changes", "-s", "pending", "-u", user, "-c", client)
+
+            for change in changes:
+                cl_number = int(change.get('change', 0))
+                if cl_number == 0:
+                    continue
+
+                # 체인지리스트에 파일이 있는지 확인
+                try:
+                    opened = p4.run("opened", "-c", str(cl_number))
+                    # 파일이 있으면 건너뛰기
+                    if opened:
+                        continue
+                except P4Exception:
+                    # 파일이 없으면 에러 발생 (정상 - 빈 CL)
+                    pass
+
+                # 빈 체인지리스트 삭제 시도
+                try:
+                    p4.run("change", "-d", str(cl_number))
+                    deleted_cls.append(cl_number)
+                    print(f"빈 체인지리스트 삭제: {cl_number}")
+                except P4Exception as e:
+                    # 삭제 실패는 경고만 출력하고 계속 진행
+                    print(f"체인지리스트 삭제 실패 (CL {cl_number}): {e}")
+
+            return deleted_cls
+        except P4Exception as e:
+            print(f"빈 체인지리스트 삭제 작업 실패: {e}")
             raise
         finally:
             if p4.connected():
@@ -160,7 +260,11 @@ class Perforce:
             bool: 제출 성공 여부 (False인 경우 빈 체인지리스트로 삭제됨)
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -200,7 +304,11 @@ class Perforce:
             bool: 성공 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -237,7 +345,11 @@ class Perforce:
             Dict: 수정된 체인지리스트 정보
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -285,7 +397,11 @@ class Perforce:
             List[Dict]: 체인지리스트 정보 리스트
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -324,7 +440,11 @@ class Perforce:
             Dict: 체인지리스트 정보
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -355,7 +475,11 @@ class Perforce:
             Dict: 체인지리스트 정보 (없으면 빈 딕셔너리)
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -396,7 +520,11 @@ class Perforce:
             List[Dict]: 매칭되는 체인지리스트 리스트
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -468,13 +596,21 @@ class Perforce:
         """
         if not isinstance(file_paths, list):
             raise ValueError("file_paths must be a list")
+        
+        if not file_paths:
+            return False
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
             normalized = self._normalize_paths(file_paths)
+            print(f"Normalized: {normalized}")
 
             # 다른 체인지리스트에 이미 열려있는지 체크
             try:
@@ -513,9 +649,16 @@ class Perforce:
         """
         if not isinstance(file_paths, list):
             raise ValueError("file_paths must be a list")
+        
+        if not file_paths:
+            return False
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -558,9 +701,16 @@ class Perforce:
         """
         if not isinstance(file_paths, list):
             raise ValueError("file_paths must be a list")
+        
+        if not file_paths:
+            return False
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -602,7 +752,11 @@ class Perforce:
             bool: 성공 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -658,7 +812,11 @@ class Perforce:
             bool: 체크아웃 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -687,7 +845,11 @@ class Perforce:
             raise ValueError("file_paths must be a list")
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -726,11 +888,16 @@ class Perforce:
             bool: 다른 사용자가 체크아웃한 경우 True
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
             current_user = p4.user
+            current_client = self.workspace_name
             normalized = self._normalize_path(file_path)
 
             # 모든 사용자의 열린 파일 확인
@@ -738,7 +905,13 @@ class Perforce:
 
             for file_info in opened:
                 user = file_info.get('user', '')
-                if user and user != current_user:
+                client = file_info.get('client', '')
+
+                # 다른 워크스페이스(클라이언트)에서 체크아웃한 경우
+                if client and client != current_client:
+                    return True
+                # 같은 클라이언트지만 다른 사용자인 경우 (거의 없지만 체크)
+                if user and user != current_user and client == current_client:
                     return True
 
             return False
@@ -763,14 +936,32 @@ class Perforce:
             raise ValueError("file_paths must be a list")
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
             current_user = p4.user
+            current_client = self.workspace_name
             normalized = self._normalize_paths(file_paths)
-            result = {}
 
+            # 로컬 경로 -> depot 경로 매핑 생성
+            path_to_depot = {}
+            for path in normalized:
+                try:
+                    where_result = p4.run("where", path)
+                    if where_result:
+                        depot_file = where_result[0].get('depotFile', '')
+                        if depot_file:
+                            path_to_depot[depot_file] = path
+                except P4Exception:
+                    # 파일이 Perforce에 없으면 무시
+                    pass
+
+            result = {}
             for path in normalized:
                 result[path] = {
                     'checked_out': False,
@@ -783,19 +974,24 @@ class Perforce:
             try:
                 opened = p4.run("opened", "-a", *normalized)
                 for file_info in opened:
-                    client_file = file_info.get('clientFile', '')
-                    if client_file:
-                        norm_client = self._normalize_path(client_file)
-                        if norm_client in result:
-                            user = file_info.get('user', '')
-                            result[norm_client]['checked_out'] = True
-                            result[norm_client]['user'] = user
-                            result[norm_client]['client'] = file_info.get('client', '')
+                    depot_file = file_info.get('depotFile', '')
+                    if depot_file and depot_file in path_to_depot:
+                        local_path = path_to_depot[depot_file]
+                        user = file_info.get('user', '')
+                        client = file_info.get('client', '')
 
-                            if user == current_user:
-                                result[norm_client]['by_current_user'] = True
-                            else:
-                                result[norm_client]['by_others'] = True
+                        result[local_path]['checked_out'] = True
+                        result[local_path]['user'] = user
+                        result[local_path]['client'] = client
+
+                        # 다른 워크스페이스(클라이언트)에서 체크아웃한 경우
+                        if client != current_client:
+                            result[local_path]['by_others'] = True
+                        elif user == current_user:
+                            result[local_path]['by_current_user'] = True
+                        else:
+                            # 같은 클라이언트지만 다른 사용자 (드문 경우)
+                            result[local_path]['by_others'] = True
             except P4Exception:
                 # 파일이 하나도 열려있지 않으면 에러 발생
                 pass
@@ -857,7 +1053,11 @@ class Perforce:
             bool: 체인지리스트에 포함 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -890,7 +1090,11 @@ class Perforce:
             bool: Perforce에 존재 여부
         """
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -919,7 +1123,11 @@ class Perforce:
             raise ValueError("file_paths must be a list")
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 
@@ -951,7 +1159,11 @@ class Perforce:
             raise ValueError("file_paths must be a list")
 
         p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
         p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
         try:
             p4.connect()
 

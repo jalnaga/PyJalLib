@@ -5,14 +5,19 @@ Perforce 모듈 단순화 버전 테스트
 
 from pyjallib.perforce import Perforce
 
+PORT = "PC-Build:1666"
+USER = "Dev"
+# CLIENT = "Kwangsoo_DevStorage"
+CLIENT = "DongseokKim_DevStorage"
+
 
 def test_connection():
     """연결 테스트"""
     print("\n=== 연결 테스트 ===")
-    p4 = Perforce()
+    p4 = Perforce(PORT, USER)
 
     # 워크스페이스 이름을 환경에 맞게 수정하세요
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
 
     try:
         result = p4.connect(workspace_name)
@@ -29,9 +34,9 @@ def test_connection():
 def test_create_and_delete_changelist():
     """체인지리스트 생성 및 삭제 테스트"""
     print("\n=== 체인지리스트 생성/삭제 테스트 ===")
-    p4 = Perforce()
+    p4 = Perforce(PORT, USER)
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
 
     try:
         p4.connect(workspace_name)
@@ -43,10 +48,54 @@ def test_create_and_delete_changelist():
         print(f"  Description: {cl['description']}")
         print(f"  Status: {cl['status']}")
 
-        # 체인지리스트 삭제
-        result = p4.delete_empty_change_list(cl['id'])
+        # 체인지리스트 삭제 (delete_change_list 사용)
+        result = p4.delete_change_list(cl['id'])
         print(f"삭제 성공: {result}")
 
+        p4.disconnect()
+    except Exception as e:
+        print(f"테스트 실패: {e}")
+
+
+def test_delete_empty_changelists():
+    """모든 빈 체인지리스트 삭제 테스트"""
+    print("\n=== 빈 체인지리스트 일괄 삭제 테스트 ===")
+    p4 = Perforce(PORT, USER)
+
+    workspace_name = CLIENT
+
+    try:
+        p4.connect(workspace_name)
+
+        # 테스트용 빈 체인지리스트 여러 개 생성
+        print("테스트용 빈 체인지리스트 3개 생성 중...")
+        cl1 = p4.create_change_list("빈 체인지리스트 테스트 1")
+        cl2 = p4.create_change_list("빈 체인지리스트 테스트 2")
+        cl3 = p4.create_change_list("빈 체인지리스트 테스트 3")
+        print(f"생성된 CL: {cl1['id']}, {cl2['id']}, {cl3['id']}")
+
+        # 모든 빈 체인지리스트 삭제
+        print("\n빈 체인지리스트 삭제 실행...")
+        deleted = p4.delete_empty_change_list()
+        print(f"\n삭제된 CL 개수: {len(deleted)}")
+        print(f"삭제된 CL 목록: {deleted}")
+
+        p4.disconnect()
+    except Exception as e:
+        print(f"테스트 실패: {e}")
+        
+def test_create_changelist():
+    """체인지리스트 생성 테스트"""
+    print("\n=== 체인지리스트 생성 테스트 ===")
+    p4 = Perforce(PORT, USER)
+    workspace_name = CLIENT
+    try:
+        p4.connect(workspace_name)
+        cl = p4.create_change_list("테스트 체인지리스트")
+        print(f"생성된 CL: {cl}")
+        print(f"  ID: {cl['id']}")
+        print(f"  Description: {cl['description']}")
+        print(f"  Status: {cl['status']}")
         p4.disconnect()
     except Exception as e:
         print(f"테스트 실패: {e}")
@@ -55,9 +104,9 @@ def test_create_and_delete_changelist():
 def test_get_pending_changelists():
     """대기 중인 체인지리스트 조회 테스트"""
     print("\n=== 대기 중인 체인지리스트 조회 테스트 ===")
-    p4 = Perforce()
+    p4 = Perforce(PORT, USER)
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
 
     try:
         p4.connect(workspace_name)
@@ -79,8 +128,8 @@ def test_file_operations():
     print("\n=== 파일 작업 테스트 ===")
     p4 = Perforce()
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
-    test_file = "//depot/path/to/test/file.txt"  # 실제 파일 경로로 수정하세요
+    workspace_name = CLIENT
+    test_file = r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\Priest\Male\Animation\BattleCrowBar\Action\Groggy\A_Nm_Priest_M_BattleCrowBar_Action_Groggy_End.json"  # 실제 파일 경로로 수정하세요
 
     try:
         p4.connect(workspace_name)
@@ -113,10 +162,10 @@ def test_batch_file_operations():
     print("\n=== 배치 파일 작업 테스트 ===")
     p4 = Perforce()
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
     test_files = [
-        "//depot/path/to/test/file1.txt",
-        "//depot/path/to/test/file2.txt",
+        r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\Priest\Male\Animation\BattleCrowBar\Action\Groggy\A_Nm_Priest_M_BattleCrowBar_Action_Groggy_End.json",
+        r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\Priest\Male\Animation\BattleCrowBar\Action\Groggy\A_Nm_Priest_M_BattleCrowBar_Action_Groggy_Start.json",
     ]  # 실제 파일 경로로 수정하세요
 
     try:
@@ -150,9 +199,9 @@ def test_batch_file_operations():
 def test_submit_workflow():
     """제출 워크플로우 테스트 (실제 제출하지 않음)"""
     print("\n=== 제출 워크플로우 테스트 ===")
-    p4 = Perforce()
+    p4 = Perforce(PORT, USER)
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
 
     try:
         p4.connect(workspace_name)
@@ -174,9 +223,9 @@ def test_submit_workflow():
 def test_changelist_search():
     """체인지리스트 검색 테스트"""
     print("\n=== 체인지리스트 검색 테스트 ===")
-    p4 = Perforce()
+    p4 = Perforce(PORT, USER)
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
+    workspace_name = CLIENT
 
     try:
         p4.connect(workspace_name)
@@ -199,7 +248,7 @@ def test_changelist_search():
         print(f"패턴으로 검색: {len(found_by_pattern)}개 발견")
 
         # 정리
-        p4.delete_empty_change_list(cl['id'])
+        p4.delete_change_list(cl['id'])
         print("테스트 CL 삭제 완료")
 
         p4.disconnect()
@@ -212,8 +261,8 @@ def test_file_status_checks():
     print("\n=== 파일 상태 확인 테스트 ===")
     p4 = Perforce()
 
-    workspace_name = "YOUR_WORKSPACE_NAME"
-    test_file = "//depot/path/to/test/file.txt"  # 실제 파일 경로로 수정하세요
+    workspace_name = CLIENT
+    test_file = r"E:\DevStorage_root\DevStorage\ExtPythonPackage\.venv\Lib\site-packages\pyjallib\perforceCore\adapter.py"  # 실제 파일 경로로 수정하세요
 
     try:
         p4.connect(workspace_name)
@@ -253,13 +302,13 @@ def run_all_tests():
     test_connection()
     test_create_and_delete_changelist()
     test_get_pending_changelists()
-    test_submit_workflow()
+    # test_submit_workflow()
     test_changelist_search()
 
     # 파일 작업 테스트는 주석 처리 (실제 파일 경로 필요)
-    # test_file_operations()
-    # test_batch_file_operations()
-    # test_file_status_checks()
+    test_file_operations()
+    test_batch_file_operations()
+    test_file_status_checks()
 
     print("\n" + "=" * 60)
     print("테스트 완료")
@@ -270,6 +319,11 @@ if __name__ == "__main__":
     # 개별 테스트 실행 예시:
     # test_connection()
     # test_create_and_delete_changelist()
+    # test_delete_empty_changelists()
 
     # 모든 테스트 실행:
-    run_all_tests()
+    # run_all_tests()
+
+    # 새로운 메소드 테스트
+    test_create_and_delete_changelist()  # delete_change_list 테스트
+    test_delete_empty_changelists()      # delete_empty_change_list 테스트

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tests/test_perforce_simple.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
