@@ -58,7 +58,6 @@ class KneeBone:
         self.calfRotHelper = None
         
         self.thighRotRootHelper = None
-        self.calfRotRootHelper = None
         
         self.thighTwistBones = []
         self.calfTwistBones = []
@@ -165,24 +164,15 @@ class KneeBone:
         self.foot = inFoot
         
         thighRotRootHelperName = self.name.replace_name_part("Type", inThigh.name, self.name.get_name_part_value_by_description("Type", "Dummy"))
-        calfRotRootHelperName = self.name.replace_name_part("Type", inCalf.name, self.name.get_name_part_value_by_description("Type", "Dummy"))
         thighRotRootHelperName = self.name.add_suffix_to_real_name(thighRotRootHelperName, filteringChar + "Lift")
-        calfRotRootHelperName = self.name.add_suffix_to_real_name(calfRotRootHelperName, filteringChar + "Lift")
         if isLowerName:
             thighRotRootHelperName = thighRotRootHelperName.lower()
-            calfRotRootHelperName = calfRotRootHelperName.lower()
         
         thighRotRootHelper = self.helper.create_point(thighRotRootHelperName, crossToggle=False, boxToggle=True)
         thighRotRootHelper.transform = inThigh.transform
         thighRotRootHelper.parent = inThigh
         
-        calfRotRootHelper = self.helper.create_point(calfRotRootHelperName, crossToggle=False, boxToggle=True)
-        calfRotRootHelper.transform = inCalf.transform
-        calfRotRootHelper.position = inFoot.transform.position
-        calfRotRootHelper.parent = inCalf
-        
         self.thighRotRootHelper = thighRotRootHelper
-        self.calfRotRootHelper = calfRotRootHelper
 
     def create_rot_helper(self, inThigh, inCalf, inFoot):
         """
@@ -491,7 +481,7 @@ class KneeBone:
         
         # 모든 헬퍼 수집
         all_helpers = [self.lookAtHleper, self.thighRotHelper, self.calfRotHelper, 
-                      self.thighRotRootHelper, self.calfRotRootHelper, self.middleHelper]
+                      self.thighRotRootHelper, self.middleHelper]
                       
         # 트위스트 헬퍼 추가
         for helper in self.thighTwistHelpers:
@@ -579,7 +569,6 @@ class KneeBone:
         self.calfRotHelper = None
         
         self.thighRotRootHelper = None
-        self.calfRotRootHelper = None
         
         self.thighTwistBones = []
         self.calfTwistBones = []
