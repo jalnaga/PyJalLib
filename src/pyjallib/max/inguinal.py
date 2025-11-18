@@ -68,9 +68,20 @@ class Inguinal(VolumeBone):
                     item.name = inguinalRootName
                 elif rt.matchPattern(item.name.lower(), pattern="*" + transAxisNames[0].lower() + "*"):
                     item.name = inguinalFwdName
+                    posScriptConst = self.const.get_pos_list_controller(item)[1]
+                    scriptExpression = posScriptConst.script
+                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.z > 0 then result\nelse result * 0.25"
+                    scriptExpression = scriptExpression.replace("trAxis * saturatedTwist * volumeSize * transScale", newScriptExpression)
+                    posScriptConst.setExpression(scriptExpression)
+                    posScriptConst.update()
                 elif rt.matchPattern(item.name.lower(), pattern="*" + transAxisNames[1].lower() + "*"):
                     item.name = inguinalOutName
-        
+                    posScriptConst = self.const.get_pos_list_controller(item)[1]
+                    scriptExpression = posScriptConst.script
+                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.y < 0 then result\nelse result * 0.25"
+                    scriptExpression = scriptExpression.replace("trAxis * saturatedTwist * volumeSize * transScale", newScriptExpression)
+                    posScriptConst.setExpression(scriptExpression)
+                    posScriptConst.update()
         # 생성된 헬퍼들의 이름 변경
         if hasattr(volumeBoneResult, 'helpers') and volumeBoneResult.helpers:
             for item in volumeBoneResult.helpers:
