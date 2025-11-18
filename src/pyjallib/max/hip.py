@@ -215,7 +215,7 @@ class Hip:
             hipBone.name = hipBone.name.lower()
         
         rt.setProperty(hipBone, "transform", inThighTwist.transform)
-        hipBone.parent = inThigh
+        hipBone.parent = inPelvis
         
         self.const.assign_rot_const(hipBone, self.thighRotHelper)
         self.const.assign_pos_const(hipBone, self.thighPosHelper)
