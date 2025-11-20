@@ -15,11 +15,12 @@ from .anim import Anim
 from .helper import Helper
 from .bone import Bone
 from .constraint import Constraint
+from .align import Align
 
 from .boneChain import BoneChain
 
 class Armpit:
-    def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None):
+    def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, alignService=None):
         """
         Armpit 클래스의 주요 컴포넌트들을 초기화합니다.
         
@@ -38,6 +39,7 @@ class Armpit:
         self.const = constraintService if constraintService else Constraint(nameService=self.name)
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
         self.helper = helperService if helperService else Helper(nameService=self.name)
+        self.align = alignService if alignService else Align()
         
         self.boneSize = 2.0
         
@@ -111,8 +113,10 @@ class Armpit:
         armpitLookAtTargetName = self.name.replace_name_part("Type", armpitName, self.name.get_name_part_value_by_description("Type", "Target"))
         armpitLookAtTarget = self.helper.create_point(armpitLookAtTargetName)
         self.helper.set_shape_to_cross(armpitLookAtTarget)
-        armpitLookAtTarget.transform = armpitLookAtHelper
+        armpitLookAtTarget.transform = armpitLookAtHelper.transform
         self.anim.move_local(armpitLookAtTarget, spineLength, 0.0, 0.0)
+        rt.select([armpitLookAtTarget, self.spine])
+        self.align.align_to_last_rot([armpitLookAtTarget, self.spine])
         
         armpitLookAtHelper.parent = self.shoulder
         armpitLookAtTarget.parent = self.spine
@@ -127,7 +131,7 @@ class Armpit:
         self.helper.set_shape_to_box(armpitPosHelper)
         armpitPosHelper.transform = armpitLookAtTarget.transform
         
-        armpitPosHelper.parent = armpitLookAtTarget
+        armpitPosHelper.parent = armpitLookAtHelper
         
         genHelpers.append(armpitLookAtHelper)
         genHelpers.append(armpitLookAtTarget)
