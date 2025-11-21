@@ -284,8 +284,9 @@ class JacketPanel:
         frontBlendHelperName = self.name.replace_name_part("Type", frontCenterName, self.name.get_name_part_value_by_description("Type", "Position"))
         frontBlendHelper = self.helper.create_point(frontBlendHelperName)
         self.helper.set_shape_to_box(frontBlendHelper)
-        frontBlendHelper.transform.position = inLeftFrontPosHelper.transform.position
-        frontBlendHelper.transform.position.x = 0.0
+        frontBlendHelper.transform = inLeftFrontPosHelper.transform
+        frontBlendHelper.pos = rt.Point3(0.0, frontBlendHelper.transform.position.y, frontBlendHelper.transform.position.z)
+        
         self.align.align_to_last_rot([frontBlendHelper, inLeftFrontPosHelper])
         frontBlendHelper.parent = inSpine
         
@@ -321,14 +322,14 @@ class JacketPanel:
         # ========== 뒤쪽 중앙 패널 생성 ==========
         
         # 뒤쪽 중앙 패널 이름
-        backCenterName = self.name.replace_name_part("FrontBack", centerName, self.name.get_name_part_value_by_description("FrontBack", "Back"))
+        backCenterName = self.name.replace_name_part("FrontBack", centerName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         
         # 뒤쪽 블렌드 헬퍼 생성
         backBlendHelperName = self.name.replace_name_part("Type", backCenterName, self.name.get_name_part_value_by_description("Type", "Position"))
         backBlendHelper = self.helper.create_point(backBlendHelperName)
         self.helper.set_shape_to_box(backBlendHelper)
-        backBlendHelper.transform.position = inLeftBackPosHelper.transform.position
-        backBlendHelper.transform.position.x = 0.0
+        backBlendHelper.transform = inLeftBackPosHelper.transform
+        backBlendHelper.pos = rt.Point3(0.0, backBlendHelper.transform.position.y, backBlendHelper.transform.position.z)
         self.align.align_to_last_rot([backBlendHelper, inLeftBackPosHelper])
         backBlendHelper.parent = inSpine
         
