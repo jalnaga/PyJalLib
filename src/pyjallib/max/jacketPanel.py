@@ -111,7 +111,7 @@ class JacketPanel:
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
         self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 2.0, 0.0, 0.0)
         # 로컬 Y축 방향으로 spine길이 * 0.5 이동(앞쪽)
-        self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * 0.5, 0.0)
+        self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * sideDir * 0.5, 0.0)
         self.align.align_to_last_rot([frontLookAtHelper, inSpine])
         
         # 임시 타겟 생성하여 초기 회전 설정
@@ -127,7 +127,7 @@ class JacketPanel:
         frontLookAtConst.lookat_vector_length = 0.0
         
         self.const.collapse(frontLookAtHelper)
-        # rt.delete(tempTarget)
+        rt.delete(tempTarget)
         
         # 앞쪽 타겟 헬퍼 생성
         frontTargetName = self.name.replace_name_part("Type", frontPanelName, self.name.get_name_part_value_by_description("Type", "Target"))
@@ -181,7 +181,7 @@ class JacketPanel:
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
         self.anim.move_local(backLookAtHelper, clavicleLength * sideDir / 2.0, 0.0, 0.0)
         # 로컬 -Y축 방향으로 spine길이 * 0.5 이동 (뒤쪽)
-        self.anim.move_local(backLookAtHelper, 0.0, -spineLength * fwdDir * 0.5, 0.0)
+        self.anim.move_local(backLookAtHelper, 0.0, -spineLength * fwdDir * sideDir * 0.5, 0.0)
         self.align.align_to_last_rot([backLookAtHelper, inSpine])
         
         # 임시 타겟 생성하여 초기 회전 설정
