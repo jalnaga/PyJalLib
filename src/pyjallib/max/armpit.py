@@ -6,7 +6,6 @@
 어깨본에서 링크되어 몸통본을 바라보면서 어깨의 높이 변화에 따라 몸통 바깥면을 따라 움직이는 본을 만드는 모듈
 """
 
-from pyjallib.max import shoulder
 from pymxs import runtime as rt
 
 # Import necessary service classes for default initialization

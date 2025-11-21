@@ -29,6 +29,7 @@ from .twistBone import TwistBone
 from .autoClavicle import AutoClavicle
 from .shoulder import Shoulder
 from .armpit import Armpit
+from .chest import Chest
 from .groinBone import GroinBone
 from .volumeBone import VolumeBone
 from .elbow import Elbow
@@ -88,6 +89,7 @@ class Header:
         self.autoClavicle = AutoClavicle(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
         self.shoulder = Shoulder(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, bipService=self.bip)
         self.armpit = Armpit(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, alignService=self.align)
+        self.chest = Chest(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint, alignService=self.align)
         self.volumeBone = VolumeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.elbow = Elbow(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.wrist = Wrist(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
