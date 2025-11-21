@@ -38,6 +38,7 @@ from pyjallib.max.chest import Chest
 from pyjallib.max.volumeBone import VolumeBone
 from pyjallib.max.elbow import Elbow
 from pyjallib.max.wrist import Wrist
+from pyjallib.max.ankle import Ankle
 from pyjallib.max.inguinal import Inguinal
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
@@ -78,6 +79,7 @@ __all__ = [
     'VolumeBone',
     'Elbow',
     'Wrist',
+    'Ankle',
     'Inguinal',
     'KneeBone',
     'Hip',

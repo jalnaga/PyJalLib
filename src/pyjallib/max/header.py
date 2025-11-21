@@ -34,6 +34,7 @@ from .groinBone import GroinBone
 from .volumeBone import VolumeBone
 from .elbow import Elbow
 from .wrist import Wrist
+from .ankle import Ankle
 from .inguinal import Inguinal
 from .kneeBone import KneeBone
 from .hip import Hip
@@ -93,6 +94,7 @@ class Header:
         self.volumeBone = VolumeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.elbow = Elbow(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.wrist = Wrist(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
+        self.ankle = Ankle(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.inguinal = Inguinal(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper)
         self.kneeBone = KneeBone(nameService=self.name, animService=self.anim, constraintService=self.constraint, boneService=self.bone, helperService=self.helper, volumeBoneService=self.volumeBone)
         self.hip = Hip(nameService=self.name, animService=self.anim, helperService=self.helper, boneService=self.bone, constraintService=self.constraint)
