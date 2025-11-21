@@ -42,6 +42,7 @@ from pyjallib.max.ankle import Ankle
 from pyjallib.max.inguinal import Inguinal
 from pyjallib.max.kneeBone import KneeBone
 from pyjallib.max.hip import Hip
+from pyjallib.max.jacketPanel import JacketPanel
 from pyjallib.max.ue5Skeleton import UE5Skeleton
 
 from pyjallib.max.rootMotion import RootMotion
@@ -83,6 +84,7 @@ __all__ = [
     'Inguinal',
     'KneeBone',
     'Hip',
+    'JacketPanel',
     'UE5Skeleton',
     'RootMotion',
     'FBXHandler',
