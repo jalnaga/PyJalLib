@@ -109,7 +109,7 @@ class JacketPanel:
         frontLookAtHelper.transform = inClavicle.transform
         
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
-        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 2.0, 0.0, 0.0)
+        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 1.5, 0.0, 0.0)
         # 로컬 Y축 방향으로 spine길이 * 0.5 이동(앞쪽)
         self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * sideDir * 0.5, 0.0)
         self.align.align_to_last_rot([frontLookAtHelper, inSpine])
@@ -163,7 +163,6 @@ class JacketPanel:
         frontPanelBone.transform = frontPosHelper.transform
         frontPanelBone.parent = inSpine
         self.const.assign_pos_const(frontPanelBone, frontPosHelper)
-        self.const.assign_rot_const(frontPanelBone, frontPosHelper)
         
         genBones.append(frontPanelBone)
         
@@ -233,7 +232,6 @@ class JacketPanel:
         backPanelBone.transform = backPosHelper.transform
         backPanelBone.parent = inSpine
         self.const.assign_pos_const(backPanelBone, backPosHelper)
-        self.const.assign_rot_const(backPanelBone, backPosHelper)
         
         genBones.append(backPanelBone)
         
@@ -285,20 +283,31 @@ class JacketPanel:
         frontBlendHelper = self.helper.create_point(frontBlendHelperName)
         self.helper.set_shape_to_box(frontBlendHelper)
         frontBlendHelper.transform = inLeftFrontPosHelper.transform
-        frontBlendHelper.pos = rt.Point3(0.0, frontBlendHelper.transform.position.y, frontBlendHelper.transform.position.z)
+        frontBlendHelper.pos = rt.Point3(0.0, frontBlendHelper.transform.position.y*1.1, frontBlendHelper.transform.position.z)
         
         self.align.align_to_last_rot([frontBlendHelper, inLeftFrontPosHelper])
         frontBlendHelper.parent = inSpine
         
+        # 앞쪽 헬퍼가 몸통 안으로 들어가지 않도록 하는 헬퍼 생성
+        frontClampHelperName = self.name.replace_name_part("Type", frontCenterName, self.name.get_name_part_value_by_description("Type", "Target"))
+        frontClampHelper = self.helper.create_point(frontClampHelperName)
+        self.helper.set_shape_to_cross(frontClampHelper)
+        frontClampHelper.transform = frontBlendHelper.transform
+        frontClampHelper.parent = inSpine
+        
+        # 왼쪽 패널과 링크된 앞쪽 헬퍼 생성
         frontLDumHelperName = self.name.replace_name_part("Type", baseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         frontLDumHelperName = self.name.replace_name_part("Side", frontLDumHelperName, self.name.get_name_part_value_by_description("Side", "Left"))
+        frontLDumHelperName = self.name.replace_name_part("FrontBack", frontLDumHelperName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
         frontLDumHelper = self.helper.create_point(frontLDumHelperName)
         self.helper.set_shape_to_box(frontLDumHelper)
         frontLDumHelper.transform = frontBlendHelper.transform
         frontLDumHelper.parent = inLeftFrontPosHelper
         
+        # 오른쪽 패널과 링크된 앞쪽 헬퍼 생성
         frontRDumHelperName = self.name.replace_name_part("Type", baseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         frontRDumHelperName = self.name.replace_name_part("Side", frontRDumHelperName, self.name.get_name_part_value_by_description("Side", "Right"))
+        frontRDumHelperName = self.name.replace_name_part("FrontBack", frontRDumHelperName, self.name.get_name_part_value_by_description("FrontBack", "Forward"))
         frontRDumHelper = self.helper.create_point(frontRDumHelperName)
         self.helper.set_shape_to_box(frontRDumHelper)
         frontRDumHelper.transform = frontBlendHelper.transform
@@ -307,15 +316,17 @@ class JacketPanel:
         self.const.assign_pos_const_multi(frontBlendHelper, [frontLDumHelper, frontRDumHelper])
         self.const.assign_rot_const_multi(frontBlendHelper, [frontLDumHelper, frontRDumHelper])
         
-        genHelpers.extend([frontBlendHelper, frontLDumHelper, frontRDumHelper])
+        genHelpers.extend([frontBlendHelper, frontLDumHelper, frontRDumHelper, frontClampHelper])
         
         # 앞쪽 중앙 패널 본 생성
         frontCenterBone = self.bone.create_nub_bone(frontCenterName, self.boneSize)
         frontCenterBone.name = frontCenterName
         frontCenterBone.transform = frontBlendHelper.transform
         frontCenterBone.parent = inSpine
-        self.const.assign_pos_const(frontCenterBone, frontBlendHelper)
-        self.const.assign_rot_const(frontCenterBone, frontBlendHelper)
+        clampPosConst = self.const.assign_pos_script_controller(frontCenterBone)
+        clampPosConst.AddNode("Clamp", frontClampHelper)
+        clampPosConst.AddNode("Target", frontBlendHelper)
+        clampPosConst.script = "tm = Target.transform * (inverse Clamp.transform)\nyPos = amin 0.0 tm.position.y\n[tm.position.x, yPos, tm.position.z]\n"
         
         genBones.append(frontCenterBone)
         
@@ -329,19 +340,30 @@ class JacketPanel:
         backBlendHelper = self.helper.create_point(backBlendHelperName)
         self.helper.set_shape_to_box(backBlendHelper)
         backBlendHelper.transform = inLeftBackPosHelper.transform
-        backBlendHelper.pos = rt.Point3(0.0, backBlendHelper.transform.position.y, backBlendHelper.transform.position.z)
+        backBlendHelper.pos = rt.Point3(0.0, backBlendHelper.transform.position.y*1.1, backBlendHelper.transform.position.z)
         self.align.align_to_last_rot([backBlendHelper, inLeftBackPosHelper])
         backBlendHelper.parent = inSpine
         
+        # 뒤쪽 헬퍼가 몸통 안으로 들어가지 않도록 하는 헬퍼 생성
+        backClampHelperName = self.name.replace_name_part("Type", backCenterName, self.name.get_name_part_value_by_description("Type", "Target"))
+        backClampHelper = self.helper.create_point(backClampHelperName)
+        self.helper.set_shape_to_cross(backClampHelper)
+        backClampHelper.transform = backBlendHelper.transform
+        backClampHelper.parent = inSpine
+        
+        # 왼쪽 패널과 링크된 뒤쪽 헬퍼 생성
         backLDumHelperName = self.name.replace_name_part("Type", baseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         backLDumHelperName = self.name.replace_name_part("Side", backLDumHelperName, self.name.get_name_part_value_by_description("Side", "Left"))
+        backLDumHelperName = self.name.replace_name_part("FrontBack", backLDumHelperName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         backLDumHelper = self.helper.create_point(backLDumHelperName)
         self.helper.set_shape_to_box(backLDumHelper)
         backLDumHelper.transform = backBlendHelper.transform
         backLDumHelper.parent = inLeftBackPosHelper
         
+        # 오른쪽 패널과 링크된 뒤쪽 헬퍼 생성
         backRDumHelperName = self.name.replace_name_part("Type", baseName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         backRDumHelperName = self.name.replace_name_part("Side", backRDumHelperName, self.name.get_name_part_value_by_description("Side", "Right"))
+        backRDumHelperName = self.name.replace_name_part("FrontBack", backRDumHelperName, self.name.get_name_part_value_by_description("FrontBack", "Backward"))
         backRDumHelper = self.helper.create_point(backRDumHelperName)
         self.helper.set_shape_to_box(backRDumHelper)
         backRDumHelper.transform = backBlendHelper.transform
@@ -350,15 +372,17 @@ class JacketPanel:
         self.const.assign_pos_const_multi(backBlendHelper, [backLDumHelper, backRDumHelper])
         self.const.assign_rot_const_multi(backBlendHelper, [backLDumHelper, backRDumHelper])
         
-        genHelpers.extend([backBlendHelper, backLDumHelper, backRDumHelper])
+        genHelpers.extend([backBlendHelper, backLDumHelper, backRDumHelper, backClampHelper])
         
         # 뒤쪽 중앙 패널 본 생성
         backCenterBone = self.bone.create_nub_bone(backCenterName, self.boneSize)
         backCenterBone.name = backCenterName
         backCenterBone.transform = backBlendHelper.transform
         backCenterBone.parent = inSpine
-        self.const.assign_pos_const(backCenterBone, backBlendHelper)
-        self.const.assign_rot_const(backCenterBone, backBlendHelper)
+        clampPosConst = self.const.assign_pos_script_controller(backCenterBone)
+        clampPosConst.AddNode("Clamp", backClampHelper)
+        clampPosConst.AddNode("Target", backBlendHelper)
+        clampPosConst.script = "tm = Target.transform * (inverse Clamp.transform)\nyPos = amax 0.0 tm.position.y\n[tm.position.x, yPos, tm.position.z]\n"
         
         genBones.append(backCenterBone)
         

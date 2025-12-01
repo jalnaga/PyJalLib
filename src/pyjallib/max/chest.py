@@ -100,7 +100,6 @@ class Chest:
         # 몸통의 정면이 로컬 +Y 방향인지 -Y 방향인지 결정
         spineZAxisVec = self.spine.objectTransform.row3
         spineFacingDir = rt.normalize(self.neck.transform.position - self.spine.transform.position)
-        
         spineFwdVec = rt.cross(spineZAxisVec, spineFacingDir)
         fwdDir = 1.0 if rt.dot(spineFwdVec, rt.normalize(self.spine.objectTransform.row2)) < 0.0 else -1.0
         
@@ -136,6 +135,8 @@ class Chest:
         chestBackLookAtConst.upnode_world = False
         chestBackLookAtConst.pickUpNode = self.spine
         chestBackLookAtConst.lookat_vector_length = 0.0
+        chestBackLookAtConst.SetWeight(1, 60.0)
+        chestBackLookAtConst.SetWeight(2, 40.0)
         
         # 갈비뼈 위를 흐르는 대흉근 헬퍼 생성
         chestFrontMuscleHelperName = self.name.replace_name_part("Type", chestName, self.name.get_name_part_value_by_description("Type", "Dummy"))
@@ -161,7 +162,13 @@ class Chest:
         chestOutBoneName = self.name.replace_name_part("InOut", chestName, self.name.get_name_part_value_by_description("InOut", "Out"))
         chestOutBone = self.bone.create_nub_bone(chestOutBoneName, self.boneSize)
         chestOutBone.transform = self.upperArm.transform
+        
+        upperArmZAxisVec = self.upperArm.objectTransform.row3
+        upperArmFacingDir = rt.normalize(self.upperArm.transform.position - self.autoClavicle.transform.position)
+        upperArmFwdVec = rt.cross(upperArmZAxisVec, upperArmFacingDir)
+        fwdDir = 1.0 if rt.dot(upperArmFwdVec, rt.normalize(self.upperArm.objectTransform.row2)) < 0.0 else -1.0
         self.anim.move_local(chestOutBone, 0.0, fwdDir*spineLength*0.25, 0.0)
+        
         chestOutBone.parent = self.autoClavicle
         chestOutBoneLookAtConst = self.const.assign_lookat(chestOutBone, chestFrontMuscleHelper)
         chestOutBoneLookAtConst.upnode_world = False

@@ -142,7 +142,6 @@ class Armpit:
         armpitBone.transform = armpitPosHelper.transform
         armpitBone.parent = self.spine
         self.const.assign_pos_const(armpitBone, armpitPosHelper)
-        self.const.assign_rot_const(armpitBone, armpitPosHelper)
         
         genBones.append(armpitBone)
         

@@ -15,7 +15,7 @@ class Inguinal(VolumeBone):
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
         super().__init__(nameService=nameService, animService=animService, constraintService=constraintService, boneService=boneService, helperService=helperService)
     
-    def create_bones(self, inThighTwist, inPelvis, inCalf, inRotScale=0.5, inVolumeSize=6.0, inFwdRotAxis="Z", inOutRotAxis="Y", inFwdTransAxis="PosY", inOutTransAxis="PosZ", inFwdTransScale=2.0, inOutTransScale=2.0):
+    def create_bones(self, inThighTwist, inPelvis, inCalf, inRotScale=0.5, inVolumeSize=10.0, inFwdRotAxis="Z", inOutRotAxis="Y", inFwdTransAxis="PosY", inOutTransAxis="PosZ", inFwdTransScale=2.0, inOutTransScale=2.5):
         """서혜부 볼륨 본들을 생성합니다."""
         if not rt.isValidNode(inThighTwist) or not rt.isValidNode(inPelvis) or not rt.isValidNode(inCalf):
             return False
@@ -61,7 +61,7 @@ class Inguinal(VolumeBone):
         if not volumeBoneResult:
             return None
         
-        # 생성된 본들의 이름 변경
+        # 생성된 본들의 포지션 스크립팅 변경
         if hasattr(volumeBoneResult, 'bones') and volumeBoneResult.bones:
             for item in volumeBoneResult.bones:
                 if rt.matchPattern(item.name.lower(), pattern="*root*"):
@@ -70,7 +70,7 @@ class Inguinal(VolumeBone):
                     item.name = inguinalFwdName
                     posScriptConst = self.const.get_pos_list_controller(item)[1]
                     scriptExpression = posScriptConst.script
-                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.z > 0 then result\nelse result * 0.25"
+                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.z > 0 then result\nelse result * 0.0\n"
                     scriptExpression = scriptExpression.replace("trAxis * saturatedTwist * volumeSize * transScale", newScriptExpression)
                     posScriptConst.setExpression(scriptExpression)
                     posScriptConst.update()
@@ -78,7 +78,7 @@ class Inguinal(VolumeBone):
                     item.name = inguinalOutName
                     posScriptConst = self.const.get_pos_list_controller(item)[1]
                     scriptExpression = posScriptConst.script
-                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.y < 0 then result\nelse result * 0.25"
+                    newScriptExpression = "result = trAxis * saturatedTwist * volumeSize * transScale\nif swizzledRot.y < 0 then result\nelse result * 0.0\n"
                     scriptExpression = scriptExpression.replace("trAxis * saturatedTwist * volumeSize * transScale", newScriptExpression)
                     posScriptConst.setExpression(scriptExpression)
                     posScriptConst.update()

@@ -78,7 +78,7 @@ class Hip:
             "axis = [0,0,1]\n"
             "\n"
             "saturatedTwistZ = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"
-            "pushScaleY = (amax 0.0 saturatedTwistZ) * 0.5\n"
+            "pushScaleY = (amax 0.0 saturatedTwistZ)\n"
             "\n"
             "axis = [0,1,0]\n"
             "saturatedTwistY = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"

@@ -627,25 +627,25 @@ class Skin:
                     
         return [bone_array, final_weight]
     
-    def transfert_skin_data(self, obj, source_bones, target_bones, vtx_list):
+    def transfert_skin_data(self, skin_mod, source_bone, target_bone, vtx_list):
         """
         스킨 가중치 데이터 이전
         
         Args:
-            obj: 대상 객체
-            source_bones: 원본 본 배열
-            target_bones: 대상 본
+            skin_mod: 대상 객체
+            source_bone: 원본 본
+            target_bone: 대상 본
             vtx_list: 버텍스 리스트
         """
         skin_data = []
         new_skin_data = []
         
         # 본 ID 가져오기
-        source_bones_id = [self.get_bone_id_from_name(obj, b.name) for b in source_bones]
-        target_bone_id = self.get_bone_id_from_name(obj, target_bones.name)
+        source_bone_id = self.get_bone_id_from_name(skin_mod, source_bone.name)
+        target_bone_id = self.get_bone_id_from_name(skin_mod, target_bone.name)
         
-        bone_list = [n for n in rt.refs.dependsOn(obj.skin) if rt.isValidNode(n) and self.is_valid_bone(n)]
-        bone_id_map = {self.get_bone_id_from_name(obj, b.name): i for i, b in enumerate(bone_list)}
+        bone_list = [n for n in rt.refs.dependsOn(skin_mod.skin) if rt.isValidNode(n) and self.is_valid_bone(n)]
+        bone_id_map = {self.get_bone_id_from_name(skin_mod, b.name): i for i, b in enumerate(bone_list)}
         
         # 스킨 데이터 수집
         for vtx in vtx_list:
@@ -653,9 +653,9 @@ class Skin:
             weight_array = []
             bone_weight = [0] * len(bone_list)
             
-            for b in range(1, rt.skinOps.GetVertexWeightCount(obj.skin, vtx) + 1):
-                bone_idx = rt.skinOps.GetVertexWeightBoneID(obj.skin, vtx, b)
-                bone_weight[bone_id_map[bone_idx]] += rt.skinOps.GetVertexWeight(obj.skin, vtx, b)
+            for b in range(1, rt.skinOps.GetVertexWeightCount(skin_mod.skin, vtx) + 1):
+                bone_idx = rt.skinOps.GetVertexWeightBoneID(skin_mod.skin, vtx, b)
+                bone_weight[bone_id_map[bone_idx]] += rt.skinOps.GetVertexWeight(skin_mod.skin, vtx, b)
                 
             for b in range(len(bone_weight)):
                 if bone_weight[b] > 0:
@@ -666,36 +666,35 @@ class Skin:
             new_skin_data.append([bone_array[:], weight_array[:]])
             
         # 스킨 데이터 이전
-        for b, source_bone_id in enumerate(source_bones_id):
-            vtx_id = []
-            vtx_weight = []
-            
-            # 원본 본의 가중치 추출
-            for vtx in range(len(skin_data)):
-                for i in range(len(skin_data[vtx][0])):
-                    if skin_data[vtx][0][i] == source_bone_id:
-                        vtx_id.append(vtx)
-                        vtx_weight.append(skin_data[vtx][1][i])
-                        
-            # 원본 본 영향력 제거
-            for vtx in range(len(vtx_id)):
-                for i in range(len(new_skin_data[vtx_id[vtx]][0])):
-                    if new_skin_data[vtx_id[vtx]][0][i] == source_bone_id:
-                        new_skin_data[vtx_id[vtx]][1][i] = 0.0
-                        
-            # 타겟 본에 영향력 추가
-            for vtx in range(len(vtx_id)):
-                id = new_skin_data[vtx_id[vtx]][0].index(target_bone_id) if target_bone_id in new_skin_data[vtx_id[vtx]][0] else -1
-                
-                if id == -1:
-                    new_skin_data[vtx_id[vtx]][0].append(target_bone_id)
-                    new_skin_data[vtx_id[vtx]][1].append(vtx_weight[vtx])
-                else:
-                    new_skin_data[vtx_id[vtx]][1][id] += vtx_weight[vtx]
+        vtx_id = []
+        vtx_weight = []
+        
+        # 원본 본의 가중치 추출
+        for vtx in range(len(skin_data)):
+            for i in range(len(skin_data[vtx][0])):
+                if skin_data[vtx][0][i] == source_bone_id:
+                    vtx_id.append(vtx)
+                    vtx_weight.append(skin_data[vtx][1][i])
                     
+        # 원본 본 영향력 제거
+        for vtx in range(len(vtx_id)):
+            for i in range(len(new_skin_data[vtx_id[vtx]][0])):
+                if new_skin_data[vtx_id[vtx]][0][i] == source_bone_id:
+                    new_skin_data[vtx_id[vtx]][1][i] = 0.0
+                    
+        # 타겟 본에 영향력 추가
+        for vtx in range(len(vtx_id)):
+            id = new_skin_data[vtx_id[vtx]][0].index(target_bone_id) if target_bone_id in new_skin_data[vtx_id[vtx]][0] else -1
+            
+            if id == -1:
+                new_skin_data[vtx_id[vtx]][0].append(target_bone_id)
+                new_skin_data[vtx_id[vtx]][1].append(vtx_weight[vtx])
+            else:
+                new_skin_data[vtx_id[vtx]][1][id] += vtx_weight[vtx]
+                
         # 스킨 데이터 적용
         for i in range(len(vtx_list)):
-            rt.skinOps.ReplaceVertexWeights(obj.skin, vtx_list[i], 
+            rt.skinOps.ReplaceVertexWeights(skin_mod.skin, vtx_list[i], 
                                            skin_data[i][0], new_skin_data[i][1])
             
     def smooth_skin(self, inObj, inVertMode=VertexMode.Edges, inRadius=5.0, inIterNum=3, inKeepMax=False):
