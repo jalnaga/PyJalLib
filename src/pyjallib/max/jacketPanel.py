@@ -109,7 +109,7 @@ class JacketPanel:
         frontLookAtHelper.transform = inClavicle.transform
         
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
-        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 1.5, 0.0, 0.0)
+        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 1.65, 0.0, 0.0)
         # 로컬 Y축 방향으로 spine길이 * 0.5 이동(앞쪽)
         self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * sideDir * 0.5, 0.0)
         self.align.align_to_last_rot([frontLookAtHelper, inSpine])
@@ -178,7 +178,7 @@ class JacketPanel:
         backLookAtHelper.transform = inClavicle.transform
         
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
-        self.anim.move_local(backLookAtHelper, clavicleLength * sideDir / 2.0, 0.0, 0.0)
+        self.anim.move_local(backLookAtHelper, clavicleLength * sideDir / 1.65, 0.0, 0.0)
         # 로컬 -Y축 방향으로 spine길이 * 0.5 이동 (뒤쪽)
         self.anim.move_local(backLookAtHelper, 0.0, -spineLength * fwdDir * sideDir * 0.5, 0.0)
         self.align.align_to_last_rot([backLookAtHelper, inSpine])
