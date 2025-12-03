@@ -68,7 +68,10 @@ class Chest:
         self.autoClavicle = None
         self.upperArm = None
         
-    def create_bones(self, inSpine: rt.Object, inNeck: rt.Object, inAutoClavicle: rt.Object, inUpperArm: rt.Object) -> BoneChain:
+    def create_bones(self, inSpine: rt.Object, inNeck: rt.Object, inAutoClavicle: rt.Object, inUpperArm: rt.Object,
+                     inSpineHeightScale: float = 0.33, inSpinePushScale: float = 0.5,
+                     inFrontWeight: float = 60.0, inShoulderWeight: float = 40.0,
+                     inChestMuscleHeightScale: float = 0.15, inShoulderPushScale: float = 0.25) -> BoneChain:
         """
         Chest 본들을 생성합니다.
         
@@ -77,6 +80,12 @@ class Chest:
             inNeck: 목 본
             inAutoClavicle: 자동 쇄골 본
             inUpperArm: 상완 본
+            inSpineHeightScale: 척추 높이 비율 (기본값: 0.33)
+            inSpinePushScale: 척추 앞뒤 밀림 비율 (기본값: 0.5)
+            inFrontWeight: 가슴쪽 LookAt 웨이트 (기본값: 60.0)
+            inShoulderWeight: 어깨쪽 LookAt 웨이트 (기본값: 40.0)
+            inChestMuscleHeightScale: 대흉근 높이 비율 (기본값: 0.15)
+            inShoulderPushScale: 어깨 밀림 비율 (기본값: 0.25)
         """
         
         if not rt.isValidNode(inSpine) or not rt.isValidNode(inNeck) or not rt.isValidNode(inAutoClavicle) or not rt.isValidNode(inUpperArm):
@@ -108,7 +117,7 @@ class Chest:
         chestBackLookAtHelper = self.helper.create_point(chestBackLookAtHelperName)
         self.helper.set_shape_to_axis(chestBackLookAtHelper)
         chestBackLookAtHelper.transform = self.spine.transform
-        self.anim.move_local(chestBackLookAtHelper, spineLength*0.33, -fwdDir*spineLength*0.5, 0.0)
+        self.anim.move_local(chestBackLookAtHelper, spineLength*inSpineHeightScale, -fwdDir*spineLength*inSpinePushScale, 0.0)
         chestBackLookAtHelper.parent = self.spine
         
         # 앞쪽 갈비펴 타겟 헬퍼 생성
@@ -117,7 +126,7 @@ class Chest:
         chestFrontTargetHelper = self.helper.create_point(chestFrontTargetHelperName)
         self.helper.set_shape_to_cross(chestFrontTargetHelper)
         chestFrontTargetHelper.transform  = self.spine.transform
-        self.anim.move_local(chestFrontTargetHelper, spineLength*0.33, fwdDir*spineLength*0.5, 0.0)
+        self.anim.move_local(chestFrontTargetHelper, spineLength*inSpineHeightScale, fwdDir*spineLength*inSpinePushScale, 0.0)
         chestFrontTargetHelper.parent = self.spine
         
         # 어깨 타겟 헬퍼 생성
@@ -135,15 +144,15 @@ class Chest:
         chestBackLookAtConst.upnode_world = False
         chestBackLookAtConst.pickUpNode = self.spine
         chestBackLookAtConst.lookat_vector_length = 0.0
-        chestBackLookAtConst.SetWeight(1, 60.0)
-        chestBackLookAtConst.SetWeight(2, 40.0)
+        chestBackLookAtConst.SetWeight(1, inFrontWeight)
+        chestBackLookAtConst.SetWeight(2, inShoulderWeight)
         
         # 갈비뼈 위를 흐르는 대흉근 헬퍼 생성
         chestFrontMuscleHelperName = self.name.replace_name_part("Type", chestName, self.name.get_name_part_value_by_description("Type", "Dummy"))
         chestFrontMuscleHelper = self.helper.create_point(chestFrontMuscleHelperName)
         self.helper.set_shape_to_box(chestFrontMuscleHelper)
         chestFrontMuscleHelper.transform = chestBackLookAtHelper.transform
-        self.anim.move_local(chestFrontMuscleHelper, spineLength, -spineLength*0.15, 0.0)
+        self.anim.move_local(chestFrontMuscleHelper, spineLength, -spineLength*inChestMuscleHeightScale, 0.0)
         chestFrontMuscleHelper.parent = chestBackLookAtHelper
         
         # 몸통쪽 대흉근 본 생성
@@ -167,7 +176,7 @@ class Chest:
         upperArmFacingDir = rt.normalize(self.upperArm.transform.position - self.autoClavicle.transform.position)
         upperArmFwdVec = rt.cross(upperArmZAxisVec, upperArmFacingDir)
         fwdDir = 1.0 if rt.dot(upperArmFwdVec, rt.normalize(self.upperArm.objectTransform.row2)) < 0.0 else -1.0
-        self.anim.move_local(chestOutBone, 0.0, fwdDir*spineLength*0.25, 0.0)
+        self.anim.move_local(chestOutBone, 0.0, fwdDir*spineLength*inShoulderPushScale, 0.0)
         
         chestOutBone.parent = self.autoClavicle
         chestOutBoneLookAtConst = self.const.assign_lookat(chestOutBone, chestFrontMuscleHelper)
@@ -191,7 +200,7 @@ class Chest:
             "Bones": genBones,
             "Helpers": genHelpers,
             "SourceBones": [self.spine, self.neck, self.autoClavicle, self.upperArm],
-            "Parameters": []
+            "Parameters": [inSpineHeightScale, inSpinePushScale, inFrontWeight, inShoulderWeight, inChestMuscleHeightScale, inShoulderPushScale]
         }
         
         self.reset()
@@ -206,6 +215,9 @@ class Chest:
         
         Args:
             inBoneChain: 기존 BoneChain
+            
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None
@@ -218,9 +230,29 @@ class Chest:
         if len(sourceBones) < 4 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]) or not rt.isValidNode(sourceBones[2]) or not rt.isValidNode(sourceBones[3]):
             return None
         
-        self.spine = sourceBones[0]
-        self.neck = sourceBones[1]
-        self.autoClavicle = sourceBones[2]
-        self.upperArm = sourceBones[3]
+        spine = sourceBones[0]
+        neck = sourceBones[1]
+        autoClavicle = sourceBones[2]
+        upperArm = sourceBones[3]
         
-        return self.create_bones(self.spine, self.neck, self.autoClavicle, self.upperArm)
+        # 파라미터 추출
+        if len(parameters) >= 6:
+            spineHeightScale = parameters[0]
+            spinePushScale = parameters[1]
+            frontWeight = parameters[2]
+            shoulderWeight = parameters[3]
+            chestMuscleHeightScale = parameters[4]
+            shoulderPushScale = parameters[5]
+        else:
+            # 기본값
+            spineHeightScale = 0.33
+            spinePushScale = 0.5
+            frontWeight = 60.0
+            shoulderWeight = 40.0
+            chestMuscleHeightScale = 0.15
+            shoulderPushScale = 0.25
+        
+        return self.create_bones(spine, neck, autoClavicle, upperArm,
+                                 spineHeightScale, spinePushScale,
+                                 frontWeight, shoulderWeight,
+                                 chestMuscleHeightScale, shoulderPushScale)

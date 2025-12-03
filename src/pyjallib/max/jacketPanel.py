@@ -58,7 +58,7 @@ class JacketPanel:
         self.genHelpers = []
         
     
-    def create_side_panel(self, inClavicle, inUpperArm, inSpine, inNeck):
+    def create_side_panel(self, inClavicle, inUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67):
         """
         좌우 자켓 패널 본들을 생성합니다 (앞/뒤 2개).
         
@@ -67,6 +67,10 @@ class JacketPanel:
             inUpperArm: 상완 본 (clavicle 길이 계산용)
             inSpine: 척추 본
             inNeck: 목 본
+            inWidthScale: clavicle 길이 기반 너비 스케일 (기본값: 1.65)
+            inForwardScale: 앞쪽 방향 스케일 (기본값: 0.5)
+            inBackwardScale: 뒤쪽 방향 스케일 (기본값: 0.5)
+            inHeightScale: 높이 스케일 (기본값: 0.67)
             
         Returns:
             dict: 생성된 본, 헬퍼, 포지션 헬퍼 참조
@@ -109,15 +113,15 @@ class JacketPanel:
         frontLookAtHelper.transform = inClavicle.transform
         
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
-        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / 1.65, 0.0, 0.0)
-        # 로컬 Y축 방향으로 spine길이 * 0.5 이동(앞쪽)
-        self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * sideDir * 0.5, 0.0)
+        self.anim.move_local(frontLookAtHelper, clavicleLength * sideDir / inWidthScale, 0.0, 0.0)
+        # 로컬 Y축 방향으로 spine길이 * inForwardScale 이동(앞쪽)
+        self.anim.move_local(frontLookAtHelper, 0.0, spineLength * fwdDir * sideDir * inForwardScale, 0.0)
         self.align.align_to_last_rot([frontLookAtHelper, inSpine])
         
         # 임시 타겟 생성하여 초기 회전 설정
         tempTarget = self.helper.create_point("Temp")
         tempTarget.transform = frontLookAtHelper.transform
-        self.anim.move_local(tempTarget, -spineLength * 0.67, 0.0, 0.0)
+        self.anim.move_local(tempTarget, -spineLength * inHeightScale, 0.0, 0.0)
         
         self.align.align_to_last_rot([frontLookAtHelper, inClavicle])
         
@@ -134,7 +138,7 @@ class JacketPanel:
         frontTarget = self.helper.create_point(frontTargetName)
         self.helper.set_shape_to_cross(frontTarget)
         frontTarget.transform = frontLookAtHelper.transform
-        self.anim.move_local(frontTarget, spineLength * 0.67, 0.0, 0.0)
+        self.anim.move_local(frontTarget, spineLength * inHeightScale, 0.0, 0.0)
         self.align.align_to_last_rot([frontTarget, inSpine])
         
         frontLookAtHelper.parent = inClavicle
@@ -178,15 +182,15 @@ class JacketPanel:
         backLookAtHelper.transform = inClavicle.transform
         
         # clavicle 로컬 X축으로 clavicle 길이의 절반 이동
-        self.anim.move_local(backLookAtHelper, clavicleLength * sideDir / 1.65, 0.0, 0.0)
-        # 로컬 -Y축 방향으로 spine길이 * 0.5 이동 (뒤쪽)
-        self.anim.move_local(backLookAtHelper, 0.0, -spineLength * fwdDir * sideDir * 0.5, 0.0)
+        self.anim.move_local(backLookAtHelper, clavicleLength * sideDir / inWidthScale, 0.0, 0.0)
+        # 로컬 -Y축 방향으로 spine길이 * inBackwardScale 이동 (뒤쪽)
+        self.anim.move_local(backLookAtHelper, 0.0, -spineLength * fwdDir * sideDir * inBackwardScale, 0.0)
         self.align.align_to_last_rot([backLookAtHelper, inSpine])
         
         # 임시 타겟 생성하여 초기 회전 설정
         tempTarget = self.helper.create_point("Temp")
         tempTarget.transform = backLookAtHelper.transform
-        self.anim.move_local(tempTarget, -spineLength * 0.67, 0.0, 0.0)
+        self.anim.move_local(tempTarget, -spineLength * inHeightScale, 0.0, 0.0)
         
         self.align.align_to_last_rot([backLookAtHelper, inClavicle])
         
@@ -203,7 +207,7 @@ class JacketPanel:
         backTarget = self.helper.create_point(backTargetName)
         self.helper.set_shape_to_cross(backTarget)
         backTarget.transform = backLookAtHelper.transform
-        self.anim.move_local(backTarget, spineLength * 0.67, 0.0, 0.0)
+        self.anim.move_local(backTarget, spineLength * inHeightScale, 0.0, 0.0)
         self.align.align_to_last_rot([backTarget, inSpine])
         
         backLookAtHelper.parent = inClavicle
@@ -244,7 +248,7 @@ class JacketPanel:
         
         return result
         
-    def create_center_panel(self, inLeftFrontPosHelper, inRightFrontPosHelper, inLeftBackPosHelper, inRightBackPosHelper, inSpine):
+    def create_center_panel(self, inLeftFrontPosHelper, inRightFrontPosHelper, inLeftBackPosHelper, inRightBackPosHelper, inSpine, inFrontCenterPushScale=1.1, inBackCenterPushScale=1.1):
         """
         가운데 자켓 패널 본들을 생성합니다 (앞/뒤 2개).
         좌우 포지션 헬퍼를 50:50으로 블렌드합니다.
@@ -255,6 +259,8 @@ class JacketPanel:
             inLeftBackPosHelper: 왼쪽 뒤쪽 포지션 헬퍼
             inRightBackPosHelper: 오른쪽 뒤쪽 포지션 헬퍼
             inSpine: 척추 본
+            inFrontCenterPushScale: 앞쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
+            inBackCenterPushScale: 뒤쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
             
         Returns:
             dict: 생성된 본, 헬퍼
@@ -283,7 +289,7 @@ class JacketPanel:
         frontBlendHelper = self.helper.create_point(frontBlendHelperName)
         self.helper.set_shape_to_box(frontBlendHelper)
         frontBlendHelper.transform = inLeftFrontPosHelper.transform
-        frontBlendHelper.pos = rt.Point3(0.0, frontBlendHelper.transform.position.y*1.1, frontBlendHelper.transform.position.z)
+        frontBlendHelper.pos = rt.Point3(0.0, frontBlendHelper.transform.position.y*inFrontCenterPushScale, frontBlendHelper.transform.position.z)
         
         self.align.align_to_last_rot([frontBlendHelper, inLeftFrontPosHelper])
         frontBlendHelper.parent = inSpine
@@ -340,7 +346,7 @@ class JacketPanel:
         backBlendHelper = self.helper.create_point(backBlendHelperName)
         self.helper.set_shape_to_box(backBlendHelper)
         backBlendHelper.transform = inLeftBackPosHelper.transform
-        backBlendHelper.pos = rt.Point3(0.0, backBlendHelper.transform.position.y*1.1, backBlendHelper.transform.position.z)
+        backBlendHelper.pos = rt.Point3(0.0, backBlendHelper.transform.position.y*inBackCenterPushScale, backBlendHelper.transform.position.z)
         self.align.align_to_last_rot([backBlendHelper, inLeftBackPosHelper])
         backBlendHelper.parent = inSpine
         
@@ -393,7 +399,7 @@ class JacketPanel:
         
         return result
         
-    def create_bones(self, inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck):
+    def create_bones(self, inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67, inFrontCenterPushScale=1.1, inBackCenterPushScale=1.1):
         """
         자켓 패널 본들을 생성합니다 (총 6개: 좌앞, 좌뒤, 우앞, 우뒤, 중앙앞, 중앙뒤).
         
@@ -404,6 +410,12 @@ class JacketPanel:
             inRUpperArm: 오른쪽 상완 본
             inSpine: 척추 본
             inNeck: 목 본
+            inWidthScale: clavicle 길이 기반 너비 스케일 (기본값: 1.65)
+            inForwardScale: 앞쪽 방향 스케일 (기본값: 0.5)
+            inBackwardScale: 뒤쪽 방향 스케일 (기본값: 0.5)
+            inHeightScale: 높이 스케일 (기본값: 0.67)
+            inFrontCenterPushScale: 앞쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
+            inBackCenterPushScale: 뒤쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
             
         Returns:
             BoneChain: 생성된 본 체인
@@ -417,7 +429,7 @@ class JacketPanel:
         allHelpers = []
         
         # 1. 왼쪽 패널 생성 (앞, 뒤)
-        leftResult = self.create_side_panel(inLClavicle, inLUpperArm, inSpine, inNeck)
+        leftResult = self.create_side_panel(inLClavicle, inLUpperArm, inSpine, inNeck, inWidthScale, inForwardScale, inBackwardScale, inHeightScale)
         if leftResult:
             allBones.extend(leftResult["Bones"])
             allHelpers.extend(leftResult["Helpers"])
@@ -427,7 +439,7 @@ class JacketPanel:
             return None
         
         # 2. 오른쪽 패널 생성 (앞, 뒤)
-        rightResult = self.create_side_panel(inRClavicle, inRUpperArm, inSpine, inNeck)
+        rightResult = self.create_side_panel(inRClavicle, inRUpperArm, inSpine, inNeck, inWidthScale, inForwardScale, inBackwardScale, inHeightScale)
         if rightResult:
             allBones.extend(rightResult["Bones"])
             allHelpers.extend(rightResult["Helpers"])
@@ -438,7 +450,7 @@ class JacketPanel:
         
         # 3. 중앙 패널 생성 (앞, 뒤)
         centerResult = self.create_center_panel(leftFrontPosHelper, rightFrontPosHelper, 
-                                                leftBackPosHelper, rightBackPosHelper, inSpine)
+                                                leftBackPosHelper, rightBackPosHelper, inSpine, inFrontCenterPushScale, inBackCenterPushScale)
         if centerResult:
             allBones.extend(centerResult["Bones"])
             allHelpers.extend(centerResult["Helpers"])
@@ -452,7 +464,7 @@ class JacketPanel:
             "Bones": allBones,
             "Helpers": allHelpers,
             "SourceBones": [inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck],
-            "Parameters": []
+            "Parameters": [inWidthScale, inForwardScale, inBackwardScale, inHeightScale, inFrontCenterPushScale, inBackCenterPushScale]
         }
         
         self.reset()
@@ -491,5 +503,24 @@ class JacketPanel:
         spine = sourceBones[4]
         neck = sourceBones[5]
         
-        return self.create_bones(lClavicle, lUpperArm, rClavicle, rUpperArm, spine, neck)
+        # 파라미터 추출
+        if len(parameters) >= 6:
+            widthScale = parameters[0]
+            forwardScale = parameters[1]
+            backwardScale = parameters[2]
+            heightScale = parameters[3]
+            frontCenterPushScale = parameters[4]
+            backCenterPushScale = parameters[5]
+        else:
+            # 기본값
+            widthScale = 1.65
+            forwardScale = 0.5
+            backwardScale = 0.5
+            heightScale = 0.67
+            frontCenterPushScale = 1.1
+            backCenterPushScale = 1.1
+        
+        return self.create_bones(lClavicle, lUpperArm, rClavicle, rUpperArm, spine, neck,
+                                 widthScale, forwardScale, backwardScale, heightScale,
+                                 frontCenterPushScale, backCenterPushScale)
 

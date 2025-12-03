@@ -64,7 +64,7 @@ class Armpit:
         self.genHelpers = []
         
     
-    def create_bones(self, inShoulder, inSpine, inNeck):
+    def create_bones(self, inShoulder, inSpine, inNeck, inSpineLengthScale=0.67):
         """
         Armpit 본들을 생성합니다.
         
@@ -72,6 +72,7 @@ class Armpit:
             inShoulder: 어깨 본
             inNeck: 목 본
             inSpine: 몸통 본
+            inSpineLengthScale: 몸통 길이 비율 (기본값: 0.67)
         """
         if not rt.isValidNode(inShoulder) or not rt.isValidNode(inNeck) or not rt.isValidNode(inSpine):
             return False
@@ -84,7 +85,7 @@ class Armpit:
         self.neck = inNeck
         
         # 몸통 길이 계산
-        spineLength = rt.distance(self.spine, self.neck) * 0.67
+        spineLength = rt.distance(self.spine, self.neck) * inSpineLengthScale
         
         # 겨드랑이 본 이름 생성
         armpitName = self.name.replace_name_part("RealName", self.shoulder.name, "Armpit")
@@ -152,7 +153,7 @@ class Armpit:
             "Bones": genBones,
             "Helpers": genHelpers,
             "SourceBones": [self.shoulder, self.spine, self.neck],
-            "Parameters": []
+            "Parameters": [inSpineLengthScale]
         }
         
         self.reset()
@@ -162,6 +163,16 @@ class Armpit:
         return BoneChain.from_result(result)
         
     def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """
+        기존 BoneChain 객체에서 Armpit 본을 생성합니다.
+        기존 설정을 복원하거나 저장된 데이터에서 Armpit 본 셋업을 재생성할 때 사용합니다.
+        
+        Args:
+            inBoneChain (BoneChain): Armpit 본 정보를 포함한 BoneChain 객체
+        
+        Returns:
+            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         
@@ -177,5 +188,11 @@ class Armpit:
         spine = sourceBones[1]
         neck = sourceBones[2]
         
-        return self.create_bones(shoulder, spine, neck)
+        # 파라미터 추출
+        if len(parameters) >= 1:
+            spineLengthScale = parameters[0]
+        else:
+            spineLengthScale = 0.67  # 기본값
+        
+        return self.create_bones(shoulder, spine, neck, spineLengthScale)
         
