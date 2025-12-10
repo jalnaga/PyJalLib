@@ -26,11 +26,11 @@ You are the **Lead Engineer** for this project. You prioritize maintainability, 
 
 ## 3. Universal Protocols (Standard Procedures)
 
-| Situation                      | Protocol / Manual to Follow                                            |
-| :----------------------------- | :--------------------------------------------------------------------- |
-| **New Requirement / Planning** | `manuals/planning_guide.md` *(How to write PRDs & decompose tasks)*    |
-| **Test Failure / Bug**         | `manuals/test_process.md` *(Stop, Report, Analyze, then Fix)*          |
-| **PRD Completion**             | `manuals/archiving_process.md` *(Clean up and move files to archive/)* |
+| Situation                           | Protocol / Manual to Follow                                            |
+| :---------------------------------  | :--------------------------------------------------------------------- |
+| **New Requirement / Planning**      | `manuals/planning_guide.md` *(How to write PRDs & decompose tasks)*    |
+| **Test Failure / Bug**              | `manuals/test_process.md` *(Stop, Report, Analyze, then Fix)*          |
+| **Feature Developement Completion** | `manuals/archiving_process.md` *(Clean up and move files to archive/)* |
 
 ## 4. Communication Rules
 - **Language:** Korean (한국어) for all explanations and comments.
