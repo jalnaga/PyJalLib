@@ -29,3 +29,25 @@
 - **`pymxs`**: 3ds Max Python API (available only in 3ds Max environment)
 - **`unreal`**: Unreal Engine 5 Python API (available only in UE5 environment)
 - **`loguru`**: Logging
+
+## 7. Code Style Notes
+
+- Korean comments throughout codebase (documentation target audience)
+- Service classes use dependency injection pattern
+- Type hints used extensively in perforceCore and newer code
+- pymxs (3DS Max API) uses runtime namespace pattern: `from pymxs import runtime as rt`
+
+### Naming Conventions
+- **Class names**: PascalCase (e.g., `PerforceService`, `NamePart`, `BoneChain`)
+- **Method names**: snake_case (e.g., `create_changelist()`, `get_animation_range()`)
+- **Variable names**: camelCase (e.g., `workspaceRoot`, `paddingNum`, `nodeArray`)
+- **Method parameters**: inCamelCase with `in` prefix (e.g., `inDescription`, `inWorkspaceName`, `inObj`)
+
+Example:
+```python
+class PerforceService:
+    def create_changelist(self, inDescription: str) -> ChangeListInfo:
+        changeSpec = self.adapter.run_change_create()
+        changeSpec["Description"] = inDescription
+        return self._save_and_fetch(changeSpec)
+```
