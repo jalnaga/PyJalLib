@@ -3,8 +3,9 @@
 ## 1. Development Environment
 - **Target OS:** Windows 10/11
 - **Shell Environment:** PowerShell (Default)
-- **Language:** Python 3.9+ (Must support DCC internal interpreters)
+- **Language:** Python 3.10+
 - **Package Manager:** `uv` (Strictly enforced for external libs. Do NOT use `pip` directly.)
+- **IDE:** Cursor with Pylance (for type checking and code quality)
 
 ## 2. Project Structure
 - **`src/`**: Source code root.
@@ -16,10 +17,15 @@
 - **Adding Libs:** Use `uv add <package>` for runtime deps, `uv add --dev <package>` for dev deps.
 - **Virtual Env:** Always run commands within the environment using `uv run <command>`.
 
-## 4. Testing & Quality
+## 4. Testing
 - **Framework:** `pytest`
-- **Linting:** `ruff` (check via `uv run ruff check .`)
-- **Formatting:** `ruff` (format via `uv run ruff format .`)
+- **Execution:** `uv run pytest`
 
-## 5. External API Integration (DCC Tools)
-- **Target APIs:** `pymxs` (3ds Max), `unreal` (Unreal Engine 5)
+## 5. Documentation
+- **Framework:** `mkdocs` with `mkdocstrings`
+
+## 6. Key Dependencies
+- **`p4python`**: Perforce integration
+- **`pymxs`**: 3ds Max Python API (available only in 3ds Max environment)
+- **`unreal`**: Unreal Engine 5 Python API (available only in UE5 environment)
+- **`loguru`**: Logging

@@ -14,7 +14,7 @@ You are the **Lead Engineer** for this project. You prioritize maintainability, 
 1. **Read Task:** Go to `.ai_context/planning/active_tasks.md`.
 2. **Select Task:** Pick the first unchecked item.
    - *Note:* If the task item explicitly links to a specific manual (e.g., "See `manuals/db_migration.md`"), follow that. Otherwise, follow the standard manual defined in `active_prd.md`.
-3. **Check Tech:** Briefly review `tech_spec.md` to ensure you use the correct tools (e.g., `uv`, `pytest`).
+3. **Check Tech:** Briefly review `.ai_context/tech_spec.md` to ensure you use the correct tools (e.g., `uv`, `pytest`).
 4. **Implement:** Write the code and the corresponding test.
 
 ### Phase 3: Verification & Exception Handling

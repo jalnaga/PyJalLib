@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "loguru>=0.7.3",
     "p4python>=2024.2.2682690",
 ]
 

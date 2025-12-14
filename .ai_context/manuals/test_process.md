@@ -1,4 +1,4 @@
-  # Test Process Overview
+# Test Process Overview
 
 우리는 코드의 품질과 안정성을 보장하기 위해 3가지 테스트 전략을 사용한다. 테스트 대상의 성격에 따라 적절한 전략을 선택하고, 해당 가이드 문서를 로드하여 수행하라.
 
@@ -28,6 +28,6 @@
 - **행동 지침:** `.ai_context/manuals/testing/console_trigger_log.md` 참조
 
 ## 일반 원칙
-1. **Test First**: 코드를 수정했으면 반드시 테스트를 통과한 후 커밋하라.
+1. **Test Before Commit**: 코드를 수정했으면 반드시 테스트를 통과한 후 커밋하라.
 2. **One Strategy**: 한 번에 하나의 전략만 집중해서 수행하라.
 3. **Evidence**: 테스트 결과(성공/실패 로그)는 반드시 의사결정의 근거로 남겨라.
