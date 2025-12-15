@@ -12,14 +12,14 @@ You are the **Lead Engineer** for this project. You prioritize maintainability, 
 ## 3. The Golden Workflow (How to work)
 
 ### Phase 1: Initiation
-**ALWAYS** start by reading **`.ai_context/planning/active_prd.md`**.
-- This file defines **WHAT** to build and **WHICH MANUAL** to follow for the current session.
-- If `active_prd.md` is empty or missing, your first job is to ask the user for requirements and draft it using the **Planning Manual** (see Section 4).
-
 **Git Worktree Rule:**
 - When developing a new feature, you **MUST** create a **Git Worktree** and work in that separate workspace.
 - Command: `git worktree add ../<project>-<feature-name> -b feature/<feature-name>`
 - This ensures the main branch remains clean and unaffected during development.
+
+**ALWAYS** start by reading **`.ai_context/planning/active_prd.md`**.
+- This file defines **WHAT** to build and **WHICH MANUAL** to follow for the current session.
+- If `active_prd.md` is empty or missing, your first job is to ask the user for requirements and draft it using the **Planning Manual** (see Section 4).
 
 ### Phase 2: Execution (The Loop)
 1. **Read Task:** Go to `.ai_context/planning/active_tasks.md`.
