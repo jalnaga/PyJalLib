@@ -22,15 +22,20 @@ First, read `.ai_context/planning/active_prd.md` and `active_tasklist.md`.
 - **If files have content:** Skip to STEP 4 and continue with existing tasks.
 - **If files are empty:** Proceed to STEP 2 to start a new feature.
 
-### STEP 2: Create Git Worktree (New Feature Only)
+### STEP 2: Request Git Worktree (User Responsibility)
 
-When starting a new feature, create an isolated workspace:
+**AI does NOT execute git worktree commands.** Instead, request the user to create a worktree:
 
-```powershell
+```
+[Worktree Required]
+새 기능 작업을 위해 워크트리를 생성해주세요:
+
 git worktree add ../<project>-<feature-name> -b feature/<feature-name>
+
+완료되면 알려주세요.
 ```
 
-This keeps the main branch clean and ensures feature isolation. Skip this step if you're already working in a worktree.
+**STOP and wait for user confirmation before proceeding.**
 
 ### STEP 3: Write PRD & Wait for Approval
 
@@ -38,91 +43,74 @@ This keeps the main branch clean and ensures feature isolation. Skip this step i
 
 1. Analyze the user's requirements and write `active_prd.md`.
 2. Categorize all requirements into **Must-Have / Should-Have / Nice-to-Have / Non-Goal**.
-3. **STOP and request user approval:**
+3. **Select Primary Manual:** PRD must include a `Primary Manual` field specifying which manual to follow during implementation. (See `planning_guide.md` for available manuals)
+4. **STOP and request user approval:**
 
 ```
 [Planning Complete]
-I have drafted the PRD. Please confirm the following prioritization:
+PRD를 작성했습니다. 다음 우선순위 분류를 확인해주세요:
 
 - **Must-Have:** (summary)
 - **Should-Have:** (summary)
 - **Nice-to-Have:** (summary)
 - **Non-Goal:** (summary)
+- **Primary Manual:** (selected manual path)
 
-If approved, I will create the Task List and begin implementation.
+승인하시면 Task List를 작성하고 구현을 시작하겠습니다.
 ```
 
 **Do NOT write any code until the user approves the PRD.**
 
-### STEP 4: Create Task List & Execute
+### STEP 4: Create Task List & Execute (with User Approval per Task)
 
 **Manual:** `.ai_context/manuals/planning_guide.md` (Section 3)
 
 1. Decompose **only Must-Have items** from the PRD into `active_tasklist.md`.
 2. **Test-First:** Place test tasks before implementation tasks.
-3. Pick the first unchecked task (`[ ]`) and start working.
+3. **Execute tasks following the Task Loop:** `.ai_context/manuals/task_loop.md`
 
-Example task structure:
-```markdown
-- [ ] (`tests/`) Create test file for feature_x (failing tests)
-- [ ] (`src/`) Implement feature_x core logic
-- [ ] (`tests/`) Verify tests pass
-- [ ] (`src/`) Refactor and check type hints
-```
-
-### STEP 5: Test After Every Code Change
-
-**Manual:** `.ai_context/manuals/test_process.md`
-
-Follow the **Red → Green → Refactor** cycle:
-
-| Action | Command |
-|--------|---------|
-| Run tests | `uv run pytest` |
-| If tests fail | Fix code and re-run |
-| If tests pass | Check task complete (`[x]`), move to next task |
-
-**Do NOT proceed to the next task until all tests pass.**
-
-If tests fail repeatedly, follow the **Debugging Protocol:**
-1. Analyze the failure log.
-2. Identify root cause (environment? logic? dependency?).
-3. Fix and re-test.
-4. If failed 3+ times, report to user.
-
-### STEP 6: Verify All Tasks Complete
+### STEP 5: Verify All Tasks Complete
 
 Before archiving, confirm:
 - All items in `active_tasklist.md` are checked (`[x]`).
 - `uv run pytest` passes completely.
 - `uv run ruff check .` passes lint checks.
 
-If all checks pass, proceed to STEP 7.
+If all checks pass, proceed to STEP 6.
 
-### STEP 7: Archive & Cleanup
+### STEP 6: Archive & Cleanup
 
 **Manual:** `.ai_context/manuals/archiving_process.md`
 
 1. **Knowledge Consolidation:** Update `manuals/` or `references/` with new learnings.
-2. **Merge Git Worktree:**
-   ```powershell
-   git checkout main
-   git merge feature/<feature-name>
-   git push origin main
-   git worktree remove ../<project>-<feature-name>
-   git branch -d feature/<feature-name>
-   ```
-3. **Archive Files:**
+2. **Archive files (before merge):**
    - Move `active_prd.md` → `archive/YYYYMMDD_{FeatureName}_PRD.md`
    - Move `active_tasklist.md` → `archive/YYYYMMDD_{FeatureName}_Tasks.md`
-4. **Reset Active Files:** Clear contents for next feature.
-5. **Report Completion:**
-   ```
-   Archiving complete.
-   - Documents: archive/YYYYMMDD_{FeatureName}_*.md
-   - Branch: feature/<feature-name> merged
-   Awaiting next instruction.
-   ```
+   - Clear active files for next feature
+3. **Request Git Worktree Merge (User Responsibility):**
+
+```
+[Merge Required]
+아카이빙이 완료되었습니다. 워크트리 병합을 진행해주세요:
+
+git checkout main
+git merge feature/<feature-name>
+git push origin main
+git worktree remove ../<project>-<feature-name>
+git branch -d feature/<feature-name>
+
+완료되면 알려주세요.
+```
+
+4. **Report Completion (after user confirms merge):**
+
+```
+[Archiving Complete]
+- 문서: archive/YYYYMMDD_{FeatureName}_*.md
+- 브랜치: feature/<feature-name> 병합 완료
+
+다음 지시를 기다립니다.
+```
 
 ---
 
@@ -131,6 +119,7 @@ If all checks pass, proceed to STEP 7.
 | Situation | Manual to Follow |
 |:----------|:-----------------|
 | New feature planning | `manuals/planning_guide.md` |
+| Task execution | `manuals/task_loop.md` |
 | Test failure / Bug | `manuals/test_process.md` |
 | Work completion | `manuals/archiving_process.md` |
 | Tech specs | `tech_spec.md` |

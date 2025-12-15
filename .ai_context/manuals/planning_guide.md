@@ -1,4 +1,3 @@
-
 # Planning & Decomposition Manual
 
 이 문서는 사용자의 **모호한 요구사항(회의록, 대화, 아이디어)**을 분석하여 **실행 가능한 계획(PRD & Tasks)**으로 변환하는 표준 절차입니다.
@@ -32,16 +31,36 @@
 
 분석된 내용을 바탕으로 `.ai_context/planning/active_prd.md`를 작성하십시오.
 
-### **PRD Structure Guidelines**
+### **PRD 필수 섹션**
+
+PRD에는 반드시 다음 섹션들이 포함되어야 합니다:
 
 - **Title:** 작업의 핵심을 한 줄로 요약
 - **Background & Intent:** "왜 이 기능을 만드는가?" (회의록의 맥락 반영)
-- **Scope & Prioritization (핵심):**
+- **Primary Manual (필수):** 이 작업을 수행할 때 참조할 매뉴얼 경로
+- **Scope & Prioritization:**
     - `[Must-Have]`: 구현 대상. (테스트 코드 필수)
     - `[Should-Have]`: 중요하지만 2순위.
     - `[Nice-to-Have]`: 여유가 될 때만 고려하는 보너스 요소.
     - `[Non-Goal]`: 명시적 제외 대상.
-- **Manual Selection:** 이 작업을 수행할 때 주로 참고할 매뉴얼 지정 (예: `manuals/coding_workflow.md`)
+
+### **Primary Manual 선택 절차**
+
+1. **매뉴얼 목록 확인:** `.ai_context/manuals/` 폴더의 파일 목록을 확인
+2. **적합한 매뉴얼 선택:** 작업 성격에 맞는 매뉴얼을 선택하여 PRD에 기재
+3. **사용자 승인:** PRD 승인 시 Primary Manual 선택도 함께 확인받음
+
+**적합한 매뉴얼이 없는 경우:**
+
+```
+[Manual Required]
+이 작업에 적합한 매뉴얼이 없습니다.
+작업 성격: (작업 유형 설명)
+
+새 매뉴얼을 생성해주시거나, 기존 매뉴얼 중 사용할 것을 지정해주세요.
+```
+
+**STOP: 매뉴얼이 지정될 때까지 PRD 작성을 진행하지 마십시오.**
 
 ---
 
@@ -53,27 +72,18 @@
 
 1. **Atomic Unit:** 하나의 태스크는 코드 50줄 내외, 혹은 함수 1~2개 분량이어야 합니다.
 2. **Test-First Enforcement:** 기능 구현 태스크 바로 앞에는 반드시 **"해당 기능의 실패하는 테스트 작성"** 태스크가 있어야 합니다.
-3. **Logical Flow Example:**
-    - [ ] (`tests/`) 00기능 테스트 파일 생성 및 더미 테스트 작성
-    - [ ] (`src/`) 00기능 인터페이스(함수명/클래스명) 정의
-    - [ ] (`tests/`) 핵심 로직 검증용 실패 테스트(Red) 작성
-    - [ ] (`src/`) 핵심 로직 구현 (Green)
-    - [ ] (`src/`) 리팩토링 및 타입 힌트 점검 (Refactor)
+3. **Checkbox Format:** 모든 태스크는 `- [ ]` 형식으로 작성하고, 완료 시 `- [x]`로 업데이트합니다.
 
 ---
 
 ## 4. Verification & Approval (승인 절차)
 
-파일 작성이 완료되면, 사용자에게 다음 포맷으로 컨펌을 요청하십시오.
+PRD 작성 전 다음 체크리스트를 확인하십시오:
 
-> **[기획 분석 완료]**
-> 사용자의 요구사항을 바탕으로 `active_prd.md`를 생성했습니다.
-> 
-> - **Must-Have (이번 구현 대상):** (요약)
-> - **Should-Have (보류):** (요약)
-> - **Nice-to-Have (후순위):** (요약)
-> - **Non-Goal (제외):** (요약)
-> 
-> 이 우선순위 분류가 정확합니까? 승인하시면 Task List를 작성하고 구현을 시작하겠습니다.
+- [ ] Primary Manual이 지정되어 있는가?
+- [ ] Must-Have / Should-Have / Nice-to-Have / Non-Goal이 명확히 분리되어 있는가?
+- [ ] Background & Intent에 "왜"가 기록되어 있는가?
+
+**모든 항목이 충족되면** 사용자에게 승인을 요청하십시오.
 
 **STOP: 사용자의 승인(`진행해`, `OK`)이 있어야만 Task List 작성 및 실행 단계로 넘어갑니다.**

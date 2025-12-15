@@ -1,4 +1,3 @@
-
 # Archiving & Cleanup Manual
 
 이 문서는 하나의 작업 사이클(PRD 작성 -> 구현 -> 테스트 통과)이 완전히 끝났을 때, 작업 내역을 보존하고 다음 작업을 준비하는 절차입니다.
@@ -9,7 +8,7 @@
 
 아카이빙을 수행하기 전에 다음 항목을 반드시 확인하십시오.
 
-1. **Task Completion:** `active_tasks.md`의 모든 항목이 `[x]`로 체크되어 있는가?
+1. **Task Completion:** `active_tasklist.md`의 모든 항목이 `[x]`로 체크되어 있는가?
 2. **Test Verification:** `uv run pytest`를 실행하여 모든 테스트가 통과하는지 마지막으로 확인했는가?
 3. **User Approval:** 사용자가 결과물에 대해 최종 승인(Confirm)을 했는가?
 4. **Linting:** `uv run ruff check .` 및 `format`을 수행하여 코드 스타일을 정리했는가?
@@ -22,60 +21,62 @@
 
 - **Rule Update:** 작업 중 사용자가 지적한 코딩 스타일이나 규칙이 있다면 `manuals/` 폴더의 해당 문서를 업데이트하십시오.
 - **Domain Knowledge:** 새로 알게 된 게임 공식, 데이터 구조, 비즈니스 로직이 있다면 `references/` 폴더의 문서에 추가하십시오.
-    - *예: 데미지 계산식이 변경되었다면 `references/game_formulas.md` 업데이트*
 
 ---
 
 ## 3. File Archiving (파일 이동)
 
-현재의 `active` 문서들을 `archive` 폴더로 이동하여 역사를 보존합니다.
+**병합 전에 수행해야 합니다.** 현재의 `active` 문서들을 `archive` 폴더로 이동하여 역사를 보존합니다.
 
 ### **Naming Convention**
 
-파일 이름은 **날짜**와 **기능명**을 조합하여 유니크하게 만듭니다.
-
 - **Format:** `YYYYMMDD_{FeatureName}_{Type}.md`
-- **Example:**
-    - `20240520_StatSystem_PRD.md`
-    - `20240520_StatSystem_Tasks.md`
+- **Example:** `20240520_StatSystem_PRD.md`, `20240520_StatSystem_Tasks.md`
 
 ### **Action**
 
-다음 명령을 수행(또는 파일 시스템 조작)하여 파일을 이동하십시오.
-
-1. `.ai_context/planning/active_prd.md`
-    → `.ai_context/planning/archive/YYYYMMDD_{FeatureName}_PRD.md`
-2. `.ai_context/planning/active_tasks.md`
-    → `.ai_context/planning/archive/YYYYMMDD_{FeatureName}_Tasks.md`
+1. `.ai_context/planning/active_prd.md` → `.ai_context/planning/archive/YYYYMMDD_{FeatureName}_PRD.md`
+2. `.ai_context/planning/active_tasklist.md` → `.ai_context/planning/archive/YYYYMMDD_{FeatureName}_Tasks.md`
+3. Active 파일 내용 비움 (다음 작업 준비)
 
 ---
 
-## 3.5. Git Worktree Merge & Cleanup (워크트리 병합 및 정리)
+## 4. Git Worktree Merge (User Responsibility)
 
-워크트리에서 작업한 경우, 아카이빙 전에 다음 단계를 수행하십시오.
+**AI는 git worktree 관련 명령을 직접 실행하지 않습니다.**
 
-### **Step 1: 메인 브랜치로 병합**
-1. 메인 프로젝트 디렉토리로 이동
-2. `git checkout main` (또는 `master`) 실행
-3. `git merge feature/<feature-name>` 으로 병합
-4. 충돌이 있으면 해결 후 커밋
+워크트리에서 작업한 경우, 사용자에게 다음 안내를 제공하십시오:
 
-### **Step 2: 원격 저장소에 푸시**
-1. `git push origin main` 으로 원격에 반영
+```
+[Merge Required]
+아카이빙이 완료되었습니다. 워크트리 병합을 진행해주세요:
 
-### **Step 3: 워크트리 정리**
-1. `git worktree remove ../<project>-<feature-name>` 으로 워크트리 제거
-2. `git branch -d feature/<feature-name>` 으로 로컬 브랜치 삭제
+1. 메인 프로젝트로 이동 후 병합:
+   git checkout main
+   git merge feature/<feature-name>
+
+2. 원격 저장소에 푸시:
+   git push origin main
+
+3. 워크트리 정리:
+   git worktree remove ../<project>-<feature-name>
+   git branch -d feature/<feature-name>
+
+완료되면 알려주세요.
+```
+
+**STOP: 사용자가 병합 완료를 알릴 때까지 대기하십시오.**
 
 ---
 
-## 4. Reset & Ready (다음 작업 준비)
+## 5. Report Completion (완료 보고)
 
-다음 작업을 위해 작업 공간을 초기화합니다.
+사용자가 병합 완료를 확인하면 최종 보고:
 
-1. **Clear Active Files:**
-    - `.ai_context/planning/active_prd.md`를 내용을 비우거나 기본 템플릿 상태로 만드십시오.
-    - `.ai_context/planning/active_tasks.md`를 내용을 비우십시오.
-2. **Report:**
-    - 사용자에게 아카이빙 완료를 보고하십시오.
-    - > "작업이 완료되어 문서(PRD, Tasks)를 아카이빙했습니다. 참고 문헌(References) 업데이트도 완료했습니다. 다음 지시를 내려주세요."
+```
+[Archiving Complete]
+- 문서: archive/YYYYMMDD_{FeatureName}_*.md
+- 브랜치: feature/<feature-name> 병합 완료
+
+다음 지시를 기다립니다.
+```
