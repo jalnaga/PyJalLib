@@ -50,6 +50,25 @@
 
 ---
 
+## 3.5. Git Worktree Merge & Cleanup (워크트리 병합 및 정리)
+
+워크트리에서 작업한 경우, 아카이빙 전에 다음 단계를 수행하십시오.
+
+### **Step 1: 메인 브랜치로 병합**
+1. 메인 프로젝트 디렉토리로 이동
+2. `git checkout main` (또는 `master`) 실행
+3. `git merge feature/<feature-name>` 으로 병합
+4. 충돌이 있으면 해결 후 커밋
+
+### **Step 2: 원격 저장소에 푸시**
+1. `git push origin main` 으로 원격에 반영
+
+### **Step 3: 워크트리 정리**
+1. `git worktree remove ../<project>-<feature-name>` 으로 워크트리 제거
+2. `git branch -d feature/<feature-name>` 으로 로컬 브랜치 삭제
+
+---
+
 ## 4. Reset & Ready (다음 작업 준비)
 
 다음 작업을 위해 작업 공간을 초기화합니다.
