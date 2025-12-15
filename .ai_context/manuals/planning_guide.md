@@ -15,7 +15,7 @@
 
 1. **Must-Have (P0 - 필수):**
     - 이번 작업의 핵심 목표. 이것이 없으면 기능이 동작하지 않거나 의미가 없음.
-    - *Action:* 즉시 `active_tasks.md`로 분해되어 구현됨.
+    - *Action:* 즉시 `active_tasklist.md`로 분해되어 구현됨.
 2. **Should-Have (P1 - 권장):**
     - 중요한 기능이지만, 시간 제약이 있거나 기술적 난이도가 높을 경우 다음 스프린트로 미룰 수 있음.
     - *Action:* PRD에는 기록하되, 초기 태스크 리스트에는 포함하지 않음 (유저 요청 시 포함).
@@ -45,9 +45,9 @@
 
 ---
 
-## 3. Creating `active_tasks.md` (Extreme Decomposition)
+## 3. Creating `active_tasklist.md` (Extreme Decomposition)
 
-작성된 PRD의 **`Must-Have` 항목만**을 대상으로, 실패할 수 없을 만큼 작은 단위로 쪼개어 `.ai_context/planning/active_tasks.md`를 작성하십시오.
+작성된 PRD의 **`Must-Have` 항목만**을 대상으로, 실패할 수 없을 만큼 작은 단위로 쪼개어 `.ai_context/planning/active_tasklist.md`를 작성하십시오.
 
 ### **Decomposition Rules**
 
@@ -67,13 +67,13 @@
 파일 작성이 완료되면, 사용자에게 다음 포맷으로 컨펌을 요청하십시오.
 
 > **[기획 분석 완료]**
-> 사용자의 요구사항을 바탕으로 `active_prd.md`와 `active_tasks.md`를 생성했습니다.
+> 사용자의 요구사항을 바탕으로 `active_prd.md`를 생성했습니다.
 > 
 > - **Must-Have (이번 구현 대상):** (요약)
 > - **Should-Have (보류):** (요약)
 > - **Nice-to-Have (후순위):** (요약)
 > - **Non-Goal (제외):** (요약)
 > 
-> 이 우선순위 분류가 정확합니까? 승인하시면 `Must-Have`부터 실행하겠습니다.
+> 이 우선순위 분류가 정확합니까? 승인하시면 Task List를 작성하고 구현을 시작하겠습니다.
 
-사용자의 승인(`진행해`, `OK`)이 있어야만 실행 단계로 넘어갑니다.
+**STOP: 사용자의 승인(`진행해`, `OK`)이 있어야만 Task List 작성 및 실행 단계로 넘어갑니다.**
