@@ -66,7 +66,7 @@ PRD를 작성했습니다. 다음 우선순위 분류를 확인해주세요:
 **Manual:** `.ai_context/manuals/planning_guide.md` (Section 3)
 
 1. Decompose **only Must-Have items** from the PRD into `active_tasklist.md`.
-2. **Test-First:** Place test tasks before implementation tasks.
+2. **Code-First:** Place implementation tasks before test tasks.
 3. **STOP and request user approval:**
 
 ```
