@@ -1,4 +1,4 @@
-# Archiving & Cleanup Manual
+# Archiving Manual
 
 이 문서는 하나의 작업 사이클(PRD 작성 -> 구현 -> 테스트 통과)이 완전히 끝났을 때, 작업 내역을 보존하고 다음 작업을 준비하는 절차입니다.
 
@@ -26,7 +26,7 @@
 
 ## 3. File Archiving (파일 이동)
 
-**병합 전에 수행해야 합니다.** 현재의 `active` 문서들을 `archive` 폴더로 이동하여 역사를 보존합니다.
+현재의 `active` 문서들을 `archive` 폴더로 이동하여 역사를 보존합니다.
 
 ### **Naming Convention**
 
@@ -41,42 +41,21 @@
 
 ---
 
-## 4. Git Worktree Merge (User Responsibility)
+## 4. Report Complete & Request Worktree Merge (완료 보고)
+
+아카이빙이 완료되면 작업 완료를 선언하고 워크트리 병합을 안내합니다.
 
 **AI는 git worktree 관련 명령을 직접 실행하지 않습니다.**
 
-워크트리에서 작업한 경우, 사용자에게 다음 안내를 제공하십시오:
-
 ```
-[Merge Required]
-아카이빙이 완료되었습니다. 워크트리 병합을 진행해주세요:
-
-1. 메인 프로젝트로 이동 후 병합:
-   git checkout main
-   git merge feature/<feature-name>
-
-2. 원격 저장소에 푸시:
-   git push origin main
-
-3. 워크트리 정리:
-   git worktree remove ../<project>-<feature-name>
-   git branch -d feature/<feature-name>
-
-완료되면 알려주세요.
-```
-
-**STOP: 사용자가 병합 완료를 알릴 때까지 대기하십시오.**
-
----
-
-## 5. Report Completion (완료 보고)
-
-사용자가 병합 완료를 확인하면 최종 보고:
-
-```
-[Archiving Complete]
+[Feature Complete]
+작업이 완료되었습니다.
 - 문서: archive/YYYYMMDD_{FeatureName}_*.md
-- 브랜치: feature/<feature-name> 병합 완료
 
-다음 지시를 기다립니다.
+워크트리 병합을 진행해주세요:
+git checkout main
+git merge feature/<feature-name>
+git push origin main
+git worktree remove ../<project>-<feature-name>
+git branch -d feature/<feature-name>
 ```

@@ -99,38 +99,28 @@ Before archiving, confirm:
 
 If all checks pass, proceed to STEP 7.
 
-### STEP 7: Archive & Cleanup
+### STEP 7: Archive
 
 **Manual:** `.ai_context/manuals/archiving_process.md`
 
 1. **Knowledge Consolidation:** Update `manuals/` or `references/` with new learnings.
-2. **Archive files (before merge):**
+2. **Archive files:**
    - Move `active_prd.md` → `archive/YYYYMMDD_{FeatureName}_PRD.md`
    - Move `active_tasklist.md` → `archive/YYYYMMDD_{FeatureName}_Tasks.md`
    - Clear active files for next feature
-3. **Request Git Worktree Merge (User Responsibility):**
+3. **Report Complete & Request Worktree Merge:**
 
 ```
-[Merge Required]
-아카이빙이 완료되었습니다. 워크트리 병합을 진행해주세요:
+[Feature Complete]
+작업이 완료되었습니다.
+- 문서: archive/YYYYMMDD_{FeatureName}_*.md
 
+워크트리 병합을 진행해주세요:
 git checkout main
 git merge feature/<feature-name>
 git push origin main
 git worktree remove ../<project>-<feature-name>
 git branch -d feature/<feature-name>
-
-완료되면 알려주세요.
-```
-
-4. **Report Completion (after user confirms merge):**
-
-```
-[Archiving Complete]
-- 문서: archive/YYYYMMDD_{FeatureName}_*.md
-- 브랜치: feature/<feature-name> 병합 완료
-
-다음 지시를 기다립니다.
 ```
 
 ---

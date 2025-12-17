@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"python.autoComplete.extraPaths": [
+			"${workspaceFolder}",
+			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
+			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
+			"D:/root/Omni/Intermediate/PythonStub",
+			"E:/DevStorage_root/DevStorage/ExtPythonPackage/.venv/Lib/site-packages"
+		],
+		"[python]": {
+			"editor.formatOnSave": true,
+			"editor.defaultFormatter": "ms-python.python"
+		},
+		"editor.rulers": [
+			100
+		],
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true
+		},
+		"cursorpyright.analysis.extraPaths": [
+			"${workspaceFolder}",
+			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
+			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
+			"D:/root/Omni/Intermediate/PythonStub",
+			"E:/DevStorage_root/DevStorage/ExtPythonPackage/.venv/Lib/site-packages"
+		]
+	}
+}
