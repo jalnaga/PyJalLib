@@ -36,7 +36,7 @@ UE5Logger를 pyjallib.Logger 상속 없이 완전히 독립적인 클래스로 �
 
 3. **pyjallib.Logger와 동일한 로그 파일 설정**
    - 기본 경로: `Documents/PyJalLib/logs/`
-   - 파일명 패턴: `{파일명}_{YYYYMMDD}.log`
+   - 파일명 패턴: `{파일명}_{YYYYMMDD}.log` (기본 파일명: `ue5`)
    - 인코딩: `utf-8`
 
 4. **기존 UE5 전용 기능 유지**
