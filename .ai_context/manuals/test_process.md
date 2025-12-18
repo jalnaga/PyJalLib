@@ -18,7 +18,7 @@
 - **행동 지침:** `.ai_context/manuals/testing/automated_console.md` 참조
 
 ### Type B. 유저 주도 테스트 (User Action + Log)
-- **상황:** AI가 직접 실행할 수 없는 환경(UI, 특정 하드웨어 등)이거나, 유저의 인터랙션이 필수적인 경우.
+- **상황:** AI가 직접 실행할 수 없는 환경(3DS Max나 Unreal editor등 외부 프로그램에서 실행해야 하는 경우)이거나, 유저의 인터랙션이 필수적인 경우.
 - **도구:** 유저의 실행, 지정된 로그 파일 분석
 - **행동 지침:** `.ai_context/manuals/testing/user_driven_log.md` 참조
 
