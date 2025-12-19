@@ -11,117 +11,23 @@ You are the **Lead Engineer** for this project. You prioritize maintainability, 
 
 ---
 
-## 3. The Golden Workflow
+## 3. Workflow Router
 
-When a user requests a new feature, you MUST follow this exact sequence. Do not skip steps.
+사용자 요청에 따라 아래 워크플로우 매뉴얼을 참조하세요.
 
-### STEP 1: Check PRD/Task Status
+| 상황 | 워크플로우 매뉴얼 |
+|:-----|:-----------------|
+| 워크트리 생성 요청 | `.ai_context/manuals/workflow/worktree_creation.md` |
+| 새 기능 개발 요청 | `.ai_context/manuals/workflow/new_feature.md` |
+| 버그 조사/수정 테스트 요청 | `.ai_context/manuals/workflow/bug_investigation.md` |
+| 워크트리 병합 요청 | `.ai_context/manuals/workflow/worktree_merge.md` |
 
-First, read `.ai_context/planning/active_prd.md` and `active_tasklist.md`.
+### 워크플로우 선택 기준
 
-- **If files have content:** Skip to STEP 5 and continue with task execution.
-- **If files are empty:** Proceed to STEP 2 to start a new feature.
-
-### STEP 2: Request Git Worktree (User Responsibility)
-
-**AI does NOT execute git worktree commands.** Instead, request the user to create a worktree:
-
-```
-[Worktree Required]
-새 기능 작업을 위해 워크트리를 생성해주세요:
-
-git worktree add ../<project>-<feature-name> -b feature/<feature-name>
-
-완료되면 알려주세요.
-```
-
-**STOP and wait for user confirmation before proceeding.**
-
-### STEP 3: Write PRD & Wait for Approval
-
-**Manual:** `.ai_context/manuals/planning_guide.md`
-
-1. Analyze the user's requirements and write `active_prd.md`.
-2. Categorize all requirements into **Must-Have / Should-Have / Nice-to-Have / Non-Goal**.
-3. **Select Primary Manual:** PRD must include a `Primary Manual` field specifying which manual to follow during implementation. (See `planning_guide.md` for available manuals)
-4. **STOP and request user approval:**
-
-```
-[Planning Complete]
-PRD를 작성했습니다. 다음 우선순위 분류를 확인해주세요:
-
-- **Must-Have:** (summary)
-- **Should-Have:** (summary)
-- **Nice-to-Have:** (summary)
-- **Non-Goal:** (summary)
-- **Primary Manual:** (selected manual path)
-
-승인하시면 Task List를 작성하고 구현을 시작하겠습니다.
-```
-
-**Do NOT write any code until the user approves the PRD.**
-
-### STEP 4: Create Task List & Wait for Approval
-
-**Manual:** `.ai_context/manuals/planning_guide.md` (Section 3)
-
-1. Decompose **only Must-Have items** from the PRD into `active_tasklist.md`.
-2. **Code-First:** Place implementation tasks before test tasks.
-3. **STOP and request user approval:**
-
-```
-[Task List Complete]
-태스크 리스트를 작성했습니다. 확인해주세요:
-
-- **총 태스크 수:** (N)개
-- **테스트 태스크:** (summary)
-- **구현 태스크:** (summary)
-
-승인하시면 태스크 실행을 시작하겠습니다.
-```
-
-**Do NOT execute any task until the user approves the Task List.**
-
-### STEP 5: Execute Tasks
-
-**Manual:** `.ai_context/manuals/task_loop.md`
-
-1. Execute tasks one by one following the Task Loop manual.
-2. Mark each completed task with `[x]` in `active_tasklist.md`.
-3. Report progress after each task completion.
-
-### STEP 6: Verify All Tasks Complete
-
-Before archiving, confirm:
-- All items in `active_tasklist.md` are checked (`[x]`).
-- `uv run pytest` passes completely.
-- `uv run ruff check .` passes lint checks.
-
-If all checks pass, proceed to STEP 7.
-
-### STEP 7: Archive
-
-**Manual:** `.ai_context/manuals/archiving_process.md`
-
-1. **Knowledge Consolidation:** Update `manuals/` or `references/` with new learnings.
-2. **Archive files:**
-   - Move `active_prd.md` → `archive/YYYYMMDD_{FeatureName}_PRD.md`
-   - Move `active_tasklist.md` → `archive/YYYYMMDD_{FeatureName}_Tasks.md`
-   - Clear active files for next feature
-3. **Report Complete & Request Worktree Merge:**
-
-```
-[Feature Complete]
-작업이 완료되었습니다.
-- 문서: archive/YYYYMMDD_{FeatureName}_*.md
-
-워크트리 병합을 진행해주세요:
-git checkout main
-git merge feature/<feature-name>
-git push origin main
-git worktree remove ../<project>-<feature-name>
-git branch -d feature/<feature-name>
-```
+1. **워크트리 생성**: 사용자가 새 워크트리 생성을 요청하거나, 새 기능 작업 전 워크트리가 필요할 때
+2. **새 기능 개발**: 사용자가 새로운 기능 구현을 요청할 때 (워크트리가 이미 있는 상태 전제)
+3. **버그 조사 테스트**: 개발 완료된 기능의 실사용 중 발견된 버그/문제 파악을 위한 테스트 요청
+4. **워크트리 병합**: 기능 개발 완료 후 머지를 요청할 때
 
 ---
 
@@ -129,7 +35,10 @@ git branch -d feature/<feature-name>
 
 | Situation | Manual to Follow |
 |:----------|:-----------------|
-| New feature planning | `manuals/planning_guide.md` |
+| 워크트리 생성 | `manuals/workflow/worktree_creation.md` |
+| 새 기능 개발 | `manuals/workflow/new_feature.md` |
+| 버그 조사/수정 테스트 | `manuals/workflow/bug_investigation.md` |
+| 워크트리 병합 | `manuals/workflow/worktree_merge.md` |
 | Task execution | `manuals/task_loop.md` |
 | Test failure / Bug | `manuals/test_process.md` |
 | Work completion | `manuals/archiving_process.md` |

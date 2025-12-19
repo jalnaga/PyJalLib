@@ -41,21 +41,12 @@
 
 ---
 
-## 4. Report Complete & Request Worktree Merge (완료 보고)
+## 4. Report Complete (완료 보고)
 
-아카이빙이 완료되면 작업 완료를 선언하고 워크트리 병합을 안내합니다.
-
-**AI는 git worktree 관련 명령을 직접 실행하지 않습니다.**
+아카이빙이 완료되면 작업 완료를 선언하십시오.
 
 ```
 [Feature Complete]
-작업이 완료되었습니다.
+기능 개발이 완료되었습니다.
 - 문서: archive/YYYYMMDD_{FeatureName}_*.md
-
-워크트리 병합을 진행해주세요:
-git checkout main
-git merge feature/<feature-name>
-git push origin main
-git worktree remove ../<project>-<feature-name>
-git branch -d feature/<feature-name>
 ```
