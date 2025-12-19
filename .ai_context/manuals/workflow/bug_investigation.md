@@ -12,76 +12,126 @@
 
 **Note:** 새 기능 개발 중 테스트는 이 워크플로우가 아닌 `.ai_context/manuals/workflow/new_feature.md`를 따릅니다.
 
+**Note:** 이 워크플로우는 워크트리 생성 없이 현재 브랜치에서 직접 작업합니다.
+
 ---
 
 ## 워크플로우
 
-### STEP 1: 문제 파악
+### STEP 1: Check PRD/Task Status
 
-사용자로부터 다음 정보를 수집합니다:
+`.ai_context/planning/active_prd.md`와 `active_tasklist.md`를 확인합니다.
 
-- 문제 현상 (무엇이 잘못되었는가?)
-- 재현 조건 (어떤 상황에서 발생하는가?)
-- 기대 동작 (원래 어떻게 동작해야 하는가?)
-
----
-
-### STEP 2: 버그 재현 테스트 작성
-
-**Manual:** `.ai_context/manuals/test_process.md`
-
-1. 버그를 재현하는 테스트 코드 작성
-2. 테스트 실행하여 버그 재현 확인 (테스트 실패 = 버그 재현 성공)
-
-```
-[Bug Reproduced]
-버그를 재현하는 테스트를 작성했습니다:
-- 테스트 파일: (path)
-- 테스트 함수: (name)
-- 실패 내용: (description)
-
-수정을 진행하시겠습니까?
-```
-
----
-
-### STEP 3: 버그 수정
-
-1. 문제의 근본 원인 분석
-2. 구현 코드 수정 (테스트 코드 수정 금지)
-3. 테스트 재실행
-
-| 상황 | 행동 |
+| 상태 | 행동 |
 |:-----|:-----|
-| 테스트 통과 | STEP 4로 진행 |
-| 테스트 실패 | 구현 코드 재수정 후 재테스트 |
+| 파일에 내용이 있음 | STEP 4로 건너뛰어 태스크 실행 계속 |
+| 파일이 비어 있음 | STEP 2로 진행하여 버그 조사 시작 |
 
 ---
 
-### STEP 4: 검증 및 완료
+### STEP 2: Write PRD & Wait for Approval
 
-1. 전체 테스트 실행: `uv run pytest`
-2. 린트 검사: `uv run ruff check .`
-3. 결과 보고
+**Manual:** `.ai_context/manuals/planning_guide.md`
+
+1. 사용자의 문제 상황을 분석하여 `active_prd.md` 작성
+2. 다음 정보를 포함:
+   - **문제 현상:** 무엇이 잘못되었는가?
+   - **재현 조건:** 어떤 상황에서 발생하는가?
+   - **기대 동작:** 원래 어떻게 동작해야 하는가?
+3. 조사/수정 사항을 **Must-Have / Should-Have / Nice-to-Have / Non-Goal**로 분류
+4. **Primary Manual:** `.ai_context/manuals/test_process.md` (고정)
+5. **STOP: 사용자 승인 요청**
 
 ```
-[Bug Fixed]
-버그가 수정되었습니다:
+[Planning Complete]
+버그 조사 PRD를 작성했습니다. 다음 우선순위 분류를 확인해주세요:
+
+- **문제 현상:** (summary)
+- **Must-Have:** (summary)
+- **Should-Have:** (summary)
+- **Nice-to-Have:** (summary)
+- **Non-Goal:** (summary)
+- **Primary Manual:** `.ai_context/manuals/test_process.md`
+
+승인하시면 Task List를 작성하고 조사/수정을 시작하겠습니다.
+```
+
+**사용자가 승인할 때까지 코드 작성 금지.**
+
+---
+
+### STEP 3: Create Task List & Wait for Approval
+
+**Manual:** `.ai_context/manuals/planning_guide.md` (Section 3)
+
+1. PRD의 **Must-Have 항목만** `active_tasklist.md`로 분해
+2. 일반적인 태스크 순서:
+   - 버그 재현 테스트 작성
+   - 근본 원인 분석
+   - 구현 코드 수정
+   - 테스트 검증
+3. **STOP: 사용자 승인 요청**
+
+```
+[Task List Complete]
+태스크 리스트를 작성했습니다. 확인해주세요:
+
+- **총 태스크 수:** (N)개
+- **조사 태스크:** (summary)
+- **수정 태스크:** (summary)
+- **테스트 태스크:** (summary)
+
+승인하시면 태스크 실행을 시작하겠습니다.
+```
+
+**사용자가 승인할 때까지 태스크 실행 금지.**
+
+---
+
+### STEP 4: Execute Tasks
+
+**Manual:** `.ai_context/manuals/task_loop.md`
+
+1. 태스크를 하나씩 실행 (Task Loop 매뉴얼 준수)
+2. 각 태스크 완료 시 `active_tasklist.md`를 `[x]`로 업데이트
+3. 태스크마다 진행 상황 보고
+
+**버그 수정 시 주의사항:**
+- 테스트 코드가 실패해야 버그가 재현된 것
+- 구현 코드 수정 후 테스트 통과 확인
+- 테스트 코드 자체는 수정하지 않음 (버그 재현 목적)
+
+---
+
+### STEP 5: Verify All Tasks Complete
+
+아카이빙 전에 다음을 확인합니다:
+
+- [ ] `active_tasklist.md`의 모든 항목이 `[x]`로 체크됨
+
+모든 검증 통과 시 STEP 6으로 진행.
+
+---
+
+### STEP 6: Archive
+
+**Manual:** `.ai_context/manuals/archiving_process.md`
+
+1. **Knowledge Consolidation:** `manuals/` 또는 `references/`에 새로운 지식 반영
+2. **파일 아카이빙:**
+   - `active_prd.md` → `archive/YYYYMMDD_{BugName}_PRD.md`
+   - `active_tasklist.md` → `archive/YYYYMMDD_{BugName}_Tasks.md`
+   - Active 파일 내용 비움
+
+3. **완료 보고:**
+
+```
+[Bug Investigation Complete]
+버그 조사/수정이 완료되었습니다.
 - 원인: (root cause)
 - 수정 내용: (fix description)
-- 테스트: 모두 통과
-
-추가 조치가 필요하시면 말씀해주세요.
+- 문서: archive/YYYYMMDD_{BugName}_*.md
 ```
-
----
-
-## PRD/Task List 필요 여부
-
-| 상황 | PRD/Task List |
-|:-----|:--------------|
-| 단순 버그 수정 (코드 50줄 이하) | 불필요 - 즉시 수정 |
-| 복잡한 버그 수정 (구조적 변경 필요) | 필요 - `.ai_context/manuals/workflow/new_feature.md` 워크플로우 권장 |
 
 ---
 
@@ -93,4 +143,3 @@
 2. 근본 원인 파악 (환경? 로직? 의존성?)
 3. 수정 후 재테스트
 4. **3회 이상 실패 시 사용자에게 보고**
-
