@@ -8,12 +8,20 @@ if extPackagePath not in sys.path:
 
 from pyjallib.ue5.inUnreal.interchangeAnimationImporter import InterchangeAnimationImporter
 
-fbxPath = r'{inAnimFbxPath}'
-skeletonFbxPath = r'{inSkeletonFbxPath}'
+# 새 인터페이스: 직접 경로 지정
+fbxPath = r'{inFbxPath}'
+destinationPath = r'{inDestinationPath}'
+skeletonPath = r'{inSkeletonPath}'  # /Game/... 형식의 스켈레톤 Content 경로
+assetName = r'{inAssetName}'  # 선택적: 빈 문자열이면 FBX 파일명 기반 자동 생성
 
-contentRootPrefix = r'{inContentRootPrefix}'
-fbxRootPrefix = r'{inFbxRootPrefix}'
+animImporter = InterchangeAnimationImporter()
 
-animImporter = InterchangeAnimationImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
+# assetName이 비어있으면 None으로 처리
+actualAssetName = assetName if assetName else None
 
-result = animImporter.import_animation(fbxPath, skeletonFbxPath)
+result = animImporter.import_animation(
+    inFbxPath=fbxPath,
+    inDestinationPath=destinationPath,
+    inSkeletonPath=skeletonPath,
+    inAssetName=actualAssetName
+)

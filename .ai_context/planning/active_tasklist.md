@@ -66,26 +66,26 @@
 
 ### Phase 4: 템플릿 및 프로세서 업데이트
 
-- [ ] **Task 4.1**: Interchange 템플릿 업데이트
+- [x] **Task 4.1**: Interchange 템플릿 업데이트
   - 파일:
     - `templates/interchangeSkeletonImportTemplate.py`
     - `templates/interchangeSkeletalMeshImportTemplate.py`
     - `templates/interchangeAnimImportTemplate.py`
     - `templates/interchangeBatchAnimImportTemplate.py`
-  - 내용: 새 인터페이스에 맞게 수정
+  - 완료: 새 인터페이스 적용 (inFbxPath, inDestinationPath, inSkeletonPath, inAssetName)
 
-- [ ] **Task 4.2**: `templates/__init__.py` 업데이트
+- [x] **Task 4.2**: `templates/__init__.py` 업데이트
   - 파일: `templates/__init__.py`
-  - 내용: 레거시 템플릿 상수 및 매핑 제거
+  - 완료: 이미 Interchange 상수만 존재, 레거시 상수 없음
 
-- [ ] **Task 4.3**: `templateProcessor.py` 업데이트
+- [x] **Task 4.3**: `templateProcessor.py` 업데이트
   - 파일: `templateProcessor.py`
-  - 내용: 레거시 템플릿 관련 메서드 제거, Interchange 템플릿 메서드 수정
+  - 완료: 레거시 메서드 제거, Interchange 메서드 새 인터페이스 적용, format_list_for_template 유틸리티 추가
 
 ---
 
 ## Progress Summary
 
 - **Total Tasks**: 12
-- **Completed**: 9
-- **Remaining**: 3
+- **Completed**: 12
+- **Remaining**: 0

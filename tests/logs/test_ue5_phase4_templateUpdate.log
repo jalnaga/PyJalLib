@@ -1,0 +1,84 @@
+2026-01-20 21:07:44 - INFO - ======================================================================
+2026-01-20 21:07:44 - INFO - === Phase 4: 템플릿 및 프로세서 업데이트 통합 테스트 시작 ===
+2026-01-20 21:07:44 - INFO - ======================================================================
+2026-01-20 21:07:44 - INFO - 
+--- Task 4.1: Interchange 템플릿 새 인터페이스 확인 ---
+2026-01-20 21:07:44 - INFO - === TEST: skeleton_template_new_interface ===
+2026-01-20 21:07:44 - INFO - SUCCESS: skeleton_template - 새 플레이스홀더 확인: {inExtPackagePath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeleton_template - 새 플레이스홀더 확인: {inFbxPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeleton_template - 새 플레이스홀더 확인: {inDestinationPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeleton_template - 새 플레이스홀더 확인: {inAssetName}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeleton_template_new_interface - 스켈레톤 템플릿 새 인터페이스 확인 완료
+2026-01-20 21:07:44 - INFO - === TEST: skeletal_mesh_template_new_interface ===
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template - 새 플레이스홀더 확인: {inExtPackagePath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template - 새 플레이스홀더 확인: {inFbxPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template - 새 플레이스홀더 확인: {inDestinationPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template - 새 플레이스홀더 확인: {inSkeletonPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template - 새 플레이스홀더 확인: {inAssetName}
+2026-01-20 21:07:44 - INFO - SUCCESS: skeletal_mesh_template_new_interface - 스켈레탈 메시 템플릿 새 인터페이스 확인 완료
+2026-01-20 21:07:44 - INFO - === TEST: anim_template_new_interface ===
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template - 새 플레이스홀더 확인: {inExtPackagePath}
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template - 새 플레이스홀더 확인: {inFbxPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template - 새 플레이스홀더 확인: {inDestinationPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template - 새 플레이스홀더 확인: {inSkeletonPath}
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template - 새 플레이스홀더 확인: {inAssetName}
+2026-01-20 21:07:44 - INFO - SUCCESS: anim_template_new_interface - 애니메이션 템플릿 새 인터페이스 확인 완료
+2026-01-20 21:07:44 - INFO - === TEST: batch_anim_template_new_interface ===
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template - 새 플레이스홀더 확인: {inExtPackagePath}
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template - 새 플레이스홀더 확인: {inFbxPaths}
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template - 새 플레이스홀더 확인: {inDestinationPaths}
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template - 새 플레이스홀더 확인: {inSkeletonPaths}
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template - 새 플레이스홀더 확인: {inAssetNames}
+2026-01-20 21:07:44 - INFO - SUCCESS: batch_anim_template_new_interface - 배치 애니메이션 템플릿 새 인터페이스 확인 완료
+2026-01-20 21:07:44 - INFO - 
+--- Task 4.2: templates/__init__.py 업데이트 확인 ---
+2026-01-20 21:07:44 - INFO - === TEST: templates_init_no_legacy_constants ===
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init_no_legacy_constants - 모든 레거시 상수 제거 확인
+2026-01-20 21:07:44 - INFO - === TEST: templates_init_has_interchange_constants ===
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init - Interchange 상수 확인: INTERCHANGE_ANIM_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init - Interchange 상수 확인: INTERCHANGE_SKELETON_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init - Interchange 상수 확인: INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init - Interchange 상수 확인: INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_init_has_interchange_constants - 모든 Interchange 상수 확인
+2026-01-20 21:07:44 - INFO - 
+--- Task 4.3: templateProcessor.py 업데이트 확인 ---
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_no_legacy_imports ===
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor_no_legacy_imports - 모든 레거시 import 제거 확인
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_no_legacy_methods ===
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor_no_legacy_methods - 모든 레거시 메서드 제거 확인
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_has_interchange_methods ===
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - Interchange 메서드 확인: def process_interchange_skeleton_import_template
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - Interchange 메서드 확인: def process_interchange_skeletal_mesh_import_template
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - Interchange 메서드 확인: def process_interchange_animation_import_template
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - Interchange 메서드 확인: def process_interchange_batch_anim_import_template
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor_has_interchange_methods - 모든 Interchange 메서드 확인
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_has_utility_methods ===
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - 유틸리티 메서드 확인: def format_list_for_template
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - 유틸리티 메서드 확인: def validate_template_data
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor - 유틸리티 메서드 확인: def get_default_output_path
+2026-01-20 21:07:44 - INFO - SUCCESS: template_processor_has_utility_methods - 모든 유틸리티 메서드 확인
+2026-01-20 21:07:44 - INFO - 
+--- 모듈 import 및 기능 테스트 ---
+2026-01-20 21:07:44 - INFO - === TEST: templates_module_import ===
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - templates/__init__.py 구문 검증 통과
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - 상수 확인: INTERCHANGE_ANIM_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - 상수 확인: INTERCHANGE_SKELETON_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - 상수 확인: INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - 상수 확인: INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE
+2026-01-20 21:07:44 - INFO - SUCCESS: templates_module_import - 모든 상수 확인 완료
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_import ===
+2026-01-20 21:07:44 - INFO - SKIP: template_processor_import - templateProcessor는 loguru 의존성이 있어 UE5에서 테스트 불가 (PRD 범위 밖)
+2026-01-20 21:07:44 - INFO - NOTE: templateProcessor.py 파일 내용 검증은 이전 테스트에서 완료됨
+2026-01-20 21:07:44 - INFO - === TEST: format_list_for_template ===
+2026-01-20 21:07:44 - INFO - SUCCESS: format_list_for_template - 메서드 존재 확인
+2026-01-20 21:07:44 - INFO - SUCCESS: format_list_for_template - raw 문자열 포맷팅 구현 확인
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_skeleton_method ===
+2026-01-20 21:07:44 - INFO - SKIP: template_processor_skeleton_method - templateProcessor는 loguru 의존성이 있어 UE5에서 테스트 불가
+2026-01-20 21:07:44 - INFO - NOTE: 템플릿 플레이스홀더 검증은 Task 4.1 테스트에서 완료됨
+2026-01-20 21:07:44 - INFO - === TEST: template_processor_batch_anim_method ===
+2026-01-20 21:07:44 - INFO - SKIP: template_processor_batch_anim_method - templateProcessor는 loguru 의존성이 있어 UE5에서 테스트 불가
+2026-01-20 21:07:44 - INFO - NOTE: 배치 템플릿 플레이스홀더 검증은 Task 4.1 테스트에서 완료됨
+2026-01-20 21:07:44 - INFO - 
+======================================================================
+2026-01-20 21:07:44 - INFO - === Phase 4 테스트 완료 ===
+2026-01-20 21:07:44 - INFO - ======================================================================
