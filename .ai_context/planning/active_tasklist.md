@@ -32,34 +32,37 @@
   - 내용: 새 인터페이스 (`inFbxPath`, `inDestinationPath`, `inAssetName`)
   - 완료: 외부 의존성 제거 (ue5_logger, self.naming), pathUtils 사용, 새 인터페이스 적용
 
-- [ ] **Task 2.3**: `interchangeSkeletalMeshImporter.py` 리팩토링
+- [x] **Task 2.3**: `interchangeSkeletalMeshImporter.py` 리팩토링
   - 파일: `inUnreal/interchangeSkeletalMeshImporter.py`
   - 내용: 새 인터페이스 (`inFbxPath`, `inDestinationPath`, `inSkeletonPath`, `inAssetName`)
+  - 완료: 외부 의존성 제거 (ue5_logger, 레거시 경로 변환), pathUtils 사용, 새 인터페이스 적용
 
-- [ ] **Task 2.4**: `interchangeAnimationImporter.py` 리팩토링
+- [x] **Task 2.4**: `interchangeAnimationImporter.py` 리팩토링
   - 파일: `inUnreal/interchangeAnimationImporter.py`
   - 내용: 새 인터페이스 (`inFbxPath`, `inDestinationPath`, `inSkeletonPath`, `inAssetName`)
+  - 완료: 외부 의존성 제거 (ue5_logger, 레거시 경로 변환), pathUtils 사용, 새 인터페이스 적용
 
 ### Phase 3: 레거시 코드 제거
 
-- [ ] **Task 3.1**: 레거시 임포터 파일 삭제
-  - 삭제 대상:
+- [x] **Task 3.1**: 레거시 임포터 파일 삭제
+  - 삭제 완료:
     - `inUnreal/baseImporter.py`
     - `inUnreal/importerSettings.py`
     - `inUnreal/skeletonImporter.py`
     - `inUnreal/skeletalMeshImporter.py`
     - `inUnreal/animationImporter.py`
 
-- [ ] **Task 3.2**: `inUnreal/__init__.py` 업데이트
+- [x] **Task 3.2**: `inUnreal/__init__.py` 업데이트
   - 파일: `inUnreal/__init__.py`
-  - 내용: 레거시 임포터 export 제거, `pathUtils` export 추가
+  - 완료: 레거시 임포터 export 제거, `pathUtils` export 추가
 
-- [ ] **Task 3.3**: 레거시 템플릿 파일 삭제
-  - 삭제 대상:
+- [x] **Task 3.3**: 레거시 템플릿 파일 삭제
+  - 삭제 완료:
     - `templates/skeletonImportTemplate.py`
     - `templates/skeletalMeshImportTemplate.py`
     - `templates/animImportTemplate.py`
     - `templates/batchAnimImportTemplate.py`
+  - `templates/__init__.py` 업데이트 완료
 
 ### Phase 4: 템플릿 및 프로세서 업데이트
 
@@ -84,5 +87,5 @@
 ## Progress Summary
 
 - **Total Tasks**: 12
-- **Completed**: 4
-- **Remaining**: 8
+- **Completed**: 9
+- **Remaining**: 3

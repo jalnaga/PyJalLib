@@ -1,0 +1,66 @@
+2026-01-20 20:51:55 - INFO - ============================================================
+2026-01-20 20:51:55 - INFO - === Phase 3: 레거시 코드 제거 통합 테스트 시작 ===
+2026-01-20 20:51:55 - INFO - ============================================================
+2026-01-20 20:51:55 - INFO - === TEST: legacy_importer_files_deleted ===
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 파일 삭제 확인: baseImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 파일 삭제 확인: importerSettings.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 파일 삭제 확인: skeletonImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 파일 삭제 확인: skeletalMeshImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 파일 삭제 확인: animationImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_importer_files_deleted - 모든 레거시 임포터 파일 삭제 완료
+2026-01-20 20:51:55 - INFO - === TEST: legacy_template_files_deleted ===
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_template_files_deleted - 파일 삭제 확인: skeletonImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_template_files_deleted - 파일 삭제 확인: skeletalMeshImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_template_files_deleted - 파일 삭제 확인: animImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_template_files_deleted - 파일 삭제 확인: batchAnimImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: legacy_template_files_deleted - 모든 레거시 템플릿 파일 삭제 완료
+2026-01-20 20:51:55 - INFO - === TEST: interchange_files_exist ===
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: pathUtils.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: interchangeImporterBase.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: interchangePipelineSettings.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: interchangeSkeletonImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: interchangeSkeletalMeshImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 파일 존재 확인: interchangeAnimationImporter.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_files_exist - 모든 Interchange 파일 존재 확인
+2026-01-20 20:51:55 - INFO - === TEST: interchange_templates_exist ===
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_templates_exist - 파일 존재 확인: interchangeAnimImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_templates_exist - 파일 존재 확인: interchangeSkeletonImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_templates_exist - 파일 존재 확인: interchangeSkeletalMeshImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_templates_exist - 파일 존재 확인: interchangeBatchAnimImportTemplate.py
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_templates_exist - 모든 Interchange 템플릿 파일 존재 확인
+2026-01-20 20:51:55 - INFO - === TEST: inunreal_init_no_legacy ===
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_no_legacy - 모든 레거시 import 제거 확인
+2026-01-20 20:51:55 - INFO - === TEST: inunreal_init_has_pathutils ===
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_pathutils - pathUtils export 확인
+2026-01-20 20:51:55 - INFO - === TEST: inunreal_init_has_interchange ===
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangeImporterBase
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangePipelineSettings
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangePipelinePreset
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangeSkeletonImporter
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangeSkeletalMeshImporter
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - export 확인: InterchangeAnimationImporter
+2026-01-20 20:51:55 - INFO - SUCCESS: inunreal_init_has_interchange - 모든 Interchange export 확인
+2026-01-20 20:51:55 - INFO - === TEST: templates_init_no_legacy ===
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_no_legacy - 모든 레거시 상수 및 매핑 제거 확인
+2026-01-20 20:51:55 - INFO - === TEST: templates_init_has_interchange ===
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_has_interchange - 상수 확인: INTERCHANGE_ANIM_IMPORT_TEMPLATE
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_has_interchange - 상수 확인: INTERCHANGE_SKELETON_IMPORT_TEMPLATE
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_has_interchange - 상수 확인: INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_has_interchange - 상수 확인: INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE
+2026-01-20 20:51:55 - INFO - SUCCESS: templates_init_has_interchange - 모든 Interchange 상수 확인
+2026-01-20 20:51:55 - INFO - === TEST: interchange_module_import ===
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_module_import - pathUtils import 성공
+2026-01-20 20:51:55 - INFO - SUCCESS: interchange_module_import - interchangeImporterBase.InterchangeImporterBase import 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_module_import - interchangePipelineSettings.InterchangePipelineSettings import 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_module_import - interchangeSkeletonImporter.InterchangeSkeletonImporter import 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_module_import - interchangeSkeletalMeshImporter.InterchangeSkeletalMeshImporter import 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_module_import - interchangeAnimationImporter.InterchangeAnimationImporter import 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_module_import - 모든 Interchange 모듈 import 성공
+2026-01-20 20:51:56 - INFO - === TEST: interchange_importer_instantiation ===
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_importer_instantiation - InterchangeSkeletonImporter() 인스턴스 생성 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_importer_instantiation - InterchangeSkeletalMeshImporter() 인스턴스 생성 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_importer_instantiation - InterchangeAnimationImporter() 인스턴스 생성 성공
+2026-01-20 20:51:56 - INFO - SUCCESS: interchange_importer_instantiation - 모든 Interchange 임포터 인스턴스 생성 성공
+2026-01-20 20:51:56 - INFO - ============================================================
+2026-01-20 20:51:56 - INFO - === TEST END ===
+2026-01-20 20:51:56 - INFO - ============================================================
