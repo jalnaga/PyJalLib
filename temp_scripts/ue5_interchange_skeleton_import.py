@@ -1,17 +1,17 @@
 import sys
 
 # 프로젝트 루트 디렉토리 추가 (PyJalLib 디렉토리)
-extPackagePath = r'{inExtPackagePath}'
+extPackagePath = r'J:\My Drive\Programming\Python\PyJalLib-ue5-interchange-framework\src'
 
 if extPackagePath not in sys.path:
     sys.path.insert(0, extPackagePath)
 
 from pyjallib.ue5.inUnreal.interchangeSkeletonImporter import InterchangeSkeletonImporter
 
-fbxPath = r'{inSkeletonFbxPath}'
+fbxPath = r'E:\DevStorage_root\DevStorage\Characters\Shared\Human\Female\Mesh\BaseSkeleton3\Sh_Human_F_BaseSkeleton3.fbx'
 
-contentRootPrefix = r'{inContentRootPrefix}'
-fbxRootPrefix = r'{inFbxRootPrefix}'
+contentRootPrefix = r'/Game/'
+fbxRootPrefix = r'E:\DevStorage_root\DevStorage'
 
 skeletonImporter = InterchangeSkeletonImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
 
