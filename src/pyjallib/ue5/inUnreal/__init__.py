@@ -62,6 +62,44 @@ if is_ue5_available():
         AnimationImporter = None
         print(f"[PyJalLib] AnimationImporter 임포트 실패: {e}")
 
+    # Interchange Framework 기반 임포터
+    try:
+        from .interchangeImporterBase import InterchangeImporterBase
+        __all__.append('InterchangeImporterBase')
+    except ImportError as e:
+        InterchangeImporterBase = None
+        print(f"[PyJalLib] InterchangeImporterBase 임포트 실패: {e}")
+
+    try:
+        from .interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+        __all__.append('InterchangePipelineSettings')
+        __all__.append('InterchangePipelinePreset')
+    except ImportError as e:
+        InterchangePipelineSettings = None
+        InterchangePipelinePreset = None
+        print(f"[PyJalLib] InterchangePipelineSettings 임포트 실패: {e}")
+
+    try:
+        from .interchangeSkeletonImporter import InterchangeSkeletonImporter
+        __all__.append('InterchangeSkeletonImporter')
+    except ImportError as e:
+        InterchangeSkeletonImporter = None
+        print(f"[PyJalLib] InterchangeSkeletonImporter 임포트 실패: {e}")
+
+    try:
+        from .interchangeSkeletalMeshImporter import InterchangeSkeletalMeshImporter
+        __all__.append('InterchangeSkeletalMeshImporter')
+    except ImportError as e:
+        InterchangeSkeletalMeshImporter = None
+        print(f"[PyJalLib] InterchangeSkeletalMeshImporter 임포트 실패: {e}")
+
+    try:
+        from .interchangeAnimationImporter import InterchangeAnimationImporter
+        __all__.append('InterchangeAnimationImporter')
+    except ImportError as e:
+        InterchangeAnimationImporter = None
+        print(f"[PyJalLib] InterchangeAnimationImporter 임포트 실패: {e}")
+
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     ImporterSettings = None
@@ -69,6 +107,13 @@ else:
     SkeletonImporter = None
     SkeletalMeshImporter = None
     AnimationImporter = None
+    # Interchange 모듈
+    InterchangeImporterBase = None
+    InterchangePipelineSettings = None
+    InterchangePipelinePreset = None
+    InterchangeSkeletonImporter = None
+    InterchangeSkeletalMeshImporter = None
+    InterchangeAnimationImporter = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
 
 def get_available_modules() -> list:
@@ -89,6 +134,19 @@ def get_available_modules() -> list:
         available.append('SkeletalMeshImporter')
     if 'AnimationImporter' in __all__ and AnimationImporter is not None:
         available.append('AnimationImporter')
+    # Interchange 모듈
+    if 'InterchangeImporterBase' in __all__ and InterchangeImporterBase is not None:
+        available.append('InterchangeImporterBase')
+    if 'InterchangePipelineSettings' in __all__ and InterchangePipelineSettings is not None:
+        available.append('InterchangePipelineSettings')
+    if 'InterchangePipelinePreset' in __all__ and InterchangePipelinePreset is not None:
+        available.append('InterchangePipelinePreset')
+    if 'InterchangeSkeletonImporter' in __all__ and InterchangeSkeletonImporter is not None:
+        available.append('InterchangeSkeletonImporter')
+    if 'InterchangeSkeletalMeshImporter' in __all__ and InterchangeSkeletalMeshImporter is not None:
+        available.append('InterchangeSkeletalMeshImporter')
+    if 'InterchangeAnimationImporter' in __all__ and InterchangeAnimationImporter is not None:
+        available.append('InterchangeAnimationImporter')
     return available
 
 # 헬퍼 함수도 __all__에 추가

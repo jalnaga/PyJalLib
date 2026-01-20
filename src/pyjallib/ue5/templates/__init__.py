@@ -10,18 +10,30 @@ import os
 from pathlib import Path
 from typing import Dict, Optional
 
-# 템플릿 이름 상수
+# 템플릿 이름 상수 (레거시)
 ANIM_IMPORT_TEMPLATE = "animImport"
 SKELETON_IMPORT_TEMPLATE = "skeletonImport" 
 SKELETAL_MESH_IMPORT_TEMPLATE = "skeletalMeshImport"
 BATCH_ANIM_IMPORT_TEMPLATE = "batchAnimImport"
 
+# Interchange 템플릿 이름 상수
+INTERCHANGE_ANIM_IMPORT_TEMPLATE = "interchangeAnimImport"
+INTERCHANGE_SKELETON_IMPORT_TEMPLATE = "interchangeSkeletonImport"
+INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = "interchangeSkeletalMeshImport"
+INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = "interchangeBatchAnimImport"
+
 # 템플릿 파일 매핑
 _TEMPLATE_FILE_MAP = {
+    # 레거시 템플릿
     ANIM_IMPORT_TEMPLATE: "animImportTemplate.py",
     SKELETON_IMPORT_TEMPLATE: "skeletonImportTemplate.py",
     SKELETAL_MESH_IMPORT_TEMPLATE: "skeletalMeshImportTemplate.py",
-    BATCH_ANIM_IMPORT_TEMPLATE: "batchAnimImportTemplate.py"
+    BATCH_ANIM_IMPORT_TEMPLATE: "batchAnimImportTemplate.py",
+    # Interchange 템플릿
+    INTERCHANGE_ANIM_IMPORT_TEMPLATE: "interchangeAnimImportTemplate.py",
+    INTERCHANGE_SKELETON_IMPORT_TEMPLATE: "interchangeSkeletonImportTemplate.py",
+    INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE: "interchangeSkeletalMeshImportTemplate.py",
+    INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE: "interchangeBatchAnimImportTemplate.py",
 }
 
 def get_template_path(template_name: str) -> str:
@@ -102,8 +114,14 @@ __all__ = [
     'get_all_template_paths',
     'get_available_templates',
     'validate_template_name',
+    # 레거시 템플릿 상수
     'ANIM_IMPORT_TEMPLATE',
     'SKELETON_IMPORT_TEMPLATE',
     'SKELETAL_MESH_IMPORT_TEMPLATE',
-    'BATCH_ANIM_IMPORT_TEMPLATE'
+    'BATCH_ANIM_IMPORT_TEMPLATE',
+    # Interchange 템플릿 상수
+    'INTERCHANGE_ANIM_IMPORT_TEMPLATE',
+    'INTERCHANGE_SKELETON_IMPORT_TEMPLATE',
+    'INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE',
+    'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE',
 ] 
