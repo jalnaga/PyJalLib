@@ -1,31 +1,35 @@
-# UE 5.7 Interchange Framework 기반 에셋 임포터 모듈
+# Active PRD
+
+## Title
+Interchange Framework 모듈 외부 의존성 제거 및 경로 입력 단순화
+
+---
 
 ## Background & Intent
 
-### 왜 이 기능을 만드는가?
+### 현재 상태
+- `inUnreal/` 모듈들이 `pyjallib.naming.Naming` 외부 패키지에 의존함
+- FBX 경로를 Content 경로로 변환하는 복잡한 로직 사용 (`fbxRootPrefix` → `contentRootPrefix` 치환)
+- Interchange Framework를 사용하지 않는 레거시 임포터 코드가 혼재
+- `baseImporter.py`가 추상 클래스로 복잡한 상속 구조를 강제함
 
-현재 PyJalLib의 UE5 임포터 모듈들(`skeletonImporter.py`, `skeletalMeshImporter.py`, `animationImporter.py`)은 레거시 FBX Importer(`unreal.AssetImportTask` + `unreal.FbxImportUI`)를 사용하고 있습니다.
+### 목표
+- `inUnreal/` 폴더의 모든 코드를 **파이썬 표준 라이브러리 + unreal 모듈**만 사용하도록 변경
+- 사용자가 **소스 FBX 절대 경로 + 목적지 Content 경로**를 직접 입력하는 단순한 인터페이스
+- `baseImporter.py` 제거 → `pathUtils.py` 유틸리티 모듈로 대체
+- Interchange Framework를 사용하지 않는 레거시 코드 제거
 
-UE 5.7에서는 Interchange Framework가 새로운 표준 에셋 교환 시스템으로 자리잡았으며, 다음과 같은 이점을 제공합니다:
-
-1. **확장 가능한 파이프라인 아키텍처**: 커스텀 파이프라인 에셋을 통한 임포트 설정 관리
-2. **더 세밀한 제어**: 파이프라인 속성을 통한 정밀한 임포트 옵션 제어
-3. **향후 호환성**: Epic의 공식 로드맵에서 Interchange가 표준으로 확정됨
-4. **동기 임포트 지원**: `import_asset()` 메서드를 통한 안정적인 동기 임포트
-
-### 의사 결정 기록
-
-| 결정 사항 | 선택 | 이유 |
-|-----------|------|------|
-| 모듈 추가 방식 | **기존 inUnreal 패키지에 추가** | 새로운 Interchange 기반 임포터로 완전 대체 |
-| BaseImporter 상속 vs 새 베이스 | **상속** | 경로 변환, 네이밍 시스템 재사용 |
-| 파이프라인 설정 방식 | **별도 설정 클래스** | 관심사 분리, 프리셋 시스템 확장성 |
+### 왜 이 작업이 필요한가?
+- 언리얼 에디터 환경에서는 외부 파이썬 패키지 설치가 어렵고 불안정함
+- 경로 변환 로직의 단순화로 유지보수성 향상
+- 불필요한 추상 클래스 상속 제거로 코드 명확성 향상
+- 불필요한 레거시 코드 제거로 코드베이스 정리
 
 ---
 
 ## Primary Manual
 
-`.ai_context/manuals/new_module_creation.md`
+`.ai_context/manuals/task_loop.md`
 
 ---
 
@@ -33,192 +37,191 @@ UE 5.7에서는 Interchange Framework가 새로운 표준 에셋 교환 시스�
 
 ### [Must-Have] (P0 - 필수)
 
-1. **`interchangeImporterBase.py`** - Interchange 베이스 클래스
-   - `BaseImporter` 상속
-   - `InterchangeManager` 래핑 (동기/비동기 임포트)
-   - `InterchangeSourceData` 생성 유틸리티
-   - `SoftObjectPath` 변환 유틸리티
-   - 비동기 콜백 인프라 (배치 임포트용)
-   - 에러 처리 및 로깅
+1. **새 유틸리티 모듈 생성: `pathUtils.py`**
+   - 절대 경로 → `/Game/...` Content 경로 변환
+   - 디렉토리 존재 확인/생성
+   - 파이썬 표준 라이브러리 + `unreal` 모듈만 사용
 
-2. **`interchangePipelineSettings.py`** - 파이프라인 설정 관리
-   - 프로젝트 표준 파이프라인 에셋 경로 관리
-   - Skeleton/SkeletalMesh/Animation 프리셋 설정
-   - `InterchangeGenericAssetsPipeline` 속성 설정 헬퍼
-   - 런타임 파이프라인 속성 오버라이드 지원
+2. **레거시 코드 제거**
+   - `baseImporter.py` 제거
+   - `importerSettings.py` 제거 (FBX UI 옵션 - Interchange에서 불필요)
+   - `skeletonImporter.py` 제거
+   - `skeletalMeshImporter.py` 제거
+   - `animationImporter.py` 제거
+   - 레거시 템플릿 제거:
+     - `skeletonImportTemplate.py`
+     - `skeletalMeshImportTemplate.py`
+     - `animImportTemplate.py`
+     - `batchAnimImportTemplate.py`
 
-3. **`interchangeSkeletonImporter.py`** - 스켈레톤 임포터
-   - 새 스켈레톤 생성 임포트
-   - 단일 임포트: `import_skeleton()` (동기)
-   - 배치 임포트: `import_skeletons()` (비동기 콜백 방식)
-   - `ImportedObjects` 필드 추가
+3. **Interchange 임포터 리팩토링**
+   - `InterchangeImporterBase` - baseImporter 상속 제거, pathUtils 사용
+   - `InterchangeSkeletonImporter` - 새 인터페이스 (경로 직접 입력)
+   - `InterchangeSkeletalMeshImporter` - 새 인터페이스 (스켈레톤 경로 직접 입력)
+   - `InterchangeAnimationImporter` - 새 인터페이스 (스켈레톤 경로 직접 입력)
 
-4. **`interchangeSkeletalMeshImporter.py`** - 스켈레탈 메시 임포터
-   - 기존 스켈레톤 참조 필수
-   - 단일 임포트: `import_skeletal_mesh()` (동기)
-   - 배치 임포트: `import_skeletal_meshes()` (비동기 콜백 방식)
-   - 메시 임포트 옵션 (노멀, 모프 타겟 등)
-   - 소스 컨트롤 체크인 통합
+4. **`interchangePipelineSettings.py` 정리**
+   - 외부 의존성 확인 및 제거 (있다면)
 
-5. **`interchangeAnimationImporter.py`** - 애니메이션 임포터
-   - 기존 스켈레톤 참조 필수
-   - 단일 임포트: `import_animation()` (동기)
-   - 배치 임포트: `import_animations()` (비동기 콜백 방식)
-   - 기존 `animationImporter.py`와 동일한 인터페이스
+5. **`inUnreal/__init__.py` 업데이트**
+   - 레거시 임포터 export 제거
+   - `pathUtils` export 추가
 
-6. **비동기 배치 임포트 인프라** (`interchangeImporterBase.py`에 포함)
-   - `on_asset_done` 콜백: 개별 에셋 임포트 완료 시 호출
-   - `on_assets_import_done` 콜백: 전체 배치 완료 시 호출
-   - 임포트 진행 상태 추적
-   - 에러 수집 및 보고
+6. **`templates/__init__.py` 업데이트**
+   - 레거시 템플릿 상수 및 매핑 제거
 
-7. **`__init__.py` 업데이트** - 공개 API 노출 (Interchange 임포터 추가)
+7. **`templateProcessor.py` 업데이트**
+   - 레거시 템플릿 관련 메서드 제거
+   - Interchange 템플릿만 지원
 
-8. **`templates/` Interchange 버전 업데이트**
-   - `interchangeAnimImportTemplate.py` - 애니메이션 임포트 템플릿
-   - `interchangeBatchAnimImportTemplate.py` - 배치 애니메이션 임포트 템플릿
-   - `interchangeSkeletonImportTemplate.py` - 스켈레톤 임포트 템플릿
-   - `interchangeSkeletalMeshImportTemplate.py` - 스켈레탈 메시 임포트 템플릿
-   - `templates/__init__.py` 업데이트 - 새 템플릿 상수 및 경로 추가
-   - `templateProcessor.py` 업데이트 - Interchange 템플릿 처리 메서드 추가
+8. **Interchange 템플릿 업데이트**
+   - 새로운 인터페이스에 맞게 템플릿 수정
 
 ### [Should-Have] (P1 - 권장)
 
-1. **FBX Interchange 활성화 헬퍼**
-   - 콘솔 명령 `Interchange.FeatureFlags.Import.FBX true` 자동 실행
-   - 활성화 상태 확인 메서드
-
-2. **파이프라인 에셋 런타임 수정**
-   - `InterchangeGenericAssetsPipeline` 속성 직접 수정 API
-   - 머티리얼/텍스처 임포트 비활성화 프리셋
+1. **로깅 시스템 단순화**
+   - `logger.py`의 UE5Logger를 더 가벼운 형태로 리팩토링 가능
+   - 현재도 표준 라이브러리만 사용하므로 우선순위 낮음
 
 ### [Nice-to-Have] (P2 - 부가)
 
-1. **리임포트 지원**
-   - `reimport_asset` 파라미터 활용
-   - 기존 에셋 업데이트 워크플로우
+1. 임포트 결과 형식 개선
+2. 에러 메시지 국제화
 
-### [Non-Goal] (범위 제외)
+### [Non-Goal] (Out of Scope)
 
-1. **레거시 임포터 삭제** - 기존 `skeletonImporter.py`, `skeletalMeshImporter.py`, `animationImporter.py`, `importerSettings.py` 유지
-2. **레거시 템플릿 삭제** - 기존 템플릿 파일들 유지
-3. **StaticMesh 임포터** - 이번 스코프 제외
-4. **머티리얼/텍스처 파이프라인 상세 구현** - 기본 비활성화로 처리
-5. **Scene 임포트** - 에셋 단위 임포트만 지원
-6. **파이프라인 에셋 파일 생성** - 런타임 설정만 지원 (에디터에서 미리 생성 필요)
+1. **UE5 API 변경** - `unreal` 모듈 의존성은 유지 (UE5 환경에서 필수)
+2. **새로운 임포트 타입 추가** - 기존 3가지 타입(Skeleton, SkeletalMesh, Animation)만 지원
+3. **소스 컨트롤 통합 제거** - 기존 체크아웃/체크인 로직 유지
+4. **`inUnreal/` 폴더 외부 코드 변경** - templateProcessor.py 외부의 의존성 구조는 변경하지 않음
 
 ---
 
-## Technical Constraints
+## Technical Decisions
 
-### UE 5.7 Interchange Python API 스펙
+### 아키텍처 변경: 상속 → 구성(Composition)
+
+**Before (상속 기반):**
+```
+baseImporter.py (ABC)
+    └── interchangeImporterBase.py
+            ├── interchangeSkeletonImporter.py
+            ├── interchangeSkeletalMeshImporter.py
+            └── interchangeAnimationImporter.py
+```
+
+**After (구성 기반):**
+```
+pathUtils.py (순수 유틸리티 함수)
+    ↑ 사용
+interchangeImporterBase.py (독립 클래스)
+    ├── interchangeSkeletonImporter.py
+    ├── interchangeSkeletalMeshImporter.py
+    └── interchangeAnimationImporter.py
+```
+
+### 새 파일 구조
+
+```
+inUnreal/
+├── pathUtils.py                    # NEW: 경로 변환 유틸리티
+├── interchangeImporterBase.py      # 리팩토링
+├── interchangeSkeletonImporter.py  # 리팩토링
+├── interchangeSkeletalMeshImporter.py  # 리팩토링
+├── interchangeAnimationImporter.py # 리팩토링
+├── interchangePipelineSettings.py  # 정리
+└── __init__.py                     # 업데이트
+```
+
+### `pathUtils.py` 설계
 
 ```python
-# Manager 획득
-interchange_manager = unreal.InterchangeManager.get_interchange_manager_scripted()
+"""경로 변환 유틸리티 - 파이썬 표준 라이브러리 + unreal만 사용"""
+from pathlib import Path
+import unreal
 
-# SourceData 생성
-source_data = unreal.InterchangeManager.create_source_data(file_name)
+def absolute_path_to_content_path(inAbsolutePath: str) -> str:
+    """절대 경로를 /Game/... Content 경로로 변환"""
+    pass
 
-# 동기 임포트
-imported_objects = interchange_manager.import_asset(
-    content_path,
-    source_data,
-    import_asset_parameters
+def ensure_directory_exists(inContentPath: str) -> bool:
+    """Content 경로의 디렉토리가 존재하는지 확인하고 생성"""
+    pass
+
+def checkout_or_add_file(inContentPath: str) -> bool:
+    """소스 컨트롤 체크아웃"""
+    pass
+```
+
+### 인터페이스 변경
+
+**Before:**
+```python
+importer = InterchangeSkeletonImporter(
+    inContentRootPrefix="D:/UE5/Content/Characters",
+    inFbxRootPrefix="D:/Export/FBX"
+)
+result = importer.import_skeleton("D:/Export/FBX/Hero/SK_Hero.fbx")
+```
+
+**After:**
+```python
+importer = InterchangeSkeletonImporter()
+result = importer.import_skeleton(
+    inFbxPath="D:/Export/FBX/Hero/SK_Hero.fbx",
+    inDestinationPath="/Game/Characters/Hero",
+    inAssetName="SK_Hero"  # 선택적
 )
 ```
 
-### 핵심 구현 포인트
-
-1. **SoftObjectPath 변환 필수**
+**SkeletalMesh/Animation (스켈레톤 경로 직접 입력):**
 ```python
-# 올바른 방식
-soft_path = unreal.SoftObjectPath(pipeline_asset_path)
-import_params.override_pipelines = [soft_path]
-```
-
-2. **기존 인터페이스 스타일 유지**
-```python
-# 메서드명 및 파라미터 네이밍 컨벤션 유지
-def import_skeleton(self, inFbxFile: str, inAssetName: str = None, inDescription: str = None) -> dict
-def import_skeletal_mesh(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None) -> dict
-def import_animation(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None) -> dict
-def import_animations(self, inFbxFiles: list[str], inFbxSkeletonPaths: list[str], inAssetNames: list[str] = None, inDescription: str = None)
-```
-
-3. **반환 형식 (단일 임포트)**
-```python
-{
-    "SourceFile": str,
-    "Path": str,
-    "Name": str,
-    "Type": str,
-    "Success": bool,
-    "ImportedObjects": List[Object]  # Interchange 버전 추가
-}
-```
-
-4. **비동기 배치 임포트 콜백**
-```python
-# ImportAssetParameters 콜백 설정
-import_params.on_asset_done = self._on_single_asset_done      # 개별 완료
-import_params.on_assets_import_done = self._on_batch_complete  # 전체 완료
-
-# 콜백 시그니처 (UE5 API)
-def on_asset_done(obj: Object) -> None
-def on_assets_import_done(objects: Array[Object]) -> None
-```
-
-5. **배치 임포트 반환 형식**
-```python
-{
-    "TotalCount": int,
-    "SuccessCount": int,
-    "FailedCount": int,
-    "Results": List[dict],  # 개별 결과 딕셔너리 리스트
-    "Errors": List[str]     # 에러 메시지 리스트
-}
+importer = InterchangeSkeletalMeshImporter()
+result = importer.import_skeletal_mesh(
+    inFbxPath="D:/Export/FBX/Hero/SKM_Hero.fbx",
+    inDestinationPath="/Game/Characters/Hero",
+    inSkeletonPath="/Game/Characters/Hero/SK_Hero",  # 직접 입력
+    inAssetName="SKM_Hero"
+)
 ```
 
 ---
 
-## File Structure
+## File Change Summary
 
-```
-src/pyjallib/ue5/
-├── inUnreal/
-│   ├── __init__.py                         # 업데이트: Interchange 모듈 노출 추가
-│   ├── baseImporter.py                     # 기존 유지 (경로 변환 로직 재사용)
-│   ├── importerSettings.py                 # 기존 유지 (레거시)
-│   ├── skeletonImporter.py                 # 기존 유지 (레거시)
-│   ├── skeletalMeshImporter.py             # 기존 유지 (레거시)
-│   ├── animationImporter.py                # 기존 유지 (레거시)
-│   ├── interchangeImporterBase.py          # [신규] Interchange 베이스 클래스
-│   ├── interchangePipelineSettings.py      # [신규] 파이프라인 설정 관리
-│   ├── interchangeSkeletonImporter.py      # [신규] 스켈레톤 임포터
-│   ├── interchangeSkeletalMeshImporter.py  # [신규] 스켈레탈 메시 임포터
-│   └── interchangeAnimationImporter.py     # [신규] 애니메이션 임포터
-│
-├── templates/
-│   ├── __init__.py                              # 업데이트: Interchange 템플릿 상수 추가
-│   ├── animImportTemplate.py                    # 기존 유지 (레거시)
-│   ├── batchAnimImportTemplate.py               # 기존 유지 (레거시)
-│   ├── skeletonImportTemplate.py                # 기존 유지 (레거시)
-│   ├── skeletalMeshImportTemplate.py            # 기존 유지 (레거시)
-│   ├── interchangeAnimImportTemplate.py         # [신규]
-│   ├── interchangeBatchAnimImportTemplate.py    # [신규]
-│   ├── interchangeSkeletonImportTemplate.py     # [신규]
-│   └── interchangeSkeletalMeshImportTemplate.py # [신규]
-│
-└── templateProcessor.py                    # 업데이트: Interchange 템플릿 처리 메서드 추가
-```
+| 파일 | 변경 내용 |
+|------|----------|
+| `inUnreal/pathUtils.py` | **신규 생성** - 경로 변환 유틸리티 |
+| `inUnreal/baseImporter.py` | **삭제** |
+| `inUnreal/importerSettings.py` | **삭제** |
+| `inUnreal/skeletonImporter.py` | **삭제** |
+| `inUnreal/skeletalMeshImporter.py` | **삭제** |
+| `inUnreal/animationImporter.py` | **삭제** |
+| `inUnreal/interchangeImporterBase.py` | 리팩토링 (상속 제거, pathUtils 사용) |
+| `inUnreal/interchangeSkeletonImporter.py` | 리팩토링 (새 인터페이스) |
+| `inUnreal/interchangeSkeletalMeshImporter.py` | 리팩토링 (새 인터페이스) |
+| `inUnreal/interchangeAnimationImporter.py` | 리팩토링 (새 인터페이스) |
+| `inUnreal/interchangePipelineSettings.py` | 정리 (외부 의존성 제거) |
+| `inUnreal/__init__.py` | 업데이트 (레거시 제거, pathUtils 추가) |
+| `templates/skeletonImportTemplate.py` | **삭제** |
+| `templates/skeletalMeshImportTemplate.py` | **삭제** |
+| `templates/animImportTemplate.py` | **삭제** |
+| `templates/batchAnimImportTemplate.py` | **삭제** |
+| `templates/interchangeSkeletonImportTemplate.py` | 업데이트 (새 인터페이스) |
+| `templates/interchangeSkeletalMeshImportTemplate.py` | 업데이트 (새 인터페이스) |
+| `templates/interchangeAnimImportTemplate.py` | 업데이트 (새 인터페이스) |
+| `templates/interchangeBatchAnimImportTemplate.py` | 업데이트 (새 인터페이스) |
+| `templates/__init__.py` | 레거시 상수 제거 |
+| `templateProcessor.py` | 레거시 메서드 제거 |
 
 ---
 
-## Success Criteria
+## Completion Status
 
-1. 모든 신규 임포터가 기존 메서드명 및 `inCamelCase` 파라미터 컨벤션 유지
-2. 내부적으로 UE5 `InterchangeManager.import_asset()` API를 사용하여 동기 임포트 수행
-3. 기존 `baseImporter.py`의 경로 변환 로직 정상 재사용
-4. 소스 컨트롤 체크아웃/체크인 정상 동작
-5. 린트 통과 (`uv run ruff check .`)
+**완료일**: 2026-01-20
+
+**결과 요약**:
+- 모든 P0 필수 항목 완료 (12/12 태스크)
+- `inUnreal/` 폴더의 외부 의존성 완전 제거
+- 새로운 단순화된 인터페이스 적용
+- 레거시 코드 및 템플릿 제거
