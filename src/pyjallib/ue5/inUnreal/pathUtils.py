@@ -93,7 +93,8 @@ def ensure_directory_exists(inContentPath: str) -> bool:
     if directoryPath in ("/Game", "/Engine"):
         return True
     
-    if unreal.Paths.directory_exists(directoryPath):
+    # Content 경로에 대해서는 EditorAssetLibrary 사용
+    if unreal.EditorAssetLibrary.does_directory_exist(directoryPath):
         return True
     
     # 디렉토리 생성

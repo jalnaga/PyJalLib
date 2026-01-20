@@ -21,14 +21,16 @@
 
 ### Phase 2: Interchange 임포터 리팩토링
 
-- [ ] **Task 2.1**: `interchangeImporterBase.py` 리팩토링
+- [x] **Task 2.1**: `interchangeImporterBase.py` 리팩토링
   - 파일: `inUnreal/interchangeImporterBase.py`
   - 내용: `baseImporter` 상속 제거, `pathUtils` 사용, 새 인터페이스 적용
   - 의존성: 파이썬 표준 라이브러리 + unreal + pathUtils만 사용
+  - 추가: `pathUtils.ensure_directory_exists`에서 `EditorAssetLibrary.does_directory_exist` 사용하도록 수정
 
-- [ ] **Task 2.2**: `interchangeSkeletonImporter.py` 리팩토링
+- [x] **Task 2.2**: `interchangeSkeletonImporter.py` 리팩토링
   - 파일: `inUnreal/interchangeSkeletonImporter.py`
   - 내용: 새 인터페이스 (`inFbxPath`, `inDestinationPath`, `inAssetName`)
+  - 완료: 외부 의존성 제거 (ue5_logger, self.naming), pathUtils 사용, 새 인터페이스 적용
 
 - [ ] **Task 2.3**: `interchangeSkeletalMeshImporter.py` 리팩토링
   - 파일: `inUnreal/interchangeSkeletalMeshImporter.py`
@@ -82,5 +84,5 @@
 ## Progress Summary
 
 - **Total Tasks**: 12
-- **Completed**: 2
-- **Remaining**: 10
+- **Completed**: 4
+- **Remaining**: 8

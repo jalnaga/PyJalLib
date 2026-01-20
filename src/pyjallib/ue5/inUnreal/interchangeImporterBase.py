@@ -6,36 +6,35 @@ UE5 Interchange 베이스 임포터 모듈
 
 이 모듈은 UE 5.7 Interchange Framework를 사용하여 에셋을 임포트하는 
 베이스 클래스를 제공합니다.
+
+의존성: 파이썬 표준 라이브러리 + unreal + pathUtils만 사용
 """
 
+import configparser
 from abc import abstractmethod
+from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
 
 import unreal
 
-from .baseImporter import BaseImporter
-from ..logger import ue5_logger
+try:
+    from . import pathUtils
+except ImportError:
+    import pathUtils
 
 
-class InterchangeImporterBase(BaseImporter):
+class InterchangeImporterBase:
     """
     Interchange Framework 기반 임포터의 베이스 클래스.
     
-    BaseImporter를 상속하여 경로 변환 로직을 재사용하고,
     Interchange Manager 래핑 및 동기/비동기 임포트 인프라를 제공합니다.
+    외부 패키지 의존성 없이 파이썬 표준 라이브러리와 unreal 모듈만 사용합니다.
     """
     
-    def __init__(self, inContentRootPrefix: str, inFbxRootPrefix: str, inPresetName: str):
+    def __init__(self):
         """
         InterchangeImporterBase 초기화.
-        
-        Args:
-            inContentRootPrefix: UE5 Content 디렉토리의 루트 경로
-            inFbxRootPrefix: FBX 파일들이 위치한 루트 경로
-            inPresetName: 프리셋 이름 (Skeleton, SkeletalMesh, Animation 등)
         """
-        super().__init__(inContentRootPrefix, inFbxRootPrefix, inPresetName)
-        
         # 배치 임포트 상태 추적
         self._batchImportResults: List[Dict[str, Any]] = []
         self._batchImportErrors: List[str] = []
@@ -46,7 +45,37 @@ class InterchangeImporterBase(BaseImporter):
         self._userOnAssetDone: Optional[Callable] = None
         self._userOnBatchComplete: Optional[Callable] = None
         
-        ue5_logger.debug(f"InterchangeImporterBase 초기화: Preset={inPresetName}")
+        unreal.log(f"[InterchangeImporterBase] 초기화 완료: {self.asset_type}")
+    
+    @property
+    @abstractmethod
+    def asset_type(self) -> str:
+        """에셋 타입을 반환하는 추상 프로퍼티 - 하위 클래스에서 구현 필수"""
+        pass
+    
+    # ========================================================================
+    # 개발 모드 확인
+    # ========================================================================
+    
+    def is_development_mode(self) -> bool:
+        """
+        개발 모드 여부를 확인합니다.
+        
+        Returns:
+            개발 모드이면 True, 아니면 False
+        """
+        homeDir = Path.home()
+        documentsFolder = homeDir / "Documents"
+        userIniFile = documentsFolder / "ORV" / "ORV_Setting.ini"
+        
+        config = configparser.ConfigParser()
+        if userIniFile.exists():
+            config.read(userIniFile, encoding='utf-8')
+            try:
+                return config.get("Development", "mode").lower() == "true"
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                return False
+        return False
     
     # ========================================================================
     # Interchange Manager 래핑 메서드
@@ -72,7 +101,7 @@ class InterchangeImporterBase(BaseImporter):
             InterchangeSourceData 인스턴스
         """
         sourceData = unreal.InterchangeManager.create_source_data(inFilePath)
-        ue5_logger.debug(f"SourceData 생성: {inFilePath}")
+        unreal.log(f"[InterchangeImporterBase] SourceData 생성: {inFilePath}")
         return sourceData
     
     def _create_soft_object_path(self, inAssetPath: str) -> unreal.SoftObjectPath:
@@ -86,7 +115,6 @@ class InterchangeImporterBase(BaseImporter):
             SoftObjectPath 인스턴스
         """
         softPath = unreal.SoftObjectPath(inAssetPath)
-        ue5_logger.debug(f"SoftObjectPath 생성: {inAssetPath}")
         return softPath
     
     # ========================================================================
@@ -117,12 +145,12 @@ class InterchangeImporterBase(BaseImporter):
         if inOverridePipelines:
             softPaths = [self._create_soft_object_path(path) for path in inOverridePipelines]
             importParams.override_pipelines = softPaths
-            ue5_logger.debug(f"파이프라인 오버라이드 설정: {inOverridePipelines}")
+            unreal.log(f"[InterchangeImporterBase] 파이프라인 오버라이드 설정: {inOverridePipelines}")
         
         # 리임포트 에셋 설정
         if inReimportAsset is not None:
             importParams.reimport_asset = inReimportAsset
-            ue5_logger.debug(f"리임포트 에셋 설정: {inReimportAsset.get_name()}")
+            unreal.log(f"[InterchangeImporterBase] 리임포트 에셋 설정: {inReimportAsset.get_name()}")
         
         return importParams
     
@@ -147,7 +175,7 @@ class InterchangeImporterBase(BaseImporter):
         Returns:
             임포트된 오브젝트 리스트
         """
-        ue5_logger.info(f"Interchange 동기 임포트 시작: {inContentPath}")
+        unreal.log(f"[InterchangeImporterBase] Interchange 동기 임포트 시작: {inContentPath}")
         
         interchangeManager = self._get_interchange_manager()
         importedObjects = interchangeManager.import_asset(
@@ -156,7 +184,7 @@ class InterchangeImporterBase(BaseImporter):
             inImportParams
         )
         
-        ue5_logger.info(f"Interchange 임포트 완료: {len(importedObjects)}개 오브젝트")
+        unreal.log(f"[InterchangeImporterBase] Interchange 임포트 완료: {len(importedObjects)}개 오브젝트")
         return list(importedObjects)
     
     # ========================================================================
@@ -184,7 +212,7 @@ class InterchangeImporterBase(BaseImporter):
         if inObject is not None:
             objectName = inObject.get_name()
             objectPath = inObject.get_path_name()
-            ue5_logger.debug(f"개별 에셋 임포트 완료: {objectName}")
+            unreal.log(f"[InterchangeImporterBase] 개별 에셋 임포트 완료: {objectName}")
             
             result = {
                 "Name": objectName,
@@ -194,7 +222,7 @@ class InterchangeImporterBase(BaseImporter):
             }
             self._batchImportResults.append(result)
         else:
-            ue5_logger.warning("개별 에셋 임포트 완료: None 오브젝트")
+            unreal.log_warning("[InterchangeImporterBase] 개별 에셋 임포트 완료: None 오브젝트")
             self._batchImportErrors.append("임포트된 오브젝트가 None입니다")
         
         # 사용자 콜백 호출
@@ -202,7 +230,7 @@ class InterchangeImporterBase(BaseImporter):
             try:
                 self._userOnAssetDone(inObject)
             except Exception as e:
-                ue5_logger.error(f"사용자 콜백 실행 중 에러: {e}")
+                unreal.log_error(f"[InterchangeImporterBase] 사용자 콜백 실행 중 에러: {e}")
     
     def _on_batch_complete(self, inObjects: List[unreal.Object]):
         """
@@ -212,14 +240,14 @@ class InterchangeImporterBase(BaseImporter):
             inObjects: 임포트된 모든 오브젝트 리스트
         """
         totalCount = len(inObjects) if inObjects else 0
-        ue5_logger.info(f"배치 임포트 완료: 총 {totalCount}개 오브젝트")
+        unreal.log(f"[InterchangeImporterBase] 배치 임포트 완료: 총 {totalCount}개 오브젝트")
         
         # 사용자 콜백 호출
         if self._userOnBatchComplete is not None:
             try:
                 self._userOnBatchComplete(inObjects)
             except Exception as e:
-                ue5_logger.error(f"사용자 배치 완료 콜백 실행 중 에러: {e}")
+                unreal.log_error(f"[InterchangeImporterBase] 사용자 배치 완료 콜백 실행 중 에러: {e}")
     
     def _execute_batch_import_async(
         self,
@@ -248,7 +276,7 @@ class InterchangeImporterBase(BaseImporter):
         inImportParams.on_asset_done = self._on_single_asset_done
         inImportParams.on_assets_import_done = self._on_batch_complete
         
-        ue5_logger.info(f"비동기 배치 임포트 시작: {len(inSourceDataList)}개 파일")
+        unreal.log(f"[InterchangeImporterBase] 비동기 배치 임포트 시작: {len(inSourceDataList)}개 파일")
         
         interchangeManager = self._get_interchange_manager()
         
@@ -283,8 +311,36 @@ class InterchangeImporterBase(BaseImporter):
         }
     
     # ========================================================================
-    # 결과 딕셔너리 생성 (Interchange 버전)
+    # 결과 딕셔너리 생성
     # ========================================================================
+    
+    def _create_result_dict(
+        self, 
+        inSourceFile: str, 
+        inPath: str, 
+        inName: str, 
+        inSuccess: bool = True
+    ) -> Dict[str, Any]:
+        """
+        결과 딕셔너리를 생성합니다.
+        
+        Args:
+            inSourceFile: 소스 파일 경로
+            inPath: 임포트 대상 경로
+            inName: 에셋 이름
+            inSuccess: 성공 여부
+            
+        Returns:
+            결과 딕셔너리
+        """
+        result = {
+            "SourceFile": inSourceFile,
+            "Path": inPath,
+            "Name": inName,
+            "Type": self.asset_type,
+            "Success": inSuccess
+        }
+        return result
     
     def _create_interchange_result_dict(
         self, 
@@ -309,32 +365,96 @@ class InterchangeImporterBase(BaseImporter):
         """
         result = self._create_result_dict(inSourceFile, inPath, inName, inSuccess)
         result["ImportedObjects"] = inImportedObjects or []
-        ue5_logger.debug(f"Interchange 결과 딕셔너리 생성: {result}")
         return result
     
     # ========================================================================
-    # 추상 메서드 오버라이드 (BaseImporter 호환)
+    # 에셋 의존성 확인 (소스 컨트롤용)
     # ========================================================================
     
-    def create_import_task(self, inFbxFile: str, inDestinationPath: str):
+    def get_dirty_deps(self, inAssetPath: str) -> List[str]:
         """
-        레거시 호환을 위한 임포트 태스크 생성 메서드.
-        
-        Interchange에서는 사용하지 않지만, BaseImporter의 추상 메서드이므로 구현합니다.
-        실제 Interchange 임포트는 _execute_import()를 사용합니다.
+        에셋의 더티 종속성을 확인하고 저장합니다.
         
         Args:
-            inFbxFile: FBX 파일 경로
-            inDestinationPath: 대상 경로
+            inAssetPath: 에셋 경로
             
         Returns:
-            None (Interchange에서는 사용하지 않음)
+            저장된 종속성 경로 리스트
         """
-        ue5_logger.warning("create_import_task는 Interchange에서 사용하지 않습니다. _execute_import()를 사용하세요.")
-        return None
+        returnList = []
+        
+        assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
+        assetData = unreal.EditorAssetLibrary.find_asset_data(inAssetPath)
+        
+        unreal.log(f"[InterchangeImporterBase] 에셋 의존성 확인: {assetData.asset_name}")
+        
+        depPackages = assetRegistry.get_dependencies(
+            assetData.package_name,  
+            unreal.AssetRegistryDependencyOptions(
+                include_soft_package_references=False,
+                include_hard_package_references=True,
+                include_searchable_names=False,
+                include_soft_management_references=False,
+                include_hard_management_references=False
+            )
+        )
+        
+        if depPackages is not None:
+            for dep in depPackages:
+                depPathStart = str(dep).split('/')[1]
+                assetPathStart = str(assetData.package_name).split('/')[1]
+                if depPathStart == assetPathStart:
+                    if unreal.EditorAssetLibrary.save_asset(dep, only_if_is_dirty=True):
+                        returnList.append(dep)
+        
+        return returnList
     
-    @property
-    @abstractmethod
-    def asset_type(self) -> str:
-        """에셋 타입을 반환하는 추상 프로퍼티 - 하위 클래스에서 구현 필수"""
-        pass
+    # ========================================================================
+    # 임포트 경로 준비 (pathUtils 사용)
+    # ========================================================================
+    
+    def _prepare_import_directory(self, inDestinationPath: str) -> bool:
+        """
+        임포트 대상 디렉토리를 준비합니다.
+        
+        Args:
+            inDestinationPath: /Game/... 형식의 Content 경로
+            
+        Returns:
+            준비 성공 여부
+        """
+        if not pathUtils.validate_content_path(inDestinationPath):
+            unreal.log_error(f"[InterchangeImporterBase] 유효하지 않은 Content 경로: {inDestinationPath}")
+            return False
+        
+        if not pathUtils.ensure_directory_exists(inDestinationPath):
+            unreal.log_error(f"[InterchangeImporterBase] 디렉토리 생성 실패: {inDestinationPath}")
+            return False
+        
+        return True
+    
+    def _prepare_asset_for_import(
+        self, 
+        inDestinationPath: str, 
+        inAssetName: str
+    ) -> Optional[str]:
+        """
+        임포트할 에셋 경로를 준비하고, 기존 파일이 있으면 체크아웃합니다.
+        
+        Args:
+            inDestinationPath: /Game/... 형식의 Content 디렉토리 경로
+            inAssetName: 에셋 이름
+            
+        Returns:
+            에셋 전체 경로 (/Game/Path/AssetName), 실패 시 None
+        """
+        if not self._prepare_import_directory(inDestinationPath):
+            return None
+        
+        assetFullPath = f"{inDestinationPath}/{inAssetName}"
+        
+        # 기존 파일이 있으면 체크아웃
+        pathUtils.checkout_or_add_file(assetFullPath)
+        
+        unreal.log(f"[InterchangeImporterBase] 임포트 준비 완료: {assetFullPath}")
+        return assetFullPath
