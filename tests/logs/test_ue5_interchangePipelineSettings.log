@@ -1,0 +1,22 @@
+2026-01-20 20:20:27 - INFO - ============================================================
+2026-01-20 20:20:27 - INFO - === interchangePipelineSettings 모듈 테스트 시작 ===
+2026-01-20 20:20:27 - INFO - ============================================================
+2026-01-20 20:20:27 - INFO - === TEST: initialization ===
+2026-01-20 20:20:27 - INFO - SUCCESS: initialization - 기본 초기화 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: initialization - 프리셋 이름 초기화 성공
+2026-01-20 20:20:27 - INFO - === TEST: get_pipeline_path ===
+2026-01-20 20:20:27 - INFO - SUCCESS: get_pipeline_path - Skeleton 경로: /Interchange/Pipelines/DefaultGenericPipeline
+2026-01-20 20:20:27 - INFO - SUCCESS: get_pipeline_path - Animation 경로: /Interchange/Pipelines/DefaultAnimationPipeline
+2026-01-20 20:20:27 - INFO - SUCCESS: get_pipeline_path - 커스텀 경로: /Game/CustomPipeline
+2026-01-20 20:20:27 - INFO - === TEST: get_settings ===
+2026-01-20 20:20:27 - INFO - SUCCESS: get_settings - Skeleton 설정 반환 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: get_settings - SkeletalMesh 설정 반환 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: get_settings - Animation 설정 반환 성공
+2026-01-20 20:20:27 - INFO - === TEST: property_overrides ===
+2026-01-20 20:20:27 - INFO - SUCCESS: property_overrides - 단일 속성 오버라이드 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: property_overrides - 복수 속성 오버라이드 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: property_overrides - 속성 오버라이드 초기화 성공
+2026-01-20 20:20:27 - INFO - SUCCESS: property_overrides - 설정에 오버라이드 적용 성공
+2026-01-20 20:20:27 - INFO - ============================================================
+2026-01-20 20:20:27 - INFO - === 모든 테스트 완료 ===
+2026-01-20 20:20:27 - INFO - ============================================================

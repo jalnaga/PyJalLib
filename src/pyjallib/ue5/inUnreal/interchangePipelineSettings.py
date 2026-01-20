@@ -13,8 +13,6 @@ from typing import Dict, Any, Optional, List
 
 import unreal
 
-from ..logger import ue5_logger
-
 
 class InterchangePipelinePreset(Enum):
     """Interchange 파이프라인 프리셋 타입"""
@@ -58,7 +56,7 @@ class InterchangePipelineSettings:
         self._customPipelinePaths: Dict[InterchangePipelinePreset, str] = {}
         self._propertyOverrides: Dict[str, Any] = {}
         
-        ue5_logger.debug(f"InterchangePipelineSettings 초기화: Preset={inPresetName}")
+        # Debug 로그는 생략 (unreal.log는 항상 출력되므로)
     
     # ========================================================================
     # 파이프라인 경로 관리
@@ -73,7 +71,6 @@ class InterchangePipelineSettings:
             inPath: 파이프라인 에셋 경로
         """
         self._customPipelinePaths[inPreset] = inPath
-        ue5_logger.debug(f"파이프라인 경로 설정: {inPreset.value} -> {inPath}")
     
     def get_pipeline_path(self, inPreset: InterchangePipelinePreset = None) -> str:
         """
@@ -199,7 +196,7 @@ class InterchangePipelineSettings:
             inPresetName = self.presetName
         
         if inPresetName is None:
-            ue5_logger.warning("프리셋 이름이 지정되지 않았습니다. 기본 Skeleton 설정 반환")
+            unreal.log_warning("[InterchangePipelineSettings] 프리셋 이름이 지정되지 않았습니다. 기본 Skeleton 설정 반환")
             return self.get_skeleton_import_settings()
         
         presetLower = inPresetName.lower()
@@ -210,7 +207,7 @@ class InterchangePipelineSettings:
         elif presetLower == "animation":
             return self.get_animation_import_settings()
         else:
-            ue5_logger.warning(f"알 수 없는 프리셋: {inPresetName}. 기본 Skeleton 설정 반환")
+            unreal.log_warning(f"[InterchangePipelineSettings] 알 수 없는 프리셋: {inPresetName}. 기본 Skeleton 설정 반환")
             return self.get_skeleton_import_settings()
     
     # ========================================================================
@@ -226,7 +223,6 @@ class InterchangePipelineSettings:
             inValue: 속성 값
         """
         self._propertyOverrides[inPropertyName] = inValue
-        ue5_logger.debug(f"속성 오버라이드 설정: {inPropertyName} = {inValue}")
     
     def set_property_overrides(self, inOverrides: Dict[str, Any]):
         """
@@ -236,12 +232,10 @@ class InterchangePipelineSettings:
             inOverrides: 속성 이름-값 딕셔너리
         """
         self._propertyOverrides.update(inOverrides)
-        ue5_logger.debug(f"속성 오버라이드 일괄 설정: {inOverrides}")
     
     def clear_property_overrides(self):
         """모든 속성 오버라이드를 초기화합니다."""
         self._propertyOverrides.clear()
-        ue5_logger.debug("속성 오버라이드 초기화됨")
     
     def get_property_overrides(self) -> Dict[str, Any]:
         """현재 설정된 속성 오버라이드를 반환합니다."""
@@ -263,9 +257,7 @@ class InterchangePipelineSettings:
         """
         asset = unreal.EditorAssetLibrary.load_asset(inPipelinePath)
         if asset is None:
-            ue5_logger.warning(f"파이프라인 에셋 로드 실패: {inPipelinePath}")
-        else:
-            ue5_logger.debug(f"파이프라인 에셋 로드 성공: {inPipelinePath}")
+            unreal.log_warning(f"[InterchangePipelineSettings] 파이프라인 에셋 로드 실패: {inPipelinePath}")
         return asset
     
     def apply_settings_to_pipeline(
@@ -284,7 +276,7 @@ class InterchangePipelineSettings:
             성공 여부
         """
         if inPipeline is None:
-            ue5_logger.error("파이프라인 에셋이 None입니다")
+            unreal.log_error("[InterchangePipelineSettings] 파이프라인 에셋이 None입니다")
             return False
         
         try:
@@ -292,10 +284,9 @@ class InterchangePipelineSettings:
                 if hasattr(inPipeline, 'set_editor_property'):
                     try:
                         inPipeline.set_editor_property(propName, propValue)
-                        ue5_logger.debug(f"파이프라인 속성 설정: {propName} = {propValue}")
                     except Exception as e:
-                        ue5_logger.warning(f"파이프라인 속성 설정 실패: {propName} = {propValue}, 에러: {e}")
+                        unreal.log_warning(f"[InterchangePipelineSettings] 파이프라인 속성 설정 실패: {propName} = {propValue}, 에러: {e}")
             return True
         except Exception as e:
-            ue5_logger.error(f"파이프라인 설정 적용 중 에러: {e}")
+            unreal.log_error(f"[InterchangePipelineSettings] 파이프라인 설정 적용 중 에러: {e}")
             return False
