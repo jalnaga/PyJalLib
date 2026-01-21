@@ -59,7 +59,7 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
         스켈레톤 경로를 검증하고 스켈레톤 에셋을 반환합니다.
         
         Args:
-            inSkeletonPath: /Game/... 형식의 스켈레톤 Content 경로
+            inSkeletonPath: /Game/... 형식의 스켈레톤 Content 경로 (정규화된 경로)
             
         Returns:
             스켈레톤 에셋
@@ -69,12 +69,6 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
         """
         if inSkeletonPath is None:
             error_msg = "애니메이션 임포트에는 스켈레톤이 필수입니다"
-            unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
-            raise ValueError(error_msg)
-        
-        # Content 경로 검증
-        if not pathUtils.validate_content_path(inSkeletonPath):
-            error_msg = f"스켈레톤 경로 형식이 유효하지 않음: {inSkeletonPath}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
         
@@ -163,11 +157,21 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
         
-        # Content 경로 검증
-        if not pathUtils.validate_content_path(inDestinationPath):
-            error_msg = f"Content 경로 검증 실패: {inDestinationPath}"
+        # Content 경로 정규화 (절대 경로 → /Game/... 자동 변환)
+        normalizedDestPath = pathUtils.normalize_content_path(inDestinationPath)
+        if normalizedDestPath is None:
+            error_msg = f"Content 경로 변환 실패: {inDestinationPath}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
+        inDestinationPath = normalizedDestPath
+        
+        # 스켈레톤 경로 정규화
+        normalizedSkeletonPath = pathUtils.normalize_content_path(inSkeletonPath)
+        if normalizedSkeletonPath is None:
+            error_msg = f"스켈레톤 경로 변환 실패: {inSkeletonPath}"
+            unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+        inSkeletonPath = normalizedSkeletonPath
         
         # 스켈레톤 검증
         skeleton = self._validate_skeleton(inSkeletonPath)

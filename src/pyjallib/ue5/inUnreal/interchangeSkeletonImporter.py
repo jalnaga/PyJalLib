@@ -88,11 +88,13 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
             unreal.log_error(f"[InterchangeSkeletonImporter] {error_msg}")
             raise ValueError(error_msg)
         
-        # Content 경로 검증
-        if not pathUtils.validate_content_path(inDestinationPath):
-            error_msg = f"Content 경로 검증 실패: {inDestinationPath}"
+        # Content 경로 정규화 (절대 경로 → /Game/... 자동 변환)
+        normalizedDestPath = pathUtils.normalize_content_path(inDestinationPath)
+        if normalizedDestPath is None:
+            error_msg = f"Content 경로 변환 실패: {inDestinationPath}"
             unreal.log_error(f"[InterchangeSkeletonImporter] {error_msg}")
             raise ValueError(error_msg)
+        inDestinationPath = normalizedDestPath
         
         # 에셋 이름 결정 (제공되지 않으면 FBX 파일명에서 생성)
         if inAssetName is None:

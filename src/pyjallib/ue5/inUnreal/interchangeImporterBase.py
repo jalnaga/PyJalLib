@@ -418,15 +418,11 @@ class InterchangeImporterBase:
         임포트 대상 디렉토리를 준비합니다.
         
         Args:
-            inDestinationPath: /Game/... 형식의 Content 경로
+            inDestinationPath: /Game/... 형식의 Content 경로 (정규화된 경로)
             
         Returns:
             준비 성공 여부
         """
-        if not pathUtils.validate_content_path(inDestinationPath):
-            unreal.log_error(f"[InterchangeImporterBase] 유효하지 않은 Content 경로: {inDestinationPath}")
-            return False
-        
         if not pathUtils.ensure_directory_exists(inDestinationPath):
             unreal.log_error(f"[InterchangeImporterBase] 디렉토리 생성 실패: {inDestinationPath}")
             return False

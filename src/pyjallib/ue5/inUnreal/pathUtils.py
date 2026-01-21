@@ -227,3 +227,54 @@ def validate_content_path(inContentPath: str) -> bool:
         return False
     
     return True
+
+
+def is_content_path(inPath: str) -> bool:
+    """
+    주어진 경로가 Content 경로 형식(/Game/... 또는 /Engine/...)인지 확인합니다.
+    
+    Args:
+        inPath: 확인할 경로
+        
+    Returns:
+        Content 경로 형식이면 True, 아니면 False
+    """
+    if not inPath:
+        return False
+    
+    return inPath.startswith('/Game/') or inPath.startswith('/Engine/')
+
+
+def normalize_content_path(inPath: str) -> Optional[str]:
+    """
+    절대 경로 또는 Content 경로를 /Game/... 형식으로 정규화합니다.
+    
+    이미 Content 경로 형식이면 그대로 반환하고,
+    절대 경로면 Content 경로로 변환을 시도합니다.
+    
+    Args:
+        inPath: 절대 경로 또는 /Game/... 형식의 Content 경로
+        
+    Returns:
+        /Game/... 형식의 Content 경로. 변환 실패 시 None 반환.
+        
+    Example:
+        >>> normalize_content_path("/Game/Characters/Hero")
+        "/Game/Characters/Hero"
+        >>> normalize_content_path("D:/UE5Project/Content/Characters/Hero")
+        "/Game/Characters/Hero"
+    """
+    if not inPath:
+        return None
+    
+    # 이미 Content 경로 형식이면 그대로 반환
+    if is_content_path(inPath):
+        return inPath
+    
+    # 절대 경로로 간주하고 변환 시도
+    convertedPath = absolute_path_to_content_path(inPath)
+    
+    if convertedPath:
+        unreal.log(f"[pathUtils] 절대 경로를 Content 경로로 변환: {inPath} -> {convertedPath}")
+    
+    return convertedPath
