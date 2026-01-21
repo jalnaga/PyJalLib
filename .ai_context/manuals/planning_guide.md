@@ -6,9 +6,17 @@
 
 ## 1. Input Analysis Protocol (입력 분석)
 
-사용자가 회의록이나 줄글 형태의 요구사항을 입력하면, 바로 `active_prd.md`를 작성하지 말고 먼저 **"의도(Intent)"**와 **"우선순위(Priority)"**를 분석하십시오.
+사용자가 회의록이나 줄글 형태의 요구사항을 입력하면, 바로 `active_prd.md`를 작성하지 말고 먼저 **"의도(Intent)"**, **"우선순위(Priority)"**, 그리고 **"표준 패턴(Reference Pattern)"**을 분석하십시오.
+
+### **지식 검색 (Standard Pattern Check)**
+
+`active_prd.md`를 작성하기 전, 반드시 다음을 수행하십시오:
+1. `.ai_context/manuals/reference_map.md`를 로드하여 작업 관련 키워드(예: UE5 Path, P4, pymxs 등)를 확인합니다.
+2. 매칭되는 레퍼런스 문서가 있다면 해당 문서를 읽고 구현에 반영할 **표준 패턴**을 파악합니다.
+3. 파악된 패턴을 PRD의 `Technical Decisions` 섹션에 기록합니다.
 
 ### **분석 원칙 (The 4-Tier Priority)**
+... (이후 기존 내용 동일) ...
 
 모든 요구사항을 4단계로 철저히 분리하여 PRD에 배치해야 합니다.
 
@@ -37,7 +45,10 @@ PRD에는 반드시 다음 섹션들이 포함되어야 합니다:
 
 - **Title:** 작업의 핵심을 한 줄로 요약
 - **Background & Intent:** "왜 이 기능을 만드는가?" (회의록의 맥락 반영)
-- **Primary Manual (필수):** 이 작업을 수행할 때 참조할 매뉴얼 경로
+- **Primary Manual (필수):** 이 작업을 수행할 때 참조할 워크플로우 매뉴얼 경로
+- **Technical Decisions & References:**
+    - 작업에 적용할 **표준 패턴** (예: Facade Pattern, UE5 Path Rules 등)
+    - 참고한 레퍼런스 문서 경로 (`.ai_context/references/...`)
 - **Scope & Prioritization:**
     - `[Must-Have]`: 구현 대상. (테스트 코드 필수)
     - `[Should-Have]`: 중요하지만 2순위.

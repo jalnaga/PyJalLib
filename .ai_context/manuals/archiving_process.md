@@ -17,10 +17,11 @@
 
 ## 2. Knowledge Consolidation (지식 자산화)
 
-**이 단계가 가장 중요합니다.** 파일을 치우기 전에, 이번 작업에서 얻은 '새로운 지식'을 시스템에 반영하십시오.
+**이 단계가 가장 중요합니다.** 파일을 보관하기 전에, 이번 작업에서 얻은 '새로운 지식'과 '재사용 가능한 패턴'을 시스템에 영구적으로 반영하십시오.
 
-- **Rule Update:** 작업 중 사용자가 지적한 코딩 스타일이나 규칙이 있다면 `manuals/` 폴더의 해당 문서를 업데이트하십시오.
-- **Domain Knowledge:** 새로 알게 된 게임 공식, 데이터 구조, 비즈니스 로직이 있다면 `references/` 폴더의 문서에 추가하십시오.
+- **Manuals Update:** 작업 중 발견된 프로세스 개선점이나 코딩 규칙이 있다면 `manuals/` 폴더의 문서를 업데이트하십시오.
+- **References Update (Mandatory):** 새로 구현한 기술적 패턴, 라이브러리 사용법(unreal, pymxs, p4), 도메인 지식은 `references/` 하위 폴더(`max/`, `ue5/`, `integrations/`, `patterns/`)에 문서로 생성하거나 기존 문서를 업데이트하십시오.
+- **Reference Map Sync:** 새로운 레퍼런스 문서를 생성했다면, 반드시 `.ai_context/manuals/reference_map.md`에 해당 문서 링크와 키워드를 추가하십시오.
 
 ---
 
@@ -48,5 +49,6 @@
 ```
 [Feature Complete]
 기능 개발이 완료되었습니다.
-- 문서: archive/YYYYMMDD_{FeatureName}_*.md
+- 보관 문서: archive/YYYYMMDD_{FeatureName}_*.md
+- 업데이트된 지식: (예: references/ue5/path_rules.md, reference_map.md)
 ```

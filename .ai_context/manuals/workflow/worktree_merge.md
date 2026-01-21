@@ -36,20 +36,20 @@ uv run ruff check .
 
 ```bash
 # 1. 메인 브랜치로 전환
-git checkout main
+git checkout master
 
 # 2. 기능 브랜치 병합
 git merge feature/<feature-name>
 
 # 3. 원격 저장소에 푸시
-git push origin main
+git push origin master
 ```
 
 **예시:**
 ```bash
-git checkout main
+git checkout master
 git merge feature/facial-builder
-git push origin main
+git push origin master
 ```
 
 ---
@@ -80,7 +80,7 @@ git branch -d feature/facial-builder
 [Merge Complete]
 워크트리 병합이 완료되었습니다:
 - 병합된 브랜치: feature/<feature-name>
-- 대상 브랜치: main
+- 대상 브랜치: master
 - 워크트리 정리: 완료
 ```
 
