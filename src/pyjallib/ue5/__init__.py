@@ -55,27 +55,30 @@ try:
         get_all_template_paths,
         get_available_templates,
         validate_template_name,
-        ANIM_IMPORT_TEMPLATE,
-        SKELETON_IMPORT_TEMPLATE,
-        SKELETAL_MESH_IMPORT_TEMPLATE
+        INTERCHANGE_ANIM_IMPORT_TEMPLATE,
+        INTERCHANGE_SKELETON_IMPORT_TEMPLATE,
+        INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE,
+        INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE
     )
     __all__.extend([
         'get_template_path',
         'get_all_template_paths',
         'get_available_templates',
         'validate_template_name',
-        'ANIM_IMPORT_TEMPLATE',
-        'SKELETON_IMPORT_TEMPLATE',
-        'SKELETAL_MESH_IMPORT_TEMPLATE'
+        'INTERCHANGE_ANIM_IMPORT_TEMPLATE',
+        'INTERCHANGE_SKELETON_IMPORT_TEMPLATE',
+        'INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE',
+        'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE'
     ])
 except ImportError as e:
     get_template_path = None
     get_all_template_paths = None
     get_available_templates = None
     validate_template_name = None
-    ANIM_IMPORT_TEMPLATE = None
-    SKELETON_IMPORT_TEMPLATE = None
-    SKELETAL_MESH_IMPORT_TEMPLATE = None
+    INTERCHANGE_ANIM_IMPORT_TEMPLATE = None
+    INTERCHANGE_SKELETON_IMPORT_TEMPLATE = None
+    INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = None
+    INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = None
     if ue5_logger:
         ue5_logger.error(f"Templates 모듈을 로드할 수 없습니다: {e}")
     else:
