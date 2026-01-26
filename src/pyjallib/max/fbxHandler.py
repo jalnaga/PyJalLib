@@ -8,9 +8,8 @@ FBXHandler 모듈
 """
 
 from pymxs import runtime as rt
-import os
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Optional
 
 class FBXHandler:
     """

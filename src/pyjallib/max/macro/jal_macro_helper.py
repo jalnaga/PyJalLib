@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pymxs import runtime as rt
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets
 import gc  # Import garbage collector
 
 from pyjallib.max.header import get_pyjallibmaxheader

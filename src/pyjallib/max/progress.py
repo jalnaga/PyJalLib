@@ -5,7 +5,6 @@
 Progress 모듈 - 3ds Max 작업 진행 상황 표시 관련 기능 제공
 """
 
-from pymxs import runtime as rt
 
 class Progress:
     """

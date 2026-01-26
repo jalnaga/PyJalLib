@@ -6,7 +6,6 @@ namePart 모듈 - 이름의 각 부분을 표현하는 기능 제공
 이름 부분의 사전 정의된 값과 가중치 매핑을 관리하는 클래스 구현
 """
 
-from typing import List, Dict, Any, Optional, Union
 from enum import Enum, auto
 
 class NamePartType(Enum):

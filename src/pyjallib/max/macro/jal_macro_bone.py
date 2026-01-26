@@ -5,7 +5,7 @@ from pymxs import runtime as rt
 from pyjallib.max.header import get_pyjallibmaxheader
 jal = get_pyjallibmaxheader()
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2 import QtWidgets, QtCore
 import gc  # Import garbage collector
 
 class BoneNameDialog(QtWidgets.QDialog):

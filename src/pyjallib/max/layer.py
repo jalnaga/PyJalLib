@@ -7,7 +7,6 @@ Layer 모듈 - 3ds Max 레이어 관리 기능
 """
 
 from pymxs import runtime as rt
-import pymxs
 
 class Layer:
     """

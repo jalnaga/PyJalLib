@@ -16,8 +16,6 @@ Phase 4: 템플릿 및 프로세서 업데이트 통합 테스트 스크립트
 - 로그 파일로 결과 검증
 """
 
-import sys
-import re
 from pathlib import Path
 from datetime import datetime
 

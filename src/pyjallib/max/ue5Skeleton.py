@@ -6,7 +6,6 @@ UE5용 스 - 3ds Max용 뼈대 생성 관련 기능 제공
 원본 MAXScript의 bone.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
-from dataclasses import dataclass
 
 from pymxs import runtime as rt
 from .name import Name

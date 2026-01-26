@@ -6,9 +6,7 @@
 원본 MAXScript의 anim.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
-import math
-import copy
-from pymxs import attime, animate, undo
+from pymxs import undo
 from pymxs import runtime as rt
 
 

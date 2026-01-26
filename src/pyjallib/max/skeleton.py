@@ -15,7 +15,6 @@ from .bone import Bone
 from .bip import Bip
 from .layer import Layer
 
-from .progress import Progress
 
 
 class Skeleton:

@@ -4,6 +4,14 @@ UE5 환경에서 파일 경로를 다룰 때 반드시 따라야 하는 규칙�
 
 ---
 
+## 공식 문서 링크
+
+- **Python API Reference:** https://dev.epicgames.com/documentation/en-us/unreal-engine/PythonAPI
+- **Python 스크립팅 가이드:** https://dev.epicgames.com/documentation/en-us/unreal-engine/scripting-the-unreal-editor-using-python
+- **EditorAssetLibrary:** https://dev.epicgames.com/documentation/en-us/unreal-engine/PythonAPI/class/EditorAssetLibrary
+
+---
+
 ## 핵심 원칙
 
 1. **Content 경로 사용:** 에셋을 다룰 때는 항상 `/Game/...` 형식의 Content 경로를 사용합니다.

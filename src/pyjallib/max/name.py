@@ -10,7 +10,6 @@ import os
 
 from pymxs import runtime as rt
 from pyjallib.naming import Naming
-from pyjallib.namePart import NamePart, NamePartType
 
 class Name(Naming):
     """
