@@ -18,11 +18,11 @@ import unreal
 try:
     from . import pathUtils
     from .interchangeImporterBase import InterchangeImporterBase
-    from .interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from .interchangePipelineSettings import InterchangePipelineSettings
 except ImportError:
     import pathUtils
     from interchangeImporterBase import InterchangeImporterBase
-    from interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from interchangePipelineSettings import InterchangePipelineSettings
 
 
 class InterchangeSkeletonImporter(InterchangeImporterBase):
@@ -41,7 +41,7 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
         InterchangeSkeletonImporter 초기화.
         """
         super().__init__()
-        self._pipelineSettings = InterchangePipelineSettings("Skeleton")
+        self._pipelineSettings = InterchangePipelineSettings()
         unreal.log("[InterchangeSkeletonImporter] 초기화 완료")
     
     @property
@@ -122,8 +122,21 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
         
         # Interchange 임포트 실행
         sourceData = self._create_source_data(inFbxPath)
-        pipelinePaths = self._pipelineSettings.get_pipeline_paths(InterchangePipelinePreset.SKELETON)
-        importParams = self._create_import_params(inOverridePipelines=pipelinePaths)
+        
+        # 파이프라인 에셋 로드 및 스켈레톤용 설정 적용
+        pipelinePath = self._pipelineSettings.get_pipeline_path()
+        pipeline = self._pipelineSettings.load_pipeline()
+        
+        if pipeline is not None:
+            unreal.log(f"[InterchangeSkeletonImporter] 파이프라인 로드됨: {pipelinePath}")
+            
+            # 스켈레톤 임포트용 설정 적용 (애니메이션/머티리얼/텍스쳐 비활성화)
+            self._pipelineSettings.configure_for_skeleton(pipeline)
+            
+            importParams = self._create_import_params(inOverridePipelines=[pipelinePath])
+        else:
+            unreal.log_warning(f"[InterchangeSkeletonImporter] 파이프라인 로드 실패: {pipelinePath}")
+            importParams = self._create_import_params(inOverridePipelines=None)
         
         importedObjects = self._execute_import(inDestinationPath, sourceData, importParams)
         

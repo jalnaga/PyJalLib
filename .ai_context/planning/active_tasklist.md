@@ -20,6 +20,21 @@
   - 출력: `temp_scripts/test_inUnreal_skeleton_import.py`
   - 생성된 `inDestinationPath`: `/Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton3`
 
+- [x] **Task 1.3:** 템플릿 수정 (loguru 의존성 제거)
+  - 문제: `pyjallib` 패키지 import 시 `loguru` 의존성 오류
+  - 해결: `inUnreal` 디렉토리를 직접 `sys.path`에 추가하여 패키지 전체 로드 우회
+  - 수정 파일: `src/pyjallib/ue5/templates/interchangeSkeletonImportTemplate.py`
+
+- [x] **Task 1.4:** 파이프라인 에셋 검증 로직 추가
+  - 문제: `/Interchange/Pipelines/DefaultGenericPipeline` 에셋이 없어서 임포트 0개
+  - 해결: 파이프라인 에셋 존재 여부 확인 후, 없으면 기본 Interchange 설정 사용
+  - 수정 파일: `src/pyjallib/ue5/inUnreal/interchangeSkeletonImporter.py`
+
+- [x] **Task 1.5:** 기본 파이프라인 경로 수정
+  - 문제: 잘못된 파이프라인 경로 사용
+  - 해결: `/Interchange/Pipelines/DefaultAssetsPipeline.DefaultAssetsPipeline`로 수정
+  - 수정 파일: `src/pyjallib/ue5/inUnreal/interchangePipelineSettings.py`
+
 ### Phase 2: 유저 테스트 실행
 - [ ] **Task 2.1:** 언리얼 에디터에서 테스트 실행
   - 언리얼 에디터 실행
