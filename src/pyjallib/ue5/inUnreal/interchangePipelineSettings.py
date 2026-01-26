@@ -8,9 +8,21 @@ UE5 Interchange 파이프라인 설정 관리 모듈
 DefaultAssetsPipeline의 서브 파이프라인 속성을 런타임에 설정합니다.
 """
 
+from enum import Enum
 from typing import Optional
 
 import unreal
+
+
+class InterchangePipelinePreset(Enum):
+    """
+    Interchange 파이프라인 프리셋 타입.
+    
+    에셋 타입에 따른 파이프라인 설정을 구분합니다.
+    """
+    SKELETON = "skeleton"
+    SKELETAL_MESH = "skeletal_mesh"
+    ANIMATION = "animation"
 
 
 class InterchangePipelineSettings:
@@ -30,9 +42,71 @@ class InterchangePipelineSettings:
         "/Interchange/Pipelines/DefaultAssetsPipeline.DefaultAssetsPipeline"
     )
 
-    def __init__(self):
-        """InterchangePipelineSettings 초기화."""
-        pass
+    def __init__(self, inAssetType: Optional[str] = None):
+        """
+        InterchangePipelineSettings 초기화.
+        
+        Args:
+            inAssetType: 에셋 타입 문자열 (선택적). 예: "Animation", "Skeleton", "SkeletalMesh"
+                         기존 코드 호환성을 위해 기본값은 None
+        """
+        self._assetType = inAssetType
+        self._propertyOverrides: dict = {}
+    
+    # ========================================================================
+    # 속성 오버라이드 관리
+    # ========================================================================
+    
+    def set_property_override(self, inKey: str, inValue) -> None:
+        """
+        파이프라인 속성 오버라이드를 설정합니다.
+        
+        임포트 시 적용될 속성들을 딕셔너리로 관리합니다.
+        
+        Args:
+            inKey: 속성 키 (예: "skeleton", "import_animations")
+            inValue: 속성 값
+        """
+        self._propertyOverrides[inKey] = inValue
+        unreal.log(f"[InterchangePipelineSettings] 속성 오버라이드 설정: {inKey} = {inValue}")
+    
+    def get_property_override(self, inKey: str, inDefault=None):
+        """
+        파이프라인 속성 오버라이드를 가져옵니다.
+        
+        Args:
+            inKey: 속성 키
+            inDefault: 키가 없을 때 반환할 기본값
+            
+        Returns:
+            저장된 속성 값 또는 기본값
+        """
+        return self._propertyOverrides.get(inKey, inDefault)
+    
+    def clear_property_overrides(self) -> None:
+        """모든 속성 오버라이드를 초기화합니다."""
+        self._propertyOverrides.clear()
+        unreal.log("[InterchangePipelineSettings] 속성 오버라이드 초기화됨")
+    
+    # ========================================================================
+    # 파이프라인 경로 관리
+    # ========================================================================
+    
+    def get_pipeline_paths(self, inPreset: InterchangePipelinePreset = None) -> list:
+        """
+        프리셋에 따라 파이프라인 경로 리스트를 반환합니다.
+        
+        현재는 모든 프리셋에 대해 동일한 기본 파이프라인을 사용합니다.
+        향후 프리셋별로 다른 파이프라인을 사용할 수 있도록 확장 가능합니다.
+        
+        Args:
+            inPreset: InterchangePipelinePreset Enum 값 (선택적)
+            
+        Returns:
+            파이프라인 경로 리스트
+        """
+        # 현재는 단일 기본 파이프라인만 사용
+        return [self.DEFAULT_PIPELINE_PATH]
 
     # ========================================================================
     # 파이프라인 로드
@@ -163,6 +237,7 @@ class InterchangePipelineSettings:
         애니메이션 임포트를 위해 파이프라인을 설정합니다.
 
         애니메이션만 임포트하고, 머티리얼/텍스쳐는 비활성화합니다.
+        skeleton 오버라이드가 설정된 경우 해당 스켈레톤을 사용합니다.
 
         Args:
             inPipeline: InterchangeGenericAssetsPipeline 에셋
@@ -184,6 +259,14 @@ class InterchangePipelineSettings:
                 unreal.log(
                     "[InterchangePipelineSettings] animation_pipeline.import_animations = True"
                 )
+                
+                # skeleton 오버라이드 적용
+                skeleton = self.get_property_override("skeleton")
+                if skeleton is not None:
+                    animationPipeline.set_editor_property("skeleton", skeleton)
+                    unreal.log(
+                        f"[InterchangePipelineSettings] animation_pipeline.skeleton = {skeleton.get_name()}"
+                    )
             else:
                 unreal.log_warning(
                     "[InterchangePipelineSettings] animation_pipeline이 None입니다"

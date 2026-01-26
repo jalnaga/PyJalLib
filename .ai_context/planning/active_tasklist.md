@@ -26,28 +26,28 @@ E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BaseSkeleton3\SK
 
 ### Phase 1: InterchangePipelineSettings 확장
 
-- [ ] **Task 1.1:** `InterchangePipelinePreset` Enum 추가
+- [x] **Task 1.1:** `InterchangePipelinePreset` Enum 추가
   - `interchangePipelineSettings.py`에 Enum 정의
   - SKELETON, SKELETAL_MESH, ANIMATION 값 포함
 
-- [ ] **Task 1.2:** `InterchangePipelineSettings` 생성자 수정
+- [x] **Task 1.2:** `InterchangePipelineSettings` 생성자 수정
   - 선택적 `asset_type` 인자 지원 (기본값: None)
   - 기존 코드 호환성 유지
 
-- [ ] **Task 1.3:** `get_pipeline_paths(preset)` 메서드 구현
+- [x] **Task 1.3:** `get_pipeline_paths(preset)` 메서드 구현
   - preset에 따라 파이프라인 경로 리스트 반환
   - 현재는 단일 기본 파이프라인만 사용 (리스트로 반환)
 
-- [ ] **Task 1.4:** `set_property_override(key, value)` 메서드 구현
+- [x] **Task 1.4:** `set_property_override(key, value)` 메서드 구현
   - 파이프라인 속성 오버라이드 저장
   - 임포트 시 적용될 속성들을 딕셔너리로 관리
 
-- [ ] **Task 1.5:** 파이프라인 설정 시 오버라이드 적용 로직 추가
+- [x] **Task 1.5:** 파이프라인 설정 시 오버라이드 적용 로직 추가
   - `configure_for_animation()` 메서드에서 skeleton 오버라이드 처리
 
 ### Phase 2: 테스트 스크립트 생성
 
-- [ ] **Task 2.1:** `tests/ue5/test_animation_import.py` 작성
+- [x] **Task 2.1:** `tests/ue5/test_animation_import.py` 작성
   - 로컬 실행용 스크립트 생성기
   - `test_skeleton_import.py` 패턴 참고
   - TemplateProcessor 사용하여 언리얼용 스크립트 생성
@@ -55,7 +55,7 @@ E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BaseSkeleton3\SK
     - FBX: `E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_HeadShakeThink_Loop-RBr-Enter.fbx`
     - 스켈레톤: `/Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton3/SKEL_Sh_Human_M_BaseSkeleton3`
 
-- [ ] **Task 2.2:** 스크립트 생성기 실행 테스트
+- [x] **Task 2.2:** 스크립트 생성기 실행 테스트
   - `uv run python tests/ue5/test_animation_import.py` 실행
   - `tests/ue5/test_inUnreal_animation_import.py` 생성 확인
 
