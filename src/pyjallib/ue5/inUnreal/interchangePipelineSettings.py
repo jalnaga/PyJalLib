@@ -259,17 +259,31 @@ class InterchangePipelineSettings:
                 unreal.log(
                     "[InterchangePipelineSettings] animation_pipeline.import_animations = True"
                 )
-                
-                # skeleton 오버라이드 적용
-                skeleton = self.get_property_override("skeleton")
-                if skeleton is not None:
-                    animationPipeline.set_editor_property("skeleton", skeleton)
-                    unreal.log(
-                        f"[InterchangePipelineSettings] animation_pipeline.skeleton = {skeleton.get_name()}"
-                    )
             else:
                 unreal.log_warning(
                     "[InterchangePipelineSettings] animation_pipeline이 None입니다"
+                )
+            
+            # 2. common_skeletal_meshes_and_animations_properties를 통한 스켈레톤 설정
+            # UE5.7 공식 문서: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/InterchangeGenericCommonSkeletalMeshesAndAnimationsProperties
+            commonSkeletalProps = inPipeline.get_editor_property("common_skeletal_meshes_and_animations_properties")
+            if commonSkeletalProps is not None:
+                # skeleton 오버라이드 적용
+                skeleton = self.get_property_override("skeleton")
+                if skeleton is not None:
+                    commonSkeletalProps.set_editor_property("skeleton", skeleton)
+                    unreal.log(
+                        f"[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties.skeleton = {skeleton.get_name()}"
+                    )
+                    
+                    # 애니메이션만 임포트 (스켈레톤은 이미 존재하므로)
+                    commonSkeletalProps.set_editor_property("import_only_animations", True)
+                    unreal.log(
+                        "[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties.import_only_animations = True"
+                    )
+            else:
+                unreal.log_warning(
+                    "[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties이 None입니다"
                 )
 
             # 2. 머티리얼 파이프라인 설정 - import_materials = False

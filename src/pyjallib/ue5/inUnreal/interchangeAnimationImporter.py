@@ -194,11 +194,24 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
         
         # Interchange 임포트 실행
         sourceData = self._create_source_data(inFbxPath)
-        pipelinePaths = self._pipelineSettings.get_pipeline_paths(InterchangePipelinePreset.ANIMATION)
-        importParams = self._create_import_params(inOverridePipelines=pipelinePaths)
         
-        # 스켈레톤 설정을 파이프라인 속성 오버라이드로 처리
-        self._pipelineSettings.set_property_override("skeleton", skeleton)
+        # 파이프라인 에셋 로드 및 애니메이션용 설정 적용
+        pipelinePath = self._pipelineSettings.get_pipeline_path()
+        pipeline = self._pipelineSettings.load_pipeline()
+        
+        if pipeline is not None:
+            unreal.log(f"[InterchangeAnimationImporter] 파이프라인 로드됨: {pipelinePath}")
+            
+            # 스켈레톤 오버라이드 설정 (configure_for_animation에서 적용됨)
+            self._pipelineSettings.set_property_override("skeleton", skeleton)
+            
+            # 애니메이션 임포트용 설정 적용 (import_animations=True, 머티리얼/텍스쳐 비활성화, 스켈레톤 설정)
+            self._pipelineSettings.configure_for_animation(pipeline)
+            
+            importParams = self._create_import_params(inOverridePipelines=[pipelinePath])
+        else:
+            unreal.log_warning(f"[InterchangeAnimationImporter] 파이프라인 로드 실패: {pipelinePath}")
+            importParams = self._create_import_params(inOverridePipelines=None)
         
         importedObjects = self._execute_import(inDestinationPath, sourceData, importParams)
         

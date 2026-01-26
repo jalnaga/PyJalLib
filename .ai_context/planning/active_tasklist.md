@@ -61,17 +61,18 @@ E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BaseSkeleton3\SK
 
 ### Phase 3: 유저 테스트 실행
 
-- [ ] **Task 3.1:** 언리얼 에디터에서 테스트 실행
+- [x] **Task 3.1:** 언리얼 에디터에서 테스트 실행
   - 사용자가 생성된 스크립트를 언리얼에서 실행
   - 오류 로그 수집
 
-- [ ] **Task 3.2:** 결과 분석 및 수정
+- [x] **Task 3.2:** 결과 분석 및 수정
   - 오류 발생 시 원인 분석
   - 코드 수정 후 재테스트
+  - 수정 사항: `common_skeletal_meshes_and_animations_properties`를 통한 스켈레톤 설정
 
 ### Phase 4: 완료
 
-- [ ] **Task 4.1:** 테스트 성공 확인
+- [x] **Task 4.1:** 테스트 성공 확인
   - 애니메이션 임포트 정상 동작 확인
   - 임포트된 에셋 검증
 
