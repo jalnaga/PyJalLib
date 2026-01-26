@@ -18,25 +18,25 @@ import unreal
 try:
     from . import pathUtils
     from .interchangeImporterBase import InterchangeImporterBase
-    from .interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from .interchangePipelineSettings import InterchangePipelineSettings
 except ImportError:
     import pathUtils
     from interchangeImporterBase import InterchangeImporterBase
-    from interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from interchangePipelineSettings import InterchangePipelineSettings
 
 
 class InterchangeAnimationImporter(InterchangeImporterBase):
     """
     Interchange Framework 기반 애니메이션 임포터.
-    
+
     FBX 파일에서 애니메이션을 추출하여 UE5로 임포트합니다.
     기존 스켈레톤 참조가 필수입니다.
     외부 패키지 의존성 없이 파이썬 표준 라이브러리와 unreal 모듈만 사용합니다.
     """
-    
+
     # 애니메이션 에셋 접두사 (기본값)
     DEFAULT_ANIMATION_PREFIX = "A_"
-    
+
     def __init__(self):
         """
         InterchangeAnimationImporter 초기화.
@@ -44,26 +44,26 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
         super().__init__()
         self._pipelineSettings = InterchangePipelineSettings("Animation")
         unreal.log("[InterchangeAnimationImporter] 초기화 완료")
-    
+
     @property
     def asset_type(self) -> str:
         """에셋 타입을 반환합니다."""
         return "Animation"
-    
+
     # ========================================================================
     # 스켈레톤 검증
     # ========================================================================
-    
+
     def _validate_skeleton(self, inSkeletonPath: str) -> unreal.Skeleton:
         """
         스켈레톤 경로를 검증하고 스켈레톤 에셋을 반환합니다.
-        
+
         Args:
             inSkeletonPath: /Game/... 형식의 스켈레톤 Content 경로 (정규화된 경로)
-            
+
         Returns:
             스켈레톤 에셋
-            
+
         Raises:
             ValueError: 스켈레톤을 찾을 수 없는 경우
         """
@@ -71,75 +71,81 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             error_msg = "애니메이션 임포트에는 스켈레톤이 필수입니다"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         skeletonAssetData = unreal.EditorAssetLibrary.find_asset_data(inSkeletonPath)
-        
+
         if not skeletonAssetData.is_valid():
             error_msg = f"스켈레톤 에셋을 찾을 수 없음: {inSkeletonPath}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         skeleton = skeletonAssetData.get_asset()
-        unreal.log(f"[InterchangeAnimationImporter] 스켈레톤 검증 완료: {skeleton.get_name()}")
+        unreal.log(
+            f"[InterchangeAnimationImporter] 스켈레톤 검증 완료: {skeleton.get_name()}"
+        )
         return skeleton
-    
+
     # ========================================================================
     # 배치 디스크립션 생성
     # ========================================================================
-    
+
     def _create_batch_import_description(
-        self, 
-        inFbxPaths: List[str], 
-        inAssetFullPaths: List[str]
+        self, inFbxPaths: List[str], inAssetFullPaths: List[str]
     ) -> str:
         """
         배치 임포트용 간결한 디스크립션을 생성합니다.
-        
+
         Args:
             inFbxPaths: 임포트된 FBX 파일 목록
             inAssetFullPaths: 임포트된 에셋 전체 경로 목록
-            
+
         Returns:
             간결한 디스크립션 문자열
         """
         totalCount = len(inFbxPaths)
-        
+
         if totalCount <= 3:
             # 3개 이하면 모든 경로 표시
             fbxList = ", ".join(inFbxPaths)
             assetList = ", ".join(inAssetFullPaths)
-            return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
+            return (
+                f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
+            )
         else:
             # 3개 초과면 처음 3개만 표시하고 나머지는 개수로 표시
             fbxList = ", ".join(inFbxPaths[:3]) + f" ... (and {totalCount - 3} more)"
-            assetList = ", ".join(inAssetFullPaths[:3]) + f" ... (and {totalCount - 3} more)"
-            return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
-    
+            assetList = (
+                ", ".join(inAssetFullPaths[:3]) + f" ... (and {totalCount - 3} more)"
+            )
+            return (
+                f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
+            )
+
     # ========================================================================
     # 단일 임포트 (동기)
     # ========================================================================
-    
+
     def import_animation(
-        self, 
-        inFbxPath: str, 
+        self,
+        inFbxPath: str,
         inDestinationPath: str,
         inSkeletonPath: str,
-        inAssetName: str = None, 
-        inDescription: str = None
+        inAssetName: str = None,
+        inDescription: str = None,
     ) -> Dict[str, Any]:
         """
         FBX 파일에서 애니메이션을 임포트합니다. (동기 방식)
-        
+
         Args:
             inFbxPath: FBX 파일의 절대 경로
             inDestinationPath: /Game/... 형식의 Content 목적지 경로
             inSkeletonPath: /Game/... 형식의 스켈레톤 Content 경로
             inAssetName: 에셋 이름 (None이면 FBX 파일명 기반 자동 생성)
             inDescription: 소스 컨트롤 체크인 설명
-            
+
         Returns:
             임포트 결과 딕셔너리
-            
+
         Example:
             >>> importer = InterchangeAnimationImporter()
             >>> result = importer.import_animation(
@@ -149,14 +155,16 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             ...     inAssetName="A_Hero_Run"  # 선택적
             ... )
         """
-        unreal.log(f"[InterchangeAnimationImporter] 애니메이션 임포트 시작: {inFbxPath}")
-        
+        unreal.log(
+            f"[InterchangeAnimationImporter] 애니메이션 임포트 시작: {inFbxPath}"
+        )
+
         # FBX 파일 검증
         if not pathUtils.validate_fbx_file(inFbxPath):
             error_msg = f"FBX 파일 검증 실패: {inFbxPath}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         # Content 경로 정규화 (절대 경로 → /Game/... 자동 변환)
         normalizedDestPath = pathUtils.normalize_content_path(inDestinationPath)
         if normalizedDestPath is None:
@@ -164,7 +172,7 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
         inDestinationPath = normalizedDestPath
-        
+
         # 스켈레톤 경로 정규화
         normalizedSkeletonPath = pathUtils.normalize_content_path(inSkeletonPath)
         if normalizedSkeletonPath is None:
@@ -172,10 +180,10 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
         inSkeletonPath = normalizedSkeletonPath
-        
+
         # 스켈레톤 검증
         skeleton = self._validate_skeleton(inSkeletonPath)
-        
+
         # 에셋 이름 결정 (제공되지 않으면 FBX 파일명에서 생성)
         if inAssetName is None:
             fbxFileName = Path(inFbxPath).stem
@@ -184,92 +192,104 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
                 inAssetName = f"{self.DEFAULT_ANIMATION_PREFIX}{fbxFileName}"
             else:
                 inAssetName = fbxFileName
-        
+
         # 임포트 준비 (디렉토리 생성 + 기존 파일 체크아웃)
         assetFullPath = self._prepare_asset_for_import(inDestinationPath, inAssetName)
         if assetFullPath is None:
             error_msg = f"임포트 준비 실패: {inDestinationPath}/{inAssetName}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         # Interchange 임포트 실행
         sourceData = self._create_source_data(inFbxPath)
-        
+
         # 파이프라인 에셋 로드 및 애니메이션용 설정 적용
         pipelinePath = self._pipelineSettings.get_pipeline_path()
         pipeline = self._pipelineSettings.load_pipeline()
-        
+
         if pipeline is not None:
-            unreal.log(f"[InterchangeAnimationImporter] 파이프라인 로드됨: {pipelinePath}")
-            
+            unreal.log(
+                f"[InterchangeAnimationImporter] 파이프라인 로드됨: {pipelinePath}"
+            )
+
             # 스켈레톤 오버라이드 설정 (configure_for_animation에서 적용됨)
             self._pipelineSettings.set_property_override("skeleton", skeleton)
-            
+
             # 애니메이션 임포트용 설정 적용 (import_animations=True, 머티리얼/텍스쳐 비활성화, 스켈레톤 설정)
             self._pipelineSettings.configure_for_animation(pipeline)
-            
-            importParams = self._create_import_params(inOverridePipelines=[pipelinePath])
+
+            importParams = self._create_import_params(
+                inOverridePipelines=[pipelinePath]
+            )
         else:
-            unreal.log_warning(f"[InterchangeAnimationImporter] 파이프라인 로드 실패: {pipelinePath}")
+            unreal.log_warning(
+                f"[InterchangeAnimationImporter] 파이프라인 로드 실패: {pipelinePath}"
+            )
             importParams = self._create_import_params(inOverridePipelines=None)
-        
-        importedObjects = self._execute_import(inDestinationPath, sourceData, importParams)
-        
+
+        importedObjects = self._execute_import(
+            inDestinationPath, sourceData, importParams
+        )
+
         if len(importedObjects) == 0:
             error_msg = f"애니메이션 임포트 실패 (임포트된 오브젝트 없음): {inFbxPath}"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         # 소스 컨트롤 체크인
         importedObjectPaths = []
         refObjectPaths = self.get_dirty_deps(assetFullPath)
-        
+
         for obj in importedObjects:
             objPath = unreal.SystemLibrary.get_system_path(obj)
             if objPath:
                 importedObjectPaths.append(objPath)
-        
-        allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
-        
+
+        allImportRelatedPaths = list(
+            dict.fromkeys(importedObjectPaths + refObjectPaths)
+        )
+
         for assetPath in allImportRelatedPaths:
             unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
-        
+
         checkInDescription = f"Animation Imported by {inFbxPath} to {assetFullPath}"
         if inDescription is not None:
             checkInDescription = inDescription
-        
+
         if self.is_development_mode():
-            unreal.log(f"[InterchangeAnimationImporter] 개발 모드 - 애니메이션 임포트 완료: {inFbxPath}")
+            unreal.log(
+                f"[InterchangeAnimationImporter] 개발 모드 - 애니메이션 임포트 완료: {inFbxPath}"
+            )
         else:
-            unreal.SourceControl.check_in_files(allImportRelatedPaths, checkInDescription, silent=True)
-        
-        unreal.log(f"[InterchangeAnimationImporter] 애니메이션 임포트 성공: {inFbxPath} -> {inAssetName}")
-        
-        return self._create_interchange_result_dict(
-            inFbxPath, 
-            inDestinationPath, 
-            inAssetName, 
-            True,
-            importedObjects
+            unreal.SourceControl.check_in_files(
+                allImportRelatedPaths, checkInDescription, silent=True
+            )
+
+        unreal.log(
+            f"[InterchangeAnimationImporter] 애니메이션 임포트 성공: {inFbxPath} -> {inAssetName}"
         )
-    
+
+        return self._create_interchange_result_dict(
+            inFbxPath, inDestinationPath, inAssetName, True, importedObjects
+        )
+
     # ========================================================================
     # 배치 임포트 (동기)
     # ========================================================================
-    
+
     def import_animations(
-        self, 
+        self,
         inFbxPaths: List[str],
         inDestinationPaths: List[str],
         inSkeletonPaths: List[str],
         inAssetNames: List[str] = None,
         inDescription: str = None,
         inOnAssetDone: Optional[Callable[[unreal.Object], None]] = None,
-        inOnBatchComplete: Optional[Callable[[List[unreal.Object]], None]] = None
+        inOnBatchComplete: Optional[Callable[[List[unreal.Object]], None]] = None,
     ) -> Dict[str, Any]:
         """
         여러 FBX 파일에서 애니메이션을 배치 임포트합니다. (동기 방식)
-        
+
         Args:
             inFbxPaths: FBX 파일 절대 경로 리스트
             inDestinationPaths: /Game/... 형식의 Content 목적지 경로 리스트
@@ -278,10 +298,10 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             inDescription: 소스 컨트롤 체크인 설명
             inOnAssetDone: 개별 에셋 완료 콜백
             inOnBatchComplete: 전체 배치 완료 콜백
-            
+
         Returns:
             배치 임포트 결과 딕셔너리
-            
+
         Example:
             >>> importer = InterchangeAnimationImporter()
             >>> result = importer.import_animations(
@@ -291,67 +311,69 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
             ...     inAssetNames=["A_Hero_Run", "A_Hero_Walk"]
             ... )
         """
-        unreal.log(f"[InterchangeAnimationImporter] 애니메이션 배치 임포트 시작: {len(inFbxPaths)}개 파일")
-        
+        unreal.log(
+            f"[InterchangeAnimationImporter] 애니메이션 배치 임포트 시작: {len(inFbxPaths)}개 파일"
+        )
+
         # 입력 검증: FBX 경로, 목적지 경로, 스켈레톤 경로 개수 일치
         if len(inFbxPaths) != len(inDestinationPaths):
             error_msg = "FBX 파일 경로와 목적지 경로의 개수가 일치하지 않습니다"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         if len(inFbxPaths) != len(inSkeletonPaths):
             error_msg = "FBX 파일과 스켈레톤 경로의 개수가 일치하지 않습니다"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         # 입력 검증: 에셋 이름이 제공된 경우 개수 일치
         if inAssetNames is not None and len(inFbxPaths) != len(inAssetNames):
             error_msg = "FBX 파일과 에셋 이름의 개수가 일치하지 않습니다"
             unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
-        
+
         results = []
         assetFullPaths = []
         batchImportedPaths = []
-        
+
         # 각 파일에 대해 순차적으로 임포트
         for index, fbxPath in enumerate(inFbxPaths):
             try:
                 destPath = inDestinationPaths[index]
                 skeletonPath = inSkeletonPaths[index]
                 assetName = inAssetNames[index] if inAssetNames else None
-                
+
                 result = self.import_animation(
-                    inFbxPath=fbxPath, 
+                    inFbxPath=fbxPath,
                     inDestinationPath=destPath,
                     inSkeletonPath=skeletonPath,
-                    inAssetName=assetName, 
-                    inDescription=None  # 개별 체크인 생략, 배치 완료 후 일괄 처리
+                    inAssetName=assetName,
+                    inDescription=None,  # 개별 체크인 생략, 배치 완료 후 일괄 처리
                 )
                 results.append(result)
-                
+
                 assetFullPath = f"{result['Path']}/{result['Name']}"
                 assetFullPaths.append(assetFullPath)
-                
+
                 # 임포트된 객체 경로 수집
                 for obj in result.get("ImportedObjects", []):
                     objPath = unreal.SystemLibrary.get_system_path(obj)
                     if objPath:
                         batchImportedPaths.append(objPath)
-                
+
                 # 개별 에셋 완료 콜백 호출
                 if inOnAssetDone and result.get("ImportedObjects"):
                     for obj in result["ImportedObjects"]:
                         inOnAssetDone(obj)
-                
+
             except Exception as e:
-                unreal.log_error(f"[InterchangeAnimationImporter] 애니메이션 임포트 실패: {fbxPath}, 에러: {e}")
-                results.append({
-                    "SourceFile": fbxPath,
-                    "Success": False,
-                    "Error": str(e)
-                })
-        
+                unreal.log_error(
+                    f"[InterchangeAnimationImporter] 애니메이션 임포트 실패: {fbxPath}, 에러: {e}"
+                )
+                results.append(
+                    {"SourceFile": fbxPath, "Success": False, "Error": str(e)}
+                )
+
         # 배치 완료 콜백 호출
         if inOnBatchComplete:
             allObjects = []
@@ -359,31 +381,39 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
                 if result.get("ImportedObjects"):
                     allObjects.extend(result["ImportedObjects"])
             inOnBatchComplete(allObjects)
-        
+
         # 배치 체크인 (개발 모드가 아닐 때)
         if not self.is_development_mode() and batchImportedPaths:
             batchImportedPaths = list(dict.fromkeys(batchImportedPaths))
-            
+
             if inDescription is not None:
                 checkInDescription = inDescription
             else:
-                checkInDescription = self._create_batch_import_description(inFbxPaths, assetFullPaths)
-            
-            unreal.SourceControl.check_in_files(batchImportedPaths, checkInDescription, silent=True)
-            unreal.log(f"[InterchangeAnimationImporter] 배치 임포트 체크인 완료: {len(batchImportedPaths)}개 파일")
-        
+                checkInDescription = self._create_batch_import_description(
+                    inFbxPaths, assetFullPaths
+                )
+
+            unreal.SourceControl.check_in_files(
+                batchImportedPaths, checkInDescription, silent=True
+            )
+            unreal.log(
+                f"[InterchangeAnimationImporter] 배치 임포트 체크인 완료: {len(batchImportedPaths)}개 파일"
+            )
+
         # 결과 집계
         successCount = len([r for r in results if r.get("Success", False)])
         failedCount = len(results) - successCount
-        
+
         batchResult = {
             "TotalCount": len(inFbxPaths),
             "SuccessCount": successCount,
             "FailedCount": failedCount,
             "Results": results,
-            "Errors": [r.get("Error") for r in results if r.get("Error")]
+            "Errors": [r.get("Error") for r in results if r.get("Error")],
         }
-        
-        unreal.log(f"[InterchangeAnimationImporter] 애니메이션 배치 임포트 완료: 성공 {successCount}/{len(inFbxPaths)}")
-        
+
+        unreal.log(
+            f"[InterchangeAnimationImporter] 애니메이션 배치 임포트 완료: 성공 {successCount}/{len(inFbxPaths)}"
+        )
+
         return batchResult

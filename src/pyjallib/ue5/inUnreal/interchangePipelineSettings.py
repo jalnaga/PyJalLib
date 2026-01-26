@@ -17,9 +17,10 @@ import unreal
 class InterchangePipelinePreset(Enum):
     """
     Interchange 파이프라인 프리셋 타입.
-    
+
     에셋 타입에 따른 파이프라인 설정을 구분합니다.
     """
+
     SKELETON = "skeleton"
     SKELETAL_MESH = "skeletal_mesh"
     ANIMATION = "animation"
@@ -45,63 +46,65 @@ class InterchangePipelineSettings:
     def __init__(self, inAssetType: Optional[str] = None):
         """
         InterchangePipelineSettings 초기화.
-        
+
         Args:
             inAssetType: 에셋 타입 문자열 (선택적). 예: "Animation", "Skeleton", "SkeletalMesh"
                          기존 코드 호환성을 위해 기본값은 None
         """
         self._assetType = inAssetType
         self._propertyOverrides: dict = {}
-    
+
     # ========================================================================
     # 속성 오버라이드 관리
     # ========================================================================
-    
+
     def set_property_override(self, inKey: str, inValue) -> None:
         """
         파이프라인 속성 오버라이드를 설정합니다.
-        
+
         임포트 시 적용될 속성들을 딕셔너리로 관리합니다.
-        
+
         Args:
             inKey: 속성 키 (예: "skeleton", "import_animations")
             inValue: 속성 값
         """
         self._propertyOverrides[inKey] = inValue
-        unreal.log(f"[InterchangePipelineSettings] 속성 오버라이드 설정: {inKey} = {inValue}")
-    
+        unreal.log(
+            f"[InterchangePipelineSettings] 속성 오버라이드 설정: {inKey} = {inValue}"
+        )
+
     def get_property_override(self, inKey: str, inDefault=None):
         """
         파이프라인 속성 오버라이드를 가져옵니다.
-        
+
         Args:
             inKey: 속성 키
             inDefault: 키가 없을 때 반환할 기본값
-            
+
         Returns:
             저장된 속성 값 또는 기본값
         """
         return self._propertyOverrides.get(inKey, inDefault)
-    
+
     def clear_property_overrides(self) -> None:
         """모든 속성 오버라이드를 초기화합니다."""
         self._propertyOverrides.clear()
         unreal.log("[InterchangePipelineSettings] 속성 오버라이드 초기화됨")
-    
+
     # ========================================================================
     # 파이프라인 경로 관리
     # ========================================================================
-    
+
     def get_pipeline_paths(self, inPreset: InterchangePipelinePreset = None) -> list:
         """
         프리셋에 따라 파이프라인 경로 리스트를 반환합니다.
-        
+
         현재는 모든 프리셋에 대해 동일한 기본 파이프라인을 사용합니다.
         향후 프리셋별로 다른 파이프라인을 사용할 수 있도록 확장 가능합니다.
-        
+
         Args:
             inPreset: InterchangePipelinePreset Enum 값 (선택적)
-            
+
         Returns:
             파이프라인 경로 리스트
         """
@@ -263,10 +266,12 @@ class InterchangePipelineSettings:
                 unreal.log_warning(
                     "[InterchangePipelineSettings] animation_pipeline이 None입니다"
                 )
-            
+
             # 2. common_skeletal_meshes_and_animations_properties를 통한 스켈레톤 설정
             # UE5.7 공식 문서: https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/InterchangeGenericCommonSkeletalMeshesAndAnimationsProperties
-            commonSkeletalProps = inPipeline.get_editor_property("common_skeletal_meshes_and_animations_properties")
+            commonSkeletalProps = inPipeline.get_editor_property(
+                "common_skeletal_meshes_and_animations_properties"
+            )
             if commonSkeletalProps is not None:
                 # skeleton 오버라이드 적용
                 skeleton = self.get_property_override("skeleton")
@@ -275,9 +280,11 @@ class InterchangePipelineSettings:
                     unreal.log(
                         f"[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties.skeleton = {skeleton.get_name()}"
                     )
-                    
+
                     # 애니메이션만 임포트 (스켈레톤은 이미 존재하므로)
-                    commonSkeletalProps.set_editor_property("import_only_animations", True)
+                    commonSkeletalProps.set_editor_property(
+                        "import_only_animations", True
+                    )
                     unreal.log(
                         "[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties.import_only_animations = True"
                     )

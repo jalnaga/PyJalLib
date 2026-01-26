@@ -28,7 +28,7 @@
 ### 2. Unreal Engine 5 (UE5)
 UE5 Python API(`unreal`)를 사용하는 작업 시 참고합니다.
 - **Path Rules:** 절대 경로(Windows Path)와 게임 경로(Package Path) 간의 변환 규칙은 매우 엄격합니다. `pathUtils` 모듈 사용이 필수입니다.
-- **Interchange Pipeline:** FBX 임포트 시 파이프라인 설정 방법. 애니메이션/머티리얼/피직스 에셋 필터링.
+- **Interchange Pipeline:** FBX 임포트 시 파이프라인 설정 방법. 스켈레톤/애니메이션/머티리얼/피직스 에셋 필터링. 애니메이션 임포트 시 `common_skeletal_meshes_and_animations_properties.skeleton` 사용 필수.
 - **Asset Path Methods:** `get_path_name()` vs `get_system_path()` 차이. 에셋 레지스트리 조회 시 패키지 경로 사용 필수.
 
 **공식 문서:**
