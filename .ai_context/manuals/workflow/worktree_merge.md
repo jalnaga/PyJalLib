@@ -40,16 +40,12 @@ git checkout master
 
 # 2. 기능 브랜치 병합
 git merge feature/<feature-name>
-
-# 3. 원격 저장소에 푸시
-git push origin master
 ```
 
 **예시:**
 ```bash
 git checkout master
 git merge feature/facial-builder
-git push origin master
 ```
 
 ---
