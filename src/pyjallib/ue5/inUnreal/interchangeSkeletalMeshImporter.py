@@ -18,11 +18,11 @@ import unreal
 try:
     from . import pathUtils
     from .interchangeImporterBase import InterchangeImporterBase
-    from .interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from .interchangePipelineSettings import InterchangePipelineSettings
 except ImportError:
     import pathUtils
     from interchangeImporterBase import InterchangeImporterBase
-    from interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
+    from interchangePipelineSettings import InterchangePipelineSettings
 
 
 class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
@@ -162,12 +162,26 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
         
         # Interchange 임포트 실행
         sourceData = self._create_source_data(inFbxPath)
-        pipelinePaths = self._pipelineSettings.get_pipeline_paths(InterchangePipelinePreset.SKELETAL_MESH)
-        importParams = self._create_import_params(inOverridePipelines=pipelinePaths)
         
-        # 스켈레톤 설정을 파이프라인 속성 오버라이드로 처리
-        # Note: Interchange에서는 파이프라인 에셋에서 스켈레톤을 설정해야 할 수 있음
-        self._pipelineSettings.set_property_override("skeleton", skeleton)
+        # 파이프라인 에셋 로드 및 스켈레탈 메시용 설정 적용
+        pipelinePath = self._pipelineSettings.get_pipeline_path()
+        pipeline = self._pipelineSettings.load_pipeline()
+        
+        if pipeline is not None:
+            unreal.log(f"[InterchangeSkeletalMeshImporter] 파이프라인 로드됨: {pipelinePath}")
+            
+            # 스켈레톤 오버라이드 설정 (configure_for_skeletal_mesh에서 적용됨)
+            self._pipelineSettings.set_property_override("skeleton", skeleton)
+            
+            # 스켈레탈 메시 임포트용 설정 적용 (애니메이션/머티리얼/텍스쳐/피직스에셋 비활성화, 스켈레톤 설정)
+            self._pipelineSettings.configure_for_skeletal_mesh(pipeline)
+            
+            importParams = self._create_import_params(
+                inOverridePipelines=[pipelinePath]
+            )
+        else:
+            unreal.log_warning(f"[InterchangeSkeletalMeshImporter] 파이프라인 로드 실패: {pipelinePath}")
+            importParams = self._create_import_params(inOverridePipelines=None)
         
         importedObjects = self._execute_import(inDestinationPath, sourceData, importParams)
         
