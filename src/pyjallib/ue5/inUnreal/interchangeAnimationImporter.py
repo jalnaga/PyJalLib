@@ -417,3 +417,155 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
         )
 
         return batchResult
+
+    # ========================================================================
+    # 배치 임포트 (비동기)
+    # ========================================================================
+
+    def import_animations_async(
+        self,
+        inFbxPaths: List[str],
+        inDestinationPaths: List[str],
+        inSkeletonPaths: List[str],
+        inAssetNames: List[str] = None,
+    ) -> None:
+        """
+        여러 FBX 파일에서 애니메이션을 비동기 배치 임포트합니다.
+
+        InterchangeManager.scripted_import_asset_async를 사용하여
+        여러 파일을 병렬로 임포트합니다.
+
+        Args:
+            inFbxPaths: FBX 파일 절대 경로 리스트
+            inDestinationPaths: /Game/... 형식의 Content 목적지 경로 리스트
+            inSkeletonPaths: /Game/... 형식의 스켈레톤 Content 경로 리스트
+            inAssetNames: 에셋 이름 리스트 (None이면 FBX 파일명 기반 자동 생성)
+
+        Note:
+            비동기 메서드이므로 반환값이 없습니다.
+            임포트 결과는 언리얼 에디터 로그에서 확인하세요.
+
+        Example:
+            >>> importer = InterchangeAnimationImporter()
+            >>> importer.import_animations_async(
+            ...     inFbxPaths=["D:/FBX/Hero_Run.fbx", "D:/FBX/Hero_Walk.fbx"],
+            ...     inDestinationPaths=["/Game/Animations/Hero", "/Game/Animations/Hero"],
+            ...     inSkeletonPaths=["/Game/Characters/Hero/SK_Hero", "/Game/Characters/Hero/SK_Hero"],
+            ...     inAssetNames=["A_Hero_Run", "A_Hero_Walk"]
+            ... )
+        """
+        unreal.log(
+            f"[InterchangeAnimationImporter] 애니메이션 비동기 배치 임포트 시작: {len(inFbxPaths)}개 파일"
+        )
+
+        # 입력 검증: FBX 경로, 목적지 경로, 스켈레톤 경로 개수 일치
+        if len(inFbxPaths) != len(inDestinationPaths):
+            error_msg = "FBX 파일 경로와 목적지 경로의 개수가 일치하지 않습니다"
+            unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+
+        if len(inFbxPaths) != len(inSkeletonPaths):
+            error_msg = "FBX 파일과 스켈레톤 경로의 개수가 일치하지 않습니다"
+            unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+
+        # 입력 검증: 에셋 이름이 제공된 경우 개수 일치
+        if inAssetNames is not None and len(inFbxPaths) != len(inAssetNames):
+            error_msg = "FBX 파일과 에셋 이름의 개수가 일치하지 않습니다"
+            unreal.log_error(f"[InterchangeAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+
+        # InterchangeManager 획득
+        interchangeManager = self._get_interchange_manager()
+
+        # 각 파일에 대해 비동기 임포트 시작
+        for index, fbxPath in enumerate(inFbxPaths):
+            try:
+                destPath = inDestinationPaths[index]
+                skeletonPath = inSkeletonPaths[index]
+                assetName = inAssetNames[index] if inAssetNames else None
+
+                # FBX 파일 검증
+                if not pathUtils.validate_fbx_file(fbxPath):
+                    unreal.log_error(
+                        f"[InterchangeAnimationImporter] FBX 파일 검증 실패: {fbxPath}"
+                    )
+                    continue
+
+                # Content 경로 정규화
+                normalizedDestPath = pathUtils.normalize_content_path(destPath)
+                if normalizedDestPath is None:
+                    unreal.log_error(
+                        f"[InterchangeAnimationImporter] Content 경로 변환 실패: {destPath}"
+                    )
+                    continue
+                destPath = normalizedDestPath
+
+                # 스켈레톤 경로 정규화
+                normalizedSkeletonPath = pathUtils.normalize_content_path(skeletonPath)
+                if normalizedSkeletonPath is None:
+                    unreal.log_error(
+                        f"[InterchangeAnimationImporter] 스켈레톤 경로 변환 실패: {skeletonPath}"
+                    )
+                    continue
+                skeletonPath = normalizedSkeletonPath
+
+                # 스켈레톤 검증
+                skeleton = self._validate_skeleton(skeletonPath)
+
+                # 에셋 이름 결정
+                if assetName is None:
+                    fbxFileName = Path(fbxPath).stem
+                    if not fbxFileName.startswith(self.DEFAULT_ANIMATION_PREFIX):
+                        assetName = f"{self.DEFAULT_ANIMATION_PREFIX}{fbxFileName}"
+                    else:
+                        assetName = fbxFileName
+
+                # 임포트 준비 (디렉토리 생성 + 기존 파일 체크아웃)
+                assetFullPath = self._prepare_asset_for_import(destPath, assetName)
+                if assetFullPath is None:
+                    unreal.log_error(
+                        f"[InterchangeAnimationImporter] 임포트 준비 실패: {destPath}/{assetName}"
+                    )
+                    continue
+
+                # SourceData 생성
+                sourceData = self._create_source_data(fbxPath)
+
+                # 파이프라인 설정
+                pipelineSettings = InterchangePipelineSettings("Animation")
+                pipelinePath = pipelineSettings.get_pipeline_path()
+                pipeline = pipelineSettings.load_pipeline()
+
+                if pipeline is not None:
+                    # 스켈레톤 오버라이드 설정
+                    pipelineSettings.set_property_override("skeleton", skeleton)
+                    # 애니메이션 임포트용 설정 적용
+                    pipelineSettings.configure_for_animation(pipeline)
+
+                    importParams = self._create_import_params(
+                        inOverridePipelines=[pipelinePath]
+                    )
+                else:
+                    unreal.log_warning(
+                        f"[InterchangeAnimationImporter] 파이프라인 로드 실패: {pipelinePath}"
+                    )
+                    importParams = self._create_import_params(inOverridePipelines=None)
+
+                # 비동기 임포트 실행
+                interchangeManager.scripted_import_asset_async(
+                    destPath, sourceData, importParams
+                )
+
+                unreal.log(
+                    f"[InterchangeAnimationImporter] 비동기 임포트 큐에 추가됨: {fbxPath}"
+                )
+
+            except Exception as e:
+                unreal.log_error(
+                    f"[InterchangeAnimationImporter] 비동기 임포트 실패: {fbxPath}, 에러: {e}"
+                )
+
+        unreal.log(
+            f"[InterchangeAnimationImporter] 모든 파일이 비동기 임포트 큐에 추가됨: {len(inFbxPaths)}개"
+        )
