@@ -31,7 +31,7 @@ dev = [
 # test_inUnreal_* 파일은 언리얼 에디터 전용 스크립트로 pytest에서 제외
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "--ignore=tests/ue5/test_inUnreal_animation_import.py --ignore=tests/ue5/test_inUnreal_skeleton_import.py --ignore=tests/ue5/test_inUnreal_skeletal_mesh_import.py --ignore=tests/ue5/test_inUnreal_batch_animation_import.py"
+addopts = "--ignore=tests/ue5/test_inUnreal_animation_import.py --ignore=tests/ue5/test_inUnreal_skeleton_import.py --ignore=tests/ue5/test_inUnreal_skeletal_mesh_import.py --ignore=tests/ue5/test_inUnreal_batch_animation_import.py --ignore=tests/max/test_dependent.py"
 
 [tool.ruff.lint.per-file-ignores]
 # 템플릿 파일은 sys.path 조작 후 import가 필요함 (언리얼 에디터 환경)
