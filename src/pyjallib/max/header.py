@@ -45,6 +45,8 @@ from .morph import Morph
 
 from .rootMotion import RootMotion
 
+from .dependent import Dependent
+
 from .fbxHandler import FBXHandler
 from .toolManager import ToolManager
 
@@ -105,6 +107,8 @@ class Header:
         self.morph = Morph()
         
         self.rootMotion = RootMotion(nameService=self.name, animService=self.anim, constraintService=self.constraint, helperService=self.helper, bipService=self.bip)
+        
+        self.dependent = Dependent(layerService=self.layer)
         
         self.fbx = FBXHandler()
         

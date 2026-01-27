@@ -47,6 +47,8 @@ from pyjallib.max.ue5Skeleton import UE5Skeleton
 
 from pyjallib.max.rootMotion import RootMotion
 
+from pyjallib.max.dependent import Dependent
+
 from pyjallib.max.fbxHandler import FBXHandler
 from pyjallib.max.toolManager import ToolManager
 from pyjallib.max.progress import Progress
@@ -87,6 +89,7 @@ __all__ = [
     'JacketPanel',
     'UE5Skeleton',
     'RootMotion',
+    'Dependent',
     'FBXHandler',
     'ToolManager',
     'Progress',
