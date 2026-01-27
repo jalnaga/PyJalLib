@@ -3,13 +3,13 @@
 UE5 익스포트 시 파이썬 스크립트 템플릿을 실제 코드로 변환하는 기능을 제공합니다.
 
 Interchange Framework 기반 템플릿만 지원합니다.
-외부 의존성: 파이썬 표준 라이브러리만 사용 (logger 제외)
+외부 의존성: 파이썬 표준 라이브러리 + pyjallib.logger
 """
 
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from .logger import ue5_logger
+from pyjallib.logger import Logger
 from .templates import (
     get_template_path, 
     get_all_template_paths, 
@@ -35,7 +35,8 @@ class TemplateProcessor:
     
     def __init__(self):
         """TemplateProcessor 초기화"""
-        ue5_logger.debug("TemplateProcessor 초기화")
+        self._logger = Logger(inLogFileName="ue5_template")
+        self._logger.debug("TemplateProcessor 초기화")
         self._default_output_dir = Path.cwd() / "temp_scripts"
     
     def process_template(self, inTemplatePath: str, inTemplateOutPath: str, inTemplateData: Dict[str, Any]) -> str:
@@ -59,12 +60,12 @@ class TemplateProcessor:
         # 템플릿 파일 존재 확인
         templatePath = Path(inTemplatePath)
         if not templatePath.exists():
-            ue5_logger.error(f"템플릿 파일을 찾을 수 없습니다: {inTemplatePath}")
+            self._logger.error(f"템플릿 파일을 찾을 수 없습니다: {inTemplatePath}")
             raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {inTemplatePath}")
         
         # 템플릿 파일 읽기 권한 확인
         if not os.access(templatePath, os.R_OK):
-            ue5_logger.error(f"템플릿 파일 읽기 권한이 없습니다: {inTemplatePath}")
+            self._logger.error(f"템플릿 파일 읽기 권한이 없습니다: {inTemplatePath}")
             raise PermissionError(f"템플릿 파일 읽기 권한이 없습니다: {inTemplatePath}")
         
         # 템플릿 파일 읽기
@@ -84,14 +85,14 @@ class TemplateProcessor:
         
         # 출력 파일 쓰기 권한 확인 (기존 파일이 있는 경우)
         if outputPath.exists() and not os.access(outputPath, os.W_OK):
-            ue5_logger.error(f"출력 파일 쓰기 권한이 없습니다: {inTemplateOutPath}")
+            self._logger.error(f"출력 파일 쓰기 권한이 없습니다: {inTemplateOutPath}")
             raise PermissionError(f"출력 파일 쓰기 권한이 없습니다: {inTemplateOutPath}")
         
         # 처리된 내용을 파일로 출력
         with open(outputPath, 'w', encoding='utf-8') as file:
             file.write(processedContent)
         
-        ue5_logger.info(f"템플릿 처리 완료: {inTemplatePath} -> {inTemplateOutPath}")
+        self._logger.info(f"템플릿 처리 완료: {inTemplatePath} -> {inTemplateOutPath}")
         return processedContent
 
     # === 템플릿 경로 관리 메서드 ===
@@ -277,13 +278,13 @@ class TemplateProcessor:
             bool: 유효한 데이터면 True, 그렇지 않으면 False
         """
         if not isinstance(template_data, dict):
-            ue5_logger.error(f"템플릿 데이터가 딕셔너리가 아닙니다: {type(template_data)}")
+            self._logger.error(f"템플릿 데이터가 딕셔너리가 아닙니다: {type(template_data)}")
             return False
         
         if required_keys:
             missing_keys = [key for key in required_keys if key not in template_data]
             if missing_keys:
-                ue5_logger.error(f"템플릿 데이터에 필수 키가 누락되었습니다: {missing_keys}")
+                self._logger.error(f"템플릿 데이터에 필수 키가 누락되었습니다: {missing_keys}")
                 return False
         
         return True
@@ -316,7 +317,7 @@ class TemplateProcessor:
             directory_path (str): 새로운 기본 출력 디렉토리 경로
         """
         self._default_output_dir = Path(directory_path)
-        ue5_logger.info(f"기본 출력 디렉토리가 변경되었습니다: {directory_path}")
+        self._logger.info(f"기본 출력 디렉토리가 변경되었습니다: {directory_path}")
     
     # === 편의 메서드 (리스트 변환) ===
     @staticmethod

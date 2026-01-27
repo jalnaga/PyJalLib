@@ -5,37 +5,13 @@
 Unreal Engine 5 패키지
 Unreal Engine 5 작업을 위한 모듈 모음
 
-새로운 구조:
-- Unreal Engine이 실행되지 않아도 사용 가능한 기능들 (templates, templateProcessor, logger 등)
+구조:
+- Unreal Engine이 실행되지 않아도 사용 가능한 기능들 (templates, templateProcessor)
 - Unreal Engine이 필요한 기능들은 inUnreal 서브모듈에 위치
 """
 
 # Unreal Engine 없이도 사용 가능한 기본 모듈들
 __all__ = []
-
-# Logger (조건부 unreal 지원)
-try:
-    from .logger import (
-        ue5_logger,
-        set_log_level,
-        set_ue5_log_level,
-        get_log_file_path,
-        set_log_file_path
-    )
-    __all__.extend([
-        'ue5_logger',
-        'set_log_level',
-        'set_ue5_log_level',
-        'get_log_file_path',
-        'set_log_file_path'
-    ])
-except ImportError as e:
-    ue5_logger = None
-    set_log_level = None
-    set_ue5_log_level = None
-    get_log_file_path = None
-    set_log_file_path = None
-    print(f"[PyJalLib] UE5 Logger를 로드할 수 없습니다: {e}")
 
 # TemplateProcessor (Unreal 없이 사용 가능)
 try:
@@ -43,10 +19,7 @@ try:
     __all__.append('TemplateProcessor')
 except ImportError as e:
     TemplateProcessor = None
-    if ue5_logger:
-        ue5_logger.error(f"TemplateProcessor를 로드할 수 없습니다: {e}")
-    else:
-        print(f"[PyJalLib] TemplateProcessor를 로드할 수 없습니다: {e}")
+    print(f"[PyJalLib] TemplateProcessor를 로드할 수 없습니다: {e}")
 
 # Templates 모듈 (Unreal 없이 사용 가능)
 try:
@@ -79,21 +52,7 @@ except ImportError as e:
     INTERCHANGE_SKELETON_IMPORT_TEMPLATE = None
     INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = None
     INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = None
-    if ue5_logger:
-        ue5_logger.error(f"Templates 모듈을 로드할 수 없습니다: {e}")
-    else:
-        print(f"[PyJalLib] Templates 모듈을 로드할 수 없습니다: {e}")
-
-# disableInterchangeFrameWork (Unreal 없이 사용 가능)
-try:
-    from .disableInterchangeFrameWork import add_disabled_plugins_to_uproject
-    __all__.append('add_disabled_plugins_to_uproject')
-except ImportError as e:
-    add_disabled_plugins_to_uproject = None
-    if ue5_logger:
-        ue5_logger.error(f"disableInterchangeFrameWork를 로드할 수 없습니다: {e}")
-    else:
-        print(f"[PyJalLib] disableInterchangeFrameWork를 로드할 수 없습니다: {e}")
+    print(f"[PyJalLib] Templates 모듈을 로드할 수 없습니다: {e}")
 
 # UE5 의존성 상태를 확인할 수 있는 함수
 def is_ue5_available() -> bool:
@@ -119,23 +78,16 @@ def get_available_modules() -> dict:
     available = {
         'core': [],
         'templates': [],
-        'utils': [],
         'unreal_dependent': []
     }
     
     # Core 모듈들
-    if ue5_logger is not None:
-        available['core'].append('logger')
     if TemplateProcessor is not None:
         available['core'].append('TemplateProcessor')
     
     # Templates 관련
     if get_template_path is not None:
         available['templates'].append('template_management')
-    
-    # Utilities
-    if add_disabled_plugins_to_uproject is not None:
-        available['utils'].append('disableInterchangeFrameWork')
     
     # Unreal 의존성 모듈들 (inUnreal 서브모듈에서 가져오기)
     try:
