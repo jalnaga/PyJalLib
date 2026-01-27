@@ -225,7 +225,9 @@ class InterchangePipelineSettings:
     def configure_for_skeletal_mesh(self, inPipeline: unreal.Object) -> bool:
         """
         스켈레탈 메쉬 임포트를 위해 파이프라인을 설정합니다.
-        (스켈레톤과 동일한 설정)
+
+        스켈레탈 메쉬만 임포트하고, 애니메이션/머티리얼/텍스쳐/피직스에셋은 비활성화합니다.
+        기존 스켈레톤을 참조합니다.
 
         Args:
             inPipeline: InterchangeGenericAssetsPipeline 에셋
@@ -233,7 +235,88 @@ class InterchangePipelineSettings:
         Returns:
             성공 여부
         """
-        return self.configure_for_skeleton(inPipeline)
+        if inPipeline is None:
+            unreal.log_error(
+                "[InterchangePipelineSettings] 파이프라인 에셋이 None입니다"
+            )
+            return False
+
+        try:
+            # 1. 애니메이션 파이프라인 설정 - import_animations = False
+            animationPipeline = inPipeline.get_editor_property("animation_pipeline")
+            if animationPipeline is not None:
+                animationPipeline.set_editor_property("import_animations", False)
+                unreal.log(
+                    "[InterchangePipelineSettings] animation_pipeline.import_animations = False"
+                )
+            else:
+                unreal.log_warning(
+                    "[InterchangePipelineSettings] animation_pipeline이 None입니다"
+                )
+
+            # 2. 머티리얼 파이프라인 설정 - import_materials = False
+            materialPipeline = inPipeline.get_editor_property("material_pipeline")
+            if materialPipeline is not None:
+                materialPipeline.set_editor_property("import_materials", False)
+                unreal.log(
+                    "[InterchangePipelineSettings] material_pipeline.import_materials = False"
+                )
+
+                # 3. 텍스쳐 파이프라인 설정 - import_textures = False
+                texturePipeline = materialPipeline.get_editor_property(
+                    "texture_pipeline"
+                )
+                if texturePipeline is not None:
+                    texturePipeline.set_editor_property("import_textures", False)
+                    unreal.log(
+                        "[InterchangePipelineSettings] material_pipeline.texture_pipeline.import_textures = False"
+                    )
+                else:
+                    unreal.log_warning(
+                        "[InterchangePipelineSettings] texture_pipeline이 None입니다"
+                    )
+            else:
+                unreal.log_warning(
+                    "[InterchangePipelineSettings] material_pipeline이 None입니다"
+                )
+
+            # 4. 메쉬 파이프라인 설정 - create_physics_asset = False
+            meshPipeline = inPipeline.get_editor_property("mesh_pipeline")
+            if meshPipeline is not None:
+                meshPipeline.set_editor_property("create_physics_asset", False)
+                unreal.log(
+                    "[InterchangePipelineSettings] mesh_pipeline.create_physics_asset = False"
+                )
+            else:
+                unreal.log_warning(
+                    "[InterchangePipelineSettings] mesh_pipeline이 None입니다"
+                )
+
+            # 5. common_skeletal_meshes_and_animations_properties를 통한 스켈레톤 설정
+            commonSkeletalProps = inPipeline.get_editor_property(
+                "common_skeletal_meshes_and_animations_properties"
+            )
+            if commonSkeletalProps is not None:
+                # skeleton 오버라이드 적용
+                skeleton = self.get_property_override("skeleton")
+                if skeleton is not None:
+                    commonSkeletalProps.set_editor_property("skeleton", skeleton)
+                    unreal.log(
+                        f"[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties.skeleton = {skeleton.get_name()}"
+                    )
+            else:
+                unreal.log_warning(
+                    "[InterchangePipelineSettings] common_skeletal_meshes_and_animations_properties이 None입니다"
+                )
+
+            unreal.log("[InterchangePipelineSettings] 스켈레탈 메쉬용 파이프라인 설정 완료")
+            return True
+
+        except Exception as e:
+            unreal.log_error(
+                f"[InterchangePipelineSettings] 스켈레탈 메쉬용 파이프라인 설정 중 에러: {e}"
+            )
+            return False
 
     def configure_for_animation(self, inPipeline: unreal.Object) -> bool:
         """
