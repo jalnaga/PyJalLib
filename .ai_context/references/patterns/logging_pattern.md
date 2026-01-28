@@ -163,7 +163,125 @@ pyjallib Logger를 사용하면 다음 기능이 자동으로 제공됩니다:
 
 ---
 
+## 멀티 인스턴스 환경에서의 격리
+
+**업데이트: 2026-01-28**
+
+### 문제 상황
+
+여러 Logger 인스턴스를 생성하는 환경(예: 툴이 pyjallib를 사용하고, pyjallib 내부 모듈도 각자 Logger를 생성)에서 다음 문제가 발생할 수 있습니다:
+
+1. **핸들러 간섭**: 새로운 Logger 인스턴스 생성 시 기존 인스턴스의 핸들러가 영향을 받음
+2. **로그 혼선**: 한 Logger의 로그가 다른 Logger의 파일에 기록됨
+3. **콘솔 중복 출력**: loguru 기본 핸들러로 인한 중복 출력
+
+### 솔루션: 인스턴스별 격리
+
+pyjallib Logger는 다음 기법을 사용하여 완전한 인스턴스 격리를 보장합니다:
+
+#### 1. UUID 기반 인스턴스 식별
+
+```python
+import uuid
+from loguru import logger
+
+class Logger:
+    def __init__(self, ...):
+        # 인스턴스 고유 ID 생성
+        self._instanceId = str(uuid.uuid4())
+
+        # 인스턴스별 바인딩된 logger 생성
+        self._logger = logger.bind(instance_id=self._instanceId)
+```
+
+#### 2. Filter 기반 핸들러 격리
+
+각 핸들러에 filter 함수를 적용하여 자신의 instance_id를 가진 로그만 처리합니다:
+
+```python
+def _setup_logger(self):
+    # 파일 핸들러 - 자신의 instance_id만 처리
+    fileHandlerId = logger.add(
+        str(logFilePath),
+        level=self._logLevel,
+        filter=lambda record: record["extra"].get("instance_id") == self._instanceId
+    )
+
+    # 콘솔 핸들러 - 자신의 instance_id만 처리
+    if self._enableConsole:
+        consoleHandlerId = logger.add(
+            sys.stderr,
+            level=self._logLevel,
+            filter=lambda record: record["extra"].get("instance_id") == self._instanceId
+        )
+```
+
+#### 3. 기본 핸들러 관리
+
+loguru는 기본적으로 stderr 핸들러를 가지고 있습니다. 첫 번째 Logger 인스턴스에서만 이를 제거하여 중복 출력을 방지합니다:
+
+```python
+class Logger:
+    # 클래스 변수: 기본 핸들러 제거 여부 추적
+    _default_handler_removed = False
+
+    def _setup_logger(self):
+        # 첫 번째 Logger 인스턴스인 경우에만 기본 핸들러 제거
+        if not Logger._default_handler_removed:
+            logger.remove()  # 기본 stderr 핸들러 제거
+            Logger._default_handler_removed = True
+```
+
+### 동작 원리
+
+1. **logger1 생성**:
+   - instance_id = "uuid-1" 생성
+   - 기본 핸들러 제거 (첫 인스턴스)
+   - file1 핸들러 추가 (filter: instance_id == "uuid-1")
+   - console1 핸들러 추가 (filter: instance_id == "uuid-1")
+
+2. **logger2 생성**:
+   - instance_id = "uuid-2" 생성
+   - 기본 핸들러는 이미 제거됨 (스킵)
+   - file2 핸들러 추가 (filter: instance_id == "uuid-2")
+   - console2 핸들러 추가 (filter: instance_id == "uuid-2")
+
+3. **logger1.info("message")**:
+   - self._logger.info("message") 호출 → instance_id="uuid-1"로 바인딩됨
+   - 전역 logger에 전달
+   - file1, console1만 filter 통과하여 처리 ✅
+   - file2, console2는 filter에서 차단됨 ❌
+
+### 결과
+
+- ✅ 각 Logger가 자신의 로그 파일에만 기록
+- ✅ 콘솔 출력이 정확히 한 번만 발생
+- ✅ 다른 Logger 인스턴스에 영향 없음
+
+### 테스트 케이스
+
+```python
+# 멀티 인스턴스 격리 테스트
+logger1 = Logger(inLogPath="path1", inLogFileName="log1", inEnableConsole=True)
+logger2 = Logger(inLogPath="path2", inLogFileName="log2", inEnableConsole=True)
+
+logger1.info("Message from logger1")  # → path1/log1_*.log에만 기록
+logger2.info("Message from logger2")  # → path2/log2_*.log에만 기록
+
+# logger1의 핸들러는 logger2 생성 후에도 정상 작동
+logger1.info("Still working")  # ✅ 정상 출력
+```
+
+### 주의사항
+
+1. **logger.remove() 직접 호출 금지**: 다른 인스턴스의 핸들러가 제거됩니다
+2. **전역 logger 직접 사용 금지**: 반드시 `self._logger` (바인딩된 logger) 사용
+3. **테스트 환경에서 격리 검증**: 멀티 인스턴스 시나리오 테스트 필수
+
+---
+
 ## 참고 자료
 
 - pyjallib Logger 소스 코드: `pyjallib/src/pyjallib/logger.py`
 - orvlib pathAndFiles: 개발 모드 확인을 위한 `isDevelopmentMode` 속성 제공
+- loguru 공식 문서: https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.bind

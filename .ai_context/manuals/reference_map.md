@@ -11,6 +11,7 @@
 |:---|:---|:---|
 | **설계 패턴** | Facade, Singleton, Dependency Injection | `../references/patterns/facade_pattern.md` |
 | **로깅 시스템** | Logger, Singleton, 로그 레벨, pyjallib | `../references/patterns/logging_pattern.md` |
+| **Logger 멀티 인스턴스 격리** | loguru bind, filter, 핸들러 격리, UUID | `../references/patterns/logging_pattern.md` (멀티 인스턴스 섹션) |
 | **UE5 에셋 처리** | 경로 변환, `/Game/...`, 에셋 유효성 | `../references/ue5/path_rules.md` |
 | **UE5 Interchange** | 파이프라인 설정, 임포트 필터링 | `../references/ue5/interchange_pipeline.md` |
 | **UE5 에셋 경로 메서드** | get_path_name, get_system_path | `../references/ue5/asset_path_methods.md` |
