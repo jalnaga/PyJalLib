@@ -11,7 +11,15 @@
 			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
 			"D:/root/Omni/Intermediate/PythonStub",
 			"E:/DevStorage_root/DevStorage/ExtPythonPackage/.venv/Lib/site-packages",
-			"J:/My Drive/Programming/Python/UnrealStubs"
+			"D:/Dropbox/Programing/Python/UnrealStubs"
+		],
+		"python.analysis.extraPaths": [
+			"${workspaceFolder}",
+			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
+			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
+			"D:/root/Omni/Intermediate/PythonStub",
+			"E:/DevStorage_root/DevStorage/ExtPythonPackage/.venv/Lib/site-packages",
+			"D:/Dropbox/Programing/Python/UnrealStubs"
 		],
 		"[python]": {
 			"editor.formatOnSave": true,
@@ -30,7 +38,7 @@
 			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
 			"D:/root/Omni/Intermediate/PythonStub",
 			"E:/DevStorage_root/DevStorage/ExtPythonPackage/.venv/Lib/site-packages",
-			"J:/My Drive/Programming/Python/UnrealStubs"
+			"D:/Dropbox/Programing/Python/UnrealStubs"
 		]
 	}
 }
