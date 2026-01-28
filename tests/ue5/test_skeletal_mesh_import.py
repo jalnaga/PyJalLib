@@ -17,7 +17,7 @@ from pathlib import Path
 # =============================================================================
 
 # PyJalLib 패키지 경로
-EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-interchange-skeletal-debug\src"
+EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-import-asset-save-fix\src"
 
 # 스켈레탈 메시 FBX 파일 경로
 FBX_PATH = r"E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BlousonPolo\Upper\SK_Sh_Human_M_BlousonPolo_Upper.fbx"

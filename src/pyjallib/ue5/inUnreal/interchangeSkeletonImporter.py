@@ -60,7 +60,6 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
         inFbxPath: str,
         inDestinationPath: str,
         inAssetName: str = None,
-        inDescription: str = None,
     ) -> Dict[str, Any]:
         """
         FBX 파일에서 스켈레톤을 임포트합니다. (동기 방식)
@@ -69,10 +68,9 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
             inFbxPath: FBX 파일의 절대 경로
             inDestinationPath: /Game/... 형식의 Content 목적지 경로
             inAssetName: 에셋 이름 (None이면 FBX 파일명 기반 자동 생성)
-            inDescription: 소스 컨트롤 체크인 설명
 
         Returns:
-            임포트 결과 딕셔너리
+            임포트 결과 딕셔너리 (LocalPaths 포함)
 
         Example:
             >>> importer = InterchangeSkeletonImporter()
@@ -185,32 +183,25 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
         )
         unreal.AssetToolsHelpers.get_asset_tools().rename_assets([skeletonRenameData])
 
-        # 소스 컨트롤 체크인
-        # get_path_name()은 패키지 경로를 반환 (예: /Game/Path/AssetName.AssetName)
-        skeletonPackagePath = importedSkeletalMesh.skeleton.get_path_name()
-        importedObjectPaths = self.get_dirty_deps(skeletonPackagePath)
-        importedObjectPaths.append(skeletonPackagePath)
+        # 파이프라인 복원 (원본 상태로)
+        if pipeline is not None:
+            self._pipelineSettings.restore_pipeline(pipeline)
 
-        checkInDescription = f"Skeleton Imported by {inFbxPath} to {skeletonFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
+        # 임포트된 에셋 저장
+        self._save_imported_assets(importedObjects)
 
-        if self.is_development_mode():
-            unreal.log(
-                f"[InterchangeSkeletonImporter] 개발 모드 - 스켈레톤 임포트 완료: {inFbxPath}"
-            )
-        else:
-            unreal.SourceControl.check_in_files(
-                importedObjectPaths, checkInDescription, silent=True
-            )
+        # 로컬 절대 경로 수집
+        localPaths = self._get_asset_local_paths(importedObjects)
 
         unreal.log(
             f"[InterchangeSkeletonImporter] 스켈레톤 임포트 성공: {inFbxPath} -> {skeletonName}"
         )
 
-        return self._create_interchange_result_dict(
+        result = self._create_interchange_result_dict(
             inFbxPath, inDestinationPath, skeletonName, True, importedObjects
         )
+        result["LocalPaths"] = localPaths
+        return result
 
     # ========================================================================
     # 배치 임포트 (동기)
@@ -221,7 +212,6 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
         inFbxPaths: List[str],
         inDestinationPaths: List[str],
         inAssetNames: List[str] = None,
-        inDescription: str = None,
         inOnAssetDone: Optional[Callable[[unreal.Object], None]] = None,
         inOnBatchComplete: Optional[Callable[[List[unreal.Object]], None]] = None,
     ) -> Dict[str, Any]:
@@ -232,12 +222,11 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
             inFbxPaths: FBX 파일 절대 경로 리스트
             inDestinationPaths: /Game/... 형식의 Content 목적지 경로 리스트
             inAssetNames: 에셋 이름 리스트 (None이면 FBX 파일명 기반 자동 생성)
-            inDescription: 소스 컨트롤 체크인 설명
             inOnAssetDone: 개별 에셋 완료 콜백
             inOnBatchComplete: 전체 배치 완료 콜백
 
         Returns:
-            배치 임포트 결과 딕셔너리
+            배치 임포트 결과 딕셔너리 (각 결과에 LocalPaths 포함)
 
         Example:
             >>> importer = InterchangeSkeletonImporter()
@@ -275,7 +264,6 @@ class InterchangeSkeletonImporter(InterchangeImporterBase):
                     inFbxPath=fbxPath,
                     inDestinationPath=destPath,
                     inAssetName=assetName,
-                    inDescription=inDescription,
                 )
                 results.append(result)
 

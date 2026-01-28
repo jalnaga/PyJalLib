@@ -17,9 +17,7 @@ from pathlib import Path
 # =============================================================================
 
 # PyJalLib 패키지 경로
-EXT_PACKAGE_PATH = (
-    r"J:\My Drive\Programming\Python\PyJalLib-fix-batch-anim-template\src"
-)
+EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-import-asset-save-fix\src"
 
 # 애니메이션 FBX 파일 경로 리스트
 FBX_PATHS = [

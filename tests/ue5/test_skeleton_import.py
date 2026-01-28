@@ -17,7 +17,7 @@ from pathlib import Path
 # =============================================================================
 
 # PyJalLib 패키지 경로
-EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-interchange-debug\src"
+EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-import-asset-save-fix\src"
 
 # FBX 파일 경로
 FBX_PATH = r"E:\DevStorage_root\DevStorage\Characters\Shared\Human\Male\Mesh\BaseSkeleton3\SK_Sh_Human_M_BaseSkeleton3.fbx"

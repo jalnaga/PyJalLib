@@ -368,6 +368,79 @@ class InterchangeImporterBase:
         return result
     
     # ========================================================================
+    # 에셋 저장 및 체인지리스트 관리
+    # ========================================================================
+
+    def _save_imported_assets(self, inImportedObjects: List[unreal.Object]) -> bool:
+        """
+        임포트된 에셋들을 저장합니다.
+
+        Args:
+            inImportedObjects: 임포트된 오브젝트 리스트
+
+        Returns:
+            저장 성공 여부
+        """
+        if not inImportedObjects:
+            unreal.log("[InterchangeImporterBase] 저장할 에셋이 없습니다")
+            return True
+
+        try:
+            success = unreal.EditorAssetLibrary.save_loaded_assets(
+                inImportedObjects, only_if_is_dirty=True
+            )
+
+            if success:
+                unreal.log(
+                    f"[InterchangeImporterBase] 에셋 저장 완료: {len(inImportedObjects)}개"
+                )
+            else:
+                unreal.log_warning(
+                    f"[InterchangeImporterBase] 에셋 저장 실패: {len(inImportedObjects)}개"
+                )
+
+            return success
+
+        except Exception as e:
+            unreal.log_error(f"[InterchangeImporterBase] 에셋 저장 중 에러: {e}")
+            return False
+
+    def _get_asset_local_paths(
+        self,
+        inImportedObjects: List[unreal.Object]
+    ) -> List[str]:
+        """
+        임포트된 오브젝트들의 로컬 절대 경로를 반환합니다.
+
+        Args:
+            inImportedObjects: 임포트된 오브젝트 리스트
+
+        Returns:
+            로컬 절대 경로 리스트
+        """
+        localPaths = []
+
+        for obj in inImportedObjects:
+            objPath = obj.get_path_name()
+            if objPath:
+                # 패키지 경로 추출 (예: /Game/Path/Asset.Asset -> /Game/Path/Asset)
+                packagePath = objPath.split(".")[0]
+                # Content 경로를 시스템 경로로 변환
+                systemPath = unreal.SystemLibrary.convert_to_absolute_path(
+                    unreal.Paths.project_content_dir()
+                )
+                # /Game/ 를 Content 디렉토리로 변환
+                if packagePath.startswith("/Game/"):
+                    relativePath = packagePath[6:]  # "/Game/" 제거
+                    fullPath = str(Path(systemPath) / relativePath) + ".uasset"
+                    localPaths.append(fullPath)
+                    unreal.log(
+                        f"[InterchangeImporterBase] 로컬 경로: {fullPath}"
+                    )
+
+        return localPaths
+
+    # ========================================================================
     # 에셋 의존성 확인 (소스 컨트롤용)
     # ========================================================================
     

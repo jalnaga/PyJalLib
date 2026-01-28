@@ -88,25 +88,23 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
     # ========================================================================
     
     def import_skeletal_mesh(
-        self, 
-        inFbxPath: str, 
+        self,
+        inFbxPath: str,
         inDestinationPath: str,
         inSkeletonPath: str,
-        inAssetName: str = None, 
-        inDescription: str = None
+        inAssetName: str = None,
     ) -> Dict[str, Any]:
         """
         FBX 파일에서 스켈레탈 메시를 임포트합니다. (동기 방식)
-        
+
         Args:
             inFbxPath: FBX 파일의 절대 경로
             inDestinationPath: /Game/... 형식의 Content 목적지 경로
             inSkeletonPath: /Game/... 형식의 스켈레톤 Content 경로
             inAssetName: 에셋 이름 (None이면 FBX 파일명 기반 자동 생성)
-            inDescription: 소스 컨트롤 체크인 설명
-            
+
         Returns:
-            임포트 결과 딕셔너리
+            임포트 결과 딕셔너리 (LocalPaths 포함)
             
         Example:
             >>> importer = InterchangeSkeletalMeshImporter()
@@ -202,58 +200,54 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
             unreal.log_error(f"[InterchangeSkeletalMeshImporter] {error_msg}")
             raise ValueError(error_msg)
         
-        # 소스 컨트롤 체크인
-        skeletalMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh)
-        importedObjectPaths = self.get_dirty_deps(assetFullPath)
-        importedObjectPaths.append(skeletalMeshSystemFullPath)
+        # 파이프라인 복원 (원본 상태로)
+        if pipeline is not None:
+            self._pipelineSettings.restore_pipeline(pipeline)
         
-        checkInDescription = f"SkeletalMesh Imported by {inFbxPath} to {assetFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
-        
-        if self.is_development_mode():
-            unreal.log(f"[InterchangeSkeletalMeshImporter] 개발 모드 - 스켈레탈 메시 임포트 완료: {inFbxPath}")
-        else:
-            unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
-        
+        # 임포트된 에셋 저장
+        self._save_imported_assets(importedObjects)
+
+        # 로컬 절대 경로 수집
+        localPaths = self._get_asset_local_paths(importedObjects)
+
         unreal.log(f"[InterchangeSkeletalMeshImporter] 스켈레탈 메시 임포트 성공: {inFbxPath} -> {inAssetName}")
-        
-        return self._create_interchange_result_dict(
-            inFbxPath, 
-            inDestinationPath, 
-            inAssetName, 
+
+        result = self._create_interchange_result_dict(
+            inFbxPath,
+            inDestinationPath,
+            inAssetName,
             True,
             importedObjects
         )
+        result["LocalPaths"] = localPaths
+        return result
     
     # ========================================================================
     # 배치 임포트 (동기)
     # ========================================================================
     
     def import_skeletal_meshes(
-        self, 
+        self,
         inFbxPaths: List[str],
         inDestinationPaths: List[str],
         inSkeletonPaths: List[str],
         inAssetNames: List[str] = None,
-        inDescription: str = None,
         inOnAssetDone: Optional[Callable[[unreal.Object], None]] = None,
-        inOnBatchComplete: Optional[Callable[[List[unreal.Object]], None]] = None
+        inOnBatchComplete: Optional[Callable[[List[unreal.Object]], None]] = None,
     ) -> Dict[str, Any]:
         """
         여러 FBX 파일에서 스켈레탈 메시를 배치 임포트합니다. (동기 방식)
-        
+
         Args:
             inFbxPaths: FBX 파일 절대 경로 리스트
             inDestinationPaths: /Game/... 형식의 Content 목적지 경로 리스트
             inSkeletonPaths: /Game/... 형식의 스켈레톤 Content 경로 리스트
             inAssetNames: 에셋 이름 리스트 (None이면 FBX 파일명 기반 자동 생성)
-            inDescription: 소스 컨트롤 체크인 설명
             inOnAssetDone: 개별 에셋 완료 콜백
             inOnBatchComplete: 전체 배치 완료 콜백
-            
+
         Returns:
-            배치 임포트 결과 딕셔너리
+            배치 임포트 결과 딕셔너리 (각 결과에 LocalPaths 포함)
             
         Example:
             >>> importer = InterchangeSkeletalMeshImporter()
@@ -293,11 +287,10 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
                 assetName = inAssetNames[index] if inAssetNames else None
                 
                 result = self.import_skeletal_mesh(
-                    inFbxPath=fbxPath, 
+                    inFbxPath=fbxPath,
                     inDestinationPath=destPath,
                     inSkeletonPath=skeletonPath,
-                    inAssetName=assetName, 
-                    inDescription=inDescription
+                    inAssetName=assetName,
                 )
                 results.append(result)
                 

@@ -38,9 +38,9 @@ class InterchangePipelineSettings:
     # 기본 파이프라인 에셋 경로 상수
     # ========================================================================
 
-    # UE5 기본 제공 파이프라인 (하나만 사용)
+    # 프로젝트 커스텀 파이프라인 (엔진 기본 파이프라인은 읽기 전용이므로 사용하지 않음)
     DEFAULT_PIPELINE_PATH = (
-        "/Interchange/Pipelines/DefaultAssetsPipeline.DefaultAssetsPipeline"
+        "/Game/Omni/Tools/InterchangePipeline/ORV_DefaultAssetsPipeline.ORV_DefaultAssetsPipeline"
     )
 
     def __init__(self, inAssetType: Optional[str] = None):
@@ -53,6 +53,7 @@ class InterchangePipelineSettings:
         """
         self._assetType = inAssetType
         self._propertyOverrides: dict = {}
+        self._originalValues: dict = {}
 
     # ========================================================================
     # 속성 오버라이드 관리
@@ -134,6 +135,220 @@ class InterchangePipelineSettings:
         return asset
 
     # ========================================================================
+    # 파이프라인 원본 값 저장/복원
+    # ========================================================================
+
+    def _store_original_values(self, inPipeline: unreal.Object) -> bool:
+        """
+        파이프라인의 원본 속성 값을 저장합니다.
+
+        configure_for_* 메서드 호출 전에 실행되어 원본 값을 보존합니다.
+        임포트 완료 후 restore_pipeline()으로 복원합니다.
+
+        저장 대상:
+        - animation_pipeline.import_animations
+        - material_pipeline.import_materials
+        - material_pipeline.texture_pipeline.import_textures
+        - mesh_pipeline.create_physics_asset
+        - common_skeletal_meshes_and_animations_properties.skeleton
+        - common_skeletal_meshes_and_animations_properties.import_only_animations
+
+        Args:
+            inPipeline: InterchangeGenericAssetsPipeline 에셋
+
+        Returns:
+            성공 여부
+        """
+        if inPipeline is None:
+            unreal.log_error(
+                "[InterchangePipelineSettings] 원본 값 저장 실패: 파이프라인 에셋이 None입니다"
+            )
+            return False
+
+        # 이미 저장된 원본 값이 있으면 덮어쓰지 않음 (첫 번째 저장 값 유지)
+        if self._originalValues:
+            unreal.log(
+                "[InterchangePipelineSettings] 원본 값이 이미 저장되어 있음 - 건너뜀"
+            )
+            return True
+
+        try:
+            self._originalValues = {}
+
+            # 1. animation_pipeline.import_animations
+            animationPipeline = inPipeline.get_editor_property("animation_pipeline")
+            if animationPipeline is not None:
+                self._originalValues["animation_pipeline.import_animations"] = (
+                    animationPipeline.get_editor_property("import_animations")
+                )
+
+            # 2. material_pipeline.import_materials
+            materialPipeline = inPipeline.get_editor_property("material_pipeline")
+            if materialPipeline is not None:
+                self._originalValues["material_pipeline.import_materials"] = (
+                    materialPipeline.get_editor_property("import_materials")
+                )
+
+                # 3. texture_pipeline.import_textures
+                texturePipeline = materialPipeline.get_editor_property("texture_pipeline")
+                if texturePipeline is not None:
+                    self._originalValues["texture_pipeline.import_textures"] = (
+                        texturePipeline.get_editor_property("import_textures")
+                    )
+
+            # 4. mesh_pipeline.create_physics_asset
+            meshPipeline = inPipeline.get_editor_property("mesh_pipeline")
+            if meshPipeline is not None:
+                self._originalValues["mesh_pipeline.create_physics_asset"] = (
+                    meshPipeline.get_editor_property("create_physics_asset")
+                )
+
+            # 5. common_skeletal_meshes_and_animations_properties
+            commonSkeletalProps = inPipeline.get_editor_property(
+                "common_skeletal_meshes_and_animations_properties"
+            )
+            if commonSkeletalProps is not None:
+                self._originalValues["common_skeletal_props.skeleton"] = (
+                    commonSkeletalProps.get_editor_property("skeleton")
+                )
+                self._originalValues["common_skeletal_props.import_only_animations"] = (
+                    commonSkeletalProps.get_editor_property("import_only_animations")
+                )
+
+            unreal.log(
+                f"[InterchangePipelineSettings] 원본 값 저장 완료: {len(self._originalValues)}개 속성"
+            )
+            return True
+
+        except Exception as e:
+            unreal.log_error(
+                f"[InterchangePipelineSettings] 원본 값 저장 중 에러: {e}"
+            )
+            self._originalValues = {}
+            return False
+
+    def restore_pipeline(self, inPipeline: unreal.Object) -> bool:
+        """
+        파이프라인을 원본 상태로 복원합니다.
+
+        _store_original_values()로 저장된 원본 값으로 파이프라인 속성을 복원한 후,
+        Perforce에서 파일을 리버트하여 디스크 상태도 원본으로 되돌립니다.
+
+        Args:
+            inPipeline: InterchangeGenericAssetsPipeline 에셋
+
+        Returns:
+            성공 여부
+        """
+        if inPipeline is None:
+            unreal.log_error(
+                "[InterchangePipelineSettings] 파이프라인 복원 실패: 파이프라인 에셋이 None입니다"
+            )
+            return False
+
+        if not self._originalValues:
+            unreal.log(
+                "[InterchangePipelineSettings] 복원할 원본 값이 없음 - 건너뜀"
+            )
+            return True
+
+        try:
+            # 1. animation_pipeline.import_animations 복원
+            animationPipeline = inPipeline.get_editor_property("animation_pipeline")
+            if animationPipeline is not None:
+                originalImportAnimations = self._originalValues.get(
+                    "animation_pipeline.import_animations"
+                )
+                if originalImportAnimations is not None:
+                    animationPipeline.set_editor_property(
+                        "import_animations", originalImportAnimations
+                    )
+
+            # 2. material_pipeline.import_materials 복원
+            materialPipeline = inPipeline.get_editor_property("material_pipeline")
+            if materialPipeline is not None:
+                originalImportMaterials = self._originalValues.get(
+                    "material_pipeline.import_materials"
+                )
+                if originalImportMaterials is not None:
+                    materialPipeline.set_editor_property(
+                        "import_materials", originalImportMaterials
+                    )
+
+                # 3. texture_pipeline.import_textures 복원
+                texturePipeline = materialPipeline.get_editor_property("texture_pipeline")
+                if texturePipeline is not None:
+                    originalImportTextures = self._originalValues.get(
+                        "texture_pipeline.import_textures"
+                    )
+                    if originalImportTextures is not None:
+                        texturePipeline.set_editor_property(
+                            "import_textures", originalImportTextures
+                        )
+
+            # 4. mesh_pipeline.create_physics_asset 복원
+            meshPipeline = inPipeline.get_editor_property("mesh_pipeline")
+            if meshPipeline is not None:
+                originalCreatePhysicsAsset = self._originalValues.get(
+                    "mesh_pipeline.create_physics_asset"
+                )
+                if originalCreatePhysicsAsset is not None:
+                    meshPipeline.set_editor_property(
+                        "create_physics_asset", originalCreatePhysicsAsset
+                    )
+
+            # 5. common_skeletal_meshes_and_animations_properties 복원
+            commonSkeletalProps = inPipeline.get_editor_property(
+                "common_skeletal_meshes_and_animations_properties"
+            )
+            if commonSkeletalProps is not None:
+                originalSkeleton = self._originalValues.get(
+                    "common_skeletal_props.skeleton"
+                )
+                # skeleton은 None일 수 있으므로 키 존재 여부로 확인
+                if "common_skeletal_props.skeleton" in self._originalValues:
+                    commonSkeletalProps.set_editor_property("skeleton", originalSkeleton)
+
+                originalImportOnlyAnimations = self._originalValues.get(
+                    "common_skeletal_props.import_only_animations"
+                )
+                if originalImportOnlyAnimations is not None:
+                    commonSkeletalProps.set_editor_property(
+                        "import_only_animations", originalImportOnlyAnimations
+                    )
+
+            # 원본 값 초기화 (다음 임포트를 위해)
+            self._originalValues = {}
+
+            # 파이프라인 에셋 리버트 (Perforce에서 변경 사항 되돌리기)
+            pipelinePath = inPipeline.get_path_name()
+            if pipelinePath:
+                packagePath = pipelinePath.split(".")[0]
+                reverted = unreal.SourceControl.revert_files([packagePath])
+                if reverted:
+                    unreal.log(
+                        f"[InterchangePipelineSettings] 파이프라인 에셋 리버트 완료: {packagePath}"
+                    )
+                    # 리버트 후 에셋 리로드 (메모리 dirty 상태 해제)
+                    unreal.EditorAssetLibrary.load_asset(packagePath)
+                    unreal.log(
+                        f"[InterchangePipelineSettings] 파이프라인 에셋 리로드 완료: {packagePath}"
+                    )
+                else:
+                    unreal.log_warning(
+                        f"[InterchangePipelineSettings] 파이프라인 에셋 리버트 실패 (이미 최신 상태이거나 체크아웃 상태 아님): {packagePath}"
+                    )
+
+            unreal.log("[InterchangePipelineSettings] 파이프라인 복원 완료")
+            return True
+
+        except Exception as e:
+            unreal.log_error(
+                f"[InterchangePipelineSettings] 파이프라인 복원 중 에러: {e}"
+            )
+            return False
+
+    # ========================================================================
     # 파이프라인 설정 메서드
     # ========================================================================
 
@@ -161,6 +376,9 @@ class InterchangePipelineSettings:
                 "[InterchangePipelineSettings] 파이프라인 에셋이 None입니다"
             )
             return False
+
+        # 원본 값 저장 (설정 변경 전)
+        self._store_original_values(inPipeline)
 
         try:
             # 1. 애니메이션 파이프라인 설정 - import_animations = False
@@ -240,6 +458,9 @@ class InterchangePipelineSettings:
                 "[InterchangePipelineSettings] 파이프라인 에셋이 None입니다"
             )
             return False
+
+        # 원본 값 저장 (설정 변경 전)
+        self._store_original_values(inPipeline)
 
         try:
             # 1. 애니메이션 파이프라인 설정 - import_animations = False
@@ -336,6 +557,9 @@ class InterchangePipelineSettings:
                 "[InterchangePipelineSettings] 파이프라인 에셋이 None입니다"
             )
             return False
+
+        # 원본 값 저장 (설정 변경 전)
+        self._store_original_values(inPipeline)
 
         try:
             # 1. 애니메이션 파이프라인 설정 - import_animations = True

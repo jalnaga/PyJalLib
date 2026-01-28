@@ -17,13 +17,13 @@ from pathlib import Path
 # =============================================================================
 
 # PyJalLib 패키지 경로
-EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-interchange-anim-debug\src"
+EXT_PACKAGE_PATH = r"J:\My Drive\Programming\Python\PyJalLib-import-asset-save-fix\src"
 
 # 애니메이션 FBX 파일 경로
-FBX_PATH = r"E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_HeadShakeThink_Loop-RBr-Enter.fbx"
+FBX_PATH = r"E:\DevStorage_root\DevStorage\Characters\NormalMonster\GumhoDistrictBully\Male\Animation\Battle\Action\Fist\A_Nm_GHDtBully_M_Battle_Action_Fist_MonsterSkill_1.fbx"
 
 # UE5 Content 경로
-DESTINATION_PATH = "/Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default"
+DESTINATION_PATH = "/Game/Omni/Characters/NormalMonster/GumhoDistrictBully/Male/Animation/Battle/Action/Fist"
 SKELETON_PATH = "/Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton3/SKEL_Sh_Human_M_BaseSkeleton3"
 
 # 출력 파일 경로
