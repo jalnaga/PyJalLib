@@ -12,3 +12,6 @@ wheels/
 # Chace
 .pytest_cache/
 .ruff_cache/
+
+# Claude files
+.claude/

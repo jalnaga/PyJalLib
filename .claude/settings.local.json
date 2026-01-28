@@ -4,7 +4,9 @@
       "Bash(git worktree:*)",
       "Bash(uv run:*)",
       "Bash(git merge:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)"
     ]
   }
 }
