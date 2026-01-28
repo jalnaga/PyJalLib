@@ -10,9 +10,11 @@
 | 상황 (Context) | 핵심 키워드 | 참조 문서 (Link) |
 |:---|:---|:---|
 | **설계 패턴** | Facade, Singleton, Dependency Injection | `../references/patterns/facade_pattern.md` |
+| **로깅 시스템** | Logger, Singleton, 로그 레벨, pyjallib | `../references/patterns/logging_pattern.md` |
 | **UE5 에셋 처리** | 경로 변환, `/Game/...`, 에셋 유효성 | `../references/ue5/path_rules.md` |
 | **UE5 Interchange** | 파이프라인 설정, 임포트 필터링 | `../references/ue5/interchange_pipeline.md` |
 | **UE5 에셋 경로 메서드** | get_path_name, get_system_path | `../references/ue5/asset_path_methods.md` |
+| **UE5 임포트 + Perforce** | 임포트 후 체인지리스트 관리, reopen, 서밋 | `../references/ue5/import_perforce_workflow.md` |
 | **3ds Max 스크립트** | pymxs, MaxScript 래핑, Node 조작 | `../references/max/pymxs_layer.md` |
 | **3ds Max 애니메이션** | 키프레임, animate on, attime | `../references/max/animation_context.md` |
 | **버전 관리 (P4)** | Perforce, 체크아웃, 서브밋, P4Python | `../references/integrations/perforce_pattern.md` |
@@ -24,6 +26,7 @@
 ### 1. Design Patterns (공통 아키텍처)
 새로운 모듈을 설계하거나 기존 구조를 리팩토링할 때 참고합니다.
 - **Facade Pattern:** 복잡한 서브시스템을 단순한 인터페이스로 감쌀 때. (`src/pyjallib/max` 패키지 구조 등)
+- **Logging Pattern:** Singleton 패턴으로 전역 Logger 인스턴스를 관리하는 방법. 개발 모드에 따른 로그 레벨 자동 설정. print문 교체 가이드 포함.
 
 ### 2. Unreal Engine 5 (UE5)
 UE5 Python API(`unreal`)를 사용하는 작업 시 참고합니다.

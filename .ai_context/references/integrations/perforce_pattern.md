@@ -78,9 +78,39 @@ if others:
     print("Files locked by others!")
 ```
 
+### 4. 체인지리스트 파일 이동 (Reopen) 및 서밋
+
+```python
+# 1. 새 체인지리스트 생성
+cl_info = p4_service.create_change_list("Import animation: MyAnim")
+cl_number = cl_info.get("id") or cl_info.get("change")
+
+try:
+    # 2. 기존 체크아웃된 파일들을 새 체인지리스트로 이동
+    asset_paths = ["E:/OmniP4_root/Omni/Content/Anim/MyAnim.uasset"]
+    p4_service.edit_change_list(cl_number, add_file_paths=asset_paths)
+
+    # 3. 체인지리스트 서밋
+    submit_result = p4_service.submit_change_list(cl_number)
+    if submit_result is False:
+        print("Empty changelist - automatically deleted")
+    else:
+        print(f"Submitted as changelist {cl_number}")
+
+except P4Exception as e:
+    # 에러 발생 시 생성된 체인지리스트 삭제 (rollback)
+    try:
+        p4_service.delete_change_list(cl_number)
+    except:
+        pass  # 삭제 실패는 무시
+    raise
+```
+
 ---
 
 ## 주의 사항
 
 1. **경로 정규화:** P4는 경로 대소문자나 슬래시 방향에 민감할 수 있습니다. `_normalize_path`를 통해 항상 절대 경로로 변환하여 사용합니다.
 2. **빈 체인지리스트:** 파일이 없는 체인지리스트는 제출 시 삭제됩니다. (Perforce 기본 동작)
+3. **Reopen 실패 처리:** 파일을 새 체인지리스트로 이동(reopen) 중 실패하면 생성된 체인지리스트를 삭제(rollback)하여 깔끔하게 정리합니다.
+4. **반환값 형식:** `create_change_list`는 워크스페이스에 따라 `{"id": 번호}` 또는 `{"change": 번호}` 형식으로 반환할 수 있으므로 두 키를 모두 확인합니다.
