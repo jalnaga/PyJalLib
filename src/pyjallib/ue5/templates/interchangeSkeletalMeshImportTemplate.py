@@ -25,5 +25,6 @@ result = skeletalMeshImporter.import_skeletal_mesh(
     inFbxPath=fbxPath,
     inDestinationPath=destinationPath,
     inSkeletonPath=skeletonPath,
-    inAssetName=actualAssetName
+    inAssetName=actualAssetName,
+    inForceReplaceSkeleton=True
 )

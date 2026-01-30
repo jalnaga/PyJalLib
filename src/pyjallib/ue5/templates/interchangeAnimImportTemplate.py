@@ -25,5 +25,6 @@ result = animImporter.import_animation(
     inFbxPath=fbxPath,
     inDestinationPath=destinationPath,
     inSkeletonPath=skeletonPath,
-    inAssetName=actualAssetName
+    inAssetName=actualAssetName,
+    inForceReplaceSkeleton=True
 )

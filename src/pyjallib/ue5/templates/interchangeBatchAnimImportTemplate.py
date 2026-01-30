@@ -26,5 +26,6 @@ animImporter.import_animations_async(
     inFbxPaths=fbxPaths,
     inDestinationPaths=destinationPaths,
     inSkeletonPaths=skeletonPaths,
-    inAssetNames=actualAssetNames
+    inAssetNames=actualAssetNames,
+    inForceReplaceSkeleton=True
 )

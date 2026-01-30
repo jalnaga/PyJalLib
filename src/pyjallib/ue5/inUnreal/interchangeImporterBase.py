@@ -122,31 +122,41 @@ class InterchangeImporterBase:
     # ========================================================================
     
     def _create_import_params(
-        self, 
+        self,
         inOverridePipelines: Optional[List[str]] = None,
         inIsAutomated: bool = True,
         inReimportAsset: Optional[unreal.Object] = None
     ) -> unreal.ImportAssetParameters:
         """
         ImportAssetParameters를 생성합니다.
-        
+
         Args:
             inOverridePipelines: 오버라이드할 파이프라인 에셋 경로 리스트
             inIsAutomated: 자동화 임포트 여부
             inReimportAsset: 리임포트할 에셋 (None이면 새 임포트)
-            
+
         Returns:
             ImportAssetParameters 인스턴스
+
+        Note:
+            UE5 ImportAssetParameters 주요 속성:
+            - reimport_asset (Object): None이면 새 임포트, 기존 에셋 객체 설정 시 리임포트
+            - replace_existing (bool): True 설정 시 같은 이름의 기존 에셋을 새 임포트로 덮어씀
+            - is_automated (bool): True 설정 시 모달 창 없이 자동 처리
         """
         importParams = unreal.ImportAssetParameters()
         importParams.is_automated = inIsAutomated
-        
+
+        # 기존 에셋 덮어쓰기 강제 - 항상 새 임포트로 처리
+        importParams.replace_existing = True
+        unreal.log("[InterchangeImporterBase] replace_existing=True: 기존 에셋이 있어도 새 임포트로 강제")
+
         # 파이프라인 오버라이드 설정
         if inOverridePipelines:
             softPaths = [self._create_soft_object_path(path) for path in inOverridePipelines]
             importParams.override_pipelines = softPaths
             unreal.log(f"[InterchangeImporterBase] 파이프라인 오버라이드 설정: {inOverridePipelines}")
-        
+
         # 리임포트 에셋 설정
         if inReimportAsset is not None:
             importParams.reimport_asset = inReimportAsset
