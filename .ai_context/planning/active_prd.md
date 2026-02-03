@@ -1,123 +1,98 @@
 # Active PRD
 
-## InterchangeImporter 자동 Reimport 방지
+> 이 파일은 현재 개발 중인 기능의 PRD(Product Requirements Document)를 작성하는 공간입니다.
+> 기능 완료 후 `archive/YYYYMMDD_FeatureName_PRD.md` 형식으로 아카이빙하고 이 파일을 비웁니다.
+
+## [기능명]
 
 ### Background & Intent
 
-현재 `InterchangeImporterBase`를 사용하여 에셋을 임포트할 때, 동일한 이름의 에셋이 이미 존재하면 UE5가 자동으로 reimport로 전환하는 문제가 발생합니다. 이는 의도하지 않은 동작이며, 사용자는 기존 에셋이 있더라도 **무조건 새로운 임포트를 강제**하고 싶어합니다.
+**왜 이 기능이 필요한가?**
+- 현재 문제점 또는 요구사항 설명
+- 해결하고자 하는 비즈니스 목표
+- 사용자 시나리오
 
-**문제 현상:**
-- 같은 이름의 에셋이 존재할 때 자동으로 reimport 모드로 전환됨
-- 새 임포트를 원하지만 UE5가 자동으로 리임포트로 판단함
-
-**기대 동작:**
-- 기존 에셋 존재 여부와 관계없이 항상 새로운 임포트로 처리
-- 임포트 파라미터에서 reimport 자동 전환을 방지
+**기대 효과:**
+- 이 기능이 제공하는 가치
+- 개선되는 워크플로우
 
 ### Primary Manual
 
-`.ai_context/manuals/test_process.md`
+`.ai_context/manuals/workflow/new_feature.md`
 
 ### Technical Decisions & References
 
-**문제 원인 분석:**
-- `_create_import_params` 메서드에서 `inReimportAsset` 파라미터를 받고 있음
-- UE5 InterchangeManager가 기존 에셋을 감지하면 자동으로 reimport로 전환하는 것으로 추정
-
-**해결 방안:**
-1. ImportAssetParameters에 reimport 방지 옵션 설정
-2. `is_automated=True` 외에 추가 파라미터 확인 필요
-3. UE5 Interchange Framework의 reimport 자동 전환 메커니즘 조사
+**기술적 접근 방법:**
+- 선택한 아키텍처/디자인 패턴
+- 대안들과 비교 (장단점)
+- 왜 이 방법을 선택했는가?
 
 **참고 파일:**
-- `src/pyjallib/ue5/inUnreal/interchangeImporterBase.py`
+- 관련 모듈 경로
+- 참조할 레퍼런스 문서
+
+**참고 문서:**
+- `.ai_context/references/patterns/facade_pattern.md` (예시)
+- 기타 관련 레퍼런스
 
 ### Scope & Prioritization
 
 #### [Must-Have]
 
-1. **임포트 파라미터에 reimport 방지 설정 추가**
-   - ImportAssetParameters에서 reimport 자동 전환을 방지하는 플래그 설정
-   - UE5 API 문서 조사하여 적절한 파라미터 확인
+**핵심 기능 (반드시 구현)**
+1. 기능 1 설명
+   - 구체적인 요구사항
+   - 성공 기준
 
-2. **_create_import_params 메서드 수정**
-   - reimport를 무조건 방지하도록 파라미터 설정
-   - 기존 `inReimportAsset` 파라미터는 유지하되, 새로운 옵션 추가
+2. 기능 2 설명
+   - 구체적인 요구사항
+   - 성공 기준
 
 #### [Should-Have]
 
-1. **간단한 테스트로 동작 확인**
-   - 같은 이름의 에셋이 있을 때 새 임포트가 강제되는지 확인
-   - 수동 테스트로 검증 가능
+**중요하지만 필수는 아닌 기능**
+1. 기능 3 설명
+   - 왜 Should-Have인가?
 
 #### [Nice-to-Have]
 
-- 없음
+**있으면 좋은 기능**
+1. 기능 4 설명
 
 #### [Non-Goal]
 
-1. **다른 임포트 로직 수정**: 임포트 파라미터 외의 로직은 수정하지 않음
-2. **리팩터링**: 코드 구조 변경 없이 파라미터만 수정
-3. **자동화 테스트 추가**: 단순 파라미터 설정 변경이므로 수동 테스트로 충분
+**명시적으로 하지 않을 것**
+1. 범위를 벗어난 작업
+2. 나중에 할 작업
 
 ---
 
-### 수동 테스트 가이드
+### Test Strategy
 
-#### 테스트 목적
+**테스트 방법:**
+- Automated Console Test (자동화 가능)
+- User-Driven Log Test (수동 실행 필요)
+- Console Trigger + Log Test (자동 실행 + 로그 분석)
 
-`replace_existing=True` 설정이 올바르게 동작하여 같은 이름의 에셋이 있어도 새 임포트로 강제되는지 검증합니다.
+**테스트 시나리오:**
+1. 시나리오 1
+2. 시나리오 2
 
-#### 테스트 시나리오
+**성공 기준:**
+- [ ] 기준 1
+- [ ] 기준 2
 
-**시나리오 1: 기존 에셋이 존재하는 경우**
+---
 
-1. **사전 조건:**
-   - UE5 프로젝트에 `/Game/Test/TestAsset` 경로에 에셋이 이미 존재
-   - 동일한 이름의 소스 파일(예: FBX)을 다른 내용으로 준비
+## PRD 작성 가이드
 
-2. **실행:**
-   - `InterchangeImporterBase`를 사용하여 동일한 경로(`/Game/Test/`)에 동일한 이름(`TestAsset`)으로 임포트 실행
-   - 임포트 파라미터는 `_create_import_params()` 메서드로 생성 (기본값 사용)
+**작성 시점:** 새로운 기능 개발 시작 전
+**승인 필요:** 사용자 승인 후 구현 시작
+**업데이트:** 요구사항 변경 시 즉시 반영
+**아카이빙:** 기능 완료 후 `archive/` 폴더로 이동
 
-3. **기대 결과:**
-   - 로그에 `replace_existing=True: 기존 에셋이 있어도 새 임포트로 강제` 메시지 출력
-   - 기존 에셋이 새로운 내용으로 **덮어쓰기**됨
-   - Reimport 모드가 아닌 **새 임포트 모드**로 동작
-   - 에셋의 타임스탬프 및 메타데이터가 갱신됨
-
-4. **검증 방법:**
-   - UE5 Output Log에서 `[InterchangeImporterBase] replace_existing=True` 로그 확인
-   - Content Browser에서 에셋의 수정 날짜/시간 확인
-   - 에셋을 열어서 내용이 새 파일의 내용으로 변경되었는지 확인
-
-**시나리오 2: 기존 에셋이 없는 경우**
-
-1. **사전 조건:**
-   - UE5 프로젝트에 `/Game/Test/NewAsset` 경로에 에셋이 존재하지 않음
-   - 소스 파일(예: FBX) 준비
-
-2. **실행:**
-   - `InterchangeImporterBase`를 사용하여 `/Game/Test/` 경로에 `NewAsset` 이름으로 임포트 실행
-
-3. **기대 결과:**
-   - 로그에 `replace_existing=True` 메시지 출력
-   - 새 에셋이 정상적으로 생성됨
-   - 에러나 경고 없이 임포트 완료
-
-4. **검증 방법:**
-   - Content Browser에서 새 에셋 생성 확인
-   - 에셋을 열어서 내용이 올바르게 임포트되었는지 확인
-
-#### 주요 체크포인트
-
-- [ ] Output Log에 `replace_existing=True` 메시지가 출력되는가?
-- [ ] 같은 이름의 에셋이 있을 때 reimport가 아닌 새 임포트로 동작하는가?
-- [ ] 기존 에셋이 새로운 내용으로 덮어쓰기되는가?
-- [ ] 기존 에셋이 없을 때도 정상적으로 임포트되는가?
-
-#### 주의사항
-
-- **백업 필수:** 테스트 전에 기존 에셋을 백업하거나 테스트 전용 에셋 사용
-- **로그 확인:** UE5 Output Log 레벨을 `Log` 이상으로 설정하여 모든 로그 메시지 확인
-- **재현성:** 같은 소스 파일로 여러 번 반복 테스트하여 일관된 동작 확인
+**작성 원칙:**
+- 구체적이고 명확하게 작성
+- "왜"를 명시 (기술적 결정의 이유)
+- 대안과 트레이드오프를 기록
+- Must-Have에 집중, 나머지는 나중에

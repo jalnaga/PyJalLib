@@ -1,19 +1,67 @@
 # Active Task List
 
-## InterchangeImporter 자동 Reimport 방지
+> 이 파일은 현재 개발 중인 기능의 작업 목록을 관리하는 공간입니다.
+> 기능 완료 후 `archive/YYYYMMDD_FeatureName_Tasks.md` 형식으로 아카이빙하고 이 파일을 비웁니다.
+
+## [기능명]
 
 ### Tasks
 
-- [x] **Task 1:** UE5 ImportAssetParameters API 조사
-  - ImportAssetParameters의 reimport 관련 속성 확인
-  - reimport 자동 전환을 방지할 수 있는 파라미터 파악
-  - 코드 주석에 조사 결과 기록
+- [ ] **Task 1:** [작업 제목]
+  - 작업 내용 설명
+  - 구현 세부사항
+  - 참고 파일 경로
 
-- [x] **Task 2:** _create_import_params 메서드 수정
-  - reimport 방지를 위한 파라미터 설정 추가
-  - 기존 `inReimportAsset` 파라미터 처리 로직은 유지
-  - 무조건 새 임포트로 강제하도록 설정
+- [ ] **Task 2:** [작업 제목]
+  - 작업 내용 설명
+  - 구현 세부사항
 
-- [x] **Task 3:** 수동 테스트 가이드 작성
-  - 같은 이름의 에셋이 있을 때 테스트 시나리오 작성
-  - 새 임포트가 강제되는지 확인하는 방법 문서화
+- [ ] **Task 3:** [작업 제목]
+  - 작업 내용 설명
+
+---
+
+## Task 작성 가이드
+
+**작업 단위:**
+- 1-2시간 내에 완료 가능한 크기로 분할
+- 구체적이고 실행 가능한 작업으로 작성
+- 테스트 가능한 단위로 구성
+
+**체크박스 규칙:**
+- `[ ]`: 미완료
+- `[x]`: 완료
+
+**Task Loop 준수:**
+1. Pick: 첫 번째 미완료 작업 선택
+2. Execute: 작업 수행
+3. Test: 테스트 실행
+4. Update: 체크박스를 `[x]`로 변경
+5. Report & STOP: 사용자에게 보고 후 대기
+6. Wait: 사용자 승인 대기
+
+**주의사항:**
+- 작업 완료 후 즉시 체크박스 업데이트
+- 테스트 실패 시 다음 작업으로 진행하지 않음
+- 사용자 승인 없이 다음 작업 진행 금지
+
+**예제:**
+
+```markdown
+### Tasks
+
+- [x] **Task 1:** Facade 클래스 구조 설계
+  - MainFacade 클래스 생성
+  - 서브모듈 구조 정의
+  - _sharedData 딕셔너리 추가
+
+- [x] **Task 2:** 서브모듈 구현
+  - SubModule1 클래스 생성 (_parent 참조 추가)
+  - SubModule2 클래스 생성
+  - 의존성 주입 패턴 적용
+
+- [ ] **Task 3:** 유닛 테스트 작성
+  - test_main_facade.py 생성
+  - 서브모듈 간 데이터 공유 테스트
+  - uv run pytest로 검증
+```
