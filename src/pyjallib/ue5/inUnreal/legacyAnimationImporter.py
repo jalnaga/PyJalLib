@@ -10,7 +10,6 @@ PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니�
 
 import unreal
 from pathlib import Path
-from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from legacyBaseImporter import LegacyBaseImporter
@@ -49,20 +48,25 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             assetList = ", ".join(inAssetFullPaths[:3]) + f" ... (and {totalCount - 3} more)"
             return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
 
-    def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
+    def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None):
         """애니메이션 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 태스크 생성 시작: {inFbxFile}")
 
         importOptions = self.importerSettings.load_options()
         unreal.log("[LegacyAnimationImporter] 애니메이션 임포트 옵션 로드 완료")
 
-        # 스켈레톤 필수 설정
-        if inFbxSkeletonPath is None:
-            error_msg = "애니메이션 임포트에는 스켈레톤이 필수입니다"
+        # 스켈레톤 경로 결정: inSkeletonContentPath 우선, 없으면 FBX 경로 변환
+        if inSkeletonContentPath is not None:
+            skeletonPath = inSkeletonContentPath
+            unreal.log(f"[LegacyAnimationImporter] Content 경로를 직접 사용: {skeletonPath}")
+        elif inFbxSkeletonPath is not None:
+            skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
+            unreal.log(f"[LegacyAnimationImporter] FBX 경로를 Content 경로로 변환: {inFbxSkeletonPath} -> {skeletonPath}")
+        else:
+            error_msg = "애니메이션 임포트에는 스켈레톤이 필수입니다 (inSkeletonContentPath 또는 inFbxSkeletonPath 중 하나 제공 필요)"
             unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
 
-        skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
         skeletonAssetData = unreal.EditorAssetLibrary.find_asset_data(skeletonPath)
         if not skeletonAssetData.is_valid():
             error_msg = f"스켈레톤 에셋을 찾을 수 없음: {skeletonPath}"
@@ -88,7 +92,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
         return task
 
-    def import_animation(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None):
+    def import_animation(self, inFbxFile: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None, inAssetName: str = None, inDescription: str = None):
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 시작: {inFbxFile}")
 
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -98,7 +102,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         if unreal.Paths.file_exists(assetFullPath):
             unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
 
-        task = self.create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath)
+        task = self.create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath, inSkeletonContentPath)
 
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
@@ -135,10 +139,23 @@ class LegacyAnimationImporter(LegacyBaseImporter):
 
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
 
-    def import_animations(self, inFbxFiles: list[str], inFbxSkeletonPaths: list[str], inAssetNames: list[str] = None, inDescription: str = None):
+    def import_animations(self, inFbxFiles: list[str], inFbxSkeletonPaths: list[str] = None, inSkeletonContentPaths: list[str] = None, inAssetNames: list[str] = None, inDescription: str = None):
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 시작: {inFbxFiles}")
 
-        if len(inFbxFiles) != len(inFbxSkeletonPaths):
+        # 스켈레톤 경로 검증: 하나는 반드시 제공되어야 함
+        if inSkeletonContentPaths is None and inFbxSkeletonPaths is None:
+            error_msg = "애니메이션 임포트에는 스켈레톤 경로가 필요합니다 (inSkeletonContentPaths 또는 inFbxSkeletonPaths 중 하나)"
+            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+
+        # inSkeletonContentPaths가 제공되었으면 길이 검증
+        if inSkeletonContentPaths is not None and len(inFbxFiles) != len(inSkeletonContentPaths):
+            error_msg = "애니메이션 임포트에는 파일과 스켈레톤이 같은 개수여야 합니다"
+            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
+            raise ValueError(error_msg)
+
+        # inFbxSkeletonPaths가 제공되었으면 길이 검증
+        if inFbxSkeletonPaths is not None and len(inFbxFiles) != len(inFbxSkeletonPaths):
             error_msg = "애니메이션 임포트에는 파일과 스켈레톤이 같은 개수여야 합니다"
             unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
@@ -166,7 +183,11 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             if unreal.Paths.file_exists(assetFullPath):
                 unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
 
-            task = self.create_import_task(fbxFile, destinationPath, inFbxSkeletonPaths[index])
+            # 스켈레톤 경로 결정
+            fbxSkeletonPath = inFbxSkeletonPaths[index] if inFbxSkeletonPaths is not None else None
+            skeletonContentPath = inSkeletonContentPaths[index] if inSkeletonContentPaths is not None else None
+
+            task = self.create_import_task(fbxFile, destinationPath, fbxSkeletonPath, skeletonContentPath)
             tasks.append(task)
 
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks(tasks)

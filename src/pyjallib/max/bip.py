@@ -547,7 +547,7 @@ class Bip:
         if directory and not os.path.exists(directory):
             try:
                 os.makedirs(directory, exist_ok=True)
-            except OSError as e:
+            except OSError:
                 return False
         
         if inCollapseLayers:

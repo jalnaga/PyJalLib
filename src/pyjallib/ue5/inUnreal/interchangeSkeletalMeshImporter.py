@@ -256,7 +256,7 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
             del existingAsset
             gc.collect()
             unreal.log(
-                f"[InterchangeSkeletalMeshImporter] Python GC 수행 완료"
+                "[InterchangeSkeletalMeshImporter] Python GC 수행 완료"
             )
 
             # 에셋을 경로로 다시 로드
@@ -275,7 +275,7 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
 
             if success:
                 unreal.log(
-                    f"[InterchangeSkeletalMeshImporter] consolidate_assets 성공"
+                    "[InterchangeSkeletalMeshImporter] consolidate_assets 성공"
                 )
 
                 # 기존 에셋 삭제 (consolidate_assets는 레퍼런스만 이전하고 에셋을 삭제하지 않음)
@@ -315,7 +315,7 @@ class InterchangeSkeletalMeshImporter(InterchangeImporterBase):
                     importedObjects = [unreal.EditorAssetLibrary.load_asset(newSkeletalMeshPath)]
             else:
                 unreal.log_error(
-                    f"[InterchangeSkeletalMeshImporter] consolidate_assets 실패"
+                    "[InterchangeSkeletalMeshImporter] consolidate_assets 실패"
                 )
                 # 실패 시에도 임포트된 에셋 반환
                 importedObjects = [unreal.EditorAssetLibrary.load_asset(newSkeletalMeshPath)]

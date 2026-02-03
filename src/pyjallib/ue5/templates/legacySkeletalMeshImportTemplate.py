@@ -8,14 +8,22 @@ inUnrealPath = extPackagePath + r'/pyjallib/ue5/inUnreal'
 if inUnrealPath not in sys.path:
     sys.path.insert(0, inUnrealPath)
 
+from legacyBaseImporter import LegacyBaseImporter
 from legacySkeletalMeshImporter import LegacySkeletalMeshImporter
 
-fbxPath = r'{inSkeletalMeshFbxPath}'
-skeletonPath = r'{inSkeletonFbxPath}'
+# Interchange 방식의 입력 변수
+fbxPath = r'{inFbxPath}'
+destinationPath = r'{inDestinationPath}'
+skeletonPath = r'{inSkeletonPath}'
+assetName = r'{inAssetName}'
 
-contentRootPrefix = r'{inContentRootPrefix}'
-fbxRootPrefix = r'{inFbxRootPrefix}'
+# prefix 자동 추론
+contentRootPrefix, fbxRootPrefix = LegacyBaseImporter.infer_prefixes_from_paths(destinationPath, fbxPath)
 
+# 임포터 초기화 및 실행
 skeletalMeshImporter = LegacySkeletalMeshImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
 
-result = skeletalMeshImporter.import_skeletal_mesh(fbxPath, skeletonPath)
+# assetName이 빈 문자열이면 None으로 처리 (자동 생성)
+assetNameArg = assetName if assetName else None
+
+result = skeletalMeshImporter.import_skeletal_mesh(fbxPath, inSkeletonContentPath=skeletonPath, inAssetName=assetNameArg)

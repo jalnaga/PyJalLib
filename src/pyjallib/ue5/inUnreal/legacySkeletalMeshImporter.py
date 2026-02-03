@@ -8,7 +8,6 @@ UE5에서 스켈레탈 메쉬를 임포트하는 기능을 제공합니다.
 
 import unreal
 from pathlib import Path
-from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from legacyBaseImporter import LegacyBaseImporter
@@ -23,20 +22,25 @@ class LegacySkeletalMeshImporter(LegacyBaseImporter):
     def asset_type(self) -> str:
         return "SkeletalMesh"
 
-    def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str):
+    def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None):
         """스켈레탈 메시 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 태스크 생성 시작: {inFbxFile}")
 
         importOptions = self.importerSettings.load_options()
         unreal.log("[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 옵션 로드 완료")
 
-        # 스켈레톤 필수 설정
-        if inFbxSkeletonPath is None:
-            error_msg = "스켈레탈 메시 임포트에는 스켈레톤이 필수입니다"
+        # 스켈레톤 경로 결정: inSkeletonContentPath 우선, 없으면 FBX 경로 변환
+        if inSkeletonContentPath is not None:
+            skeletonPath = inSkeletonContentPath
+            unreal.log(f"[LegacySkeletalMeshImporter] Content 경로를 직접 사용: {skeletonPath}")
+        elif inFbxSkeletonPath is not None:
+            skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
+            unreal.log(f"[LegacySkeletalMeshImporter] FBX 경로를 Content 경로로 변환: {inFbxSkeletonPath} -> {skeletonPath}")
+        else:
+            error_msg = "스켈레탈 메시 임포트에는 스켈레톤이 필수입니다 (inSkeletonContentPath 또는 inFbxSkeletonPath 중 하나 제공 필요)"
             unreal.log_error(f"[LegacySkeletalMeshImporter] {error_msg}")
             raise ValueError(error_msg)
 
-        skeletonPath = self.convert_fbx_path_to_skeleton_path(inFbxSkeletonPath)
         skeletonAssetData = unreal.EditorAssetLibrary.find_asset_data(skeletonPath)
         if not skeletonAssetData.is_valid():
             error_msg = f"스켈레톤 에셋을 찾을 수 없음: {skeletonPath}"
@@ -62,7 +66,7 @@ class LegacySkeletalMeshImporter(LegacyBaseImporter):
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 태스크 생성 완료: Destination={inDestinationPath}, AssetName={assetName}")
         return task
 
-    def import_skeletal_mesh(self, inFbxFile: str, inFbxSkeletonPath: str, inAssetName: str = None, inDescription: str = None):
+    def import_skeletal_mesh(self, inFbxFile: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None, inAssetName: str = None, inDescription: str = None):
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 시작: {inFbxFile}")
 
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -72,7 +76,7 @@ class LegacySkeletalMeshImporter(LegacyBaseImporter):
         if unreal.Paths.file_exists(assetFullPath):
             unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
 
-        task = self.create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath)
+        task = self.create_import_task(inFbxFile, destinationPath, inFbxSkeletonPath, inSkeletonContentPath)
 
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 실행: {inFbxFile} -> {destinationPath}/{assetName}")
         unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])

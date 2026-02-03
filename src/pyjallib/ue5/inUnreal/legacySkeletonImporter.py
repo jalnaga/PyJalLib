@@ -10,7 +10,6 @@ PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니�
 
 import unreal
 from pathlib import Path
-from typing import Optional, Dict, Any
 
 # UE5 모듈 import
 from legacyBaseImporter import LegacyBaseImporter

@@ -7,6 +7,7 @@ Interchange Framework 기반 템플릿만 지원합니다.
 """
 
 import os
+import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from pyjallib.logger import Logger
@@ -121,15 +122,18 @@ class TemplateProcessor:
         """사용 가능한 템플릿 목록 반환"""
         return get_available_templates()
 
-    # === Interchange 템플릿 처리 메서드 ===
+    # === Interchange 템플릿 처리 메서드 (Deprecated) ===
     def process_interchange_skeleton_import_template(
-        self, 
-        inTemplateData: Dict[str, Any], 
+        self,
+        inTemplateData: Dict[str, Any],
         inOutputPath: Optional[str] = None
     ) -> str:
         """
         Interchange 스켈레톤 임포트 전용 템플릿 처리
-        
+
+        .. deprecated::
+            이 메서드는 deprecated되었습니다. process_import_template('skeleton', 'interchange', ...)를 사용하세요.
+
         Args:
             inTemplateData (Dict[str, Any]): 템플릿 데이터
                 필수 키:
@@ -139,24 +143,17 @@ class TemplateProcessor:
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
-            
+
         Returns:
             str: 처리된 템플릿 내용
         """
-        required_keys = ['inExtPackagePath', 'inFbxPath', 'inDestinationPath']
-        if not self.validate_template_data(INTERCHANGE_SKELETON_IMPORT_TEMPLATE, inTemplateData, required_keys):
-            raise ValueError(f"Interchange 스켈레톤 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
-        
-        # 선택적 키에 기본값 설정
-        if 'inAssetName' not in inTemplateData:
-            inTemplateData['inAssetName'] = ''
-        
-        template_path = get_template_path(INTERCHANGE_SKELETON_IMPORT_TEMPLATE)
-        
-        if inOutputPath is None:
-            inOutputPath = self.get_default_output_path(INTERCHANGE_SKELETON_IMPORT_TEMPLATE, "interchangeSkeletonImportScript")
-        
-        return self.process_template(template_path, inOutputPath, inTemplateData)
+        warnings.warn(
+            "process_interchange_skeleton_import_template is deprecated. "
+            "Use process_import_template('skeleton', 'interchange', ...) instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.process_import_template('skeleton', 'interchange', inTemplateData, inOutputPath)
     
     def process_interchange_skeletal_mesh_import_template(
         self, 
@@ -276,23 +273,28 @@ class TemplateProcessor:
         inOutputPath: Optional[str] = None
     ) -> str:
         """
-        Legacy 스켈레톤 임포트 전용 템플릿 처리
+        Legacy 스켈레톤 임포트 전용 템플릿 처리 (Interchange 방식 변수 사용)
 
         Args:
             inTemplateData (Dict[str, Any]): 템플릿 데이터
                 필수 키:
                 - inExtPackagePath: 외부 패키지 경로
-                - inContentRootPrefix: Content 루트 접두사
-                - inFbxRootPrefix: FBX 루트 접두사
-                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+                - inFbxPath: FBX 파일 절대 경로
+                - inDestinationPath: /Game/... 형식의 목적지 경로
+                선택 키:
+                - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
             str: 처리된 템플릿 내용
         """
-        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inSkeletonFbxPath']
+        required_keys = ['inExtPackagePath', 'inFbxPath', 'inDestinationPath']
         if not self.validate_template_data(LEGACY_SKELETON_IMPORT_TEMPLATE, inTemplateData, required_keys):
             raise ValueError(f"Legacy 스켈레톤 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        # 선택적 키에 기본값 설정
+        if 'inAssetName' not in inTemplateData:
+            inTemplateData['inAssetName'] = ''
 
         template_path = get_template_path(LEGACY_SKELETON_IMPORT_TEMPLATE)
 
@@ -307,24 +309,29 @@ class TemplateProcessor:
         inOutputPath: Optional[str] = None
     ) -> str:
         """
-        Legacy 스켈레탈 메시 임포트 전용 템플릿 처리
+        Legacy 스켈레탈 메시 임포트 전용 템플릿 처리 (Interchange 방식 변수 사용)
 
         Args:
             inTemplateData (Dict[str, Any]): 템플릿 데이터
                 필수 키:
                 - inExtPackagePath: 외부 패키지 경로
-                - inContentRootPrefix: Content 루트 접두사
-                - inFbxRootPrefix: FBX 루트 접두사
-                - inSkeletalMeshFbxPath: 스켈레탈 메시 FBX 파일 절대 경로
-                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+                - inFbxPath: FBX 파일 절대 경로
+                - inDestinationPath: /Game/... 형식의 목적지 경로
+                - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
+                선택 키:
+                - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
             str: 처리된 템플릿 내용
         """
-        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inSkeletalMeshFbxPath', 'inSkeletonFbxPath']
+        required_keys = ['inExtPackagePath', 'inFbxPath', 'inDestinationPath', 'inSkeletonPath']
         if not self.validate_template_data(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE, inTemplateData, required_keys):
             raise ValueError(f"Legacy 스켈레탈 메시 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        # 선택적 키에 기본값 설정
+        if 'inAssetName' not in inTemplateData:
+            inTemplateData['inAssetName'] = ''
 
         template_path = get_template_path(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE)
 
@@ -339,24 +346,29 @@ class TemplateProcessor:
         inOutputPath: Optional[str] = None
     ) -> str:
         """
-        Legacy 애니메이션 임포트 전용 템플릿 처리
+        Legacy 애니메이션 임포트 전용 템플릿 처리 (Interchange 방식 변수 사용)
 
         Args:
             inTemplateData (Dict[str, Any]): 템플릿 데이터
                 필수 키:
                 - inExtPackagePath: 외부 패키지 경로
-                - inContentRootPrefix: Content 루트 접두사
-                - inFbxRootPrefix: FBX 루트 접두사
-                - inAnimFbxPath: 애니메이션 FBX 파일 절대 경로
-                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+                - inFbxPath: FBX 파일 절대 경로
+                - inDestinationPath: /Game/... 형식의 목적지 경로
+                - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
+                선택 키:
+                - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
             str: 처리된 템플릿 내용
         """
-        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inAnimFbxPath', 'inSkeletonFbxPath']
+        required_keys = ['inExtPackagePath', 'inFbxPath', 'inDestinationPath', 'inSkeletonPath']
         if not self.validate_template_data(LEGACY_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
             raise ValueError(f"Legacy 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        # 선택적 키에 기본값 설정
+        if 'inAssetName' not in inTemplateData:
+            inTemplateData['inAssetName'] = ''
 
         template_path = get_template_path(LEGACY_ANIM_IMPORT_TEMPLATE)
 
@@ -371,22 +383,21 @@ class TemplateProcessor:
         inOutputPath: Optional[str] = None
     ) -> str:
         """
-        Legacy 배치 애니메이션 임포트 전용 템플릿 처리
+        Legacy 배치 애니메이션 임포트 전용 템플릿 처리 (Interchange 방식 변수 사용)
 
         Args:
             inTemplateData (Dict[str, Any]): 템플릿 데이터
                 필수 키:
                 - inExtPackagePath: 외부 패키지 경로
-                - inContentRootPrefix: Content 루트 접두사
-                - inFbxRootPrefix: FBX 루트 접두사
-                - inAnimFbxPaths: 애니메이션 FBX 파일 절대 경로 리스트 (Python 리스트 문자열)
-                - inSkeletonFbxPaths: 스켈레톤 FBX 파일 절대 경로 리스트
+                - inFbxPaths: FBX 파일 절대 경로 리스트 (Python 리스트 문자열)
+                - inDestinationPath: /Game/... 형식의 목적지 경로
+                - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
             str: 처리된 템플릿 내용
         """
-        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inAnimFbxPaths', 'inSkeletonFbxPaths']
+        required_keys = ['inExtPackagePath', 'inFbxPaths', 'inDestinationPath', 'inSkeletonPath']
         if not self.validate_template_data(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
             raise ValueError(f"Legacy 배치 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
 
@@ -396,6 +407,130 @@ class TemplateProcessor:
             inOutputPath = self.get_default_output_path(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE, "legacyBatchAnimImportScript")
 
         return self.process_template(template_path, inOutputPath, inTemplateData)
+
+    # === 통합 템플릿 처리 메서드 ===
+    def process_import_template(
+        self,
+        asset_type: str,
+        template_type: str,
+        template_data: Dict[str, Any],
+        output_path: Optional[str] = None
+    ) -> str:
+        """
+        통합 템플릿 처리 메서드 - asset_type과 template_type으로 템플릿 선택
+
+        Args:
+            asset_type (str): 'skeleton', 'skeletal_mesh', 'animation', 'batch_animation'
+            template_type (str): 'legacy', 'interchange'
+            template_data (Dict[str, Any]): 템플릿 데이터
+                공통 필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inFbxPath: FBX 파일 절대 경로 (batch_animation은 inFbxPaths)
+                - inDestinationPath: /Game/... 형식의 목적지 경로 (Interchange 방식)
+                선택 키:
+                - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inSkeletonPath: /Game/... 형식의 스켈레톤 경로 (skeletal_mesh, animation 필요)
+            output_path (Optional[str]): 출력 파일 경로. None인 경우 자동 생성
+
+        Returns:
+            str: 처리된 템플릿 내용
+
+        Raises:
+            ValueError: 잘못된 asset_type이나 template_type, 또는 필수 키 누락 시
+        """
+        # 템플릿 이름 매핑
+        template_name = self._get_template_name(asset_type, template_type)
+
+        # 필수 키 검증
+        required_keys = self._get_required_keys(asset_type)
+        if not self.validate_template_data(template_name, template_data, required_keys):
+            raise ValueError(f"템플릿 데이터에 필요한 키가 누락되었습니다: {required_keys}")
+
+        # 선택적 키에 기본값 설정
+        if 'inAssetName' not in template_data:
+            template_data['inAssetName'] = ''
+
+        # 템플릿 경로 가져오기
+        template_path = get_template_path(template_name)
+
+        # 출력 경로 생성 (파일명 자동 생성)
+        if output_path is None:
+            output_filename = self._generate_output_filename(asset_type, template_type)
+            output_path = self.get_default_output_path(template_name, output_filename)
+
+        return self.process_template(template_path, output_path, template_data)
+
+    def _get_template_name(self, asset_type: str, template_type: str) -> str:
+        """
+        asset_type과 template_type으로 템플릿 이름 상수 반환
+
+        Args:
+            asset_type (str): 'skeleton', 'skeletal_mesh', 'animation', 'batch_animation'
+            template_type (str): 'legacy', 'interchange'
+
+        Returns:
+            str: 템플릿 이름 상수
+
+        Raises:
+            ValueError: 잘못된 asset_type이나 template_type
+        """
+        template_map = {
+            ('skeleton', 'legacy'): LEGACY_SKELETON_IMPORT_TEMPLATE,
+            ('skeleton', 'interchange'): INTERCHANGE_SKELETON_IMPORT_TEMPLATE,
+            ('skeletal_mesh', 'legacy'): LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE,
+            ('skeletal_mesh', 'interchange'): INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE,
+            ('animation', 'legacy'): LEGACY_ANIM_IMPORT_TEMPLATE,
+            ('animation', 'interchange'): INTERCHANGE_ANIM_IMPORT_TEMPLATE,
+            ('batch_animation', 'legacy'): LEGACY_BATCH_ANIM_IMPORT_TEMPLATE,
+            ('batch_animation', 'interchange'): INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE,
+        }
+
+        key = (asset_type, template_type)
+        if key not in template_map:
+            raise ValueError(f"잘못된 asset_type 또는 template_type: {asset_type}, {template_type}")
+
+        return template_map[key]
+
+    def _get_required_keys(self, asset_type: str) -> list:
+        """
+        asset_type에 따른 필수 키 목록 반환
+
+        Args:
+            asset_type (str): 'skeleton', 'skeletal_mesh', 'animation', 'batch_animation'
+
+        Returns:
+            list: 필수 키 목록
+        """
+        # 통일된 Interchange 방식의 키
+        if asset_type == 'skeleton':
+            return ['inExtPackagePath', 'inFbxPath', 'inDestinationPath']
+        elif asset_type == 'skeletal_mesh':
+            return ['inExtPackagePath', 'inFbxPath', 'inDestinationPath', 'inSkeletonPath']
+        elif asset_type == 'animation':
+            return ['inExtPackagePath', 'inFbxPath', 'inDestinationPath', 'inSkeletonPath']
+        elif asset_type == 'batch_animation':
+            return ['inExtPackagePath', 'inFbxPaths', 'inDestinationPath', 'inSkeletonPath']
+        else:
+            raise ValueError(f"잘못된 asset_type: {asset_type}")
+
+    def _generate_output_filename(self, asset_type: str, template_type: str) -> str:
+        """
+        출력 파일명 자동 생성: {template_type}_{asset_type}Import 형식
+
+        Args:
+            asset_type (str): 'skeleton', 'skeletal_mesh', 'animation', 'batch_animation'
+            template_type (str): 'legacy', 'interchange'
+
+        Returns:
+            str: 생성된 파일명 (확장자 제외)
+
+        Examples:
+            >>> _generate_output_filename('skeleton', 'legacy')
+            'legacy_skeletonImport'
+            >>> _generate_output_filename('batch_animation', 'interchange')
+            'interchange_batch_animationImport'
+        """
+        return f"{template_type}_{asset_type}Import"
 
     # === 유틸리티 메서드 ===
     def validate_template_data(self, template_type: str, template_data: Dict[str, Any], required_keys: list = None) -> bool:

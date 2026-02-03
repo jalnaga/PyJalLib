@@ -296,7 +296,7 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
                 del existingAsset
                 gc.collect()
                 unreal.log(
-                    f"[InterchangeAnimationImporter] Python GC 수행 완료"
+                    "[InterchangeAnimationImporter] Python GC 수행 완료"
                 )
 
                 # 에셋을 경로로 다시 로드
@@ -315,7 +315,7 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
 
                 if success:
                     unreal.log(
-                        f"[InterchangeAnimationImporter] consolidate_assets 성공"
+                        "[InterchangeAnimationImporter] consolidate_assets 성공"
                     )
 
                     # 기존 에셋 삭제 (consolidate_assets는 레퍼런스만 이전하고 에셋을 삭제하지 않음)
@@ -355,13 +355,13 @@ class InterchangeAnimationImporter(InterchangeImporterBase):
                         importedObjects = [unreal.EditorAssetLibrary.load_asset(newAnimAssetPath)]
                 else:
                     unreal.log_error(
-                        f"[InterchangeAnimationImporter] consolidate_assets 실패"
+                        "[InterchangeAnimationImporter] consolidate_assets 실패"
                     )
                     # 실패 시에도 임포트된 에셋 반환
                     importedObjects = [unreal.EditorAssetLibrary.load_asset(newAnimAssetPath)]
             else:
                 unreal.log_warning(
-                    f"[InterchangeAnimationImporter] 임포트된 AnimSequence를 찾을 수 없음"
+                    "[InterchangeAnimationImporter] 임포트된 AnimSequence를 찾을 수 없음"
                 )
 
         # 로컬 절대 경로 수집

@@ -8,14 +8,22 @@ inUnrealPath = extPackagePath + r'/pyjallib/ue5/inUnreal'
 if inUnrealPath not in sys.path:
     sys.path.insert(0, inUnrealPath)
 
+from legacyBaseImporter import LegacyBaseImporter
 from legacyAnimationImporter import LegacyAnimationImporter
 
-fbxPath = r'{inAnimFbxPath}'
-skeletonPath = r'{inSkeletonFbxPath}'
+# Interchange 방식의 입력 변수
+fbxPath = r'{inFbxPath}'
+destinationPath = r'{inDestinationPath}'
+skeletonPath = r'{inSkeletonPath}'
+assetName = r'{inAssetName}'
 
-contentRootPrefix = r'{inContentRootPrefix}'
-fbxRootPrefix = r'{inFbxRootPrefix}'
+# prefix 자동 추론
+contentRootPrefix, fbxRootPrefix = LegacyBaseImporter.infer_prefixes_from_paths(destinationPath, fbxPath)
 
+# 임포터 초기화 및 실행
 animImporter = LegacyAnimationImporter(inContentRootPrefix=contentRootPrefix, inFbxRootPrefix=fbxRootPrefix)
 
-result = animImporter.import_animation(fbxPath, skeletonPath)
+# assetName이 빈 문자열이면 None으로 처리 (자동 생성)
+assetNameArg = assetName if assetName else None
+
+result = animImporter.import_animation(fbxPath, inSkeletonContentPath=skeletonPath, inAssetName=assetNameArg)

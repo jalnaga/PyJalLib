@@ -26,14 +26,14 @@ def setup_temp_dir():
 
 
 def test_legacy_skeleton_import_template():
-    """Legacy 스켈레톤 임포트 템플릿 테스트"""
+    """Legacy 스켈레톤 임포트 템플릿 테스트 (Interchange 방식 변수 사용)"""
     processor = TemplateProcessor()
 
     template_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX',
-        'inSkeletonFbxPath': 'D:/FBX/TestCharacter/TestSkeleton.fbx'
+        'inFbxPath': 'D:/FBX/TestCharacter/TestSkeleton.fbx',
+        'inDestinationPath': '/Game/TestCharacter',
+        'inAssetName': ''
     }
 
     output_path = str(TEMP_DIR / "test_legacy_skeleton_import.py")
@@ -53,19 +53,19 @@ def test_legacy_skeleton_import_template():
 
     # 필수 내용이 포함되어 있는지 확인
     assert 'LegacySkeletonImporter' in script_content
-    assert template_data['inSkeletonFbxPath'] in script_content
+    assert template_data['inFbxPath'] in script_content
 
 
 def test_legacy_skeletal_mesh_import_template():
-    """Legacy 스켈레탈 메시 임포트 템플릿 테스트"""
+    """Legacy 스켈레탈 메시 임포트 템플릿 테스트 (Interchange 방식 변수 사용)"""
     processor = TemplateProcessor()
 
     template_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX',
-        'inSkeletalMeshFbxPath': 'D:/FBX/TestCharacter/TestMesh.fbx',
-        'inSkeletonFbxPath': 'D:/FBX/TestCharacter/TestSkeleton.fbx'
+        'inFbxPath': 'D:/FBX/TestCharacter/TestMesh.fbx',
+        'inDestinationPath': '/Game/TestCharacter',
+        'inSkeletonPath': '/Game/TestCharacter/TestSkeleton',
+        'inAssetName': ''
     }
 
     output_path = str(TEMP_DIR / "test_legacy_skeletal_mesh_import.py")
@@ -84,20 +84,20 @@ def test_legacy_skeletal_mesh_import_template():
 
     # 필수 내용이 포함되어 있는지 확인
     assert 'LegacySkeletalMeshImporter' in script_content
-    assert template_data['inSkeletalMeshFbxPath'] in script_content
-    assert template_data['inSkeletonFbxPath'] in script_content
+    assert template_data['inFbxPath'] in script_content
+    assert template_data['inSkeletonPath'] in script_content
 
 
 def test_legacy_animation_import_template():
-    """Legacy 애니메이션 임포트 템플릿 테스트"""
+    """Legacy 애니메이션 임포트 템플릿 테스트 (Interchange 방식 변수 사용)"""
     processor = TemplateProcessor()
 
     template_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX',
-        'inAnimFbxPath': 'D:/FBX/TestCharacter/Animations/TestAnim.fbx',
-        'inSkeletonFbxPath': 'D:/FBX/TestCharacter/TestSkeleton.fbx'
+        'inFbxPath': 'D:/FBX/TestCharacter/Animations/TestAnim.fbx',
+        'inDestinationPath': '/Game/TestCharacter/Animations',
+        'inSkeletonPath': '/Game/TestCharacter/TestSkeleton',
+        'inAssetName': ''
     }
 
     output_path = str(TEMP_DIR / "test_legacy_animation_import.py")
@@ -116,12 +116,12 @@ def test_legacy_animation_import_template():
 
     # 필수 내용이 포함되어 있는지 확인
     assert 'LegacyAnimationImporter' in script_content
-    assert template_data['inAnimFbxPath'] in script_content
-    assert template_data['inSkeletonFbxPath'] in script_content
+    assert template_data['inFbxPath'] in script_content
+    assert template_data['inSkeletonPath'] in script_content
 
 
 def test_legacy_batch_anim_import_template():
-    """Legacy 배치 애니메이션 임포트 템플릿 테스트"""
+    """Legacy 배치 애니메이션 임포트 템플릿 테스트 (Interchange 방식 변수 사용)"""
     processor = TemplateProcessor()
 
     # 배치 임포트는 리스트를 문자열로 전달
@@ -130,18 +130,12 @@ def test_legacy_batch_anim_import_template():
         'D:/FBX/TestCharacter/Animations/Run.fbx',
         'D:/FBX/TestCharacter/Animations/Jump.fbx'
     ]
-    skeleton_paths = [
-        'D:/FBX/TestCharacter/TestSkeleton.fbx',
-        'D:/FBX/TestCharacter/TestSkeleton.fbx',
-        'D:/FBX/TestCharacter/TestSkeleton.fbx'
-    ]
 
     template_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX',
-        'inAnimFbxPaths': str(anim_paths),
-        'inSkeletonFbxPaths': str(skeleton_paths)
+        'inFbxPaths': str(anim_paths),
+        'inDestinationPath': '/Game/TestCharacter/Animations',
+        'inSkeletonPath': '/Game/TestCharacter/TestSkeleton'
     }
 
     output_path = str(TEMP_DIR / "test_legacy_batch_anim_import.py")
@@ -166,14 +160,13 @@ def test_legacy_batch_anim_import_template():
 
 
 def test_legacy_skeleton_import_template_missing_keys():
-    """Legacy 스켈레톤 임포트 템플릿 - 필수 키 누락 테스트"""
+    """Legacy 스켈레톤 임포트 템플릿 - 필수 키 누락 테스트 (Interchange 방식)"""
     processor = TemplateProcessor()
 
-    # inSkeletonFbxPath 누락
+    # inFbxPath 누락
     incomplete_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX'
+        'inDestinationPath': '/Game/TestCharacter'
     }
 
     output_path = str(TEMP_DIR / "test_invalid.py")
@@ -184,15 +177,14 @@ def test_legacy_skeleton_import_template_missing_keys():
 
 
 def test_legacy_skeletal_mesh_import_template_missing_keys():
-    """Legacy 스켈레탈 메시 임포트 템플릿 - 필수 키 누락 테스트"""
+    """Legacy 스켈레탈 메시 임포트 템플릿 - 필수 키 누락 테스트 (Interchange 방식)"""
     processor = TemplateProcessor()
 
-    # inSkeletalMeshFbxPath 누락
+    # inSkeletonPath 누락
     incomplete_data = {
         'inExtPackagePath': 'D:/TestProject/Content',
-        'inContentRootPrefix': '/Game',
-        'inFbxRootPrefix': 'D:/FBX',
-        'inSkeletonFbxPath': 'D:/FBX/TestCharacter/TestSkeleton.fbx'
+        'inFbxPath': 'D:/FBX/TestCharacter/TestMesh.fbx',
+        'inDestinationPath': '/Game/TestCharacter'
     }
 
     output_path = str(TEMP_DIR / "test_invalid.py")

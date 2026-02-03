@@ -51,7 +51,7 @@ class Constraint:
             source += f"    $'{obj.name}'.rotation.controller = Euler_XYZ()\n"
             source += f"    $'{obj.name}'.scale.controller = Bezier_Scale()\n"
             source += f"    $'{obj.name}'.transform = tempTransform\n"
-            source += f")\n"
+            source += ")\n"
             rt.execute(source)
     
     def set_active_last(self, inObj):
