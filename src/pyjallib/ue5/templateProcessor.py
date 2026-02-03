@@ -11,14 +11,19 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from pyjallib.logger import Logger
 from .templates import (
-    get_template_path, 
-    get_all_template_paths, 
+    get_template_path,
+    get_all_template_paths,
     get_available_templates,
     # Interchange 템플릿
     INTERCHANGE_ANIM_IMPORT_TEMPLATE,
     INTERCHANGE_SKELETON_IMPORT_TEMPLATE,
     INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE,
     INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE,
+    # Legacy 템플릿
+    LEGACY_SKELETON_IMPORT_TEMPLATE,
+    LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE,
+    LEGACY_ANIM_IMPORT_TEMPLATE,
+    LEGACY_BATCH_ANIM_IMPORT_TEMPLATE,
 )
 
 
@@ -263,7 +268,135 @@ class TemplateProcessor:
             inOutputPath = self.get_default_output_path(INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE, "interchangeBatchAnimImportScript")
         
         return self.process_template(template_path, inOutputPath, inTemplateData)
-    
+
+    # === Legacy 템플릿 처리 메서드 ===
+    def process_legacy_skeleton_import_template(
+        self,
+        inTemplateData: Dict[str, Any],
+        inOutputPath: Optional[str] = None
+    ) -> str:
+        """
+        Legacy 스켈레톤 임포트 전용 템플릿 처리
+
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inContentRootPrefix: Content 루트 접두사
+                - inFbxRootPrefix: FBX 루트 접두사
+                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inSkeletonFbxPath']
+        if not self.validate_template_data(LEGACY_SKELETON_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"Legacy 스켈레톤 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        template_path = get_template_path(LEGACY_SKELETON_IMPORT_TEMPLATE)
+
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(LEGACY_SKELETON_IMPORT_TEMPLATE, "legacySkeletonImportScript")
+
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+
+    def process_legacy_skeletal_mesh_import_template(
+        self,
+        inTemplateData: Dict[str, Any],
+        inOutputPath: Optional[str] = None
+    ) -> str:
+        """
+        Legacy 스켈레탈 메시 임포트 전용 템플릿 처리
+
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inContentRootPrefix: Content 루트 접두사
+                - inFbxRootPrefix: FBX 루트 접두사
+                - inSkeletalMeshFbxPath: 스켈레탈 메시 FBX 파일 절대 경로
+                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inSkeletalMeshFbxPath', 'inSkeletonFbxPath']
+        if not self.validate_template_data(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"Legacy 스켈레탈 메시 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        template_path = get_template_path(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE)
+
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE, "legacySkeletalMeshImportScript")
+
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+
+    def process_legacy_animation_import_template(
+        self,
+        inTemplateData: Dict[str, Any],
+        inOutputPath: Optional[str] = None
+    ) -> str:
+        """
+        Legacy 애니메이션 임포트 전용 템플릿 처리
+
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inContentRootPrefix: Content 루트 접두사
+                - inFbxRootPrefix: FBX 루트 접두사
+                - inAnimFbxPath: 애니메이션 FBX 파일 절대 경로
+                - inSkeletonFbxPath: 스켈레톤 FBX 파일 절대 경로
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inAnimFbxPath', 'inSkeletonFbxPath']
+        if not self.validate_template_data(LEGACY_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"Legacy 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        template_path = get_template_path(LEGACY_ANIM_IMPORT_TEMPLATE)
+
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(LEGACY_ANIM_IMPORT_TEMPLATE, "legacyAnimImportScript")
+
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+
+    def process_legacy_batch_anim_import_template(
+        self,
+        inTemplateData: Dict[str, Any],
+        inOutputPath: Optional[str] = None
+    ) -> str:
+        """
+        Legacy 배치 애니메이션 임포트 전용 템플릿 처리
+
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inContentRootPrefix: Content 루트 접두사
+                - inFbxRootPrefix: FBX 루트 접두사
+                - inAnimFbxPaths: 애니메이션 FBX 파일 절대 경로 리스트 (Python 리스트 문자열)
+                - inSkeletonFbxPaths: 스켈레톤 FBX 파일 절대 경로 리스트
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        required_keys = ['inExtPackagePath', 'inContentRootPrefix', 'inFbxRootPrefix', 'inAnimFbxPaths', 'inSkeletonFbxPaths']
+        if not self.validate_template_data(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"Legacy 배치 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        template_path = get_template_path(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE)
+
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE, "legacyBatchAnimImportScript")
+
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+
     # === 유틸리티 메서드 ===
     def validate_template_data(self, template_type: str, template_data: Dict[str, Any], required_keys: list = None) -> bool:
         """

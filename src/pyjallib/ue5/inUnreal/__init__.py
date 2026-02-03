@@ -79,6 +79,46 @@ if is_ue5_available():
         InterchangeAnimationImporter = None
         print(f"[PyJalLib] InterchangeAnimationImporter 임포트 실패: {e}")
 
+    # Legacy Base Importer
+    try:
+        from .legacyBaseImporter import LegacyBaseImporter
+        __all__.append('LegacyBaseImporter')
+    except ImportError as e:
+        LegacyBaseImporter = None
+        print(f"[PyJalLib] LegacyBaseImporter 임포트 실패: {e}")
+
+    # Legacy Importer Settings
+    try:
+        from .legacyImporterSettings import LegacyImporterSettings
+        __all__.append('LegacyImporterSettings')
+    except ImportError as e:
+        LegacyImporterSettings = None
+        print(f"[PyJalLib] LegacyImporterSettings 임포트 실패: {e}")
+
+    # Legacy Skeleton Importer
+    try:
+        from .legacySkeletonImporter import LegacySkeletonImporter
+        __all__.append('LegacySkeletonImporter')
+    except ImportError as e:
+        LegacySkeletonImporter = None
+        print(f"[PyJalLib] LegacySkeletonImporter 임포트 실패: {e}")
+
+    # Legacy Skeletal Mesh Importer
+    try:
+        from .legacySkeletalMeshImporter import LegacySkeletalMeshImporter
+        __all__.append('LegacySkeletalMeshImporter')
+    except ImportError as e:
+        LegacySkeletalMeshImporter = None
+        print(f"[PyJalLib] LegacySkeletalMeshImporter 임포트 실패: {e}")
+
+    # Legacy Animation Importer
+    try:
+        from .legacyAnimationImporter import LegacyAnimationImporter
+        __all__.append('LegacyAnimationImporter')
+    except ImportError as e:
+        LegacyAnimationImporter = None
+        print(f"[PyJalLib] LegacyAnimationImporter 임포트 실패: {e}")
+
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     pathUtils = None
@@ -88,12 +128,17 @@ else:
     InterchangeSkeletonImporter = None
     InterchangeSkeletalMeshImporter = None
     InterchangeAnimationImporter = None
+    LegacyBaseImporter = None
+    LegacyImporterSettings = None
+    LegacySkeletonImporter = None
+    LegacySkeletalMeshImporter = None
+    LegacyAnimationImporter = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
 
 def get_available_modules() -> list:
     """
     현재 사용 가능한 모듈 목록을 반환합니다.
-    
+
     Returns:
         list: 사용 가능한 모듈 이름 목록
     """
@@ -112,6 +157,16 @@ def get_available_modules() -> list:
         available.append('InterchangeSkeletalMeshImporter')
     if 'InterchangeAnimationImporter' in __all__ and InterchangeAnimationImporter is not None:
         available.append('InterchangeAnimationImporter')
+    if 'LegacyBaseImporter' in __all__ and LegacyBaseImporter is not None:
+        available.append('LegacyBaseImporter')
+    if 'LegacyImporterSettings' in __all__ and LegacyImporterSettings is not None:
+        available.append('LegacyImporterSettings')
+    if 'LegacySkeletonImporter' in __all__ and LegacySkeletonImporter is not None:
+        available.append('LegacySkeletonImporter')
+    if 'LegacySkeletalMeshImporter' in __all__ and LegacySkeletalMeshImporter is not None:
+        available.append('LegacySkeletalMeshImporter')
+    if 'LegacyAnimationImporter' in __all__ and LegacyAnimationImporter is not None:
+        available.append('LegacyAnimationImporter')
     return available
 
 # 헬퍼 함수도 __all__에 추가
