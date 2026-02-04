@@ -28,4 +28,6 @@ animImporter = LegacyAnimationImporter(inContentRootPrefix=contentRootPrefix, in
 # 모든 애니메이션이 같은 스켈레톤을 사용하므로, 스켈레톤 경로를 리스트로 변환
 skeletonPaths = [skeletonPath] * len(fbxPaths)
 
-result = animImporter.import_animations(fbxPaths, inSkeletonContentPaths=skeletonPaths)
+# import_animation() 반복 호출 방식 사용 (스켈레톤 변경 감지 기능 활용)
+for i, fbxPath in enumerate(fbxPaths):
+    animImporter.import_animation(fbxPath, inSkeletonContentPath=skeletonPaths[i])
