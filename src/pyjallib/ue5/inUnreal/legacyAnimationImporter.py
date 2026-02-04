@@ -8,6 +8,7 @@ UE5 애니메이션 임포터 모듈
 PyJalLib의 naming 모듈을 사용하여 에셋 이름을 자동 생성합니다.
 """
 
+import os
 import unreal
 from pathlib import Path
 
@@ -198,18 +199,25 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         tempFolder = f"{destinationPath}/_SkeletonSwapTemp"
         tempPath = f"{tempFolder}/{assetName}"
 
-        unreal.log(f"[LegacyAnimationImporter] Consolidate+Rename 시작: {assetFullPath}")
+        unreal.log(f"[LegacyAnimationImporter] ========== Consolidate+Rename 시작 ==========")
+        unreal.log(f"[LegacyAnimationImporter] 대상 에셋: {assetFullPath}")
         unreal.log(f"[LegacyAnimationImporter] 임시 경로: {tempPath}")
+        unreal.log(f"[LegacyAnimationImporter] FBX 파일: {inFbxFile}")
 
         # 2. 임시 폴더 생성
-        if not unreal.EditorAssetLibrary.does_directory_exist(tempFolder):
+        tempFolderExists = unreal.EditorAssetLibrary.does_directory_exist(tempFolder)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] 임시 폴더 존재 여부: {tempFolderExists}")
+        if not tempFolderExists:
             unreal.log(f"[LegacyAnimationImporter] 임시 폴더 생성: {tempFolder}")
             unreal.EditorAssetLibrary.make_directory(tempFolder)
 
         # 3. 기존 임시 에셋 정리
-        if unreal.EditorAssetLibrary.does_asset_exist(tempPath):
-            unreal.log(f"[LegacyAnimationImporter] 기존 임시 에셋 삭제: {tempPath}")
-            unreal.EditorAssetLibrary.delete_asset(tempPath)
+        tempAssetExists = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] 기존 임시 에셋 존재 여부: {tempAssetExists}")
+        if tempAssetExists:
+            unreal.log(f"[LegacyAnimationImporter] 기존 임시 에셋 삭제 시도: {tempPath}")
+            deleteResult = unreal.EditorAssetLibrary.delete_asset(tempPath)
+            unreal.log(f"[LegacyAnimationImporter] [반환값] 기존 임시 에셋 삭제 결과: {deleteResult}")
 
         # 4. 새 스켈레톤으로 임시 폴더에 에셋 임포트 (파일명 그대로)
         task = self.create_import_task(inFbxFile, tempFolder, inFbxSkeletonPath, inSkeletonContentPath)
@@ -219,7 +227,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
 
         result = task.get_objects()
         importedPaths = task.imported_object_paths
-        unreal.log(f"[LegacyAnimationImporter] 임포트 결과: objects={len(result)}, paths={importedPaths}")
+        unreal.log(f"[LegacyAnimationImporter] [반환값] 임포트 결과: objects={len(result)}, paths={importedPaths}")
 
         if len(result) == 0:
             # 임포트 실패 상세 정보 로깅
@@ -228,44 +236,146 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             unreal.log_error(f"[LegacyAnimationImporter] 임시 에셋 임포트 실패 - imported_object_paths: {importedPaths}")
             raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
 
-        # 4. 에셋 로드
+        # 임포트 후 에셋 존재 여부 확인
+        tempAssetExistsAfterImport = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+        oldAssetExistsBeforeConsolidate = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] 임포트 후 임시 에셋 존재: {tempAssetExistsAfterImport}")
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Consolidate 전 기존 에셋 존재: {oldAssetExistsBeforeConsolidate}")
+
+        # 5. 에셋 로드
         newAsset = unreal.EditorAssetLibrary.load_asset(tempPath)
         oldAsset = unreal.EditorAssetLibrary.load_asset(assetFullPath)
+
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] newAsset 로드됨: {newAsset is not None}")
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] oldAsset 로드됨: {oldAsset is not None}")
 
         if not newAsset or not oldAsset:
             raise ValueError(f"에셋 로드 실패: newAsset={newAsset}, oldAsset={oldAsset}")
 
         unreal.log(f"[LegacyAnimationImporter] 에셋 로드 완료: new={tempPath}, old={assetFullPath}")
 
-        # 5. Consolidate (참조 리다이렉트)
-        success = unreal.EditorAssetLibrary.consolidate_assets(newAsset, [oldAsset])
-        if not success:
+        # 6. Consolidate (참조 리다이렉트)
+        unreal.log(f"[LegacyAnimationImporter] Consolidate 시도: newAsset={newAsset.get_path_name()}, oldAsset={oldAsset.get_path_name()}")
+        consolidateSuccess = unreal.EditorAssetLibrary.consolidate_assets(newAsset, [oldAsset])
+        unreal.log(f"[LegacyAnimationImporter] [반환값] consolidate_assets() 결과: {consolidateSuccess}")
+
+        if not consolidateSuccess:
+            unreal.log_error(f"[LegacyAnimationImporter] Consolidate 실패!")
             # 임시 에셋 정리
             unreal.EditorAssetLibrary.delete_asset(tempPath)
             raise ValueError(f"Consolidate 실패: {assetFullPath}")
 
+        # Consolidate 후 상태 체크
+        tempAssetExistsAfterConsolidate = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+        oldPathExistsAfterConsolidate = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Consolidate 후 임시 에셋 존재: {tempAssetExistsAfterConsolidate}")
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Consolidate 후 기존 경로 존재 (Redirector?): {oldPathExistsAfterConsolidate}")
+
+        # Redirector 여부 확인
+        if oldPathExistsAfterConsolidate:
+            oldPathAssetData = unreal.EditorAssetLibrary.find_asset_data(assetFullPath)
+            if oldPathAssetData.is_valid():
+                assetClass = oldPathAssetData.asset_class_path.asset_name
+                unreal.log(f"[LegacyAnimationImporter] [상태체크] 기존 경로의 에셋 클래스: {assetClass}")
+
         unreal.log(f"[LegacyAnimationImporter] Consolidate 완료: 참조가 {tempPath}로 리다이렉트됨")
 
-        # 6. 기존 경로의 Redirector 삭제
-        if unreal.EditorAssetLibrary.does_asset_exist(assetFullPath):
-            unreal.log(f"[LegacyAnimationImporter] Redirector 삭제: {assetFullPath}")
-            unreal.EditorAssetLibrary.delete_asset(assetFullPath)
+        # 7. Redirector 삭제 (Consolidate로 생성된 Redirector 정리)
+        # delete_asset()은 Headless 모드에서 디스크 파일을 삭제하지 않으므로
+        # delete_asset() 후 디스크 파일을 직접 삭제
+        redirectorExists = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Redirector 삭제 전 기존 경로 존재: {redirectorExists}")
 
-        # 7. Rename으로 이름 복원
-        success = unreal.EditorAssetLibrary.rename_asset(tempPath, assetFullPath)
-        if not success:
+        if redirectorExists:
+            unreal.log(f"[LegacyAnimationImporter] Redirector 삭제 시도: {assetFullPath}")
+            deleteRedirectorResult = unreal.EditorAssetLibrary.delete_asset(assetFullPath)
+            unreal.log(f"[LegacyAnimationImporter] [반환값] Redirector delete_asset() 결과: {deleteRedirectorResult}")
+
+            # 디스크 파일 직접 삭제 (Headless 모드에서 delete_asset()이 디스크 파일을 삭제하지 않는 경우 대비)
+            contentDir = unreal.Paths.project_content_dir()
+            # /Game/... -> Content/... 경로로 변환
+            relativePath = assetFullPath.replace("/Game/", "")
+            diskPath = os.path.join(contentDir, relativePath + ".uasset")
+            diskPath = os.path.normpath(diskPath)
+
+            unreal.log(f"[LegacyAnimationImporter] [상태체크] 디스크 경로: {diskPath}")
+            if os.path.exists(diskPath):
+                unreal.log(f"[LegacyAnimationImporter] 디스크 파일 직접 삭제 시도: {diskPath}")
+                try:
+                    os.remove(diskPath)
+                    unreal.log(f"[LegacyAnimationImporter] [반환값] 디스크 파일 삭제 성공")
+                except OSError as e:
+                    unreal.log_error(f"[LegacyAnimationImporter] 디스크 파일 삭제 실패: {e}")
+
+            # AssetRegistry 갱신 - 디스크 삭제 후 레지스트리 동기화
+            unreal.log(f"[LegacyAnimationImporter] AssetRegistry 갱신 시도: {destinationPath}")
+            assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
+            assetRegistry.scan_paths_synchronous([destinationPath], force_rescan=True)
+            unreal.log(f"[LegacyAnimationImporter] [반환값] AssetRegistry 갱신 완료")
+
+            # Garbage Collection 실행
+            unreal.SystemLibrary.collect_garbage()
+            unreal.log(f"[LegacyAnimationImporter] Garbage Collection 완료")
+
+        # 삭제 후 상태 체크
+        oldPathExistsAfterDelete = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Redirector 삭제 후 기존 경로 존재: {oldPathExistsAfterDelete}")
+
+        # 8. Rename으로 이름 복원
+        unreal.log(f"[LegacyAnimationImporter] Rename 시도: {tempPath} -> {assetFullPath}")
+        renameSuccess = unreal.EditorAssetLibrary.rename_asset(tempPath, assetFullPath)
+        unreal.log(f"[LegacyAnimationImporter] [반환값] rename_asset() 결과: {renameSuccess}")
+
+        if not renameSuccess:
+            # Rename 실패 시 상태 체크
+            tempStillExists = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+            targetExists = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+            unreal.log_error(f"[LegacyAnimationImporter] Rename 실패! 임시 에셋 존재: {tempStillExists}, 대상 경로 존재: {targetExists}")
             raise ValueError(f"Rename 실패: {tempPath} -> {assetFullPath}")
 
+        # 9. 임시 경로의 Redirector 삭제 (Rename으로 생성된 Redirector 정리)
+        tempRedirectorExists = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Rename 후 임시 경로 Redirector 존재: {tempRedirectorExists}")
+
+        if tempRedirectorExists:
+            unreal.log(f"[LegacyAnimationImporter] 임시 경로 Redirector 삭제 시도: {tempPath}")
+            deleteTempRedirectorResult = unreal.EditorAssetLibrary.delete_asset(tempPath)
+            unreal.log(f"[LegacyAnimationImporter] [반환값] 임시 Redirector delete_asset() 결과: {deleteTempRedirectorResult}")
+
+            # 디스크 파일 직접 삭제
+            tempRelativePath = tempPath.replace("/Game/", "")
+            tempDiskPath = os.path.join(unreal.Paths.project_content_dir(), tempRelativePath + ".uasset")
+            tempDiskPath = os.path.normpath(tempDiskPath)
+
+            if os.path.exists(tempDiskPath):
+                unreal.log(f"[LegacyAnimationImporter] 임시 디스크 파일 직접 삭제 시도: {tempDiskPath}")
+                try:
+                    os.remove(tempDiskPath)
+                    unreal.log(f"[LegacyAnimationImporter] [반환값] 임시 디스크 파일 삭제 성공")
+                except OSError as e:
+                    unreal.log_error(f"[LegacyAnimationImporter] 임시 디스크 파일 삭제 실패: {e}")
+
+        # Rename 후 상태 체크
+        finalAssetExists = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
+        tempAssetExistsAfterRename = unreal.EditorAssetLibrary.does_asset_exist(tempPath)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Rename 후 최종 에셋 존재: {finalAssetExists}")
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] Rename 후 임시 에셋 존재: {tempAssetExistsAfterRename}")
         unreal.log(f"[LegacyAnimationImporter] Rename 완료: {tempPath} -> {assetFullPath}")
 
-        # 8. 임시 폴더 정리 (비어있으면 삭제)
-        if unreal.EditorAssetLibrary.does_directory_exist(tempFolder):
+        # 10. 임시 폴더 정리 (비어있으면 삭제)
+        tempFolderExistsForCleanup = unreal.EditorAssetLibrary.does_directory_exist(tempFolder)
+        unreal.log(f"[LegacyAnimationImporter] [상태체크] 정리 단계 - 임시 폴더 존재: {tempFolderExistsForCleanup}")
+        if tempFolderExistsForCleanup:
             assetsInTemp = unreal.EditorAssetLibrary.list_assets(tempFolder)
+            unreal.log(f"[LegacyAnimationImporter] [상태체크] 임시 폴더 내 에셋 수: {len(assetsInTemp)}")
+            if len(assetsInTemp) > 0:
+                unreal.log(f"[LegacyAnimationImporter] [상태체크] 임시 폴더 내 에셋 목록: {assetsInTemp}")
             if len(assetsInTemp) == 0:
-                unreal.EditorAssetLibrary.delete_directory(tempFolder)
-                unreal.log(f"[LegacyAnimationImporter] 임시 폴더 삭제: {tempFolder}")
+                deleteFolderResult = unreal.EditorAssetLibrary.delete_directory(tempFolder)
+                unreal.log(f"[LegacyAnimationImporter] [반환값] 임시 폴더 삭제 결과: {deleteFolderResult}")
 
-        unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 성공 (Consolidate+Rename): {assetFullPath}")
+        unreal.log(f"[LegacyAnimationImporter] ========== Consolidate+Rename 완료 ==========")
+        unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 성공: {assetFullPath}")
 
         return True
 
