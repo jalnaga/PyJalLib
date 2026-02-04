@@ -17,6 +17,7 @@
 | **UE5 에셋 경로 메서드** | get_path_name, get_system_path | `../references/ue5/asset_path_methods.md` |
 | **UE5 임포트 + Perforce** | 임포트 후 체인지리스트 관리, reopen, 서밋 | `../references/ue5/import_perforce_workflow.md` |
 | **UE5 헤드레스 실행** | 백그라운드 실행, subprocess, 로그 경로 지정, 창 숨김 | `../references/ue5/headless_execution.md` |
+| **UE5 AnimSequence 스켈레톤 변경** | 재임포트, skeleton read-only, Consolidate+Rename | `../references/ue5/animsequence_skeleton_change.md` |
 | **3ds Max 스크립트** | pymxs, MaxScript 래핑, Node 조작 | `../references/max/pymxs_layer.md` |
 | **3ds Max 애니메이션** | 키프레임, animate on, attime | `../references/max/animation_context.md` |
 | **버전 관리 (P4)** | Perforce, 체크아웃, 서브밋, P4Python | `../references/integrations/perforce_pattern.md` |

@@ -1,0 +1,22 @@
+2026-02-04 15:01:40,875 - INFO - ============================================================
+2026-02-04 15:01:40,875 - INFO - === TEST START: Task 5 - 참조 무결성 검증 ===
+2026-02-04 15:01:40,875 - INFO - ============================================================
+2026-02-04 15:01:40,875 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 15:01:40,875 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 15:01:40,876 - INFO - 테스트 대상 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 15:01:40,876 - INFO - [Step 1] 에셋 존재 확인
+2026-02-04 15:01:40,876 - INFO -   - 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 15:01:40,876 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 15:01:40,876 - INFO - [Step 1] SUCCESS: 에셋 존재 확인
+2026-02-04 15:01:40,876 - INFO - [Step 2] 테스트용 AnimMontage 생성
+2026-02-04 15:01:40,899 - ERROR - ERROR: 예외 발생 - Exception: AnimMontage: Failed to find property 'slot_anim_tracks' for attribute 'slot_anim_tracks' on 'AnimMontage'
+2026-02-04 15:01:40,900 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_reference_integrity.py", line 265, in run_test
+    test_montage_path = create_test_anim_montage(expected_asset_path, current_skeleton)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_reference_integrity.py", line 131, in create_test_anim_montage
+    slot_tracks = montage.get_editor_property('slot_anim_tracks')
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: AnimMontage: Failed to find property 'slot_anim_tracks' for attribute 'slot_anim_tracks' on 'AnimMontage'
+
+2026-02-04 15:01:40,900 - INFO - === TEST END: ERROR ===

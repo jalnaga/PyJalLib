@@ -1,0 +1,280 @@
+2026-02-04 13:51:42,682 - INFO - ============================================================
+2026-02-04 13:51:42,682 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 13:51:42,682 - INFO - ============================================================
+2026-02-04 13:51:42,683 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 13:51:42,683 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 13:51:42,683 - ERROR - ERROR: 예외 발생 - ModuleNotFoundError: No module named 'legacyAnimationImporter'
+2026-02-04 13:51:42,684 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 113, in run_test
+    from legacyAnimationImporter import LegacyAnimationImporter
+ModuleNotFoundError: No module named 'legacyAnimationImporter'
+
+2026-02-04 13:51:42,684 - INFO - === TEST END: ERROR ===
+2026-02-04 13:52:42,671 - INFO - ============================================================
+2026-02-04 13:52:42,671 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 13:52:42,671 - INFO - ============================================================
+2026-02-04 13:52:42,671 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 13:52:42,671 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 13:52:42,689 - INFO - [Step 1] 스켈레톤 X로 초기 임포트 시작
+2026-02-04 13:52:42,689 - INFO -   - FBX: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:52:42,689 - INFO -   - 스켈레톤 X: /Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton/SKEL_Sh_Human_M_BaseSkeleton.SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 13:52:42,689 - INFO -   - 대상 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default//A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 13:52:42,689 - INFO -   - 기존 에셋 삭제: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default//A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 13:52:43,330 - ERROR - ERROR: 예외 발생 - ValueError: FBX 파일 경로가 올바르지 않습니다: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:52:43,331 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 138, in run_test
+    result1 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 120, in import_animation
+    destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyBaseImporter.py", line 259, in _prepare_import_paths
+    raise ValueError(error_msg)
+ValueError: FBX 파일 경로가 올바르지 않습니다: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 13:52:43,331 - INFO - === TEST END: ERROR ===
+2026-02-04 13:54:19,448 - INFO - ============================================================
+2026-02-04 13:54:19,448 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 13:54:19,448 - INFO - ============================================================
+2026-02-04 13:54:19,448 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 13:54:19,448 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 13:54:19,448 - INFO - [Step 1] 스켈레톤 X로 초기 임포트 시작
+2026-02-04 13:54:19,448 - INFO -   - FBX: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:54:19,448 - INFO -   - 스켈레톤 X: /Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton/SKEL_Sh_Human_M_BaseSkeleton.SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 13:54:19,448 - INFO -   - 대상 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default//A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 13:54:19,449 - ERROR - ERROR: 예외 발생 - ValueError: FBX 파일 경로가 올바르지 않습니다: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:54:19,449 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 138, in run_test
+    result1 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 120, in import_animation
+    destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyBaseImporter.py", line 259, in _prepare_import_paths
+    raise ValueError(error_msg)
+ValueError: FBX 파일 경로가 올바르지 않습니다: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 13:54:19,450 - INFO - === TEST END: ERROR ===
+2026-02-04 13:54:58,608 - INFO - ============================================================
+2026-02-04 13:54:58,608 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 13:54:58,608 - INFO - ============================================================
+2026-02-04 13:54:58,608 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 13:54:58,608 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 13:54:58,608 - INFO - [Step 1] 스켈레톤 X로 초기 임포트 시작
+2026-02-04 13:54:58,608 - INFO -   - FBX: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:54:58,608 - INFO -   - 스켈레톤 X: /Game/Omni/Characters/Shared/Human/Male/Mesh/BaseSkeleton/SKEL_Sh_Human_M_BaseSkeleton.SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 13:54:58,608 - INFO -   - 대상 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default//A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 13:54:58,831 - ERROR - ERROR: 예외 발생 - ValueError: 애니메이션 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 13:54:58,832 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 138, in run_test
+    result1 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 136, in import_animation
+    raise ValueError(error_msg)
+ValueError: 애니메이션 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 13:54:58,832 - INFO - === TEST END: ERROR ===
+2026-02-04 14:00:27,162 - INFO - ============================================================
+2026-02-04 14:00:27,163 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:00:27,163 - INFO - ============================================================
+2026-02-04 14:00:27,163 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:00:27,163 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:00:27,167 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:00:27,187 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:00:27,187 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:00:27,187 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:00:27,187 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:00:27,187 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:00:27,647 - INFO - [Step 2] SUCCESS: 재임포트 완료
+2026-02-04 14:00:27,647 - INFO - [Step 3] 재임포트 후 스켈레톤 검증
+2026-02-04 14:00:27,648 - INFO -   - 재임포트 전 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:00:27,648 - INFO -   - 재임포트 후 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:00:27,648 - INFO -   - 기대 스켈레톤 (Y): SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:00:27,648 - ERROR - FAIL: 스켈레톤이 Y로 변경되지 않음
+2026-02-04 14:00:27,648 - ERROR -   - 예상: SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:00:27,648 - ERROR -   - 실제: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:00:27,648 - INFO - ============================================================
+2026-02-04 14:00:27,648 - INFO - === TEST END: FAIL ===
+2026-02-04 14:00:27,648 - INFO - ============================================================
+2026-02-04 14:16:59,665 - INFO - ============================================================
+2026-02-04 14:16:59,665 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:16:59,665 - INFO - ============================================================
+2026-02-04 14:16:59,665 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:16:59,665 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:16:59,671 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:16:59,682 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:16:59,683 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:16:59,683 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:16:59,683 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:16:59,683 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:16:59,889 - ERROR - ERROR: 예외 발생 - ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 14:16:59,890 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 234, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 186, in _swap_skeleton_via_consolidate
+    raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
+ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 14:16:59,890 - INFO - === TEST END: ERROR ===
+2026-02-04 14:19:50,988 - INFO - ============================================================
+2026-02-04 14:19:50,988 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:19:50,988 - INFO - ============================================================
+2026-02-04 14:19:50,988 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:19:50,988 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:19:50,995 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:19:51,006 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:19:51,006 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:19:51,006 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:19:51,006 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:19:51,006 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:19:51,207 - ERROR - ERROR: 예외 발생 - ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 14:19:51,208 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 242, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 194, in _swap_skeleton_via_consolidate
+    raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
+ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 14:19:51,208 - INFO - === TEST END: ERROR ===
+2026-02-04 14:22:18,429 - INFO - ============================================================
+2026-02-04 14:22:18,429 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:22:18,429 - INFO - ============================================================
+2026-02-04 14:22:18,429 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:22:18,429 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:22:18,436 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:22:18,447 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:22:18,447 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:22:18,447 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:22:18,447 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:22:18,447 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:22:18,642 - ERROR - ERROR: 예외 발생 - ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 14:22:18,643 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 249, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 201, in _swap_skeleton_via_consolidate
+    raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
+ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 14:22:18,643 - INFO - === TEST END: ERROR ===
+2026-02-04 14:29:17,757 - INFO - ============================================================
+2026-02-04 14:29:17,757 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:29:17,757 - INFO - ============================================================
+2026-02-04 14:29:17,757 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:29:17,758 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:29:17,758 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:29:17,758 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:29:17,758 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:29:17,758 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:29:17,758 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:29:17,758 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:29:17,965 - ERROR - ERROR: 예외 발생 - ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 14:29:17,966 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 249, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 201, in _swap_skeleton_via_consolidate
+    raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
+ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 14:29:17,966 - INFO - === TEST END: ERROR ===
+2026-02-04 14:31:01,513 - INFO - ============================================================
+2026-02-04 14:31:01,513 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:31:01,513 - INFO - ============================================================
+2026-02-04 14:31:01,513 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:31:01,513 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:31:01,520 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:31:01,530 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:31:01,530 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:31:01,530 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:31:01,530 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:31:01,530 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:31:01,751 - ERROR - ERROR: 예외 발생 - ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+2026-02-04 14:31:01,752 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 248, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 200, in _swap_skeleton_via_consolidate
+    raise ValueError(f"임시 에셋 임포트 실패: {inFbxFile}")
+ValueError: 임시 에셋 임포트 실패: E:\DevStorage_root\DevStorage\Characters\NPC\Human\Male\Animation\Neutral\Storytelling\Default\A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter.fbx
+
+2026-02-04 14:31:01,752 - INFO - === TEST END: ERROR ===
+2026-02-04 14:49:29,559 - INFO - ============================================================
+2026-02-04 14:49:29,559 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:49:29,559 - INFO - ============================================================
+2026-02-04 14:49:29,559 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:49:29,559 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:49:29,565 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:49:29,576 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:49:29,581 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:49:29,581 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:49:29,581 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:49:29,581 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:49:29,586 - ERROR - ERROR: 예외 발생 - Exception: FbxFactory: Failed to find property 'import_ui' for attribute 'import_ui' on 'FbxFactory'
+2026-02-04 14:49:29,586 - ERROR - Traceback (most recent call last):
+  File "D:/Dropbox/Programing/Python/PyJalLib/tests/ue5/test_skeleton_reimport.py", line 215, in run_test
+    result2 = importer.import_animation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 275, in import_animation
+    self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 205, in _swap_skeleton_via_consolidate
+    task = self.create_import_task(inFbxFile, tempFolder, inFbxSkeletonPath, inSkeletonContentPath)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dropbox\Programing\Python\PyJalLib\src\pyjallib\ue5\inUnreal\legacyAnimationImporter.py", line 78, in create_import_task
+    importOptions = factory.get_editor_property('import_ui')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: FbxFactory: Failed to find property 'import_ui' for attribute 'import_ui' on 'FbxFactory'
+
+2026-02-04 14:49:29,587 - INFO - === TEST END: ERROR ===
+2026-02-04 14:51:38,958 - INFO - ============================================================
+2026-02-04 14:51:38,958 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 14:51:38,958 - INFO - ============================================================
+2026-02-04 14:51:38,958 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 14:51:38,959 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 14:51:38,965 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:51:38,975 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 14:51:38,975 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 14:51:38,975 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:51:38,975 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 14:51:38,976 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:51:41,207 - INFO - [Step 2] SUCCESS: 재임포트 완료
+2026-02-04 14:51:41,207 - INFO - [Step 3] 재임포트 후 스켈레톤 검증
+2026-02-04 14:51:41,208 - INFO -   - 재임포트 전 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 14:51:41,208 - INFO -   - 재임포트 후 스켈레톤: SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:51:41,208 - INFO -   - 기대 스켈레톤 (Y): SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 14:51:41,208 - INFO - [Step 3] SUCCESS: 스켈레톤이 Y로 정상 변경됨
+2026-02-04 14:51:41,208 - INFO - ============================================================
+2026-02-04 14:51:41,208 - INFO - === TEST END: SUCCESS ===
+2026-02-04 14:51:41,208 - INFO - ============================================================
+2026-02-04 15:01:27,246 - INFO - ============================================================
+2026-02-04 15:01:27,246 - INFO - === TEST START: Task 4 - 재임포트 시 스켈레톤 변경 검증 ===
+2026-02-04 15:01:27,246 - INFO - ============================================================
+2026-02-04 15:01:27,246 - INFO - [Step 0] 설정값 검증 시작
+2026-02-04 15:01:27,247 - INFO - [Step 0] SUCCESS: 설정값 검증 통과
+2026-02-04 15:01:27,251 - INFO - 예상 에셋 경로: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 15:01:27,264 - INFO - [Step 1] 기존 에셋 발견 - 초기 임포트 건너뜀
+2026-02-04 15:01:27,265 - INFO -   - 기존 에셋: /Game/Omni/Characters/NPC/Human/Male/Animation/Neutral/Storytelling/Default/A_Nc_Human_M_Neutral_Storytelling_Default_Cry_RBr-Enter
+2026-02-04 15:01:27,265 - INFO -   - 현재 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 15:01:27,265 - INFO - [Step 2] 스켈레톤 Y로 재임포트 시작
+2026-02-04 15:01:27,265 - INFO -   - 스켈레톤 Y: /Game/Omni/Characters/Shared/Human/Female/Mesh/BaseSkeleton/SKEL_Sh_Human_F_BaseSkeleton.SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 15:01:29,521 - INFO - [Step 2] SUCCESS: 재임포트 완료
+2026-02-04 15:01:29,521 - INFO - [Step 3] 재임포트 후 스켈레톤 검증
+2026-02-04 15:01:29,522 - INFO -   - 재임포트 전 스켈레톤: SKEL_Sh_Human_M_BaseSkeleton
+2026-02-04 15:01:29,522 - INFO -   - 재임포트 후 스켈레톤: SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 15:01:29,522 - INFO -   - 기대 스켈레톤 (Y): SKEL_Sh_Human_F_BaseSkeleton
+2026-02-04 15:01:29,522 - INFO - [Step 3] SUCCESS: 스켈레톤이 Y로 정상 변경됨
+2026-02-04 15:01:29,522 - INFO - ============================================================
+2026-02-04 15:01:29,522 - INFO - === TEST END: SUCCESS ===
+2026-02-04 15:01:29,522 - INFO - ============================================================
