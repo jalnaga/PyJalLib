@@ -1,0 +1,111 @@
+2026-02-07 16:11:43,468 [INFO] === TEST START: CheckLayer ===
+2026-02-07 16:11:43,468 [INFO] SUCCESS: TC01 인스턴스 생성 (layerService 주입)
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC02 layerService 없이 인스턴스 생성, layerService == None
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: set_layer_hierarchy
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: has_empty_layers
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: fix_empty_layers
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: is_default_layer_empty
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: is_correct_layer_name
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: has_correct_layer_names
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC03 메서드 존재: is_object_in_correct_layer
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC04 set_layer_hierarchy 데이터 저장
+2026-02-07 16:11:43,469 [INFO] SUCCESS: TC05 set_layer_hierarchy 덮어쓰기
+2026-02-07 16:11:44,146 [INFO] SUCCESS: TC06 has_empty_layers 반환 타입이 bool
+2026-02-07 16:11:44,146 [INFO] SUCCESS: TC07 빈 레이어 생성 후 has_empty_layers == True
+2026-02-07 16:11:44,146 [INFO] SUCCESS: TC08 fix_empty_layers 후 has_empty_layers == False
+2026-02-07 16:11:44,708 [INFO] SUCCESS: TC09 빈 씬에서 is_default_layer_empty == True
+2026-02-07 16:11:44,709 [INFO] SUCCESS: TC10 오브젝트 추가 후 is_default_layer_empty == False
+2026-02-07 16:11:45,249 [INFO] SUCCESS: TC11 올바른 레이어 구조에서 has_correct_layer_names == True
+2026-02-07 16:11:45,249 [INFO] SUCCESS: TC12 is_correct_layer_name 개별 검증 (Bip, Bip_AddOn, Rig_AddOn_Ankle)
+2026-02-07 16:11:45,249 [INFO] SUCCESS: TC13 parent_* 패턴 매칭: Rig_Custom (부모 Rig) == True
+2026-02-07 16:11:45,249 [INFO] SUCCESS: TC14 미등록 레이어 is_correct_layer_name == False
+2026-02-07 16:11:45,250 [INFO] SUCCESS: TC15 Geometry가 Mesh_Body 레이어에 있을 때 == True
+2026-02-07 16:11:45,250 [INFO] SUCCESS: TC16 Bone이 Bone_Body 레이어에 있을 때 == True
+2026-02-07 16:11:45,250 [INFO] SUCCESS: TC17 Geometry가 Bip 레이어에 있을 때 == False
+2026-02-07 16:11:45,819 [INFO] === TEST END: 23/23 passed, 0 failed ===
+2026-02-07 16:15:14,647 [INFO] === TEST START: CheckMaterial ===
+2026-02-07 16:15:14,647 [INFO] SUCCESS: TC01 인스턴스 생성
+2026-02-07 16:15:14,647 [INFO] SUCCESS: TC02 메서드 존재: is_mat_ids_continued
+2026-02-07 16:15:14,647 [INFO] SUCCESS: TC02 메서드 존재: has_correct_material
+2026-02-07 16:15:15,201 [INFO] SUCCESS: TC03 기본 Box의 MatID가 연속 (1만 존재)
+2026-02-07 16:15:15,217 [INFO] SUCCESS: TC04 비연속 MatID (1과 3) == False
+2026-02-07 16:15:15,769 [INFO] SUCCESS: TC05 머티리얼 없는 오브젝트 == False
+2026-02-07 16:15:15,773 [INFO] SUCCESS: TC06 Multimaterial == True
+2026-02-07 16:15:15,774 [INFO] SUCCESS: TC07 StandardMaterial == False
+2026-02-07 16:15:16,329 [INFO] === TEST END: 8/8 passed, 0 failed ===
+2026-02-07 16:15:45,498 [INFO] === TEST START: CheckObject ===
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC01 인스턴스 생성
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: has_valid_name
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: is_editable_poly
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: fix_editable_poly
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_ngons
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: has_ngons
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: has_init_xform
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: fix_xform
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: is_transform_locked
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: fix_transform_locked
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: has_correct_mod
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_uv_range
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_num_uv_channels
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_animation_keys
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_animation_keys_fix
+2026-02-07 16:15:45,498 [INFO] SUCCESS: TC02 메서드 존재: check_meshes_not_animated
+2026-02-07 16:15:46,049 [INFO] SUCCESS: TC03 has_valid_name (일치 True, 불일치 False)
+2026-02-07 16:15:46,050 [INFO] SUCCESS: TC04 Box 프리미티브 is_editable_poly == False
+2026-02-07 16:15:46,050 [INFO] SUCCESS: TC05 convertToPoly 후 is_editable_poly == True
+2026-02-07 16:15:46,076 [INFO] SUCCESS: TC06 fix_editable_poly 후 is_editable_poly == True
+2026-02-07 16:15:46,635 [INFO] SUCCESS: TC07 Box(quad만) has_ngons == False
+2026-02-07 16:15:46,636 [INFO] SUCCESS: TC08 초기 상태 has_init_xform == True
+2026-02-07 16:15:46,636 [INFO] SUCCESS: TC09 회전 후 has_init_xform == False
+2026-02-07 16:15:46,641 [INFO] SUCCESS: TC10 fix_xform 후 has_init_xform == True
+2026-02-07 16:15:47,175 [INFO] SUCCESS: TC11 기본 상태 is_transform_locked == False
+2026-02-07 16:15:47,176 [INFO] SUCCESS: TC12 잠금 후 is_transform_locked == True
+2026-02-07 16:15:47,176 [INFO] SUCCESS: TC13 fix_transform_locked 후 == False
+2026-02-07 16:15:47,736 [INFO] SUCCESS: TC14 모디파이어 없음 has_correct_mod == True
+2026-02-07 16:15:47,737 [INFO] SUCCESS: TC15 Skin만 has_correct_mod == True
+2026-02-07 16:15:48,284 [INFO] SUCCESS: TC16 Bend 모디파이어 has_correct_mod == False
+2026-02-07 16:15:48,847 [ERROR] FAIL: TC17 기본 Box check_num_uv_channels == True - 실제: False
+2026-02-07 16:15:49,402 [INFO] SUCCESS: TC18 키 없는 오브젝트 check_animation_keys 길이 == 0
+2026-02-07 16:15:49,402 [ERROR] FAIL: TC19 check_animation_keys 키 추가 - 'pymxs.runtime' object has no attribute 'animate'
+2026-02-07 16:15:49,411 [INFO] SUCCESS: TC20 check_animation_keys_fix 후 키 수 == 0
+2026-02-07 16:15:49,955 [INFO] SUCCESS: TC21 애니메이션 없는 씬 check_meshes_not_animated 길이 == 0
+2026-02-07 16:15:49,955 [ERROR] FAIL: TC22 check_meshes_not_animated 애니메이션 - 'pymxs.runtime' object has no attribute 'animate'
+2026-02-07 16:15:50,516 [INFO] === TEST END: 33/36 passed, 3 failed ===
+2026-02-07 16:20:06,809 [INFO] === TEST START: CheckObject ===
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC01 인스턴스 생성
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: has_valid_name
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: is_editable_poly
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: fix_editable_poly
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: check_ngons
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: has_ngons
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: has_init_xform
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: fix_xform
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: is_transform_locked
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: fix_transform_locked
+2026-02-07 16:20:06,809 [INFO] SUCCESS: TC02 메서드 존재: has_correct_mod
+2026-02-07 16:20:06,810 [INFO] SUCCESS: TC02 메서드 존재: check_uv_range
+2026-02-07 16:20:06,810 [INFO] SUCCESS: TC02 메서드 존재: check_num_uv_channels
+2026-02-07 16:20:06,810 [INFO] SUCCESS: TC02 메서드 존재: check_animation_keys
+2026-02-07 16:20:06,810 [INFO] SUCCESS: TC02 메서드 존재: check_animation_keys_fix
+2026-02-07 16:20:06,810 [INFO] SUCCESS: TC02 메서드 존재: check_meshes_not_animated
+2026-02-07 16:20:07,369 [INFO] SUCCESS: TC03 has_valid_name (일치 True, 불일치 False)
+2026-02-07 16:20:07,369 [INFO] SUCCESS: TC04 Box 프리미티브 is_editable_poly == False
+2026-02-07 16:20:07,369 [INFO] SUCCESS: TC05 convertToPoly 후 is_editable_poly == True
+2026-02-07 16:20:07,370 [INFO] SUCCESS: TC06 fix_editable_poly 후 is_editable_poly == True
+2026-02-07 16:20:07,926 [INFO] SUCCESS: TC07 Box(quad만) has_ngons == False
+2026-02-07 16:20:07,926 [INFO] SUCCESS: TC08 초기 상태 has_init_xform == True
+2026-02-07 16:20:07,926 [INFO] SUCCESS: TC09 회전 후 has_init_xform == False
+2026-02-07 16:20:07,927 [INFO] SUCCESS: TC10 fix_xform 후 has_init_xform == True
+2026-02-07 16:20:08,464 [INFO] SUCCESS: TC11 기본 상태 is_transform_locked == False
+2026-02-07 16:20:08,464 [INFO] SUCCESS: TC12 잠금 후 is_transform_locked == True
+2026-02-07 16:20:08,464 [INFO] SUCCESS: TC13 fix_transform_locked 후 == False
+2026-02-07 16:20:09,017 [INFO] SUCCESS: TC14 모디파이어 없음 has_correct_mod == True
+2026-02-07 16:20:09,017 [INFO] SUCCESS: TC15 Skin만 has_correct_mod == True
+2026-02-07 16:20:09,562 [INFO] SUCCESS: TC16 Bend 모디파이어 has_correct_mod == False
+2026-02-07 16:20:10,102 [INFO] SUCCESS: TC17 기본 Box check_num_uv_channels == True
+2026-02-07 16:20:10,648 [INFO] SUCCESS: TC18 키 없는 오브젝트 check_animation_keys 길이 == 0
+2026-02-07 16:20:10,664 [INFO] SUCCESS: TC19 키 추가 후 check_animation_keys 길이 > 0
+2026-02-07 16:20:10,666 [INFO] SUCCESS: TC20 check_animation_keys_fix 후 키 수 == 0
+2026-02-07 16:20:11,207 [INFO] SUCCESS: TC21 애니메이션 없는 씬 check_meshes_not_animated 길이 == 0
+2026-02-07 16:20:11,224 [INFO] SUCCESS: TC22 애니메이션 있는 메쉬 check_meshes_not_animated 길이 > 0
+2026-02-07 16:20:11,786 [INFO] === TEST END: 36/36 passed, 0 failed ===

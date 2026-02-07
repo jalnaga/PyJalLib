@@ -47,6 +47,11 @@ from .rootMotion import RootMotion
 
 from .dependent import Dependent
 
+from .checkViewport import CheckViewport
+from .checkLayer import CheckLayer
+from .checkMaterial import CheckMaterial
+from .checkObject import CheckObject
+
 from .fbxHandler import FBXHandler
 from .toolManager import ToolManager
 
@@ -109,7 +114,12 @@ class Header:
         self.rootMotion = RootMotion(nameService=self.name, animService=self.anim, constraintService=self.constraint, helperService=self.helper, bipService=self.bip)
         
         self.dependent = Dependent(layerService=self.layer)
-        
+
+        self.checkViewport = CheckViewport()
+        self.checkLayer = CheckLayer(layerService=self.layer)
+        self.checkMaterial = CheckMaterial()
+        self.checkObject = CheckObject()
+
         self.fbx = FBXHandler()
         
         self.toolManager = ToolManager()

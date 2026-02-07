@@ -49,6 +49,11 @@ from pyjallib.max.rootMotion import RootMotion
 
 from pyjallib.max.dependent import Dependent
 
+from pyjallib.max.checkViewport import CheckViewport
+from pyjallib.max.checkLayer import CheckLayer
+from pyjallib.max.checkMaterial import CheckMaterial
+from pyjallib.max.checkObject import CheckObject
+
 from pyjallib.max.fbxHandler import FBXHandler
 from pyjallib.max.toolManager import ToolManager
 from pyjallib.max.progress import Progress
@@ -90,6 +95,10 @@ __all__ = [
     'UE5Skeleton',
     'RootMotion',
     'Dependent',
+    'CheckViewport',
+    'CheckLayer',
+    'CheckMaterial',
+    'CheckObject',
     'FBXHandler',
     'ToolManager',
     'Progress',

@@ -66,7 +66,7 @@ class Layer:
         """
         returnVal = []
         
-        if inLayerNum == False or inLayerNum is None:
+        if inLayerNum is False or inLayerNum is None:
             return returnVal
         
         code = f"""
