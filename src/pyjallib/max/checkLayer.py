@@ -144,9 +144,28 @@ class CheckLayer:
                 return False
         return True
 
-    def is_object_in_correct_layer(self, inObj):
+    def is_object_in_layer(self, inObj, inExpectedLayerName):
         """
-        오브젝트가 올바른 레이어에 있는지 확인.
+        오브젝트가 특정 레이어에 있는지만 확인.
+
+        레이어 계층 검증이나 규칙 적용 없이 단순히 오브젝트가
+        지정된 레이어에 속해있는지만 확인합니다.
+
+        Args:
+            inObj: 검증할 3ds Max 오브젝트
+            inExpectedLayerName: 기대하는 레이어 이름
+
+        Returns:
+            bool: 오브젝트가 해당 레이어에 있으면 True
+        """
+        if inObj is None or inObj.layer is None:
+            return False
+
+        return inObj.layer.name == inExpectedLayerName
+
+    def is_object_in_correct_layer_by_type(self, inObj):
+        """
+        오브젝트 타입에 따라 올바른 레이어에 있는지 확인.
 
         Geometry(Biped/BoneGeometry 제외) -> Mesh_* 레이어
         Bone/Point/Biped/Dummy(Biped 자식) -> Bone_* 레이어
