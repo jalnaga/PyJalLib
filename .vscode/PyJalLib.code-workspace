@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": ".."
+		},
+		{
+			"path": "../../../../../Work/00_Scripting/orvlib"
 		}
 	],
 	"settings": {
