@@ -30,13 +30,13 @@ class CheckMaterial:
         오브젝트의 Material ID가 1부터 연속적인지 확인.
 
         snapshotasmesh로 메쉬를 복제한 후 페이스별 MatID를 수집하고,
-        1부터 연속된 ID인지 검증합니다.
+        1부터 max(ID)까지 연속된 ID인지 검증합니다.
 
         Args:
             inObj: 검증할 3ds Max 오브젝트
 
         Returns:
-            bool: Material ID가 1부터 연속이면 True
+            bool: Material ID가 1부터 max(ID)까지 연속이면 True
         """
         dupMesh = rt.snapshotAsMesh(inObj)
         polyNum = dupMesh.numfaces
@@ -47,11 +47,9 @@ class CheckMaterial:
 
         rt.delete(dupMesh)
 
-        for idx in range(1, len(matIDSet) + 1):
-            if idx not in matIDSet:
-                return False
-
-        return True
+        maxID = max(matIDSet)
+        expectedSet = set(range(1, maxID + 1))
+        return matIDSet == expectedSet
 
     def has_correct_material(self, inObj):
         """
