@@ -113,6 +113,39 @@ class LegacyImporterSettings:
 
         return fbxImportOptions
 
+    def set_options_for_static_mesh_import(self):
+        """
+        스태틱 메쉬 임포트를 위한 옵션을 설정합니다.
+
+        메쉬만 임포트하고, 애니메이션/텍스처/매테리얼은 임포트하지 않으며,
+        스켈레탈이 아닌 스태틱 메쉬로 임포트합니다.
+
+        Returns:
+            unreal.FbxImportUI: 설정된 임포트 옵션
+        """
+        fbxImportOptions = unreal.FbxImportUI()
+        fbxImportOptions.reset_to_default()
+        fbxImportOptions.set_editor_property('original_import_type', unreal.FBXImportType.FBXIT_STATIC_MESH)
+        fbxImportOptions.set_editor_property('mesh_type_to_import', unreal.FBXImportType.FBXIT_STATIC_MESH)
+
+        # 메시 임포트 옵션
+        fbxImportOptions.set_editor_property('import_mesh', True)
+        fbxImportOptions.set_editor_property('import_as_skeletal', False)
+        fbxImportOptions.set_editor_property('import_textures', False)
+        fbxImportOptions.set_editor_property('import_materials', False)
+        fbxImportOptions.set_editor_property('import_animations', False)
+
+        # Static Mesh 세부 옵션
+        fbxImportOptions.static_mesh_import_data.set_editor_property('combine_meshes', True)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('auto_generate_collision', False)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('normal_generation_method', unreal.FBXNormalGenerationMethod.MIKK_T_SPACE)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('reorder_material_to_fbx_order', True)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('convert_scene_unit', False)
+        fbxImportOptions.static_mesh_import_data.set_editor_property('force_front_x_axis', False)
+
+        return fbxImportOptions
+
     def set_options_for_animation_import(self):
         """
         애니메이션 임포트를 위한 옵션을 설정합니다.
@@ -166,8 +199,10 @@ class LegacyImporterSettings:
             return self.set_options_for_skeleton_import()
         elif inPresetName.lower() == "skeletalmesh":
             return self.set_options_for_skeletal_mesh_import()
+        elif inPresetName.lower() == "staticmesh":
+            return self.set_options_for_static_mesh_import()
         elif inPresetName.lower() == "animation":
             return self.set_options_for_animation_import()
         else:
-            unreal.log_error(f"[LegacyImporterSettings] Unsupported preset name: {inPresetName}. Supported presets: Skeleton, SkeletalMesh, Animation")
+            unreal.log_error(f"[LegacyImporterSettings] Unsupported preset name: {inPresetName}. Supported presets: Skeleton, SkeletalMesh, StaticMesh, Animation")
             return None

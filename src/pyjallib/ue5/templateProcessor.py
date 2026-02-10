@@ -25,6 +25,7 @@ from .templates import (
     LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE,
     LEGACY_ANIM_IMPORT_TEMPLATE,
     LEGACY_BATCH_ANIM_IMPORT_TEMPLATE,
+    LEGACY_STATIC_MESH_IMPORT_TEMPLATE,
 )
 
 
@@ -377,6 +378,41 @@ class TemplateProcessor:
 
         return self.process_template(template_path, inOutputPath, inTemplateData)
 
+    def process_legacy_static_mesh_import_template(
+        self,
+        inTemplateData: Dict[str, Any],
+        inOutputPath: Optional[str] = None
+    ) -> str:
+        """
+        Legacy 스태틱 메쉬 임포트 전용 템플릿 처리
+
+        Args:
+            inTemplateData (Dict[str, Any]): 템플릿 데이터
+                필수 키:
+                - inExtPackagePath: 외부 패키지 경로
+                - inFbxPath: FBX 파일 절대 경로
+                - inDestinationPath: /Game/... 형식의 목적지 경로
+                선택 키:
+                - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+            inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
+
+        Returns:
+            str: 처리된 템플릿 내용
+        """
+        required_keys = ['inExtPackagePath', 'inFbxPath', 'inDestinationPath']
+        if not self.validate_template_data(LEGACY_STATIC_MESH_IMPORT_TEMPLATE, inTemplateData, required_keys):
+            raise ValueError(f"Legacy 스태틱 메쉬 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        if 'inAssetName' not in inTemplateData:
+            inTemplateData['inAssetName'] = ''
+
+        template_path = get_template_path(LEGACY_STATIC_MESH_IMPORT_TEMPLATE)
+
+        if inOutputPath is None:
+            inOutputPath = self.get_default_output_path(LEGACY_STATIC_MESH_IMPORT_TEMPLATE, "legacyStaticMeshImportScript")
+
+        return self.process_template(template_path, inOutputPath, inTemplateData)
+
     def process_legacy_batch_anim_import_template(
         self,
         inTemplateData: Dict[str, Any],
@@ -483,6 +519,7 @@ class TemplateProcessor:
             ('animation', 'interchange'): INTERCHANGE_ANIM_IMPORT_TEMPLATE,
             ('batch_animation', 'legacy'): LEGACY_BATCH_ANIM_IMPORT_TEMPLATE,
             ('batch_animation', 'interchange'): INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE,
+            ('static_mesh', 'legacy'): LEGACY_STATIC_MESH_IMPORT_TEMPLATE,
         }
 
         key = (asset_type, template_type)
@@ -510,6 +547,8 @@ class TemplateProcessor:
             return ['inExtPackagePath', 'inFbxPath', 'inDestinationPath', 'inSkeletonPath']
         elif asset_type == 'batch_animation':
             return ['inExtPackagePath', 'inFbxPaths', 'inDestinationPath', 'inSkeletonPath']
+        elif asset_type == 'static_mesh':
+            return ['inExtPackagePath', 'inFbxPath', 'inDestinationPath']
         else:
             raise ValueError(f"잘못된 asset_type: {asset_type}")
 

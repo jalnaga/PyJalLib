@@ -119,6 +119,14 @@ if is_ue5_available():
         LegacyAnimationImporter = None
         print(f"[PyJalLib] LegacyAnimationImporter 임포트 실패: {e}")
 
+    # Legacy Static Mesh Importer
+    try:
+        from .legacyStaticMeshImporter import LegacyStaticMeshImporter
+        __all__.append('LegacyStaticMeshImporter')
+    except ImportError as e:
+        LegacyStaticMeshImporter = None
+        print(f"[PyJalLib] LegacyStaticMeshImporter 임포트 실패: {e}")
+
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     pathUtils = None
@@ -133,6 +141,7 @@ else:
     LegacySkeletonImporter = None
     LegacySkeletalMeshImporter = None
     LegacyAnimationImporter = None
+    LegacyStaticMeshImporter = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
 
 def get_available_modules() -> list:
@@ -167,6 +176,8 @@ def get_available_modules() -> list:
         available.append('LegacySkeletalMeshImporter')
     if 'LegacyAnimationImporter' in __all__ and LegacyAnimationImporter is not None:
         available.append('LegacyAnimationImporter')
+    if 'LegacyStaticMeshImporter' in __all__ and LegacyStaticMeshImporter is not None:
+        available.append('LegacyStaticMeshImporter')
     return available
 
 # 헬퍼 함수도 __all__에 추가
