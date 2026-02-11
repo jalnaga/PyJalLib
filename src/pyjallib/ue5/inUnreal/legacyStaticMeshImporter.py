@@ -85,7 +85,7 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
                    f"Destination={inDestinationPath}, AssetName={assetName}")
         return task
 
-    def import_static_mesh(self, inFbxFile: str, inAssetName: str = None, inDescription: str = None):
+    def import_static_mesh(self, inFbxFile: str, inAssetName: str = None, inDescription: str = None, inSkipSourceControl: bool = False):
         """스태틱 메쉬를 FBX에서 임포트합니다.
 
         Interchange를 임시 비활성화하고 Legacy FBX + FbxImportUI로 임포트합니다.
@@ -94,6 +94,7 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
             inFbxFile: FBX 파일의 절대 경로
             inAssetName: 에셋 이름 (선택적, None이면 FBX 파일명 사용)
             inDescription: 소스 컨트롤 체크인 설명 (선택적)
+            inSkipSourceControl: True이면 소스 컨트롤 체크인을 건너뜁니다
 
         Returns:
             dict: 임포트 결과 딕셔너리 (SourceFile, Path, Name, Type, Success)
@@ -106,7 +107,7 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
         assetFullPath = f"{destinationPath}/{assetName}"
 
-        # 기존 에셋이 있는 경우 소스 컨트롤에서 체크아웃
+        # 기존 에셋이 있는 경우 소스 컨트롤에서 체크아웃 (쓰기 권한 확보)
         if unreal.Paths.file_exists(assetFullPath):
             unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
 
@@ -164,11 +165,12 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
         staticMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedStaticMesh)
         importedObjectPaths.append(staticMeshSystemFullPath)
 
-        checkInDescription = f"StaticMesh Imported by {inFbxFile} to {assetFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
+        if not inSkipSourceControl:
+            checkInDescription = f"StaticMesh Imported by {inFbxFile} to {assetFullPath}"
+            if inDescription is not None:
+                checkInDescription = inDescription
 
-        unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
+            unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
 
         unreal.log(f"[LegacyStaticMeshImporter] 스태틱 메쉬 임포트 성공: {inFbxFile}")
         return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
