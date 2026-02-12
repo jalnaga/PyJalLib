@@ -4,7 +4,7 @@
 			"path": ".."
 		},
 		{
-			"path": "../../../../../Work/00_Scripting/orvlib"
+			"path": "../../orvlib"
 		}
 	],
 	"settings": {
@@ -30,12 +30,6 @@
 		"files.exclude": {
 			"**/__pycache__": true,
 			"**/*.pyc": true,
-		},
-		"cursorpyright.analysis.extraPaths": [
-			"${workspaceFolder}",
-			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
-			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
-			"D:/Dropbox/Programing/UnrealStubs"
-		]
+		}
 	}
 }
