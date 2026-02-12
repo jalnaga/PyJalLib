@@ -132,6 +132,10 @@ class Perforce:
             change_spec = p4.run("change", "-o")[0]
             change_spec["Description"] = description
 
+            # Default CL 파일이 새 CL로 이동하지 않도록 Files 필드 제거
+            if "Files" in change_spec:
+                del change_spec["Files"]
+
             # 저장
             result = p4.save_change(change_spec)[0]
 
