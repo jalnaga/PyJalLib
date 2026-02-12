@@ -3,14 +3,33 @@ name = "pyjallib"
 version = "0.2.1"
 description = "A utility library for 3D game character development pipelines."
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Dongseok Kim", email = "jalnagakds@naver.com" }
 ]
 requires-python = ">=3.10"
+keywords = ["game", "character", "pipeline", "3dsmax", "unreal"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
 dependencies = [
     "loguru>=0.7.3",
     "p4python>=2024.2.2682690",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jalnaga/PyJalLib"
+Repository = "https://github.com/jalnaga/PyJalLib"
+Issues = "https://github.com/jalnaga/PyJalLib/issues"
 
 [build-system]
 requires = ["hatchling"]
