@@ -1,0 +1,7 @@
+2026-02-19 14:31:58,057 [INFO] === TEST START: Link ===
+2026-02-19 14:31:58,643 [INFO] SUCCESS: TC01 Link 인스턴스 생성
+2026-02-19 14:31:59,104 [INFO] SUCCESS: TC02 link_to_last_sel
+2026-02-19 14:31:59,554 [INFO] SUCCESS: TC03 link_to_first_sel
+2026-02-19 14:32:00,014 [INFO] SUCCESS: TC04 unlink_selection
+2026-02-19 14:32:00,475 [INFO] SUCCESS: TC05 unlink_children
+2026-02-19 14:32:00,476 [INFO] === TEST END: 5/5 passed, 0 failed ===

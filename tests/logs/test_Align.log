@@ -1,0 +1,10 @@
+2026-02-19 14:29:10,427 [INFO] === TEST START: Align ===
+2026-02-19 14:29:11,008 [INFO] SUCCESS: TC01 Align 인스턴스 생성
+2026-02-19 14:29:11,492 [INFO] SUCCESS: TC02 align_to_last 위치 정렬
+2026-02-19 14:29:11,950 [INFO] SUCCESS: TC03-a align_to_last_pos 위치 정렬
+2026-02-19 14:29:11,950 [INFO] SUCCESS: TC03-b align_to_last_pos 회전 유지
+2026-02-19 14:29:11,951 [INFO] SUCCESS: TC03-c align_to_last_pos 임시 객체 정리
+2026-02-19 14:29:12,560 [INFO] SUCCESS: TC04-a align_to_last_rot 위치 유지
+2026-02-19 14:29:12,569 [INFO] SUCCESS: TC04-b align_to_last_rot 회전 정렬
+2026-02-19 14:29:12,569 [INFO] SUCCESS: TC04-c align_to_last_rot 임시 객체 정리
+2026-02-19 14:29:12,569 [INFO] === TEST END: 8/8 passed, 0 failed ===

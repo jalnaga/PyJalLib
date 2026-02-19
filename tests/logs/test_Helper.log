@@ -1,0 +1,12 @@
+2026-02-19 14:27:08,712 [INFO] === TEST START: Helper ===
+2026-02-19 14:27:09,313 [INFO] SUCCESS: TC01 Helper 인스턴스 생성 및 Name 서비스 주입
+2026-02-19 14:27:09,823 [INFO] SUCCESS: TC02 create_point 기본 포인트 생성
+2026-02-19 14:27:10,290 [INFO] SUCCESS: TC03 create_point boxToggle/crossToggle 옵션
+2026-02-19 14:27:10,750 [INFO] SUCCESS: TC04 create_empty_point 빈 포인트 생성
+2026-02-19 14:27:11,203 [INFO] SUCCESS: TC05 set_size 헬퍼 크기 변경
+2026-02-19 14:27:11,668 [INFO] SUCCESS: TC06 add_size 헬퍼 크기 증가
+2026-02-19 14:27:12,148 [INFO] SUCCESS: TC07 set_shape_to_cross 형태 변경
+2026-02-19 14:27:12,619 [INFO] SUCCESS: TC08 set_shape_to_box 형태 변경
+2026-02-19 14:27:13,083 [INFO] SUCCESS: TC09 get_shape 형태 속성 딕셔너리 확인
+2026-02-19 14:27:13,552 [INFO] SUCCESS: TC10 set_shape 형태 속성 설정
+2026-02-19 14:27:13,552 [INFO] === TEST END: 10/10 passed, 0 failed ===

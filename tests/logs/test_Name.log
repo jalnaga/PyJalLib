@@ -1,0 +1,15 @@
+2026-02-19 14:26:20,734 [INFO] === TEST START: Name ===
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC01 Name 인스턴스 생성
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC02 get_Base_values 비어있지 않음
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC03 get_Type_values 비어있지 않음
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC04 get_Side_values 비어있지 않음
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC05 is_Type('Dum') True 확인
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC06 has_Type('DumSpine') True 확인
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC07 replace_Type('DumSpine', 'P') 결과 확인
+2026-02-19 14:26:21,415 [INFO] SUCCESS: TC08 remove_Type('DumSpine') 결과 확인
+2026-02-19 14:26:21,927 [INFO] SUCCESS: TC09 gen_unique_name 빈 씬에서 고유 이름 생성
+2026-02-19 14:26:22,433 [INFO] SUCCESS: TC10 gen_mirroring_name Side L->R 미러링
+2026-02-19 14:26:22,433 [INFO] SUCCESS: TC11 get_parent_value() 반환값 확인
+2026-02-19 14:26:22,433 [INFO] SUCCESS: TC12 get_dummy_value() 반환값 확인
+2026-02-19 14:26:22,949 [INFO] SUCCESS: TC13 sort_by_name 이름 정렬 확인
+2026-02-19 14:26:22,949 [INFO] === TEST END: 13/13 passed, 0 failed ===

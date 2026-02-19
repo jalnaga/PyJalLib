@@ -1,0 +1,30 @@
+2026-02-19 14:28:24,079 [INFO] === TEST START: Bone ===
+2026-02-19 14:28:24,746 [INFO] SUCCESS: TC01 Bone 인스턴스 생성
+2026-02-19 14:28:25,274 [INFO] SUCCESS: TC02 create_nub_bone 생성
+2026-02-19 14:28:25,274 [INFO] SUCCESS: TC02 create_nub_bone 타입 확인
+2026-02-19 14:28:25,275 [INFO] SUCCESS: TC02 create_nub_bone taper 값
+2026-02-19 14:28:25,797 [INFO] SUCCESS: TC03 is_nub_bone True 판별
+2026-02-19 14:28:26,333 [INFO] SUCCESS: TC04 is_nub_bone False 판별 (일반 뼈대)
+2026-02-19 14:28:26,914 [INFO] SUCCESS: TC05 create_simple_bone 체인 생성
+2026-02-19 14:28:26,914 [INFO] SUCCESS: TC05 create_simple_bone 뼈대 수
+2026-02-19 14:28:27,456 [INFO] SUCCESS: TC06 create_end_bone 생성
+2026-02-19 14:28:27,456 [INFO] SUCCESS: TC06 create_end_bone 부모 연결
+2026-02-19 14:28:27,989 [INFO] SUCCESS: TC07 is_end_bone End 뼈대 판별
+2026-02-19 14:28:27,990 [INFO] SUCCESS: TC07 is_end_bone 일반 뼈대 판별
+2026-02-19 14:28:28,521 [INFO] SUCCESS: TC08 sort_bones_as_hierarchy 배열 길이
+2026-02-19 14:28:28,521 [INFO] SUCCESS: TC08 sort_bones_as_hierarchy 루트 뼈대 위치
+2026-02-19 14:28:29,081 [INFO] SUCCESS: TC09 get_bone_shape 속성 개수
+2026-02-19 14:28:29,081 [INFO] SUCCESS: TC09 get_bone_shape width 값
+2026-02-19 14:28:29,081 [INFO] SUCCESS: TC09 get_bone_shape height 값
+2026-02-19 14:28:29,613 [INFO] SUCCESS: TC10 set_bone_size width
+2026-02-19 14:28:29,613 [INFO] SUCCESS: TC10 set_bone_size height
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_on frontfin 활성화
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_on sidefins 활성화
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_on backfin 활성화
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_off frontfin 비활성화
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_off sidefins 비활성화
+2026-02-19 14:28:30,146 [INFO] SUCCESS: TC11 set_fin_off backfin 비활성화
+2026-02-19 14:28:30,685 [INFO] SUCCESS: TC12 get_every_children 자식 수
+2026-02-19 14:28:31,209 [INFO] SUCCESS: TC13 get_bone_end_position 반환값
+2026-02-19 14:28:31,209 [INFO] SUCCESS: TC13 get_bone_end_position X 좌표
+2026-02-19 14:28:31,736 [INFO] === TEST END: 28/28 passed, 0 failed ===

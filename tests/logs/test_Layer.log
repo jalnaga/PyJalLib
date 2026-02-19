@@ -1,0 +1,14 @@
+2026-02-19 14:27:32,581 [INFO] === TEST START: Layer ===
+2026-02-19 14:27:33,260 [INFO] SUCCESS: TC01 Layer 인스턴스 생성
+2026-02-19 14:27:33,783 [INFO] SUCCESS: TC02 기본 레이어 존재 확인
+2026-02-19 14:27:34,317 [INFO] SUCCESS: TC03 create_layer_from_array 레이어 생성
+2026-02-19 14:27:34,317 [INFO] SUCCESS: TC03 create_layer_from_array 노드 추가
+2026-02-19 14:27:34,832 [INFO] SUCCESS: TC04 get_layer_number 레이어 번호 조회
+2026-02-19 14:27:35,373 [INFO] SUCCESS: TC05 get_nodes_by_layername 노드 조회
+2026-02-19 14:27:35,874 [INFO] SUCCESS: TC06 is_valid_layer 유효한 레이어
+2026-02-19 14:27:36,397 [INFO] SUCCESS: TC07 is_valid_layer 존재하지 않는 레이어
+2026-02-19 14:27:36,932 [INFO] SUCCESS: TC08 del_empty_layer 빈 레이어 삭제
+2026-02-19 14:27:37,445 [INFO] SUCCESS: TC09 delete_layer 레이어 삭제
+2026-02-19 14:27:37,446 [INFO] SUCCESS: TC09 delete_layer 노드 기본 레이어 이동
+2026-02-19 14:27:37,943 [INFO] SUCCESS: TC10 reset_layer 레이어 초기화
+2026-02-19 14:27:38,521 [INFO] === TEST END: 12/12 passed, 0 failed ===

@@ -1,0 +1,10 @@
+2026-02-19 14:29:29,736 [INFO] === TEST START: Select ===
+2026-02-19 14:29:30,336 [INFO] SUCCESS: TC01 Select 인스턴스 생성
+2026-02-19 14:29:30,857 [INFO] SUCCESS: TC02 distinguish_hierachy_objects 개수
+2026-02-19 14:29:30,858 [INFO] SUCCESS: TC02-b 독립 객체 확인
+2026-02-19 14:29:30,858 [INFO] SUCCESS: TC02-c 계층 객체 확인
+2026-02-19 14:29:31,344 [INFO] SUCCESS: TC03 get_nonLinked_objects
+2026-02-19 14:29:31,817 [INFO] SUCCESS: TC04 get_linked_objects
+2026-02-19 14:29:32,290 [INFO] SUCCESS: TC05 sort_by_hierachy
+2026-02-19 14:29:32,745 [INFO] SUCCESS: TC06 filter_bone
+2026-02-19 14:29:32,745 [INFO] === TEST END: 8/8 passed, 0 failed ===

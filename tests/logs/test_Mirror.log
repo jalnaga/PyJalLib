@@ -1,0 +1,13 @@
+2026-02-19 14:32:18,104 [INFO] === TEST START: Mirror ===
+2026-02-19 14:32:18,733 [INFO] SUCCESS: TC01 Mirror 인스턴스 생성
+2026-02-19 14:32:19,281 [INFO] SUCCESS: TC02 mirror_matrix X축 반전
+2026-02-19 14:32:19,743 [INFO] SUCCESS: TC03-a apply_mirror 복제본 생성
+2026-02-19 14:32:19,743 [INFO] SUCCESS: TC03-b apply_mirror 복제본 X좌표 반전
+2026-02-19 14:32:20,218 [INFO] SUCCESS: TC04-a apply_mirror 원본 변경 반환
+2026-02-19 14:32:20,219 [INFO] SUCCESS: TC04-b apply_mirror 원본 X좌표 반전
+2026-02-19 14:32:20,670 [INFO] SUCCESS: TC05-a mirror_object 결과 개수
+2026-02-19 14:32:20,670 [INFO] SUCCESS: TC05-b mirror_object X좌표 반전
+2026-02-19 14:32:21,143 [INFO] SUCCESS: TC06-a mirror_bone 결과 개수
+2026-02-19 14:32:21,143 [INFO] SUCCESS: TC06-b mirror_bone X좌표 반전
+2026-02-19 14:32:21,143 [INFO] SUCCESS: TC06-c mirror_bone 계층 구조 유지
+2026-02-19 14:32:21,143 [INFO] === TEST END: 11/11 passed, 0 failed ===

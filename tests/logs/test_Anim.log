@@ -1,0 +1,11 @@
+2026-02-19 14:26:42,606 [INFO] === TEST START: Anim ===
+2026-02-19 14:26:43,250 [INFO] SUCCESS: TC01 Anim 인스턴스 생성
+2026-02-19 14:26:43,770 [INFO] SUCCESS: TC02 rotate_local 회전 후 transform 변경
+2026-02-19 14:26:44,263 [INFO] SUCCESS: TC03 move_local 이동 후 position 변경
+2026-02-19 14:26:44,761 [INFO] SUCCESS: TC04 reset_transform_controller 후 transform 보존
+2026-02-19 14:26:45,666 [INFO] SUCCESS: TC05 delete_all_keys 후 키프레임 없음
+2026-02-19 14:26:47,272 [INFO] SUCCESS: TC06 is_node_animated 애니메이션 없는 객체 False
+2026-02-19 14:26:47,931 [INFO] SUCCESS: TC07 is_node_animated 키프레임 있는 객체 True
+2026-02-19 14:26:49,899 [INFO] SUCCESS: TC08 find_animated_nodes 애니메이션 노드만 필터링
+2026-02-19 14:26:50,354 [INFO] SUCCESS: TC09 save_xform/set_xform 변환 저장/복원
+2026-02-19 14:26:50,355 [INFO] === TEST END: 9/9 passed, 0 failed ===

@@ -1,0 +1,21 @@
+2026-02-19 14:27:57,906 [INFO] === TEST START: Constraint ===
+2026-02-19 14:27:58,587 [INFO] SUCCESS: TC01 Constraint 인스턴스 생성
+2026-02-19 14:27:59,115 [INFO] SUCCESS: TC02 assign_pos_list 리스트 컨트롤러 할당
+2026-02-19 14:27:59,116 [INFO] SUCCESS: TC02 assign_pos_list 컨트롤러 타입
+2026-02-19 14:27:59,634 [INFO] SUCCESS: TC03 assign_pos_const 위치 제약 할당
+2026-02-19 14:27:59,634 [INFO] SUCCESS: TC03 assign_pos_const 타겟 수
+2026-02-19 14:28:00,160 [INFO] SUCCESS: TC04 get_pos_const 위치 제약 조회
+2026-02-19 14:28:00,160 [INFO] SUCCESS: TC04 get_pos_const 컨트롤러 타입
+2026-02-19 14:28:00,676 [INFO] SUCCESS: TC05 assign_rot_list 리스트 컨트롤러 할당
+2026-02-19 14:28:00,676 [INFO] SUCCESS: TC05 assign_rot_list 컨트롤러 타입
+2026-02-19 14:28:01,196 [INFO] SUCCESS: TC06 assign_rot_const 회전 제약 할당
+2026-02-19 14:28:01,196 [INFO] SUCCESS: TC06 assign_rot_const 타겟 수
+2026-02-19 14:28:01,724 [INFO] SUCCESS: TC07 get_rot_const 회전 제약 조회
+2026-02-19 14:28:01,725 [INFO] SUCCESS: TC07 get_rot_const 컨트롤러 타입
+2026-02-19 14:28:02,246 [INFO] SUCCESS: TC08 assign_lookat LookAt 제약 할당
+2026-02-19 14:28:02,246 [INFO] SUCCESS: TC08 assign_lookat 타겟 수
+2026-02-19 14:28:02,758 [INFO] SUCCESS: TC09 get_lookat LookAt 제약 조회
+2026-02-19 14:28:02,758 [INFO] SUCCESS: TC09 get_lookat 컨트롤러 타입
+2026-02-19 14:28:03,293 [INFO] SUCCESS: TC10 collapse 컨트롤러 초기화
+2026-02-19 14:28:03,812 [INFO] SUCCESS: TC11 set_active_last 마지막 컨트롤러 활성화
+2026-02-19 14:28:04,333 [INFO] === TEST END: 19/19 passed, 0 failed ===
