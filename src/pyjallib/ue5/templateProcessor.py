@@ -3,14 +3,14 @@
 UE5 익스포트 시 파이썬 스크립트 템플릿을 실제 코드로 변환하는 기능을 제공합니다.
 
 Interchange Framework 기반 템플릿만 지원합니다.
-외부 의존성: 파이썬 표준 라이브러리 + pyjallib.logger
+외부 의존성: 파이썬 표준 라이브러리만 사용
 """
 
+import logging
 import os
 import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from pyjallib.logger import Logger
 from .templates import (
     get_template_path,
     get_all_template_paths,
@@ -42,8 +42,7 @@ class TemplateProcessor:
     
     def __init__(self):
         """TemplateProcessor 초기화"""
-        self._logger = Logger(inLogFileName="ue5_template")
-        self._logger.debug("TemplateProcessor 초기화")
+        self._logger = logging.getLogger(__name__)
         self._default_output_dir = Path.cwd() / "temp_scripts"
     
     def process_template(self, inTemplatePath: str, inTemplateOutPath: str, inTemplateData: Dict[str, Any]) -> str:
