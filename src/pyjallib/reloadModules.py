@@ -26,8 +26,8 @@ def reload_modules():
                 module = sys.modules[module_name]
                 importlib.reload(module)
                 reloaded_modules.append(module_name)
-                print(f"{module_name} 모듈이 다시 로드 되었습니다.")
+                print(f"{module_name} module reloaded.")
             except Exception as e:
-                print(f"모듈 리로드 중 오류 발생 - {module_name}: {e}")
+                print(f"Error occurred while reloading {module_name}: {e}")
     
     return reloaded_modules
