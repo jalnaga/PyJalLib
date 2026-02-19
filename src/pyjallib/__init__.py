@@ -6,7 +6,7 @@ pyjallib Package
 Python library for game character development pipeline.
 """
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 # reload_modules 함수를 패키지 레벨에서 사용 가능하게 함
 from pyjallib.logger import Logger
