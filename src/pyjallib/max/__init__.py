@@ -58,6 +58,10 @@ from pyjallib.max.fbxHandler import FBXHandler
 from pyjallib.max.toolManager import ToolManager
 from pyjallib.max.progress import Progress
 
+# MaxTestRunner는 pymxs에 의존하지 않으므로 이 패키지에서 import하지 않는다.
+# 3ds Max 외부에서도 사용 가능하도록 직접 import를 권장:
+#   from pyjallib.max.maxTestRunner import MaxTestRunner
+
 from pyjallib.max.ui.Container import Container
 
 # 모듈 내보내기

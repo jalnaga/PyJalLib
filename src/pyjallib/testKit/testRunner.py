@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+테스트 러너 모듈.
+
+외부에서 DCC 프로세스를 subprocess로 실행하고 결과를 수집하는 코어 러너.
+DCC별 특화 러너(MaxTestRunner 등)의 기반 클래스 역할을 한다.
+
+의존성: Python stdlib만 사용 (subprocess, dataclasses, pathlib).
+"""
+
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+
+
+@dataclass
+class RunResult:
+    """프로세스 실행 결과를 담는 데이터 클래스.
+
+    Attributes:
+        returncode: 프로세스 종료 코드. -1이면 실행되지 않았음을 의미.
+        log_path: 테스트 로그 파일 경로
+        listener_log_path: DCC 리스너 로그 경로 (해당하는 경우)
+        timed_out: 타임아웃 발생 여부
+        stdout: 표준 출력 내용
+        stderr: 표준 에러 출력 내용
+    """
+
+    returncode: int = -1
+    log_path: Optional[Path] = None
+    listener_log_path: Optional[Path] = None
+    timed_out: bool = False
+    stdout: str = ""
+    stderr: str = ""
+
+
+class TestRunner:
+    """subprocess로 테스트 프로세스를 실행하는 코어 러너.
+
+    실행 파일 경로를 받아 스크립트를 실행하고, 타임아웃 관리와 결과 수집을 담당한다.
+    DCC별 특화 러너는 이 클래스를 상속하여 build_command를 오버라이드한다.
+
+    Example:
+        runner = TestRunner(Path("python"))
+        result = runner.run(Path("test_script.py"), Path("logs/"), inTimeout=60)
+    """
+
+    def __init__(self, inExecutablePath: Path) -> None:
+        """러너를 초기화한다.
+
+        Args:
+            inExecutablePath: 실행할 프로그램의 경로
+        """
+        self._executablePath: Path = Path(inExecutablePath)
+
+    @property
+    def executable_path(self) -> Path:
+        """실행 파일 경로를 반환한다."""
+        return self._executablePath
+
+    def build_command(self, inScriptPath: Path, **kwargs: object) -> list[str]:
+        """실행할 명령줄을 조합한다.
+
+        서브클래스에서 오버라이드하여 DCC별 특화 명령줄을 구성할 수 있다.
+
+        Args:
+            inScriptPath: 실행할 스크립트 파일 경로
+            **kwargs: 추가 명령줄 옵션
+
+        Returns:
+            명령줄 인수 리스트
+        """
+        return [str(self._executablePath), str(inScriptPath)]
+
+    def run(
+        self,
+        inScriptPath: Path,
+        inLogDir: Path,
+        inTimeout: int = 300,
+        inLogPath: Optional[Path] = None,
+        **kwargs: object,
+    ) -> RunResult:
+        """프로세스를 실행하고 결과를 수집한다.
+
+        Args:
+            inScriptPath: 실행할 스크립트 파일 경로
+            inLogDir: 로그 파일 저장 디렉토리
+            inTimeout: 타임아웃 (초). 기본값 300초.
+            inLogPath: 테스트 로그 파일 경로. None이면 convention 기반으로
+                       "{logDir}/test_{scriptName}.log"를 설정한다.
+            **kwargs: build_command에 전달할 추가 옵션
+
+        Returns:
+            프로세스 실행 결과
+        """
+        logDir = Path(inLogDir)
+        logDir.mkdir(parents=True, exist_ok=True)
+
+        cmd = self.build_command(inScriptPath, **kwargs)
+        runResult = RunResult()
+
+        # log_path 설정: 명시적 경로 또는 convention 기반
+        if inLogPath is not None:
+            runResult.log_path = Path(inLogPath)
+        else:
+            scriptName = Path(inScriptPath).stem
+            runResult.log_path = logDir / f"test_{scriptName}.log"
+
+        try:
+            completed = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=inTimeout,
+            )
+            runResult.returncode = completed.returncode
+            runResult.stdout = completed.stdout
+            runResult.stderr = completed.stderr
+        except subprocess.TimeoutExpired as e:
+            runResult.timed_out = True
+            runResult.stdout = e.stdout if isinstance(e.stdout, str) else ""
+            runResult.stderr = e.stderr if isinstance(e.stderr, str) else ""
+
+        return runResult
