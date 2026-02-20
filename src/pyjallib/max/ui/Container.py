@@ -27,8 +27,10 @@ class Header(QtWidgets.QWidget):
         self.collapse_ico = QtGui.QPixmap(":teRightArrow.png")
 
         # Check if icons were loaded properly (not empty)
+        self._using_fallback_icons: bool = False
         if self.expand_ico.isNull() or self.collapse_ico.isNull():
             # Create fallback icons programmatically
+            self._using_fallback_icons = True
             self.expand_ico = self._create_arrow_icon("down")
             self.collapse_ico = self._create_arrow_icon("right")
 
@@ -36,8 +38,7 @@ class Header(QtWidgets.QWidget):
 
         stacked = QtWidgets.QStackedLayout(self)
         stacked.setStackingMode(QtWidgets.QStackedLayout.StackAll)
-        background = QtWidgets.QLabel()
-        background.setStyleSheet("QLabel{ background-color: rgb(81, 81, 81); border-radius:2px}")
+        self._background = QtWidgets.QLabel()
 
         widget = QtWidgets.QWidget()
         layout = QtWidgets.QHBoxLayout(widget)
@@ -56,8 +57,40 @@ class Header(QtWidgets.QWidget):
         layout.addItem(QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
 
         stacked.addWidget(widget)
-        stacked.addWidget(background)
-        background.setMinimumHeight(layout.sizeHint().height() * 1.5)
+        stacked.addWidget(self._background)
+        self._background.setMinimumHeight(layout.sizeHint().height() * 1.5)
+
+        self._update_background_style()
+
+    def _update_background_style(self) -> None:
+        """팔레트 기반으로 Header 배경 스타일을 갱신한다.
+
+        QPalette.Window 색상을 가져와 lighter(115)를 적용하여
+        테마 전환에 자동 대응한다.
+        """
+        baseColor = self.palette().color(QtGui.QPalette.Window)
+        bgColor = baseColor.lighter(115)
+        self._background.setStyleSheet(
+            f"QLabel{{ background-color: rgb({bgColor.red()}, {bgColor.green()}, {bgColor.blue()}); border-radius:2px}}"
+        )
+
+    def changeEvent(self, inEvent: QtCore.QEvent) -> None:
+        """팔레트 변경 이벤트를 감지하여 스타일을 갱신한다.
+
+        Args:
+            inEvent: 위젯 변경 이벤트
+        """
+        if inEvent.type() == QtCore.QEvent.PaletteChange:
+            self._update_background_style()
+            if self._using_fallback_icons:
+                self.expand_ico = self._create_arrow_icon("down")
+                self.collapse_ico = self._create_arrow_icon("right")
+                # 현재 표시 상태에 맞는 아이콘으로 갱신
+                if self.content.isVisible():
+                    self.icon.setPixmap(self.expand_ico)
+                else:
+                    self.icon.setPixmap(self.collapse_ico)
+        super().changeEvent(inEvent)
 
     def mousePressEvent(self, *args):
         """Handle mouse events, call the function to toggle groups"""
@@ -88,10 +121,11 @@ class Header(QtWidgets.QWidget):
         painter = QtGui.QPainter(pixmap)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        # Set the pen and brush
-        pen = QtGui.QPen(QtGui.QColor(200, 200, 200))
+        # 팔레트 기반 텍스트 색상 사용 (테마 대응)
+        textColor = self.palette().color(QtGui.QPalette.WindowText)
+        pen = QtGui.QPen(textColor)
         painter.setPen(pen)
-        painter.setBrush(QtGui.QBrush(QtGui.QColor(200, 200, 200)))
+        painter.setBrush(QtGui.QBrush(textColor))
 
         # Draw the arrow based on direction
         if direction == "down":
@@ -129,12 +163,9 @@ class Container(QtWidgets.QWidget):
         layout.setContentsMargins(0, 2, 0, 0)
         layout.setSpacing(0)
         self._content_widget = QtWidgets.QWidget()
-        if color_background:
-            self._content_widget.setStyleSheet('''
-                .QWidget{
-                    background-color: rgb(81, 81, 81); 
-                }
-            ''')
+        self._color_background: bool = color_background
+        if self._color_background:
+            self._update_content_style()
         header = Header(name, self._content_widget)
         layout.addWidget(header)
         layout.addWidget(self._content_widget)
@@ -143,6 +174,29 @@ class Container(QtWidgets.QWidget):
         self.collapse = header.collapse
         self.expand = header.expand
         self.toggle = header.mousePressEvent
+
+    def _update_content_style(self) -> None:
+        """팔레트 기반으로 컨텐츠 위젯 배경 스타일을 갱신한다.
+
+        QPalette.Window 색상을 가져와 lighter(115)를 적용하여
+        테마 전환에 자동 대응한다.
+        """
+        baseColor = self.palette().color(QtGui.QPalette.Window)
+        bgColor = baseColor.lighter(115)
+        self._content_widget.setStyleSheet(
+            f".QWidget{{ background-color: rgb({bgColor.red()}, {bgColor.green()}, {bgColor.blue()}); }}"
+        )
+
+    def changeEvent(self, inEvent: QtCore.QEvent) -> None:
+        """팔레트 변경 이벤트를 감지하여 컨텐츠 스타일을 갱신한다.
+
+        Args:
+            inEvent: 위젯 변경 이벤트
+        """
+        if inEvent.type() == QtCore.QEvent.PaletteChange:
+            if self._color_background:
+                self._update_content_style()
+        super().changeEvent(inEvent)
 
     @property
     def contentWidget(self):
