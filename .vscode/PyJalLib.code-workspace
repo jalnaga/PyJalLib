@@ -2,9 +2,6 @@
 	"folders": [
 		{
 			"path": ".."
-		},
-		{
-			"path": "../../orvlib"
 		}
 	],
 	"settings": {
@@ -12,13 +9,15 @@
 			"${workspaceFolder}",
 			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
 			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
-			"D:/Dropbox/Programing/UnrealStubs"
+			"D:/Dropbox/Programing/UnrealStubs",
+			"D:/Dropbox/Programing/Code/orvlib/src"
 		],
 		"python.analysis.extraPaths": [
 			"${workspaceFolder}",
 			"C:/Program Files/Autodesk/3ds Max 2024/Python/Lib/site-packages",
 			"C:/Program Files/Autodesk/3ds Max 2025/Python/Lib/site-packages",
-			"D:/Dropbox/Programing/UnrealStubs"
+			"D:/Dropbox/Programing/UnrealStubs",
+			"D:/Dropbox/Programing/Code/orvlib/src"
 		],
 		"[python]": {
 			"editor.formatOnSave": true,
