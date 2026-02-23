@@ -42,6 +42,7 @@ docformat = "markdown"
 
 [dependency-groups]
 dev = [
+    "pyside2>=5.15.2.1",
     "pytest>=9.0.2",
     "ruff>=0.14.9",
 ]
