@@ -46,7 +46,8 @@ class MaxTestRunner(TestRunner):
         """3DS Max 실행을 위한 클린 환경을 구성한다.
 
         시스템에 설치된 다른 Python 버전(3.12, 3.13 등)의 경로가 3DS Max 내장
-        Python 3.10과 충돌하는 것을 방지하기 위해 환경변수를 정리한다.
+        Python 3.10과 충돌하는 것을 방지하기 위해 PYTHONPATH, PYTHONHOME,
+        VIRTUAL_ENV 환경변수를 제거하고 PATH에서 비호환 Python 경로를 정리한다.
 
         Returns:
             정리된 환경변수 딕셔너리
@@ -56,6 +57,7 @@ class MaxTestRunner(TestRunner):
         # PYTHONPATH, PYTHONHOME 제거 (Max가 자체 Python을 사용하도록)
         env.pop("PYTHONPATH", None)
         env.pop("PYTHONHOME", None)
+        env.pop("VIRTUAL_ENV", None)
 
         # PATH에서 시스템 Python 경로 제거 (Python310은 유지)
         if "PATH" in env:
