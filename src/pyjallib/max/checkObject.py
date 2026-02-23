@@ -234,12 +234,15 @@ class CheckObject:
         if len(mods) == 0:
             return True
 
+        hasSkin = False
         for item in mods:
             itemClass = rt.classOf(item)
             if itemClass != rt.Skin and itemClass != rt.Morpher:
                 return False
+            if itemClass == rt.Skin:
+                hasSkin = True
 
-        if rt.classOf(mods[0]) != rt.Skin:
+        if hasSkin and rt.classOf(mods[0]) != rt.Skin:
             return False
 
         return True
