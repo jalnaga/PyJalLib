@@ -48,6 +48,7 @@ TEST_SCRIPTS = [
     "test_align.py",
     "test_select.py",
     "test_mirror.py",
+    "test_attribute.py",
 ]
 
 
