@@ -50,10 +50,10 @@ class Header(QtWidgets.QWidget):
 
         font = QtGui.QFont()
         font.setBold(True)
-        label = QtWidgets.QLabel(name)
-        label.setFont(font)
+        self._titleLabel = QtWidgets.QLabel(name)
+        self._titleLabel.setFont(font)
 
-        layout.addWidget(label)
+        layout.addWidget(self._titleLabel)
         layout.addItem(QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
 
         stacked.addWidget(widget)
@@ -166,14 +166,14 @@ class Container(QtWidgets.QWidget):
         self._color_background: bool = color_background
         if self._color_background:
             self._update_content_style()
-        header = Header(name, self._content_widget)
-        layout.addWidget(header)
+        self._header = Header(name, self._content_widget)
+        layout.addWidget(self._header)
         layout.addWidget(self._content_widget)
 
         # assign header methods to instance attributes so they can be called outside of this class
-        self.collapse = header.collapse
-        self.expand = header.expand
-        self.toggle = header.mousePressEvent
+        self.collapse = self._header.collapse
+        self.expand = self._header.expand
+        self.toggle = self._header.mousePressEvent
 
     def _update_content_style(self) -> None:
         """팔레트 기반으로 컨텐츠 위젯 배경 스타일을 갱신한다.
@@ -205,3 +205,11 @@ class Container(QtWidgets.QWidget):
         Returns: Content widget
         """
         return self._content_widget
+
+    def title(self) -> str:
+        """헤더에 표시된 제목 문자열을 반환한다.
+
+        Returns:
+            헤더 제목 문자열
+        """
+        return self._header._titleLabel.text()
