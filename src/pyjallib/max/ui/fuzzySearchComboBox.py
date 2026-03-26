@@ -638,6 +638,15 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
             self._currentText = inText
             self._comboDisplay.set_display_text(inText)
 
+    def addItems(self, inTexts: list) -> None:
+        """여러 아이템을 일괄 추가한다.
+
+        Args:
+            inTexts: 추가할 아이템 텍스트 리스트
+        """
+        for text in inTexts:
+            self.addItem(text)
+
     def clear(self) -> None:
         """모든 아이템을 제거하고 상태를 초기화한다."""
         self._items.clear()
