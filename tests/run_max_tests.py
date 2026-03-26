@@ -49,7 +49,15 @@ TEST_SCRIPTS = [
     "test_select.py",
     "test_mirror.py",
     "test_attribute.py",
+    "test_ui_fuzzy_search_combo_box.py",
 ]
+
+# TestReporter SuiteName 오버라이드:
+# 스크립트 파일명에서 자동 계산한 이름과 TestReporter SuiteName이 다를 때 명시적으로 지정.
+# key: 스크립트 파일명 (확장자 포함), value: TestReporter SuiteName
+LOG_NAME_OVERRIDES = {
+    "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
+}
 
 
 def main() -> None:
@@ -83,7 +91,12 @@ def main() -> None:
         suiteName = scriptPath.stem
         # TestReporter의 로그 명명 규칙에 맞춤: test_{SuiteName}.log
         # test_name.py → "Name" → test_Name.log
-        reporterSuiteName = suiteName.removeprefix("test_").capitalize()
+        # LOG_NAME_OVERRIDES에 등록된 경우 오버라이드된 SuiteName을 사용
+        scriptFileName = scriptPath.name
+        if scriptFileName in LOG_NAME_OVERRIDES:
+            reporterSuiteName = LOG_NAME_OVERRIDES[scriptFileName]
+        else:
+            reporterSuiteName = suiteName.removeprefix("test_").capitalize()
         expectedLogPath = LOG_DIR / f"test_{reporterSuiteName}.log"
         print(f"\n[RUN] {suiteName} ...", end=" ", flush=True)
 

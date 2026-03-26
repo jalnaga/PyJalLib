@@ -7,5 +7,6 @@ PyJalLib Max UI 모듈
 
 from .Container import Container
 from .toolState import ToolState
+from .fuzzySearchComboBox import FuzzySearchComboBox
 
-__all__ = ['Container', 'ToolState']
+__all__ = ['Container', 'ToolState', 'FuzzySearchComboBox']
