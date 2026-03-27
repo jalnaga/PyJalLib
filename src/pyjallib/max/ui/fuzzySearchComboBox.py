@@ -300,19 +300,23 @@ class _FuzzyPopup(QtWidgets.QFrame):
     Qt.Popup 플래그 기반 팝업 윈도우이다.
     """
 
-    # 소스 모델 인덱스와 텍스트를 전달하는 시그널
+    # 소스 모델 인덱스와 텍스트를 전달하는 시그널 (단일 선택 모드)
     item_selected = QtCore.Signal(int, str)
+    # 체크된 아이템 텍스트 리스트를 전달하는 시그널 (멀티 선택 모드)
+    checked_items_changed = QtCore.Signal(list)
 
-    def __init__(self, inParent: QtWidgets.QWidget = None):
+    def __init__(self, inParent: QtWidgets.QWidget = None, inMultiSelect: bool = False):
         """초기화.
 
         Args:
             inParent: 부모 위젯 (일반적으로 None으로 독립 윈도우 생성)
+            inMultiSelect: 멀티 선택 모드 활성화 여부
         """
         super().__init__(inParent)
         self.setWindowFlags(QtCore.Qt.Popup | QtCore.Qt.FramelessWindowHint)
 
         self._ownerWidget: QtWidgets.QWidget = None
+        self._multiSelect: bool = inMultiSelect
 
         self._setup_ui()
         self._setup_connections()
@@ -367,12 +371,39 @@ class _FuzzyPopup(QtWidgets.QFrame):
             self._listView.setCurrentIndex(firstIndex)
 
     def _on_list_clicked(self, inProxyIndex: QtCore.QModelIndex) -> None:
-        """리스트뷰 항목 클릭 시 선택을 확정한다.
+        """리스트뷰 항목 클릭 시 선택을 처리한다.
+
+        단일 선택 모드에서는 선택을 확정하고 팝업을 닫는다.
+        멀티 선택 모드에서는 체크 상태를 토글한다.
 
         Args:
             inProxyIndex: 클릭된 프록시 모델 인덱스
         """
-        self._confirm_selection(inProxyIndex)
+        if self._multiSelect:
+            self._toggle_check(inProxyIndex)
+        else:
+            self._confirm_selection(inProxyIndex)
+
+    def _toggle_check(self, inProxyIndex: QtCore.QModelIndex) -> None:
+        """프록시 인덱스에 해당하는 소스 아이템의 체크 상태를 토글한다.
+
+        Args:
+            inProxyIndex: 프록시 모델 인덱스
+        """
+        if not inProxyIndex.isValid():
+            return
+
+        sourceIndex = self._proxyModel.mapToSource(inProxyIndex)
+        item = self._sourceModel.itemFromIndex(sourceIndex)
+        if item is None:
+            return
+
+        if item.checkState() == QtCore.Qt.Checked:
+            item.setCheckState(QtCore.Qt.Unchecked)
+        else:
+            item.setCheckState(QtCore.Qt.Checked)
+
+        self.checked_items_changed.emit(self.get_checked_texts())
 
     def _confirm_selection(self, inProxyIndex: QtCore.QModelIndex) -> None:
         """선택을 확정하고 시그널을 발행한다.
@@ -418,10 +449,21 @@ class _FuzzyPopup(QtWidgets.QFrame):
             self._move_highlight(-1)
             return True
 
+        if key == QtCore.Qt.Key_Space and self._multiSelect:
+            currentIndex = self._listView.currentIndex()
+            if currentIndex.isValid():
+                self._toggle_check(currentIndex)
+            return True
+
         if key in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
             currentIndex = self._listView.currentIndex()
             if currentIndex.isValid():
-                self._confirm_selection(currentIndex)
+                if self._multiSelect:
+                    self._toggle_check(currentIndex)
+                else:
+                    self._confirm_selection(currentIndex)
+            if not self._multiSelect:
+                return True
             return True
 
         return super().eventFilter(inObj, inEvent)
@@ -507,6 +549,9 @@ class _FuzzyPopup(QtWidgets.QFrame):
         self._sourceModel.clear()
         for itemText in inItems:
             item = QtGui.QStandardItem(itemText)
+            if self._multiSelect:
+                item.setCheckable(True)
+                item.setCheckState(QtCore.Qt.Unchecked)
             self._sourceModel.appendRow(item)
 
     def add_item(self, inText: str) -> None:
@@ -516,7 +561,63 @@ class _FuzzyPopup(QtWidgets.QFrame):
             inText: 추가할 아이템 텍스트
         """
         item = QtGui.QStandardItem(inText)
+        if self._multiSelect:
+            item.setCheckable(True)
+            item.setCheckState(QtCore.Qt.Unchecked)
         self._sourceModel.appendRow(item)
+
+    def get_checked_texts(self) -> list:
+        """체크된 모든 아이템의 텍스트를 반환한다.
+
+        Returns:
+            체크된 아이템 텍스트 리스트 (소스 모델 순서)
+        """
+        result = []
+        for row in range(self._sourceModel.rowCount()):
+            item = self._sourceModel.item(row, 0)
+            if item is not None and item.checkState() == QtCore.Qt.Checked:
+                result.append(item.text())
+        return result
+
+    def get_checked_indices(self) -> list:
+        """체크된 모든 아이템의 소스 인덱스를 반환한다.
+
+        Returns:
+            체크된 아이템의 소스 모델 행 인덱스 리스트
+        """
+        result = []
+        for row in range(self._sourceModel.rowCount()):
+            item = self._sourceModel.item(row, 0)
+            if item is not None and item.checkState() == QtCore.Qt.Checked:
+                result.append(row)
+        return result
+
+    def set_checked_by_texts(self, inTexts: list) -> None:
+        """텍스트 리스트로 체크 상태를 설정한다.
+
+        Args:
+            inTexts: 체크할 아이템 텍스트 리스트
+        """
+        textSet = set(inTexts)
+        for row in range(self._sourceModel.rowCount()):
+            item = self._sourceModel.item(row, 0)
+            if item is not None:
+                if item.text() in textSet:
+                    item.setCheckState(QtCore.Qt.Checked)
+                else:
+                    item.setCheckState(QtCore.Qt.Unchecked)
+
+    def set_check_all(self, inChecked: bool) -> None:
+        """모든 아이템의 체크 상태를 일괄 설정한다.
+
+        Args:
+            inChecked: True면 전체 체크, False면 전체 해제
+        """
+        state = QtCore.Qt.Checked if inChecked else QtCore.Qt.Unchecked
+        for row in range(self._sourceModel.rowCount()):
+            item = self._sourceModel.item(row, 0)
+            if item is not None:
+                item.setCheckState(state)
 
     def clear_items(self) -> None:
         """소스 모델의 모든 아이템을 제거한다."""
@@ -546,28 +647,41 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
 
     QComboBox 호환 API를 제공하여 기존 QComboBox 사용처에서 drop-in replacement가 가능하다.
 
+    멀티 선택 모드에서는 체크박스로 여러 항목을 선택할 수 있으며,
+    퍼지 검색으로 필터링된 상태에서도 체크 상태가 유지된다.
+
     사용 예시::
 
+        # 단일 선택 모드 (기본)
         combo = FuzzySearchComboBox()
         combo.addItem("KimDokja")
         combo.addItem("YooJoonghyuk")
         combo.currentIndexChanged.connect(on_changed)
+
+        # 멀티 선택 모드
+        multi = FuzzySearchComboBox(inMultiSelect=True)
+        multi.addItems(["Alpha", "Beta", "Gamma"])
+        multi.checkedItemsChanged.connect(on_checked)
     """
 
-    # QComboBox 호환 시그널
+    # QComboBox 호환 시그널 (단일 선택 모드)
     currentIndexChanged = QtCore.Signal(int)
+    # 체크된 아이템 텍스트 리스트 시그널 (멀티 선택 모드)
+    checkedItemsChanged = QtCore.Signal(list)
 
-    def __init__(self, inParent: QtWidgets.QWidget = None):
+    def __init__(self, inParent: QtWidgets.QWidget = None, inMultiSelect: bool = False):
         """초기화.
 
         Args:
             inParent: 부모 위젯
+            inMultiSelect: 멀티 선택 모드 활성화 여부
         """
         super().__init__(inParent)
 
         self._items: list = []
         self._currentIndex: int = -1
         self._currentText: str = ""
+        self._multiSelect: bool = inMultiSelect
 
         self._setup_ui()
         self._setup_connections()
@@ -582,13 +696,15 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
         layout.addWidget(self._comboDisplay, 1)
 
         # 팝업은 독립 윈도우로 생성
-        self._popup = _FuzzyPopup(None)
+        self._popup = _FuzzyPopup(None, inMultiSelect=self._multiSelect)
         self._popup.set_owner_widget(self)
 
     def _setup_connections(self) -> None:
         """시그널/슬롯을 연결한다."""
         self._comboDisplay.clicked.connect(self._on_display_clicked)
         self._popup.item_selected.connect(self._on_item_selected)
+        if self._multiSelect:
+            self._popup.checked_items_changed.connect(self._on_checked_items_changed)
 
     def _on_display_clicked(self) -> None:
         """디스플레이 버튼 클릭 시 팝업을 연다."""
@@ -600,7 +716,7 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
         self._popup.show_popup(globalPos, self.width())
 
     def _on_item_selected(self, inSourceIndex: int, inText: str) -> None:
-        """팝업에서 항목이 선택되었을 때의 슬롯.
+        """팝업에서 항목이 선택되었을 때의 슬롯 (단일 선택 모드).
 
         Args:
             inSourceIndex: 소스 모델의 행 인덱스
@@ -617,6 +733,30 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
         if oldIndex != inSourceIndex:
             self.currentIndexChanged.emit(inSourceIndex)
 
+    def _on_checked_items_changed(self, inCheckedTexts: list) -> None:
+        """팝업에서 체크 상태가 변경되었을 때의 슬롯 (멀티 선택 모드).
+
+        디스플레이 텍스트를 갱신하고 시그널을 전달한다.
+
+        Args:
+            inCheckedTexts: 체크된 아이템 텍스트 리스트
+        """
+        self._update_multi_display_text(inCheckedTexts)
+        self.checkedItemsChanged.emit(inCheckedTexts)
+
+    def _update_multi_display_text(self, inCheckedTexts: list) -> None:
+        """멀티 선택 모드의 디스플레이 텍스트를 갱신한다.
+
+        체크된 항목이 없으면 빈 문자열, 있으면 쉼표로 연결하여 표시한다.
+
+        Args:
+            inCheckedTexts: 체크된 아이템 텍스트 리스트
+        """
+        if not inCheckedTexts:
+            self._comboDisplay.set_display_text("")
+        else:
+            self._comboDisplay.set_display_text(", ".join(inCheckedTexts))
+
     # =========================================================================
     # QComboBox 호환 API
     # =========================================================================
@@ -624,7 +764,8 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
     def addItem(self, inText: str) -> None:
         """아이템을 추가한다.
 
-        첫 번째 항목 추가 시 자동으로 선택된다 (시그널 미발생).
+        단일 선택 모드에서 첫 번째 항목 추가 시 자동으로 선택된다 (시그널 미발생).
+        멀티 선택 모드에서는 자동 선택하지 않는다.
 
         Args:
             inText: 추가할 아이템 텍스트
@@ -632,8 +773,8 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
         self._items.append(inText)
         self._popup.add_item(inText)
 
-        # 첫 항목 추가 시 자동 선택 (시그널 미발생)
-        if len(self._items) == 1 and self._currentIndex == -1:
+        # 단일 선택 모드: 첫 항목 추가 시 자동 선택 (시그널 미발생)
+        if not self._multiSelect and len(self._items) == 1 and self._currentIndex == -1:
             self._currentIndex = 0
             self._currentText = inText
             self._comboDisplay.set_display_text(inText)
@@ -728,6 +869,64 @@ class FuzzySearchComboBox(QtWidgets.QWidget):
         """
         super().setEnabled(inEnabled)
         self._comboDisplay.setEnabled(inEnabled)
+
+    # =========================================================================
+    # 멀티 선택 API
+    # =========================================================================
+
+    def isMultiSelect(self) -> bool:
+        """멀티 선택 모드 여부를 반환한다.
+
+        Returns:
+            멀티 선택 모드이면 True
+        """
+        return self._multiSelect
+
+    def checkedTexts(self) -> list:
+        """체크된 아이템의 텍스트 리스트를 반환한다 (멀티 선택 모드 전용).
+
+        Returns:
+            체크된 아이템 텍스트 리스트. 단일 선택 모드에서는 빈 리스트.
+        """
+        if not self._multiSelect:
+            return []
+        return self._popup.get_checked_texts()
+
+    def checkedIndices(self) -> list:
+        """체크된 아이템의 인덱스 리스트를 반환한다 (멀티 선택 모드 전용).
+
+        Returns:
+            체크된 아이템 인덱스 리스트. 단일 선택 모드에서는 빈 리스트.
+        """
+        if not self._multiSelect:
+            return []
+        return self._popup.get_checked_indices()
+
+    def setCheckedTexts(self, inTexts: list) -> None:
+        """텍스트 리스트로 체크 상태를 설정한다 (멀티 선택 모드 전용).
+
+        Args:
+            inTexts: 체크할 아이템 텍스트 리스트
+        """
+        if not self._multiSelect:
+            return
+        self._popup.set_checked_by_texts(inTexts)
+        checkedTexts = self._popup.get_checked_texts()
+        self._update_multi_display_text(checkedTexts)
+        self.checkedItemsChanged.emit(checkedTexts)
+
+    def setCheckAll(self, inChecked: bool) -> None:
+        """모든 아이템의 체크 상태를 일괄 설정한다 (멀티 선택 모드 전용).
+
+        Args:
+            inChecked: True면 전체 체크, False면 전체 해제
+        """
+        if not self._multiSelect:
+            return
+        self._popup.set_check_all(inChecked)
+        checkedTexts = self._popup.get_checked_texts()
+        self._update_multi_display_text(checkedTexts)
+        self.checkedItemsChanged.emit(checkedTexts)
 
     def closeEvent(self, inEvent: QtCore.QEvent) -> None:
         """위젯이 닫힐 때 팝업을 정리한다.
