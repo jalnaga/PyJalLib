@@ -267,6 +267,50 @@ class Layer:
             new_name = layerName.replace(searchFor, replaceWith)
             targetLayer.setName(new_name)
     
+    def get_nodes_in_layer_and_children(self, inLayerName: str) -> list:
+        """레이어와 하위 레이어에서 노드를 재귀적으로 수집한다.
+
+        지정된 레이어의 노드뿐 아니라, 그 하위 레이어(자식 레이어)의
+        노드까지 재귀적으로 모두 수집하여 반환한다.
+
+        Args:
+            inLayerName: 대상 레이어 이름
+
+        Returns:
+            수집된 노드 리스트. 레이어가 존재하지 않으면 빈 리스트.
+        """
+        rootLayer = rt.LayerManager.getLayerFromName(inLayerName)
+        if rootLayer is None:
+            return []
+
+        return self._collect_nodes_from_layer(rootLayer)
+
+    def _collect_nodes_from_layer(self, inLayer) -> list:
+        """레이어 객체에서 노드를 재귀적으로 수집하는 내부 메서드.
+
+        Args:
+            inLayer: 대상 레이어 객체
+
+        Returns:
+            수집된 노드 리스트
+        """
+        nodeList = []
+
+        # 현재 레이어의 노드 수집
+        layerNum = self.get_layer_number(inLayer.name)
+        if layerNum is not False:
+            nodeList = self.get_nodes_from_layer(layerNum)
+
+        # 하위 레이어의 노드 재귀 수집
+        for i in range(rt.LayerManager.count):
+            childLayer = rt.layerManager.getLayer(i)
+            if childLayer is not None:
+                parentLayer = childLayer.getParent()
+                if parentLayer is not None and parentLayer.name == inLayer.name:
+                    nodeList.extend(self._collect_nodes_from_layer(childLayer))
+
+        return nodeList
+
     def is_valid_layer(self, inLayerName=None, inLayerIndex=None):
         """
         유효한 레이어인지 확인
