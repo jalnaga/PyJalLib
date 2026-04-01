@@ -15,8 +15,10 @@ tests/logs/
 .pytest_cache/
 .ruff_cache/
 
-# Claude files
+# Claude (local only)
 .claude/
+planning/
+reports/
 
 # Temporary generated files
 temp/
