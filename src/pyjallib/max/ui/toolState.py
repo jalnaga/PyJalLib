@@ -8,7 +8,7 @@ JSON 파일로 저장하고 복원하는 기능을 제공한다.
 
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from PySide2 import QtWidgets, QtCore
 
@@ -48,6 +48,31 @@ class ToolState(QtCore.QObject):
         self._windows: dict[str, QtWidgets.QWidget] = {}
         self._containers: dict[str, dict[str, "Container"]] = {}
         self._settingsPath: str | None = None
+        self._customData: dict[str, Any] = {}
+
+    def set_custom_value(self, inKey: str, inValue: Any) -> None:
+        """커스텀 데이터에 키-값 쌍을 저장한다.
+
+        툴별 추가 상태 정보를 저장할 때 사용한다.
+        저장된 값은 save() 시 JSON에 포함되며, restore() 시 복원된다.
+
+        Args:
+            inKey: 저장할 데이터의 키
+            inValue: 저장할 값. JSON 직렬화 가능한 타입이어야 한다.
+        """
+        self._customData[inKey] = inValue
+
+    def get_custom_value(self, inKey: str, inDefault: Any = None) -> Any:
+        """커스텀 데이터에서 키에 해당하는 값을 반환한다.
+
+        Args:
+            inKey: 조회할 데이터의 키
+            inDefault: 키가 존재하지 않을 때 반환할 기본값. 기본값 None.
+
+        Returns:
+            키에 해당하는 값. 키가 없으면 inDefault 반환.
+        """
+        return self._customData.get(inKey, inDefault)
 
     def _get_settings_path(self) -> str:
         """설정 파일 경로를 반환한다.
@@ -107,7 +132,8 @@ class ToolState(QtCore.QObject):
         stateData: dict = {
             "tool_name": self._toolName,
             "version": 1,
-            "windows": {}
+            "windows": {},
+            "custom_data": self._customData
         }
 
         for windowName, window in self._windows.items():
@@ -161,6 +187,8 @@ class ToolState(QtCore.QObject):
         Args:
             inStateData: JSON에서 로드한 상태 딕셔너리
         """
+        rawCustomData = inStateData.get("custom_data", {})
+        self._customData = rawCustomData if isinstance(rawCustomData, dict) else {}
         windowsData = inStateData.get("windows", {})
 
         for windowName, windowState in windowsData.items():

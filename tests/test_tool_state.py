@@ -485,3 +485,71 @@ class TestEventFilter:
         result = state.eventFilter(w, closeEvent)
 
         assert result is False
+
+
+# ==============================================================================
+# TC21~TC25: 커스텀 데이터 (Task 1-5)
+# ==============================================================================
+
+class TestCustomData:
+    """custom_data 저장/복원 관련 테스트."""
+
+    def test_set_and_get_custom_value_roundtrip(self, tool_state):
+        """TC21: set_custom_value() 후 get_custom_value()로 같은 값을 반환한다."""
+        tool_state.set_custom_value("mode", "export")
+        tool_state.set_custom_value("count", 42)
+        tool_state.set_custom_value("flag", True)
+
+        assert tool_state.get_custom_value("mode") == "export"
+        assert tool_state.get_custom_value("count") == 42
+        assert tool_state.get_custom_value("flag") is True
+
+    def test_collect_state_includes_custom_data(self, tool_state):
+        """TC22: _collect_state()에 custom_data가 포함된다."""
+        tool_state.set_custom_value("selectedIndex", 3)
+        tool_state.set_custom_value("lastPath", "/some/path")
+
+        data = tool_state._collect_state()
+
+        assert "custom_data" in data
+        assert data["custom_data"]["selectedIndex"] == 3
+        assert data["custom_data"]["lastPath"] == "/some/path"
+
+    def test_apply_state_restores_custom_data(self, tool_state):
+        """TC23: _apply_state()로 custom_data가 복원된다."""
+        stateData = {
+            "tool_name": "TestTool",
+            "version": 1,
+            "windows": {},
+            "custom_data": {
+                "preset": "high_quality",
+                "frameRange": [0, 100]
+            }
+        }
+
+        tool_state._apply_state(stateData)
+
+        assert tool_state.get_custom_value("preset") == "high_quality"
+        assert tool_state.get_custom_value("frameRange") == [0, 100]
+
+    def test_apply_state_without_custom_data_key_returns_empty_dict(self, tool_state):
+        """TC24: custom_data 키 없는 기존 JSON 로드 시 _customData가 빈 딕셔너리 (하위 호환)."""
+        legacyStateData = {
+            "tool_name": "TestTool",
+            "version": 1,
+            "windows": {}
+            # custom_data 키 없음
+        }
+
+        tool_state._apply_state(legacyStateData)
+
+        assert tool_state._customData == {}
+
+    def test_get_custom_value_returns_default_when_key_missing(self, tool_state):
+        """TC25: get_custom_value()에 존재하지 않는 키를 조회하면 기본값을 반환한다."""
+        # 기본값 None
+        assert tool_state.get_custom_value("nonexistent") is None
+
+        # 명시적 기본값
+        assert tool_state.get_custom_value("nonexistent", "fallback") == "fallback"
+        assert tool_state.get_custom_value("missing_int", 0) == 0
