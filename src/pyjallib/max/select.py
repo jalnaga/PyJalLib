@@ -6,11 +6,14 @@
 원본 MAXScript의 select.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
+import time
+
 from pymxs import runtime as rt
 
 # Import necessary service classes for default initialization
 from .name import Name
 from .bone import Bone
+from .layer import Layer
 
 
 class Select:
@@ -20,16 +23,18 @@ class Select:
     3ds Max의 기능들을 pymxs API를 통해 제어합니다.
     """
     
-    def __init__(self, nameService=None, boneService=None):
+    def __init__(self, nameService=None, boneService=None, layerService=None):
         """
         클래스 초기화
-        
+
         Args:
             nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
             boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            layerService: Layer 서비스 인스턴스 (제공되지 않으면 새로 생성)
         """
         self.name = nameService if nameService else Name()
-        self.bone = boneService if boneService else Bone(nameService=self.name) # Pass the potentially newly created nameService
+        self.bone = boneService if boneService else Bone(nameService=self.name)
+        self.layer = layerService if layerService else Layer()
     
     def set_selectionSet_to_all(self):
         """
@@ -286,3 +291,234 @@ class Select:
                 returnArray.append(item)
         
         return returnArray
+
+    def get_all_dependencies_optimized(self, inObjs, inVisited=None):
+        """재귀적으로 모든 dependency 노드를 수집한다.
+
+        Handle 기반 O(1) 중복 체크와 BFS queue를 사용하여 최적화된 성능을 제공한다.
+        controller dependencies, skin dependencies, parent chain을 수집하며
+        Biped_Object는 스킵한다.
+
+        Args:
+            inObjs: 단일 오브젝트 또는 오브젝트 리스트
+            inVisited: 이미 방문한 노드의 handle set (재사용 가능)
+
+        Returns:
+            tuple: (node_array, visited)
+                - node_array: 수집된 노드 리스트
+                - visited: 업데이트된 visited set
+        """
+        if inVisited is None:
+            inVisited = set()
+
+        nodeArray = []
+        nodeHandles = set()
+
+        # queue 초기화
+        if hasattr(inObjs, '__iter__') and not isinstance(inObjs, str):
+            queue = list(inObjs)
+        else:
+            queue = [inObjs]
+
+        # 자주 사용하는 함수 로컬 참조 (속도 향상)
+        getHandleByAnim = rt.getHandleByAnim
+        classof = rt.classof
+        bipedObject = rt.Biped_Object
+        isvalidnode = rt.isvalidnode
+        isProperty = rt.isProperty
+        rtName = rt.Name
+        refsDependson = rt.refs.dependson
+
+        while queue:
+            obj = queue.pop()
+
+            # visited 체크 (handle 기반)
+            objHandle = getHandleByAnim(obj)
+            if objHandle in inVisited:
+                continue
+            inVisited.add(objHandle)
+
+            # Biped_Object는 스킵
+            if classof(obj) == bipedObject:
+                continue
+
+            # controller dependencies
+            if hasattr(obj, 'controller') and obj.controller is not None:
+                deps = refsDependson(obj.controller)
+                for dep in deps:
+                    if isvalidnode(dep):
+                        depHandle = getHandleByAnim(dep)
+                        if depHandle not in nodeHandles:
+                            nodeHandles.add(depHandle)
+                            nodeArray.append(dep)
+                    else:
+                        queue.append(dep)
+
+            # skin dependencies
+            if isProperty(obj, rtName('skin')) and obj.skin is not None:
+                deps = refsDependson(obj.skin)
+                for dep in deps:
+                    if isvalidnode(dep):
+                        depHandle = getHandleByAnim(dep)
+                        if depHandle not in nodeHandles:
+                            nodeHandles.add(depHandle)
+                            nodeArray.append(dep)
+                    else:
+                        queue.append(dep)
+
+            # parent chain
+            if isvalidnode(obj):
+                objHandleNode = getHandleByAnim(obj)
+                if objHandleNode not in nodeHandles:
+                    nodeHandles.add(objHandleNode)
+                    nodeArray.append(obj)
+                if obj.parent is not None:
+                    queue.append(obj.parent)
+
+        return nodeArray, inVisited
+
+    def get_dependents(self, inObjs):
+        """children과 DependentNodes를 수집한다.
+
+        입력 오브젝트의 모든 자식을 재귀적으로 수집한 후,
+        각 오브젝트의 DependentNodes도 수집하여 합산 반환한다.
+        Handle 기반 O(1) 중복 체크를 사용한다.
+
+        Args:
+            inObjs: 오브젝트 리스트
+
+        Returns:
+            list: 수집된 dependent 노드 리스트 (children + DependentNodes)
+        """
+        objs = list(inObjs)
+        objsHandles = {rt.getHandleByAnim(o) for o in objs}
+
+        dependentsNodes = []
+        dependentsHandles = set()
+
+        # 자주 사용하는 함수 로컬 참조
+        getHandleByAnim = rt.getHandleByAnim
+        dependentNodes = rt.refs.DependentNodes
+
+        # children 수집 (원본 리스트에 추가)
+        initialCount = len(objs)
+        i = 0
+        while i < len(objs):
+            obj = objs[i]
+            for c in obj.children:
+                cHandle = getHandleByAnim(c)
+                if cHandle not in objsHandles:
+                    objsHandles.add(cHandle)
+                    objs.append(c)
+            i += 1
+
+        # 재귀적으로 수집된 children을 결과에 포함
+        for obj in objs[initialCount:]:
+            objHandle = getHandleByAnim(obj)
+            if objHandle not in dependentsHandles:
+                dependentsHandles.add(objHandle)
+                dependentsNodes.append(obj)
+
+        # DependentNodes 수집
+        for obj in objs:
+            for d in dependentNodes(obj):
+                dHandle = getHandleByAnim(d)
+                if dHandle not in dependentsHandles:
+                    dependentsHandles.add(dHandle)
+                    dependentsNodes.append(d)
+
+        return dependentsNodes
+
+    def collect_addon_helpers(self, inDeps):
+        """Rig_AddOn_* 레이어에서 Helper 클래스 노드를 수집한다.
+
+        dependency 노드 리스트에서 Rig_AddOn_* 레이어에 속한 노드를 찾고,
+        해당 레이어의 모든 Helper 클래스 노드를 수집한다.
+
+        Args:
+            inDeps: dependency 노드 리스트
+
+        Returns:
+            set: 수집된 AddOn Helper 노드 set
+        """
+        addonHelper = set()
+        processedLayers = set()
+        helperClass = rt.helper
+        superClassof = rt.superClassof
+
+        for item in inDeps:
+            layerName = item.layer.name
+            if layerName.startswith('Rig_AddOn_') and layerName not in processedLayers:
+                processedLayers.add(layerName)
+                objsInLayer = self.layer.get_nodes_by_layername(layerName)
+                for obj in objsInLayer:
+                    if superClassof(obj) == helperClass:
+                        addonHelper.add(obj)
+
+        return addonHelper
+
+    def select_dependencies(self, inObjs):
+        """전체 플로우를 실행하여 dependency를 수집한다.
+
+        get_dependents -> get_all_dependencies_optimized (1차) ->
+        get_all_dependencies_optimized (2차, visited 재사용) ->
+        collect_addon_helpers -> 결합 순서로 dependency를 수집한다.
+
+        Args:
+            inObjs: 선택된 오브젝트 리스트
+
+        Returns:
+            dict: {
+                'nodes': 최종 노드 리스트 (combined),
+                'stats': {
+                    'selected_count': 선택된 오브젝트 수,
+                    'dependents_count': dependents 수,
+                    'dependencies_1st_count': 1차 dependencies 수,
+                    'dependencies_2nd_count': 2차 dependencies 수,
+                    'addon_helpers_count': AddOn Helper 수,
+                    'total_count': 최종 노드 수,
+                    'time_dependents_ms': get_dependents 소요 시간 (ms),
+                    'time_dependencies_1st_ms': 1차 dependencies 소요 시간 (ms),
+                    'time_dependencies_2nd_ms': 2차 dependencies 소요 시간 (ms),
+                    'time_total_ms': 전체 소요 시간 (ms)
+                }
+            }
+        """
+        tTotal = time.time()
+        stats = {}
+
+        objs = list(inObjs)
+        stats['selected_count'] = len(objs)
+
+        # get_dependents 호출
+        t1 = time.time()
+        dependents = self.get_dependents(objs)
+        stats['dependents_count'] = len(dependents)
+        stats['time_dependents_ms'] = (time.time() - t1) * 1000
+
+        # 1차 dependency 탐색
+        t2 = time.time()
+        visited = set()
+        dependsOn, visited = self.get_all_dependencies_optimized(objs, visited)
+        stats['dependencies_1st_count'] = len(dependsOn)
+        stats['time_dependencies_1st_ms'] = (time.time() - t2) * 1000
+
+        # 2차 dependency 탐색 (visited 재사용)
+        t3 = time.time()
+        allDeps, visited = self.get_all_dependencies_optimized(dependsOn, visited)
+        stats['dependencies_2nd_count'] = len(allDeps)
+        stats['time_dependencies_2nd_ms'] = (time.time() - t3) * 1000
+
+        # AddOn Helpers 수집
+        addonHelpers = self.collect_addon_helpers(allDeps)
+        stats['addon_helpers_count'] = len(addonHelpers)
+
+        # 최종 결합
+        combined = list(addonHelpers | set(allDeps) | set(dependsOn) | set(objs))
+        stats['total_count'] = len(combined)
+        stats['time_total_ms'] = (time.time() - tTotal) * 1000
+
+        return {
+            'nodes': combined,
+            'stats': stats
+        }

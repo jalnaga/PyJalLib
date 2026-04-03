@@ -47,6 +47,7 @@ TEST_SCRIPTS = [
     "test_link.py",
     "test_align.py",
     "test_select.py",
+    "test_select_dependency.py",
     "test_mirror.py",
     "test_attribute.py",
     "test_ui_fuzzy_search_combo_box.py",
@@ -56,6 +57,7 @@ TEST_SCRIPTS = [
 # 스크립트 파일명에서 자동 계산한 이름과 TestReporter SuiteName이 다를 때 명시적으로 지정.
 # key: 스크립트 파일명 (확장자 포함), value: TestReporter SuiteName
 LOG_NAME_OVERRIDES = {
+    "test_select_dependency.py": "SelectDependency",
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
 }
 

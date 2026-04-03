@@ -94,7 +94,7 @@ class Header:
         self.mirror = Mirror(nameService=self.name, boneService=self.bone)
         self.layer = Layer()
         self.align = Align()
-        self.sel = Select(nameService=self.name, boneService=self.bone)
+        self.sel = Select(nameService=self.name, boneService=self.bone, layerService=self.layer)
         self.link = Link()
 
         self.bip = Bip(
