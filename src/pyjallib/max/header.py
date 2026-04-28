@@ -56,6 +56,7 @@ from .checkObject import CheckObject
 from .fbxHandler import FBXHandler
 from .toolManager import ToolManager
 
+from .belt import Belt
 
 class Header:
     """
@@ -242,6 +243,14 @@ class Header:
         self.fbx = FBXHandler()
 
         self.toolManager = ToolManager()
+
+        self.belt = Belt(
+            nameService=self.name,
+            animService=self.anim,
+            constraintService=self.constraint,
+            boneService=self.bone,
+            helperService=self.helper,
+        )
 
     def update_nameConifg(self, configPath):
         """
