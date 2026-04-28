@@ -42,13 +42,17 @@ class FBXHandler:
                 return i + 1  # 1-based index
         return 0
     
-    def _set_export_options(self):
-        """FBX 익스포트 옵션 설정"""
+    def _set_export_options(self, inSmoothingGroups: bool = True):
+        """FBX 익스포트 옵션 설정
+
+        Args:
+            inSmoothingGroups: SmoothingGroups 익스포트 여부. 기본값 True.
+        """
         # FBX 익스포트 프리셋 리셋
         rt.FBXExporterSetParam("ResetExport")
-        
+
         # 지오메트리 옵션
-        rt.FBXExporterSetParam("SmoothingGroups", True)
+        rt.FBXExporterSetParam("SmoothingGroups", inSmoothingGroups)
         rt.FBXExporterSetParam("NormalsPerPoly", False)
         rt.FBXExporterSetParam("TangentSpaceExport", True)
         rt.FBXExporterSetParam("SmoothMeshExport", False)
@@ -131,34 +135,42 @@ class FBXHandler:
         rt.FBXExporterSetParam("BakeFrameStart", startFrame)
         rt.FBXExporterSetParam("BakeFrameEnd", endFrame)
     
-    def export_selection(self, inExportFile: str, inMatchAnimRange: bool = True, inStartFrame: Optional[int] = None, inEndFrame: Optional[int] = None) -> bool:
+    def export_selection(
+        self,
+        inExportFile: str,
+        inMatchAnimRange: bool = True,
+        inStartFrame: Optional[int] = None,
+        inEndFrame: Optional[int] = None,
+        inSmoothingGroups: bool = True,
+    ) -> bool:
         """
         선택된 오브젝트를 FBX로 익스포트
-        
+
         Args:
             inExportFile: 익스포트할 파일 경로
             inMatchAnimRange: 현재 애니메이션 범위에 맞출지 여부
             inStartFrame: 시작 프레임 (None이면 현재 애니메이션 범위 사용)
             inEndFrame: 끝 프레임 (None이면 현재 애니메이션 범위 사용)
-            
+            inSmoothingGroups: SmoothingGroups 익스포트 여부. 기본값 True.
+
         Returns:
             bool: 익스포트 성공 여부
         """
         # 파일 경로 검증 및 디렉토리 생성
         filePath = Path(inExportFile)
         filePath.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # 선택된 오브젝트가 있는지 확인
         if len(rt.selection) == 0:
             return False
-        
+
         # FBX 익스포터 클래스 인덱스 가져오기
         exportClassIndex = self._get_export_fbx_class_index()
         if exportClassIndex == 0:
             return False
-        
+
         # FBX 익스포트 옵션 설정
-        self._set_export_options()
+        self._set_export_options(inSmoothingGroups=inSmoothingGroups)
         
         # 애니메이션 범위 설정
         if inMatchAnimRange:
