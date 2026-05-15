@@ -145,16 +145,27 @@ class LegacyBaseImporter(ABC):
         return str(content_root_prefix), str(fbx_root_prefix)
 
     def is_development_mode(self) -> bool:
+        """개발 모드 여부를 확인합니다.
+
+        `Documents/ORV/ORV_Setting.ini`의 `[Development]` 섹션 `mode` 키를 읽어
+        bool로 반환한다. 섹션/키가 누락되거나 ini 파일 자체가 없으면
+        `False`로 fallback (비-개발 모드 가정).
+
+        Returns:
+            개발 모드이면 True, 아니면 False.
+        """
         homeDir = Path.home()
         documentsFolder = homeDir / "Documents"
         userIniFile = documentsFolder / "ORV" / "ORV_Setting.ini"
 
-        # 기존 파일이 있다면 먼저 읽어오기
         config = configparser.ConfigParser()
         if userIniFile.exists():
             config.read(userIniFile, encoding='utf-8')
-
-        return config.get("Development", "mode")
+            try:
+                return config.get("Development", "mode").lower() == "true"
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                return False
+        return False
 
     @property
     @abstractmethod
