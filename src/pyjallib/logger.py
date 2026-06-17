@@ -2,41 +2,49 @@
 # -*- coding: utf-8 -*-
 
 """
-PyJalLib 로깅 모듈 - loguru 기반
+PyJalLib 로깅 모듈 - Python 표준 logging 기반
 
-loguru를 래핑하여 PyJalLib 전용 로깅 기능을 제공합니다.
+외부 의존성 없이 Python 표준 ``logging`` 모듈만으로 파일/콘솔 로깅을 제공합니다.
+UE5/3ds Max 등 추가 패키지를 설치할 수 없는 DCC 내장 Python 환경에서도
+동일하게 동작합니다.
+
+자동 제공 기능:
+    - 타임스탬프/레벨 자동 포맷 (``%Y-%m-%d %H:%M:%S [LEVEL] 메시지``)
+    - 일자별 로그 파일 롤오버 + 7일 보관 (TimedRotatingFileHandler)
+    - UTF-8 인코딩 (한글 로그 보존)
+    - 인스턴스별 named logger 격리 (멀티 인스턴스 간 로그 혼선/콘솔 중복 차단)
 """
 
 import sys
 import uuid
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import Optional
 
-from loguru import logger
-
 
 class Logger:
-    """PyJalLib 로깅 클래스 - loguru 래퍼
+    """PyJalLib 로깅 클래스 - 표준 logging 기반
 
-    loguru를 기반으로 파일 및 콘솔 로깅을 제공합니다.
+    표준 ``logging`` 모듈을 기반으로 파일 및 콘솔 로깅을 제공합니다.
+    각 인스턴스는 고유 이름(`pyjallib.{logFileName}.{uuid}`)의 named logger를
+    사용하고 ``propagate = False``로 설정하여, 인스턴스 간 로그 혼선과
+    콘솔 중복 출력을 구조적으로 차단합니다.
 
     Attributes:
         _logPath (Path): 로그 파일 저장 경로
         _logFileName (str): 로그 파일명 (확장자 제외)
         _enableConsole (bool): 콘솔 출력 활성화 여부
         _logLevel (str): 로깅 레벨
-        _handlerIds (list): 등록된 loguru 핸들러 ID 목록
-        _instanceId (str): Logger 인스턴스 고유 ID (핸들러 격리용)
-        _logger: 인스턴스별 바인딩된 logger 객체
+        _instanceId (str): Logger 인스턴스 고유 ID (named logger 격리용)
+        _handlers (list): 이 인스턴스에 부착된 핸들러 객체 목록
+        _logger: 인스턴스별 고유 이름의 logging.Logger 객체
 
     Example:
         >>> logger = Logger()
         >>> logger.info("정보 메시지")
         >>> logger.error("에러 메시지")
     """
-
-    # 클래스 변수: loguru 기본 핸들러 제거 여부 추적
-    _default_handler_removed = False
 
     def __init__(
         self,
@@ -73,59 +81,62 @@ class Logger:
         self._enableConsole = inEnableConsole
         self._logLevel = inLogLevel.upper()
 
-        # 핸들러 ID 저장 목록
-        self._handlerIds: list[int] = []
-
-        # 인스턴스 고유 ID 생성 (핸들러 격리용)
+        # 인스턴스 고유 ID 생성 (named logger 격리용)
         self._instanceId = str(uuid.uuid4())
 
-        # 인스턴스별 바인딩된 logger 생성
-        self._logger = logger.bind(instance_id=self._instanceId)
+        # 부착된 핸들러 객체 목록
+        self._handlers: list[logging.Handler] = []
 
-        # loguru 설정
+        # 인스턴스별 고유 이름의 named logger 획득
+        # 고유 uuid가 이름에 포함되므로 다른 인스턴스와 절대 공유되지 않는다.
+        self._logger = logging.getLogger(
+            f"pyjallib.{self._logFileName}.{self._instanceId}"
+        )
+        self._logger.setLevel(self._logLevel)
+        # 루트 로거로의 전파를 차단하여 콘솔 중복/타 인스턴스 혼선을 방지한다.
+        self._logger.propagate = False
+
+        # 핸들러 설정
         self._setup_logger()
 
     def _setup_logger(self) -> None:
-        """loguru 핸들러 설정
+        """logging 핸들러 설정
 
-        새로운 핸들러를 등록합니다.
-        - 파일 핸들러: 항상 활성화
-        - 콘솔 핸들러: inEnableConsole에 따라 결정
+        - 파일 핸들러: 항상 활성화. 일자별 롤오버 + 7일 보관.
+        - 콘솔 핸들러: inEnableConsole에 따라 결정.
 
-        Note: 첫 번째 Logger 인스턴스 생성 시 loguru의 기본 핸들러를 제거합니다.
-        이후 filter 함수를 사용하여 각 인스턴스의 ID를 가진 로그만 처리하여
-        완전한 격리를 보장합니다.
+        두 핸들러는 공통 Formatter(타임스탬프 + 레벨 + 메시지)를 사용하며,
+        인스턴스 고유 named logger에만 부착되므로 인스턴스 간 격리가 보장된다.
         """
-
-        # 첫 번째 Logger 인스턴스인 경우 loguru 기본 핸들러 제거
-        if not Logger._default_handler_removed:
-            logger.remove()  # 기본 stderr 핸들러 제거
-            Logger._default_handler_removed = True
-
-        # 파일 핸들러 설정
-        # 파일명 패턴: {로그경로}/{파일명}_{time:YYYYMMDD}.log
-        logFilePath = self._logPath / f"{self._logFileName}_{{time:YYYYMMDD}}.log"
-
-        fileHandlerId = logger.add(
-            str(logFilePath),
-            level=self._logLevel,
-            rotation="10 MB",
-            retention="7 days",
-            encoding="utf-8",
-            filter=lambda record: record["extra"].get("instance_id")
-            == self._instanceId,
+        # 공통 포맷터: 타임스탬프 + 레벨 + 메시지
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
-        self._handlerIds.append(fileHandlerId)
+
+        # 파일 핸들러 설정 (일자별 롤오버 + 7일 보관)
+        # 매일 자정 새 파일로 롤오버하고, 7일 지난 백업 파일은 자동 삭제한다.
+        logFilePath = self._logPath / f"{self._logFileName}.log"
+        fileHandler = TimedRotatingFileHandler(
+            str(logFilePath),
+            when="midnight",
+            backupCount=7,
+            encoding="utf-8",
+        )
+        # 롤오버된 백업 파일명에 일자가 드러나도록 suffix 지정 (예: pyjallib.log.20260617)
+        fileHandler.suffix = "%Y%m%d"
+        fileHandler.setLevel(self._logLevel)
+        fileHandler.setFormatter(formatter)
+        self._logger.addHandler(fileHandler)
+        self._handlers.append(fileHandler)
 
         # 콘솔 핸들러 설정 (선택사항)
         if self._enableConsole:
-            consoleHandlerId = logger.add(
-                sys.stderr,
-                level=self._logLevel,
-                filter=lambda record: record["extra"].get("instance_id")
-                == self._instanceId,
-            )
-            self._handlerIds.append(consoleHandlerId)
+            consoleHandler = logging.StreamHandler(sys.stderr)
+            consoleHandler.setLevel(self._logLevel)
+            consoleHandler.setFormatter(formatter)
+            self._logger.addHandler(consoleHandler)
+            self._handlers.append(consoleHandler)
 
     def debug(self, inMessage: str) -> None:
         """디버그 레벨 로그 메시지 출력
@@ -188,12 +199,13 @@ class Logger:
         """등록된 모든 핸들러 제거
 
         Logger 인스턴스가 더 이상 필요하지 않을 때 호출하여
-        파일 핸들러를 정리합니다.
+        파일 핸들러를 정리합니다(파일 핸들 누수 방지).
         """
-        for handlerId in self._handlerIds:
+        for handler in self._handlers:
             try:
-                logger.remove(handlerId)
-            except ValueError:
-                # 이미 제거된 핸들러인 경우 무시
+                self._logger.removeHandler(handler)
+                handler.close()
+            except Exception:
+                # 이미 제거/닫힌 핸들러인 경우 무시
                 pass
-        self._handlerIds.clear()
+        self._handlers.clear()
