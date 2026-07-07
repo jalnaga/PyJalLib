@@ -709,16 +709,21 @@ class Constraint:
         return targetRotConstraint
     
     def assign_scripted_lookat(self, inOri, inTarget):
-        """
-        스크립트 기반 LookAt 제약을 구현하여 할당.
-        여러 개의 헬퍼 객체를 생성하여 복잡한 LookAt 제약 구현.
-        
+        """스크립트 기반 LookAt 제약을 여러 헬퍼 객체로 구현하여 할당한다.
+
+        LookAt 포인트·측정 포인트·ExposeTm 헬퍼를 생성해 오일러 각을 추출하고,
+        축별 Float_Expression을 대상 객체의 회전 리스트에 연결한다.
+
         Args:
-            inOri: 제약을 적용할 객체
-            inTarget: 바라볼 타겟 객체 배열
-            
+            inOri (rt.Node): 제약을 적용할 객체
+            inTarget (list[rt.Node]): 바라볼 타겟 객체 배열. 가중치는 균등 분배된다.
+
         Returns:
-            None
+            dict: 생성된 컨트롤러 모음
+                - lookAt (rt.LookAt_Constraint): LookAt 포인트의 회전 컨트롤러
+                - x (rt.Float_Expression): X축 회전 표현식 컨트롤러
+                - y (rt.Float_Expression): Y축 회전 표현식 컨트롤러
+                - z (rt.Float_Expression): Z축 회전 표현식 컨트롤러
         """
         oriObj = inOri
         oriParentObj = inOri.parent
