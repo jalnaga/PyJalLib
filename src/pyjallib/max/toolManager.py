@@ -10,22 +10,16 @@ from PySide2 import QtWidgets, QtCore
 import gc
 
 class ToolManager:
-    """
-    3DS Max에서 실행되는 도구(툴) 인스턴스를 통합 관리하는 클래스입니다.
-    도구의 등록, 닫기, 표시 등 라이프사이클을 관리합니다.
-    """
+    """3DS Max에서 실행되는 도구(툴) 인스턴스의 등록·닫기·표시 등 라이프사이클을 통합 관리한다."""
     def __init__(self):
-        """
-        ToolManager 인스턴스를 초기화합니다.
-        """
+        """ToolManager 클래스를 초기화한다."""
         self.tools = {}  # {tool_class_name: [instances]} 형태로 관리
     
     def register_tool(self, tool_instance):
-        """
-        도구 인스턴스를 등록합니다.
+        """도구 인스턴스를 클래스 이름 기준으로 등록한다.
 
         Args:
-            tool_instance: 등록할 도구 인스턴스
+            tool_instance (object): 등록할 도구 인스턴스
         """
         class_name = tool_instance.__class__.__name__
         
@@ -35,11 +29,14 @@ class ToolManager:
         self.tools[class_name].append(tool_instance)
     
     def close_tool_by_type(self, tool_class):
-        """
-        특정 클래스의 모든 도구 인스턴스를 닫고 정리합니다.
+        """특정 클래스의 모든 도구 인스턴스를 닫고 정리한다.
+
+        등록된 인스턴스를 close·deleteLater로 정리하고, QApplication의
+        전체 위젯에서도 동일 클래스/타이틀의 QDialog를 찾아 닫은 뒤
+        가비지 컬렉션을 수행한다.
 
         Args:
-            tool_class: 닫을 도구의 클래스
+            tool_class (type): 닫을 도구의 클래스
         """
         class_name = tool_class.__name__
         
@@ -81,12 +78,14 @@ class ToolManager:
         gc.collect()
     
     def show_tool(self, tool_class, **kwargs):
-        """
-        도구를 표시합니다. 중복 실행을 방지하고 항상 새 인스턴스를 생성합니다.
+        """기존 인스턴스를 모두 닫고 도구의 새 인스턴스를 생성하여 표시한다.
+
+        중복 실행을 방지하며 항상 새 인스턴스를 생성한다.
 
         Args:
-            tool_class: 표시할 도구 클래스
+            tool_class (type): 표시할 도구 클래스
             **kwargs: 도구 클래스 생성자에 전달할 인자들
+
         Returns:
             object: 새로 생성된 도구 인스턴스
         """

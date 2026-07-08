@@ -58,24 +58,25 @@ from .toolManager import ToolManager
 
 
 class Header:
-    """
-    JalLib.max 패키지의 헤더 모듈
-    3DS Max에서 사용하는 다양한 기능을 제공하는 클래스들을 초기화하고 관리합니다.
-    """
+    """pyjallib.max 패키지의 서비스 클래스 인스턴스들을 한 번만 생성하여 보관하는 싱글톤 헤더 클래스."""
 
     _instance = None
 
     @classmethod
     def get_instance(cls):
-        """싱글톤 패턴을 구현한 인스턴스 접근 메소드"""
+        """싱글톤 Header 인스턴스를 반환한다.
+
+        인스턴스가 없으면 새로 생성한다.
+
+        Returns:
+            Header: 싱글톤 Header 인스턴스
+        """
         if cls._instance is None:
             cls._instance = Header()
         return cls._instance
 
     def __init__(self):
-        """
-        Header 클래스 초기화
-        """
+        """모든 서비스 클래스 인스턴스를 생성하고 의존성을 주입하여 초기화한다."""
         self.configDir = os.path.join(os.path.dirname(__file__), "ConfigFiles")
         self.nameConfigDir = os.path.join(self.configDir, "3DSMaxNamingConfig.json")
 
@@ -244,11 +245,10 @@ class Header:
         self.toolManager = ToolManager()
 
     def update_nameConifg(self, configPath):
-        """
-        이름 설정을 업데이트합니다.
+        """이름 설정 파일을 다시 로드하여 네이밍 설정을 업데이트한다.
 
         Args:
-            configPath: ConfigPath 인스턴스
+            configPath (str): 네이밍 설정 JSON 파일 경로
         """
         self.name.load_from_config_file(configPath)
 
@@ -258,10 +258,9 @@ _pyjallibmaxheader = Header.get_instance()
 
 
 def get_pyjallibmaxheader():
-    """
-    jal 인스턴스를 반환합니다.
+    """모듈 레벨에서 생성된 전역 Header 싱글톤 인스턴스를 반환한다.
 
     Returns:
-        Header 인스턴스
+        Header: 전역 Header 인스턴스
     """
     return _pyjallibmaxheader
