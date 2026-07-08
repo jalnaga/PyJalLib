@@ -15,7 +15,18 @@ from .bip import Bip
 from .constraint import Constraint
 
 class UE5Skeleton:
+    """Biped 기반 스킨 본을 UE5 스켈레톤 규격(이름·회전·본 개수)에 맞게 변환하는 클래스."""
+
     def __init__(self, nameService=None, animService=None, boneService=None, bipService=None, constraintService=None):
+        """서비스 인스턴스들을 주입받고 UE5 변환용 회전·이름 매핑 테이블을 초기화한다.
+
+        Args:
+            nameService (Name | None): Name 서비스. None이면 새로 생성한다.
+            animService (Anim | None): Anim 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): Bone 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Bip 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): Constraint 서비스. None이면 새로 생성한다.
+        """
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
@@ -69,6 +80,13 @@ class UE5Skeleton:
         self.knuckleName = "Metacarpal"
         
     def rotate_bip_skin_bones(self, inSkinBones):
+        """Biped 스킨 본들을 UE5 축 방향에 맞게 그룹별 사전 정의 각도로 로컬 회전시킨다.
+
+        자식에는 영향을 주지 않고 각 본만 회전한다.
+
+        Args:
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열. Biped 스킨 본이 아닌 항목은 무시된다.
+        """
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
             return
@@ -89,6 +107,17 @@ class UE5Skeleton:
                         break
     
     def convert_bip_finger_skin_bone_name_to_ue5(self, inBip, inSkinBones):
+        """Biped 손가락 스킨 본 이름을 UE5 규칙(Thumb/Index/Middle/Ring/Pinky + 마디 번호)으로 변경한다.
+
+        부모가 너클(Metacarpal) 본이면 부모 이름도 함께 변경하고 스킨 본 부모 속성을 갱신한다.
+
+        Args:
+            inBip (rt.Node): 기준 Biped 노드
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 이름이 변경된 손가락 스킨 본 배열 (이름이 변경된 너클 본 포함)
+        """
         bipObj = self.bip.get_com(inBip)
         fingerNum = bipObj.controller.fingers
         fingerLinkNum = bipObj.controller.fingerLinks
@@ -152,6 +181,17 @@ class UE5Skeleton:
         return fingerSkinBones
     
     def convert_bip_toe_skin_bone_name_to_ue5(self, inBip, inSkinBones):
+        """Biped 발가락 스킨 본 이름을 UE5 규칙(Ball + 번호)으로 변경한다.
+
+        발가락이 1개면 발가락 번호 없이 Ball로 명명하며, 마디도 1개면 인덱스를 제거한다.
+
+        Args:
+            inBip (rt.Node): 기준 Biped 노드
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 이름이 변경된 발가락 스킨 본 배열
+        """
         bipObj = self.bip.get_com(inBip)
         toeNum = bipObj.controller.toes
         toeLinkNum = bipObj.controller.toeLinks
@@ -244,6 +284,14 @@ class UE5Skeleton:
         return toeSkinBones
     
     def convert_bip_skin_bone_name_to_ue5(self, inSkinBones):
+        """Biped 스킨 본 전체(몸통·팔다리·손가락·발가락)의 이름을 UE5 규칙으로 변경한다.
+
+        Args:
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 이름이 변경된 스킨 본 배열. Biped 스킨 본이 없으면 빈 리스트
+        """
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
             return []
@@ -309,6 +357,17 @@ class UE5Skeleton:
         return returnBones
     
     def match_spine_skin_bone_numbers_to_ue5(self, inSkinBones):
+        """스파인 스킨 본 개수를 UE5 기준(5개)에 맞게 추가 생성한다.
+
+        마지막 스파인과 목 사이 거리를 균등 분할해 새 본을 체인으로 생성하고,
+        목과 양쪽 쇄골의 부모를 마지막 생성 본으로 재지정한다.
+
+        Args:
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 새로 생성된 스파인 스킨 본 배열. Biped 스킨 본이 없거나 이미 기준 개수 이상이면 빈 리스트
+        """
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
             return []
@@ -397,6 +456,17 @@ class UE5Skeleton:
         return genSpineSkinBones
     
     def match_neck_skin_bone_numbers_to_ue5(self, inSkinBones):
+        """목 스킨 본 개수를 UE5 기준(2개)에 맞게 추가 생성한다.
+
+        마지막 목 본과 머리 사이 거리를 균등 분할해 새 본을 체인으로 생성하고,
+        머리의 부모를 마지막 생성 본으로 재지정한다.
+
+        Args:
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 새로 생성된 목 스킨 본 배열. Biped 스킨 본이 없거나 이미 기준 개수 이상이면 빈 리스트
+        """
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
             return []
@@ -472,6 +542,17 @@ class UE5Skeleton:
         return genNeckSkinBones
     
     def create_knuckles_skin_bones(self, inSkinBones):
+        """엄지를 제외한 각 손가락의 손등 위치에 너클(Metacarpal) 스킨 본을 생성한다.
+
+        손 본과 손가락 첫 마디 사이 거리의 80% 지점에 본을 배치하고,
+        손가락 첫 마디의 부모를 생성된 너클 본으로 재지정한다.
+
+        Args:
+            inSkinBones (list[rt.Node]): 대상 스킨 본 배열
+
+        Returns:
+            list[rt.Node]: 생성된 너클 스킨 본 배열 (왼손 + 오른손 순). Biped 스킨 본이 없거나 손가락이 2개 미만이면 빈 리스트
+        """
         bipSkinBones = [item for item in inSkinBones if self.bone.is_bip_skin_bone(item)]
         if len(bipSkinBones) == 0:
             return []
