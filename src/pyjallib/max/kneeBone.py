@@ -19,26 +19,21 @@ from .volumeBone import VolumeBone
 from .boneChain import BoneChain
 
 class KneeBone:
+    """다리 리깅을 위한 자동 무릎 본(AutoKnee) 시스템을 생성하는 클래스.
+
+    LookAt·회전 헬퍼와 스크립트 제약으로 무릎 굽힘에 따른 리프트 회전, 볼륨 중간 본, 트위스트 리프트 본을 구성한다.
     """
-    자동 무릎 본(AutoKnee) 관련 기능을 제공하는 클래스.
-    MAXScript의 _AutoKneeBone 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    
-    이 클래스는 IK 시스템 기반의 다리 리깅을 자동화하며, 무릎 관절 회전, 비틀림 본 및 
-    중간 본을 생성하여 자연스러운 무릎 움직임을 구현합니다.
-    """
-    
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, volumeBoneService=None):
-        """
-        KneeBone 클래스 초기화
-        
+        """KneeBone 클래스를 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            volumeBoneService: 볼륨 본 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            volumeBoneService (VolumeBone | None): 볼륨 본 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -100,18 +95,17 @@ class KneeBone:
             
     
     def create_lookat_helper(self, inThigh, inFoot):
-        """
-        무릎 시스템을 위한 LookAt 헬퍼 객체를 생성합니다.
-        
-        이 헬퍼는 대퇴골(Thigh)에 위치하면서 발(Foot)을 바라보도록 제약됩니다.
-        무릎 회전의 기반이 되는 방향을 결정하는 역할을 합니다.
-        
+        """무릎 시스템의 기반이 되는 LookAt 헬퍼를 생성한다.
+
+        헬퍼는 대퇴골 위치에 생성되어 발을 바라보도록 제약되며,
+        무릎 회전의 기반 방향을 결정하는 역할을 한다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inFoot: 발 본 객체
-            
+            inThigh (rt.Node): 대퇴골 본
+            inFoot (rt.Node): 발 본
+
         Returns:
-            bool: 헬퍼 생성 성공 여부
+            None | False: 유효하지 않은 노드가 있으면 False. 성공 시 반환값 없음.
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inFoot):
             return False
@@ -139,18 +133,17 @@ class KneeBone:
         self.lookAtHleper = lookAtHelper
         
     def create_rot_root_heleprs(self, inThigh, inCalf, inFoot):
-        """
-        무릎 회전의 기준이 되는 루트 헬퍼 객체들을 생성합니다.
-        
-        대퇴골과 종아리뼈에 각각 위치하며, 비틀림 계산을 위한 기준점 역할을 합니다.
-        
+        """무릎 회전의 기준이 되는 회전 루트 헬퍼를 생성한다.
+
+        대퇴골 위치에 박스 형태 헬퍼를 만들어 비틀림 계산의 기준점으로 사용한다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inCalf: 종아리뼈 본 객체
-            inFoot: 발 본 객체
-            
+            inThigh (rt.Node): 대퇴골 본
+            inCalf (rt.Node): 종아리뼈 본
+            inFoot (rt.Node): 발 본
+
         Returns:
-            bool: 헬퍼 생성 성공 여부
+            None | False: 유효하지 않은 노드가 있으면 False. 성공 시 반환값 없음.
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf) or not rt.isValidNode(inFoot):
             return False
@@ -175,18 +168,17 @@ class KneeBone:
         self.thighRotRootHelper = thighRotRootHelper
 
     def create_rot_helper(self, inThigh, inCalf, inFoot):
-        """
-        대퇴골과 종아리뼈의 회전을 제어하는 헬퍼 객체들을 생성합니다.
-        
-        이 헬퍼들은 실제 무릎 움직임에 따른 비틀림 효과를 구현하는 데 사용됩니다.
-        
+        """대퇴골과 종아리뼈의 회전을 제어하는 헬퍼들을 생성한다.
+
+        이 헬퍼들은 무릎 움직임에 따른 비틀림 효과를 구현하는 데 사용된다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inCalf: 종아리뼈 본 객체
-            inFoot: 발 본 객체
-            
+            inThigh (rt.Node): 대퇴골 본
+            inCalf (rt.Node): 종아리뼈 본
+            inFoot (rt.Node): 발 본. 종아리 회전 헬퍼의 위치 기준이 된다.
+
         Returns:
-            bool: 헬퍼 생성 성공 여부
+            None | False: 대퇴골 또는 종아리뼈가 유효하지 않으면 False. 성공 시 반환값 없음.
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf):
             return False
@@ -219,13 +211,12 @@ class KneeBone:
         self.calfRotHelper = calfRotHelper
     
     def assign_thigh_rot_constraint(self, inLiftScale=0.1):
-        """
-        대퇴골 회전 헬퍼에 스크립트 기반 회전 제약을 할당합니다.
-        
-        LookAt 헬퍼와 대퇴골 회전 루트 헬퍼 사이의 관계를 기반으로 비틀림 회전을 계산합니다.
-        
+        """대퇴골 회전 헬퍼에 스크립트 기반 회전 제약을 할당한다.
+
+        LookAt 헬퍼와 대퇴골 회전 루트 헬퍼 사이의 관계를 기반으로 비틀림 회전을 계산한다.
+
         Args:
-            inLiftScale: 회전 영향력 스케일 (0.0~1.0)
+            inLiftScale (float): 회전 영향력 스케일 (0.0~1.0)
         """
         self.liftScale = inLiftScale
         localRotRefTm = self.lookAtHleper.transform * rt.inverse(self.thighRotRootHelper.transform)
@@ -243,13 +234,12 @@ class KneeBone:
         self.const.set_rot_controllers_weight_in_list(self.thighRotHelper, 1, self.liftScale * 100.0)
         
     def assign_calf_rot_constraint(self, inLiftScale=0.1):
-        """
-        종아리뼈 회전 헬퍼에 스크립트 기반 회전 제약을 할당합니다.
-        
-        LookAt 헬퍼와 대퇴골 회전 루트 헬퍼 사이의 관계를 기반으로 비틀림 회전을 계산합니다.
-        
+        """종아리뼈 회전 헬퍼에 스크립트 기반 회전 제약을 할당한다.
+
+        LookAt 헬퍼와 대퇴골 회전 루트 헬퍼 사이의 관계를 기반으로 비틀림 회전을 계산한다.
+
         Args:
-            inLiftScale: 회전 영향력 스케일 (0.0~1.0)
+            inLiftScale (float): 회전 영향력 스케일 (0.0~1.0)
         """
         self.liftScale = inLiftScale
         localRotRefTm = self.lookAtHleper.transform * rt.inverse(self.thighRotRootHelper.transform)
@@ -267,20 +257,19 @@ class KneeBone:
         self.const.set_rot_controllers_weight_in_list(self.calfRotHelper, 1, self.liftScale * 100.0)
         
     def create_middle_bone(self, inThigh, inCalf, inKneeVolumeSize=5.0, inKneePopScale=0.1, inKneeBackScale=1.5):
-        """
-        무릎 중간 본을 생성합니다.
-        
-        이 본들은 무릎이 구부러질 때 앞(Pop)과 뒤(Back)로 움직이는 볼륨감 있는 본들입니다.
-        무릎 관절의 시각적 품질을 향상시킵니다.
-        
+        """무릎이 구부러질 때 앞(Pop)·뒤(Back)로 움직이는 볼륨 중간 본을 생성한다.
+
+        VolumeBone 서비스로 볼륨 본을 만든 뒤 무릎 이름 규칙으로 이름을 바꾼다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inCalf: 종아리뼈 본 객체
-            inKneePopScale: 무릎 앞쪽 돌출 스케일 (1.0이 기본값)
-            inKneeBackScale: 무릎 뒤쪽 돌출 스케일 (1.0이 기본값)
-            
+            inThigh (rt.Node): 대퇴골 본
+            inCalf (rt.Node): 종아리뼈 본
+            inKneeVolumeSize (float): 무릎 볼륨 크기
+            inKneePopScale (float): 무릎 앞쪽 돌출 스케일
+            inKneeBackScale (float): 무릎 뒤쪽 돌출 스케일
+
         Returns:
-            bool: 중간 본 생성 성공 여부
+            BoneChain | None: 생성된 무릎 볼륨 본 체인. 유효하지 않은 노드가 있으면 None
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf):
             return None
@@ -339,18 +328,17 @@ class KneeBone:
         return result
     
     def create_twist_bones(self, inThigh, inCalf):
-        """
-        대퇴골과 종아리뼈에 연결된 비틀림 본들에 대한 리프팅 본과 헬퍼를 생성합니다.
-        
-        기존 비틀림 본들을 찾아 각각에 대응하는 리프팅 본과 헬퍼를 생성하여 
-        무릎 구부림에 따라 자연스럽게 회전하도록 제약을 설정합니다.
-        
+        """대퇴골·종아리뼈의 기존 비틀림 본에 대응하는 리프트 본과 헬퍼를 생성한다.
+
+        자식 중 이름에 "twist"가 포함된 본을 찾아 각각 리프트 본을 만들고,
+        회전 헬퍼에 연결된 헬퍼로 위치 제약을 설정한다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inCalf: 종아리뼈 본 객체
-            
+            inThigh (rt.Node): 대퇴골 본
+            inCalf (rt.Node): 종아리뼈 본
+
         Returns:
-            bool: 비틀림 본 생성 성공 여부
+            None | False: 노드가 유효하지 않거나 자식 본이 없으면 False. 성공 시 반환값 없음.
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf):
             return False
@@ -431,27 +419,22 @@ class KneeBone:
             self.calfTwistHelpers.append(liftTwistHelper)
             
     def create_bone(self, inThigh, inCalf, inFoot, inLiftScale=0.05, inKneeVolumeSize=5.0, inKneePopScale=0.1, inKneeBackScale=1.5):
-        """
-        자동 무릎 본 시스템의 모든 요소를 생성하는 주요 메서드입니다.
-        
-        이 메서드는 다음 단계들을 순차적으로 실행합니다:
-        1. LookAt 헬퍼 생성
-        2. 회전 루트 헬퍼 생성
-        3. 회전 헬퍼 생성
-        4. 대퇴골과 종아리뼈 회전 제약 설정
-        5. 무릎 중간 본 생성
-        6. 비틀림 본 생성 및 제약 설정
-        
+        """자동 무릎 본 시스템의 모든 요소를 생성한다.
+
+        LookAt 헬퍼, 회전 루트 헬퍼, 회전 헬퍼 생성과 회전 제약 할당,
+        볼륨 중간 본과 비틀림 리프트 본 생성을 순차적으로 실행한다.
+
         Args:
-            inThigh: 대퇴골 본 객체
-            inCalf: 종아리뼈 본 객체
-            inFoot: 발 본 객체
-            inLiftScale: 회전 영향력 스케일 (0.0~1.0)
-            inKneePopScale: 무릎 앞쪽 돌출 스케일 (1.0이 기본값)
-            inKneeBackScale: 무릎 뒤쪽 돌출 스케일 (1.0이 기본값)
-            
+            inThigh (rt.Node): 대퇴골 본
+            inCalf (rt.Node): 종아리뼈 본
+            inFoot (rt.Node): 발 본
+            inLiftScale (float): 회전 영향력 스케일 (0.0~1.0)
+            inKneeVolumeSize (float): 무릎 볼륨 크기
+            inKneePopScale (float): 무릎 앞쪽 돌출 스케일
+            inKneeBackScale (float): 무릎 뒤쪽 돌출 스케일
+
         Returns:
-            BoneChain: 생성된 자동 무릎 본 체인 객체
+            BoneChain | None: 생성된 자동 무릎 본 체인. 유효하지 않은 노드가 있으면 None
         """
         if not rt.isValidNode(inThigh) or not rt.isValidNode(inCalf) or not rt.isValidNode(inFoot):
             return None
@@ -514,15 +497,15 @@ class KneeBone:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 자동 무릎 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 무릎 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 자동 무릎 본을 재생성한다.
+
+        기존 설정을 복원하거나 저장된 데이터에서 무릎 셋업을 재생성할 때 사용한다.
+
         Args:
             inBoneChain (BoneChain): 자동 무릎 본 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None
@@ -553,12 +536,12 @@ class KneeBone:
         return self.create_bone(inThigh, inCalf, inFoot, liftScale, kneeVolumeSize, kneePopScale, kneeBackScale)
     
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            KneeBone: 메서드 체이닝을 위한 자기 자신
         """
         self.thigh = None
         self.calf = None

@@ -12,11 +12,43 @@ from .volumeBone import VolumeBone
 from .boneChain import BoneChain
 
 class Elbow(VolumeBone):
+    """팔꿈치 볼륨 본을 생성하는 클래스.
+
+    VolumeBone을 상속하여 팔꿈치 굽힘에 따라 바깥쪽·안쪽으로 밀리는 볼륨 본 2개를 구성한다.
+    """
+
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
+        """Elbow 클래스를 초기화한다.
+
+        Args:
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+        """
         super().__init__(nameService=nameService, animService=animService, constraintService=constraintService, boneService=boneService, helperService=helperService)
     
     def create_bones(self, inForeArm, inUpperArm, inRotScale=0.5, inVolumeSize=4.0, inRotAxis="Z", inElbowTransAxis="PosY", inInnerElbowTransAxis="NegY", inElbowTransScale=0.25, inInnerElbowTransScale=1.0):
-        """팔꿈치 볼륨 본들을 생성합니다."""
+        """팔꿈치 볼륨 본들을 생성한다.
+
+        VolumeBone.create_bones로 볼륨 본을 만든 뒤 팔꿈치 명명 규칙에 맞게
+        본·헬퍼의 이름을 변경한다. 팔 방향에 따라 앞뒤 스케일을 자동으로 뒤집는다.
+
+        Args:
+            inForeArm (rt.Node): 전완 본. 볼륨 본의 기준 객체가 된다.
+            inUpperArm (rt.Node): 상완 본. 볼륨 본의 부모 기준이 된다.
+            inRotScale (float): 회전 반영 비율
+            inVolumeSize (float): 볼륨 본 크기
+            inRotAxis (str): 회전 감지 축 ("X", "Y", "Z")
+            inElbowTransAxis (str): 팔꿈치(뒤쪽) 본 이동 축 (예: "PosY")
+            inInnerElbowTransAxis (str): 안쪽 팔꿈치(앞쪽) 본 이동 축 (예: "NegY")
+            inElbowTransScale (float): 팔꿈치 본 이동 스케일
+            inInnerElbowTransScale (float): 안쪽 팔꿈치 본 이동 스케일
+
+        Returns:
+            BoneChain | None | False: 생성된 팔꿈치 본 체인. 입력 노드가 유효하지 않으면 False, 볼륨 본 생성에 실패하면 None
+        """
         if not rt.isValidNode(inForeArm) or not rt.isValidNode(inUpperArm):
             return False
         
@@ -87,7 +119,16 @@ class Elbow(VolumeBone):
         return volumeBoneResult
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain에서 팔꿈치 본들을 재생성합니다."""
+        """기존 BoneChain 객체에서 팔꿈치 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
+        Args:
+            inBoneChain (BoneChain): 팔꿈치 본 정보를 포함한 BoneChain 객체
+
+        Returns:
+            BoneChain | None: 재생성된 팔꿈치 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         

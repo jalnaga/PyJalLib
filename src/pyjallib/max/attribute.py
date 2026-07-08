@@ -14,12 +14,7 @@ from pymxs import runtime as rt
 
 
 class Attribute:
-    """3DS Max 커스텀 어트리뷰트 범용 관리 서비스.
-
-    노드에 커스텀 어트리뷰트 정의를 추가/조회/수정/삭제하고,
-    프로퍼티 값을 읽고 쓰며, float 프로퍼티에 Bezier Float 컨트롤러를
-    할당하는 기능을 제공합니다.
-    """
+    """노드의 커스텀 어트리뷰트 정의를 추가·조회·수정·삭제하고 프로퍼티 읽기/쓰기와 컨트롤러 할당을 제공한다."""
 
     # 지원 타입 매핑 (Python 타입명 -> MaxScript 타입 문자열)
     SUPPORTED_TYPES = {
@@ -30,7 +25,7 @@ class Attribute:
     }
 
     def __init__(self):
-        """Attribute 클래스 초기화."""
+        """Attribute 클래스를 초기화한다."""
         pass
 
     def _convert_default_value(self, inType: str, inDefault: Any) -> str:
@@ -78,17 +73,18 @@ class Attribute:
         return caBlock
 
     def build_param_def_string(self, inDefName: str, inParams: list[dict]) -> str:
-        """MaxScript 커스텀 어트리뷰트 정의 문자열을 생성.
+        """MaxScript 커스텀 어트리뷰트 정의 문자열을 생성한다.
 
         입력된 파라미터 목록으로부터 MaxScript `attributes ... ( parameters main ( ... ) )`
-        형식의 정의 문자열을 생성합니다.
+        형식의 정의 문자열을 생성한다. 이름이 없거나 지원하지 않는 타입의
+        파라미터는 건너뛴다.
 
         Args:
-            inDefName: 어트리뷰트 정의 이름
-            inParams: 파라미터 정의 리스트. 각 dict는 {"name": str, "type": str, "default": Any}
+            inDefName (str): 어트리뷰트 정의 이름
+            inParams (list[dict]): {name: str, type: str, default: Any} 형태의 파라미터 정의 리스트
 
         Returns:
-            MaxScript 어트리뷰트 정의 문자열
+            str: MaxScript 어트리뷰트 정의 문자열
         """
         lines = [
             f"attributes {inDefName}",
@@ -121,14 +117,14 @@ class Attribute:
         return "\n".join(lines)
 
     def find_attribute_def(self, inNode, inDefName: str) -> Optional[Any]:
-        """노드에서 지정된 이름의 커스텀 어트리뷰트 정의를 찾아 반환.
+        """노드에서 지정된 이름의 커스텀 어트리뷰트 정의를 찾아 반환한다.
 
         Args:
-            inNode: 검색 대상 노드
-            inDefName: 어트리뷰트 정의 이름
+            inNode (rt.Node): 검색 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            어트리뷰트 정의 객체. 없으면 None.
+            Any | None: 커스텀 어트리뷰트 정의 객체. 없거나 노드가 유효하지 않으면 None
         """
         if inNode is None:
             return None
@@ -146,14 +142,14 @@ class Attribute:
         return None
 
     def has_attribute_def(self, inNode, inDefName: str) -> bool:
-        """노드에 지정된 이름의 커스텀 어트리뷰트가 존재하는지 확인.
+        """노드에 지정된 이름의 커스텀 어트리뷰트가 존재하는지 확인한다.
 
         Args:
-            inNode: 검색 대상 노드
-            inDefName: 어트리뷰트 정의 이름
+            inNode (rt.Node): 검색 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            존재하면 True, 없거나 노드가 유효하지 않으면 False
+            bool: 존재하면 True. 없거나 노드가 유효하지 않으면 False
         """
         if inNode is None:
             return False
@@ -167,13 +163,13 @@ class Attribute:
         return self.find_attribute_def(inNode, inDefName) is not None
 
     def get_all_attribute_defs(self, inNode) -> list:
-        """노드에 등록된 모든 커스텀 어트리뷰트 정의를 리스트로 반환.
+        """노드에 등록된 모든 커스텀 어트리뷰트 정의를 리스트로 반환한다.
 
         Args:
-            inNode: 대상 노드
+            inNode (rt.Node): 대상 노드
 
         Returns:
-            어트리뷰트 정의 객체 리스트. 빈 리스트 가능.
+            list[Any]: 커스텀 어트리뷰트 정의 객체 리스트. 빈 리스트 가능
         """
         result = []
 
@@ -193,19 +189,19 @@ class Attribute:
         return result
 
     def add_attribute_def(self, inNode, inDefName: str, inParams: list[dict]) -> bool:
-        """노드에 커스텀 어트리뷰트 정의를 추가.
+        """노드에 커스텀 어트리뷰트 정의를 추가한다.
 
-        이미 동일 이름의 어트리뷰트가 존재하면 중복 방지를 위해 False를 반환합니다.
+        이미 동일 이름의 어트리뷰트가 존재하면 중복 방지를 위해 False를 반환한다.
         build_param_def_string으로 MaxScript 정의 문자열을 생성한 뒤
-        rt.execute로 정의 객체를 만들고 rt.custAttributes.add로 노드에 추가합니다.
+        rt.execute로 정의 객체를 만들고 rt.custAttributes.add로 노드에 추가한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
-            inParams: 파라미터 정의 리스트
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
+            inParams (list[dict]): {name: str, type: str, default: Any} 형태의 파라미터 정의 리스트
 
         Returns:
-            추가 성공 여부
+            bool: 추가 성공 여부. 동일 이름이 이미 존재하면 False
         """
         if inNode is None:
             return False
@@ -226,14 +222,14 @@ class Attribute:
         return True
 
     def remove_attribute_def(self, inNode, inDefName: str) -> bool:
-        """노드에서 지정된 이름의 커스텀 어트리뷰트 정의를 제거.
+        """노드에서 지정된 이름의 커스텀 어트리뷰트 정의를 제거한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            제거 성공 여부. 존재하지 않으면 False.
+            bool: 제거 성공 여부. 존재하지 않으면 False
         """
         if inNode is None:
             return False
@@ -252,18 +248,18 @@ class Attribute:
     def redefine_attribute_def(
         self, inNode, inDefName: str, inParams: list[dict]
     ) -> bool:
-        """노드의 기존 커스텀 어트리뷰트를 새 파라미터로 재정의.
+        """노드의 기존 커스텀 어트리뷰트를 새 파라미터로 재정의한다.
 
         기존 프로퍼티 값을 백업한 뒤 custAttributes.redefine으로 정의를
-        변경하고, 동일 이름의 프로퍼티 값을 복원합니다.
+        변경하고, 동일 이름의 프로퍼티 값을 복원한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
-            inParams: 새 파라미터 정의 리스트
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
+            inParams (list[dict]): {name: str, type: str, default: Any} 형태의 새 파라미터 정의 리스트
 
         Returns:
-            재정의 성공 여부. 어트리뷰트가 존재하지 않으면 False.
+            bool: 재정의 성공 여부. 어트리뷰트가 존재하지 않으면 False
         """
         if inNode is None:
             return False
@@ -289,15 +285,15 @@ class Attribute:
         return True
 
     def get_property(self, inNode, inDefName: str, inPropName: str) -> Optional[Any]:
-        """단일 프로퍼티 값을 읽어 반환.
+        """단일 프로퍼티 값을 읽어 반환한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
-            inPropName: 프로퍼티 이름
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
+            inPropName (str): 프로퍼티 이름
 
         Returns:
-            프로퍼티 값. 프로퍼티가 없거나 에러 시 None.
+            Any | None: 프로퍼티 값. 프로퍼티가 없거나 에러 시 None
         """
         caBlock = self._get_ca_block(inNode, inDefName)
         if caBlock is None:
@@ -314,16 +310,16 @@ class Attribute:
     def set_property(
         self, inNode, inDefName: str, inPropName: str, inValue: Any
     ) -> bool:
-        """단일 프로퍼티 값을 설정.
+        """단일 프로퍼티 값을 설정한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
-            inPropName: 프로퍼티 이름
-            inValue: 설정할 값
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
+            inPropName (str): 프로퍼티 이름
+            inValue (Any): 설정할 값
 
         Returns:
-            설정 성공 여부
+            bool: 설정 성공 여부
         """
         caBlock = self._get_ca_block(inNode, inDefName)
         if caBlock is None:
@@ -339,17 +335,17 @@ class Attribute:
         return False
 
     def get_all_properties(self, inNode, inDefName: str) -> dict[str, Any]:
-        """어트리뷰트의 모든 프로퍼티를 딕셔너리로 반환.
+        """어트리뷰트의 모든 프로퍼티를 딕셔너리로 반환한다.
 
         caBlock을 한 번만 조회한 뒤 루프에서 rt.getProperty로 직접 읽어
-        N번 중복 조회를 방지합니다.
+        N번 중복 조회를 방지한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            {프로퍼티명: 값} 딕셔너리. 빈 딕셔너리 가능.
+            dict[str, Any]: {프로퍼티명: 값} 딕셔너리. 빈 딕셔너리 가능
         """
         result: dict[str, Any] = {}
 
@@ -377,18 +373,18 @@ class Attribute:
     def set_all_properties(
         self, inNode, inDefName: str, inValues: dict[str, Any]
     ) -> bool:
-        """딕셔너리로 전달받은 값을 해당 프로퍼티에 일괄 설정.
+        """딕셔너리로 전달받은 값을 해당 프로퍼티에 일괄 설정한다.
 
         caBlock을 한 번만 조회한 뒤 루프에서 rt.setProperty로 직접 설정하여
-        N번 중복 조회를 방지합니다.
+        N번 중복 조회를 방지한다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
-            inValues: {프로퍼티명: 값} 딕셔너리
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
+            inValues (dict[str, Any]): {프로퍼티명: 값} 딕셔너리
 
         Returns:
-            하나라도 성공하면 True, 모두 실패하면 False
+            bool: 하나라도 성공하면 True, 모두 실패하면 False
         """
         if not inValues:
             return False
@@ -409,18 +405,17 @@ class Attribute:
         return success
 
     def assign_float_controllers(self, inNode, inDefName: str) -> bool:
-        """어트리뷰트의 float 프로퍼티에 Bezier Float 컨트롤러를 할당.
+        """어트리뷰트의 float 프로퍼티에 Bezier Float 컨트롤러를 할당한다.
 
-        이미 컨트롤러가 할당된 프로퍼티는 건너뜁니다.
-        float가 아닌 타입의 프로퍼티에 컨트롤러 할당을 시도하면 예외가
-        발생할 수 있으므로 try-except로 방어합니다.
+        이미 컨트롤러가 할당된 프로퍼티와 컨트롤러 할당이 불가능한
+        타입(float가 아닌 타입)의 프로퍼티는 건너뛴다.
 
         Args:
-            inNode: 대상 노드
-            inDefName: 어트리뷰트 정의 이름
+            inNode (rt.Node): 대상 노드
+            inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            할당 성공 여부
+            bool: 어트리뷰트/프로퍼티 목록 조회에 실패하면 False, 그 외 True
         """
         caBlock = self._get_ca_block(inNode, inDefName)
         if caBlock is None:

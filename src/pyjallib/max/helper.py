@@ -10,36 +10,29 @@ from pymxs import runtime as rt
 from .name import Name # Import Name service
 
 class Helper:
-    """
-    헬퍼 객체 관련 기능을 위한 클래스
-    MAXScript의 _Helper 구조체를 Python 클래스로 변환
-    
-    pymxs 모듈을 통해 3ds Max의 기능을 직접 접근합니다.
-    """
+    """3ds Max 포인트·ExposeTm 헬퍼의 생성과 형태, 크기 관리 기능을 제공하는 클래스."""
     
     def __init__(self, nameService=None):
-        """
-        초기화 함수
-        
+        """Name 서비스를 주입받아 초기화한다.
+
         Args:
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
     
     def create_point(self, inName, size=2, boxToggle=False, crossToggle=True, pointColor=(14, 255, 2), pos=(0, 0, 0)):
-        """
-        포인트 헬퍼 생성
-        
+        """포인트 헬퍼를 생성한다.
+
         Args:
-            inName: 헬퍼 이름
-            size: 헬퍼 크기
-            boxToggle: 박스 표시 여부
-            crossToggle: 십자 표시 여부
-            pointColor: 색상
-            pos: 위치
-            
+            inName (str): 헬퍼 이름
+            size (float): 헬퍼 크기
+            boxToggle (bool): 박스 표시 여부
+            crossToggle (bool): 십자 표시 여부
+            pointColor (tuple[int, int, int]): 와이어 색상(RGB)
+            pos (tuple[float, float, float]): 생성 위치
+
         Returns:
-            생성된 포인트 헬퍼
+            rt.Node: 생성된 포인트 헬퍼
         """
         # Point 객체 생성
         returnPoint = rt.Point()
@@ -63,14 +56,13 @@ class Helper:
         return returnPoint
     
     def create_empty_point(self, inName):
-        """
-        빈 포인트 헬퍼 생성
-        
+        """크기 0의 프리즈된 빈 포인트 헬퍼를 생성한다.
+
         Args:
-            inName: 헬퍼 이름
-            
+            inName (str): 헬퍼 이름
+
         Returns:
-            생성된 빈 포인트 헬퍼
+            rt.Node: 생성된 빈 포인트 헬퍼
         """
         # 빈 포인트 생성 (size:0, crossToggle:off)
         returnPoint = self.create_point(inName, size=0, crossToggle=False)
@@ -83,14 +75,13 @@ class Helper:
         return returnPoint
     
     def get_name_by_type(self, helperType):
-        """
-        헬퍼 타입 패턴에 따라 Type namePart 값 찾기
-        
+        """헬퍼 타입 설명에 해당하는 Type namePart 값을 찾는다.
+
         Args:
-            helperType: 헬퍼 타입 문자열 ("Dummy", "IK", "Target", "Parent", "ExposeTm")
-            
+            helperType (str): 헬퍼 타입 문자열 ("Dummy", "IK", "Target", "Parent", "ExposeTm")
+
         Returns:
-            찾은 Type namePart 값
+            str: 찾은 Type namePart 값. 없으면 최소 가중치의 기본 Type 값
         """
         typePart = self.name.get_name_part("Type")
         firstTypeValue = typePart.get_value_by_min_weight()
@@ -102,16 +93,15 @@ class Helper:
         return firstTypeValue
     
     def gen_helper_name_from_obj(self, inObj, make_two=False, is_exp=False):
-        """
-        객체로부터 헬퍼 이름 생성
-        
+        """객체 이름으로부터 헬퍼 이름을 생성한다.
+
         Args:
-            inObj: 원본 객체
-            make_two: 두 개의 이름 생성 여부
-            is_exp: ExposeTM 타입 여부
-            
+            inObj (rt.Node): 원본 객체
+            make_two (bool): True면 타겟 이름도 함께 생성한다.
+            is_exp (bool): True면 ExposeTm 타입 이름을 사용한다.
+
         Returns:
-            생성된 헬퍼 이름 배열 [포인트 이름, 타겟 이름]
+            list[str]: [포인트 이름, 타겟 이름]. make_two가 False면 타겟 이름은 빈 문자열
         """
         pointName = ""
         targetName = ""
@@ -136,14 +126,13 @@ class Helper:
         return [pointName, targetName]
     
     def gen_helper_shape_from_obj(self, inObj):
-        """
-        객체로부터 헬퍼 형태 생성
-        
+        """객체 타입에 따라 헬퍼 형태 값을 생성한다.
+
         Args:
-            inObj: 원본 객체
-            
+            inObj (rt.Node): 원본 객체
+
         Returns:
-            [헬퍼 크기, 십자 표시 여부, 박스 표시 여부]
+            list: [헬퍼 크기(float), 십자 표시 여부(bool), 박스 표시 여부(bool)]
         """
         helperSize = 2.0
         crossToggle = False
@@ -167,14 +156,15 @@ class Helper:
         return [helperSize, crossToggle, boxToggle]
     
     def create_helper(self, make_two=False):
-        """
-        헬퍼 생성
-        
+        """선택된 객체들의 트랜스폼 위치에 포인트 헬퍼를 생성한다.
+
+        선택이 없으면 기본 포인트 하나를 생성한다.
+
         Args:
-            make_two: 두 개의 헬퍼 생성 여부
-            
+            make_two (bool): True면 객체마다 타겟과 메인 두 개의 헬퍼를 생성한다.
+
         Returns:
-            생성된 헬퍼 배열
+            list[rt.Node]: 생성된 헬퍼 배열
         """
         createdHelperArray = []
         
@@ -243,8 +233,10 @@ class Helper:
         return createdHelperArray
     
     def create_parent_helper(self):
-        """
-        부모 헬퍼 생성
+        """선택된 객체마다 부모 헬퍼를 생성하여 계층 사이에 삽입한다.
+
+        Returns:
+            list[rt.Node]: 생성된 부모 헬퍼 배열. 선택이 없으면 빈 리스트
         """
         # 선택된 객체가 있는 경우에만 처리
         returnHelpers = []
@@ -288,11 +280,12 @@ class Helper:
         
     
     def create_exp_tm(self):
-        """
-        ExposeTM 헬퍼 생성
-        
+        """선택된 객체들의 트랜스폼 위치에 ExposeTm 헬퍼를 생성한다.
+
+        선택이 없으면 기본 ExposeTm 하나를 생성한다.
+
         Returns:
-            생성된 ExposeTM 헬퍼 배열
+            list[rt.Node]: 생성된 ExposeTm 헬퍼 배열
         """
         createdHelperArray = []
         
@@ -332,15 +325,14 @@ class Helper:
         return createdHelperArray
     
     def set_size(self, inObj, inNewSize):
-        """
-        헬퍼 크기 설정
-        
+        """헬퍼의 크기를 설정한다.
+
         Args:
-            inObj: 대상 객체
-            inNewSize: 새 크기
-            
+            inObj (rt.Node): 대상 헬퍼 객체
+            inNewSize (float): 새 크기
+
         Returns:
-            설정된 객체
+            rt.Node | None: 크기가 설정된 객체. 헬퍼가 아니면 None
         """
         # 헬퍼 클래스 타입인 경우에만 처리
         if rt.superClassOf(inObj) == rt.Helper:
@@ -349,15 +341,14 @@ class Helper:
         return None
     
     def add_size(self, inObj, inAddSize):
-        """
-        헬퍼 크기 증가
-        
+        """헬퍼의 크기를 증가시킨다.
+
         Args:
-            inObj: 대상 객체
-            inAddSize: 증가할 크기
-            
+            inObj (rt.Node): 대상 헬퍼 객체
+            inAddSize (float): 증가시킬 크기
+
         Returns:
-            설정된 객체
+            rt.Node | None: 크기가 변경된 객체. 헬퍼가 아니면 None
         """
         # 헬퍼 클래스 타입인 경우에만 처리
         if rt.superClassOf(inObj) == rt.Helper:
@@ -366,11 +357,10 @@ class Helper:
         return None
     
     def set_shape_to_center(self, inObj):
-        """
-        형태를 센터 마커로 설정
-        
+        """헬퍼 형태를 센터 마커와 박스 표시로 설정한다.
+
         Args:
-            inObj: 대상 객체
+            inObj (rt.Node): 대상 헬퍼 객체(Point 또는 ExposeTm)
         """
         # Point 또는 ExposeTm 클래스인 경우에만 처리
         if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
@@ -380,11 +370,10 @@ class Helper:
             inObj.cross = False
     
     def set_shape_to_axis(self, inObj):
-        """
-        형태를 축 마커로 설정
-        
+        """헬퍼 형태를 축 삼각대 표시로 설정한다.
+
         Args:
-            inObj: 대상 객체
+            inObj (rt.Node): 대상 헬퍼 객체(Point 또는 ExposeTm)
         """
         # Point 또는 ExposeTm 클래스인 경우에만 처리
         if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
@@ -394,11 +383,10 @@ class Helper:
             inObj.cross = False
     
     def set_shape_to_cross(self, inObj):
-        """
-        형태를 십자 마커로 설정
-        
+        """헬퍼 형태를 십자 표시로 설정한다.
+
         Args:
-            inObj: 대상 객체
+            inObj (rt.Node): 대상 헬퍼 객체(Point 또는 ExposeTm)
         """
         # Point 또는 ExposeTm 클래스인 경우에만 처리
         if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
@@ -408,11 +396,10 @@ class Helper:
             inObj.axistripod = False
     
     def set_shape_to_box(self, inObj):
-        """
-        형태를 박스 마커로 설정
-        
+        """헬퍼 형태를 박스 표시로 설정한다.
+
         Args:
-            inObj: 대상 객체
+            inObj (rt.Node): 대상 헬퍼 객체(Point 또는 ExposeTm)
         """
         # Point 또는 ExposeTm 클래스인 경우에만 처리
         if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
@@ -422,17 +409,18 @@ class Helper:
             inObj.cross = False
             
     def get_shape(self, inObj):
-        """
-        헬퍼 객체의 시각적 형태 속성을 가져옵니다.
-            inObj (object): 형태 정보를 가져올 대상 3ds Max 헬퍼 객체.
-            dict: 헬퍼의 형태 속성을 나타내는 딕셔너리.
-                - "size" (float): 크기
-                - "centermarker" (bool): 센터 마커 활성화 여부
-                - "axistripod" (bool): 축 삼각대 활성화 여부
-                - "cross" (bool): 십자 표시 활성화 여부
-                - "box" (bool): 박스 표시 활성화 여부
-                `inObj`가 `rt.ExposeTm` 또는 `rt.Point` 타입의 객체인 경우 해당 객체의
-                속성값을 반영하며, 그렇지 않은 경우 미리 정의된 기본값을 반환합니다.
+        """헬퍼 객체의 시각적 형태 속성을 가져온다.
+
+        Args:
+            inObj (rt.Node): 형태 정보를 가져올 헬퍼 객체
+
+        Returns:
+            dict: 헬퍼 형태 속성. Point/ExposeTm이 아니면 기본값을 반환한다.
+                - size (float): 크기
+                - centermarker (bool): 센터 마커 표시 여부
+                - axistripod (bool): 축 삼각대 표시 여부
+                - cross (bool): 십자 표시 여부
+                - box (bool): 박스 표시 여부
         """
         returnDict = {
             "size": 2.0,
@@ -451,20 +439,14 @@ class Helper:
         return returnDict
     
     def set_shape(self, inObj, inShapeDict):
-        """
-        헬퍼 객체의 표시 형태를 설정합니다.
-        `rt.ExposeTm` 또는 `rt.Point` 타입의 헬퍼 객체에 대해 크기, 센터 마커, 축 삼각대, 십자, 박스 표시 여부를 설정합니다.
-            inObj (rt.ExposeTm | rt.Point): 설정을 적용할 헬퍼 객체입니다.
-            inShapeDict (dict): 헬퍼의 형태를 정의하는 딕셔너리입니다.
-                다음 키와 값을 포함해야 합니다:
-                - "size" (float | int): 헬퍼의 크기.
-                - "centermarker" (bool): 센터 마커 표시 여부 (True/False).
-                - "axistripod" (bool): 축 삼각대(axis tripod) 표시 여부 (True/False).
-                - "cross" (bool): 십자(cross) 표시 여부 (True/False).
-                - "box" (bool): 박스(box) 표시 여부 (True/False).
-            rt.ExposeTm | rt.Point | None: 형태가 설정된 객체를 반환합니다.
-                만약 `inObj`가 `rt.ExposeTm` 또는 `rt.Point` 타입이 아닐 경우,
-                아무 작업도 수행하지 않고 `None`을 반환합니다.
+        """헬퍼 객체의 표시 형태를 딕셔너리 값으로 설정한다.
+
+        Args:
+            inObj (rt.Node): 설정을 적용할 헬퍼 객체(Point 또는 ExposeTm)
+            inShapeDict (dict): 형태 딕셔너리(size, centermarker, axistripod, cross, box 키)
+
+        Returns:
+            rt.Node | None: 형태가 설정된 객체. Point/ExposeTm이 아니면 None
         """
         if rt.classOf(inObj) == rt.ExposeTm or rt.classOf(inObj) == rt.Point:
             inObj.size = inShapeDict["size"]

@@ -10,24 +10,16 @@ from pymxs import runtime as rt
 
 
 class CheckViewport:
-    """
-    뷰포트 상태 검사 및 초기화를 위한 클래스
-
-    뷰포트 비활성화 여부 확인 및 뷰포트 상태 초기화 기능을 제공합니다.
-    """
+    """3ds Max 뷰포트의 비활성화 여부를 검사하고 뷰포트 상태를 초기화하는 클래스."""
 
     def __init__(self):
-        """
-        초기화 함수
-        """
+        """CheckViewport를 초기화한다."""
         pass
 
     def is_viewport_disabled(self):
-        """
-        뷰포트가 비활성화되어 있는지 확인.
+        """뷰포트가 비활성화되어 있는지 확인한다.
 
-        viewport.IsEnabled()가 True이면 뷰포트가 활성 상태이므로,
-        비활성화 여부를 반환합니다.
+        viewport.IsEnabled()의 결과를 반전하여 반환한다.
 
         Returns:
             bool: 뷰포트가 비활성화되어 있으면 True, 활성 상태이면 False
@@ -35,14 +27,10 @@ class CheckViewport:
         return not rt.viewport.IsEnabled()
 
     def reset_viewport(self):
-        """
-        뷰포트를 초기 상태로 리셋.
+        """뷰포트를 초기 상태로 리셋한다.
 
         IsolateSelection 해제, 씬 리드로우 활성화, 전체 언하이드,
-        뷰 리셋, 디스플레이 컬러 리셋을 수행합니다.
-
-        Returns:
-            None
+        전체 뷰 리셋, 셰이딩 디스플레이 컬러 리셋(material)을 수행한다.
         """
         rt.IsolateSelection.ExitIsolateSelectionMode()
         rt.redrawViews()

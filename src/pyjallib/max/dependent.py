@@ -18,23 +18,13 @@ from pymxs import runtime as rt
 
 
 class Dependent:
-    """
-    오브젝트 의존성 탐색을 위한 클래스
-
-    3ds Max에서 특정 오브젝트의 dependency 노드들(컨트롤러 타겟, 스킨 본, 부모 체인 등)과
-    dependent 노드들(자식, DependentNodes)을 탐색합니다.
-    Handle 기반 O(1) 중복 체크와 BFS를 사용하여 최적화된 성능을 제공합니다.
-
-    Attributes:
-        layerService: Layer 서비스 인스턴스
-    """
+    """오브젝트의 dependency·dependent 노드를 탐색한다. Handle 기반 BFS 기본 메서드와 Name 기반 재귀 DFS Deep 메서드를 제공한다."""
 
     def __init__(self, layerService=None):
-        """
-        초기화 함수
+        """Dependent 클래스를 초기화한다.
 
         Args:
-            layerService: Layer 서비스 인스턴스 (AddOn 레이어 탐색에 사용)
+            layerService (Layer | None): Layer 서비스 인스턴스 (AddOn 레이어 탐색에 사용)
         """
         self.layerService = layerService
 
@@ -43,19 +33,18 @@ class Dependent:
     # ------------------------------------------------------------------ #
 
     def get_all_dependencies(self, inObjArray, inVisited=None, inIncludeBiped=False):
-        """
-        주어진 오브젝트 배열의 모든 dependency 노드를 BFS로 수집합니다.
+        """주어진 오브젝트 배열의 모든 dependency 노드를 BFS로 수집한다.
 
-        Handle 기반 O(1) 중복 체크와 BFS queue를 사용하여 최적화된 성능을 제공합니다.
-        controller dependencies, skin dependencies, parent chain을 수집합니다.
+        Handle 기반 O(1) 중복 체크와 BFS queue를 사용하여 최적화된 성능을 제공한다.
+        controller dependencies, skin dependencies, parent chain을 수집한다.
 
         Args:
-            inObjArray: 탐색할 오브젝트 배열
-            inVisited: 이미 방문한 노드의 handle set (순환 참조 방지, 재사용 가능)
-            inIncludeBiped: Biped_Object 포함 여부. 기본값 False.
+            inObjArray (rt.Node | list[rt.Node]): 탐색할 오브젝트 배열. 단일 오브젝트도 허용된다.
+            inVisited (set[int] | None): 이미 방문한 노드의 handle set. None이면 새로 생성하며, 재사용 가능하다.
+            inIncludeBiped (bool): Biped_Object 포함 여부
 
         Returns:
-            tuple: (dependency 노드 리스트, 방문한 노드 handle set)
+            tuple[list[rt.Node], set[int]]: (dependency 노드 리스트, 방문한 노드 handle set)
         """
         if inVisited is None:
             inVisited = set()
@@ -127,16 +116,15 @@ class Dependent:
         return nodeArray, inVisited
 
     def get_dependents(self, inObjs):
-        """
-        주어진 오브젝트 배열의 모든 dependent 노드(자식, DependentNodes)를 수집합니다.
+        """주어진 오브젝트 배열의 모든 dependent 노드(자식, DependentNodes)를 수집한다.
 
-        Handle 기반 O(1) 중복 체크를 사용합니다.
+        Handle 기반 O(1) 중복 체크를 사용한다.
 
         Args:
-            inObjs: 탐색할 오브젝트 배열
+            inObjs (list[rt.Node]): 탐색할 오브젝트 배열
 
         Returns:
-            list: dependent 노드 리스트 (children + DependentNodes)
+            list[rt.Node]: dependent 노드 리스트 (children + DependentNodes)
         """
         objs = list(inObjs)
         objsHandles = {rt.getHandleByAnim(o) for o in objs}
@@ -178,14 +166,13 @@ class Dependent:
         return dependentsNodes
 
     def collect_addon_helpers(self, inDeps):
-        """
-        Rig_AddOn_* 레이어에서 Helper 클래스 노드를 수집합니다.
+        """Rig_AddOn_* 레이어에서 Helper 클래스 노드를 수집한다.
 
         Args:
-            inDeps: dependency 노드 리스트
+            inDeps (list[rt.Node]): dependency 노드 리스트
 
         Returns:
-            set: 수집된 AddOn Helper 노드 set
+            set[rt.Node]: 수집된 AddOn Helper 노드 set
         """
         addonHelper = set()
         processedLayers = set()
@@ -204,20 +191,19 @@ class Dependent:
         return addonHelper
 
     def get_all_related_to_export(self, inObjs, inIncludeBiped=False):
-        """
-        익스포트에 필요한 모든 관련 노드를 수집합니다.
+        """익스포트에 필요한 모든 관련 노드를 수집하고 선택한다.
 
         get_dependents -> get_all_dependencies (1차, 원본 기준) ->
         get_all_dependencies (2차, 1차 결과 기준, visited 재사용) ->
-        collect_addon_helpers 순서로 dependency를 수집합니다.
-        결과를 선택(rt.select)하고 반환합니다.
+        collect_addon_helpers 순서로 dependency를 수집한다.
+        결과를 선택(rt.select)하고 반환한다.
 
         Args:
-            inObjs: 탐색 시작 오브젝트 배열
-            inIncludeBiped: Biped_Object 포함 여부. 기본값 False.
+            inObjs (list[rt.Node]): 탐색 시작 오브젝트 배열
+            inIncludeBiped (bool): Biped_Object 포함 여부
 
         Returns:
-            list: 익스포트에 필요한 모든 관련 노드 리스트
+            list[rt.Node]: 익스포트에 필요한 모든 관련 노드 리스트. 입력이 비면 빈 리스트
         """
         if not inObjs:
             return []
@@ -262,19 +248,18 @@ class Dependent:
     # ------------------------------------------------------------------ #
 
     def get_deep_dependencies(self, inObjArray, inVisited=None, inIncludeBiped=False):
-        """
-        주어진 오브젝트 배열의 모든 dependency 노드를 재귀적으로 수집합니다.
+        """주어진 오브젝트 배열의 모든 dependency 노드를 재귀적으로 수집한다.
 
         refs.dependsOn(obj) 전체 오브젝트 탐색과 skinOps 본 순회를 사용하여
-        포괄적인 의존성을 수집합니다. Biped 부모를 건너뛰고 상위 체인도 탐색합니다.
+        포괄적인 의존성을 수집한다. Biped 부모를 건너뛰고 상위 체인도 탐색한다.
 
         Args:
-            inObjArray: 탐색할 오브젝트 배열
-            inVisited: 이미 방문한 노드 이름 집합 (순환 참조 방지, 내부 사용)
-            inIncludeBiped: Biped_Object 포함 여부. 기본값 False.
+            inObjArray (list[rt.Node]): 탐색할 오브젝트 배열
+            inVisited (set[str] | None): 이미 방문한 노드 이름 집합 (순환 참조 방지, 내부 사용). None이면 새로 생성한다.
+            inIncludeBiped (bool): Biped_Object 포함 여부
 
         Returns:
-            tuple: (dependency 노드 리스트, 방문한 노드 이름 집합)
+            tuple[list[rt.Node], set[str]]: (dependency 노드 리스트, 방문한 노드 이름 집합)
         """
         # pymxs 함수 로컬 참조를 통한 성능 최적화
         isValidNode = rt.isValidNode
@@ -370,18 +355,17 @@ class Dependent:
         return result, inVisited
 
     def get_deep_dependents(self, inObjs, inIncludeBiped=False):
-        """
-        주어진 오브젝트 배열의 모든 dependent 노드(자식, DependentNodes)를 수집합니다.
+        """주어진 오브젝트 배열의 모든 dependent 노드(자식, DependentNodes)를 수집한다.
 
         원본 오브젝트를 결과에 포함하며, children과 DependentNodes를
-        개별 필터링하여 수집합니다.
+        개별 필터링하여 수집한다.
 
         Args:
-            inObjs: 탐색할 오브젝트 배열
-            inIncludeBiped: Biped_Object 포함 여부. 기본값 False.
+            inObjs (list[rt.Node]): 탐색할 오브젝트 배열
+            inIncludeBiped (bool): Biped_Object 포함 여부
 
         Returns:
-            list: dependent 노드 리스트 (원본 + children + DependentNodes)
+            list[rt.Node]: dependent 노드 리스트 (원본 + children + DependentNodes)
         """
         # pymxs 함수 로컬 참조를 통한 성능 최적화
         isValidNode = rt.isValidNode
@@ -440,20 +424,19 @@ class Dependent:
         return result
 
     def get_all_related(self, inObjs, inIncludeBiped=False):
-        """
-        모든 관련 노드를 포괄적으로 수집합니다.
+        """모든 관련 노드를 포괄적으로 수집하고 선택한다.
 
         get_deep_dependents로 자식/DependentNodes를 수집한 뒤,
-        get_deep_dependencies로 전체 의존성을 탐색합니다.
-        AddOn Helper 레이어도 탐색하여 포함합니다.
-        결과를 선택(rt.select)하고 반환합니다.
+        get_deep_dependencies로 전체 의존성을 탐색한다.
+        *AddOn* 레이어의 Helper 노드도 탐색하여 포함하고,
+        결과를 선택(rt.select)한 뒤 반환한다.
 
         Args:
-            inObjs: 탐색 시작 오브젝트 배열
-            inIncludeBiped: Biped_Object 포함 여부. 기본값 False.
+            inObjs (list[rt.Node]): 탐색 시작 오브젝트 배열
+            inIncludeBiped (bool): Biped_Object 포함 여부
 
         Returns:
-            list: 모든 관련 노드 리스트
+            list[rt.Node]: 모든 관련 노드 리스트. 입력이 비면 빈 리스트
         """
         if not inObjs:
             return []

@@ -18,22 +18,17 @@ from .layer import Layer
 
 
 class Skeleton:
-    """
-    스켈레톤 관련 기능을 제공하는 클래스.
-    MAXScript의 _Skeleton 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
-    
+    """스켈레톤 객체의 의존성 노드 수집 기능을 제공하는 클래스. MAXScript의 _Skeleton 구조체를 Python으로 재구현하였다."""
+
     def __init__(self, animService=None, nameService=None, boneService=None, bipService=None, layerService=None):
-        """
-        클래스 초기화
-        
+        """서비스 인스턴스들을 주입받아 초기화한다.
+
         Args:
-            animService: Anim 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            bipService: Bip 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            layerService: Layer 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            animService (Anim | None): Anim 서비스. None이면 새로 생성한다.
+            nameService (Name | None): Name 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): Bone 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Bip 서비스. None이면 새로 생성한다.
+            layerService (Layer | None): Layer 서비스. None이면 새로 생성한다.
         """
         self.anim = animService if animService else Anim()
         self.name = nameService if nameService else Name()
@@ -102,6 +97,16 @@ class Skeleton:
     #     return nodeArray
     
     def get_dependencies(self, inObjs):
+        """객체들이 참조하는 의존성 노드를 MAXScript 함수로 수집한다.
+
+        Biped 객체는 건너뛰고, 각 객체의 컨트롤러·스킨이 참조하는 노드와 부모 노드를 재귀적으로 수집한다.
+
+        Args:
+            inObjs (list[rt.Node]): 의존성을 확인할 객체 배열. 유효하지 않은 노드는 제외된다.
+
+        Returns:
+            rt.Array: 의존성 노드 배열 (중복 제거됨)
+        """
         targetObjs = rt.Array()
         for item in inObjs:
             if rt.isValidNode(item):
@@ -150,15 +155,14 @@ class Skeleton:
         return rt.pyjallib_max_skeleton_get_dependencies(targetObjs)
     
     def get_all_dependencies(self, inObjs, inAddonLayerName="Rig_AddOn"):
-        """
-        객체의 모든 의존성을 가져옴 (애드온 레이어 포함)
-        
+        """객체의 의존성 노드에 애드온 레이어 노드들의 의존성까지 합쳐서 가져온다.
+
         Args:
-            inObjs: 의존성을 확인할 객체 배열
-            inAddonLayerName: 애드온 레이어 이름 (기본값: "Rig_Addon")
-            
+            inObjs (list[rt.Node]): 의존성을 확인할 객체 배열
+            inAddonLayerName (str): 애드온 레이어 이름 접두사 패턴
+
         Returns:
-            모든 의존성 노드 배열 (중복 제거됨)
+            list[rt.Node]: 모든 의존성 노드 배열 (중복 제거됨)
         """
         returnArray = []
         nodeArray = self.get_dependencies(inObjs)

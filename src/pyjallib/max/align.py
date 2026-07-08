@@ -10,21 +10,17 @@ from pymxs import runtime as rt
 
 
 class Align:
-    """
-    객체 정렬 관련 기능을 제공하는 클래스.
-    MAXScript의 _Align 구조체 개념을 Python으로 재구현한 클래스이며, 3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
+    """객체들을 마지막 객체의 트랜스폼·위치·회전 기준으로 정렬하는 기능을 제공하는 클래스."""
     
     def __init__(self):
-        """클래스 초기화 (현재 특별한 초기화 동작은 없음)"""
+        """클래스를 초기화한다. 현재 특별한 초기화 동작은 없다."""
         pass
     
     def align_to_last(self, inObjs: list[rt.Object]) -> None:
-        """
-        입력된 객체 배열의 마지막 객체의 트랜스폼으로 정렬.
-        
+        """배열의 모든 객체를 마지막 객체의 트랜스폼으로 정렬한다.
+
         Args:
-            inObjs: 정렬할 객체 배열
+            inObjs (list[rt.Node]): 정렬할 객체 배열
         """
         if inObjs:
             objCount = len(inObjs)
@@ -32,10 +28,9 @@ class Align:
                 inObjs[i].transform = inObjs[objCount-1].transform
     
     def align_to_last_sel(self):
-        """
-        선택된 객체들을 마지막 선택된 객체의 트랜스폼으로 정렬.
-        
-        모든 객체의 트랜스폼은 마지막 선택된 객체의 트랜스폼을 가지게 됩니다.
+        """선택된 객체들을 마지막 선택 객체의 트랜스폼으로 정렬한다.
+
+        선택이 2개 이상일 때만 동작한다.
         """
         selection_count = rt.selection.count
         
@@ -43,11 +38,10 @@ class Align:
             self.align_to_last(rt.selection)
             
     def align_to_last_pos(self, inObjs: list[rt.Object]) -> None:
-        """
-        입력된 객체 배열의 마지막 객체의 위치로 정렬.
-        
+        """배열의 모든 객체를 마지막 객체의 위치로 정렬한다 (회전은 유지).
+
         Args:
-            inObjs: 정렬할 객체 배열
+            inObjs (list[rt.Node]): 정렬할 객체 배열
         """
         if inObjs:
             objCount = len(inObjs)
@@ -73,11 +67,9 @@ class Align:
                 rt.delete(pos_dum_point)
     
     def align_to_last_sel_pos(self):
-        """
-        선택된 객체들을 마지막 선택된 객체의 위치로 정렬 (회전은 유지).
-        
-        위치는 마지막 선택된 객체를 따르고,
-        회전은 원래 객체의 회전을 유지합니다.
+        """선택된 객체들을 마지막 선택 객체의 위치로 정렬한다 (회전은 유지).
+
+        선택이 2개 이상일 때만 동작한다.
         """
         selection_count = rt.selection.count
         
@@ -85,11 +77,10 @@ class Align:
             self.align_to_last_pos(rt.selection)
     
     def align_to_last_rot(self, inObjs: list[rt.Object]) -> None:
-        """
-        입력된 객체 배열의 마지막 객체의 회전으로 정렬.
-        
+        """배열의 모든 객체를 마지막 객체의 회전으로 정렬한다 (위치는 유지).
+
         Args:
-            inObjs: 정렬할 객체 배열
+            inObjs (list[rt.Node]): 정렬할 객체 배열
         """
         if inObjs:
             objCount = len(inObjs)
@@ -117,11 +108,9 @@ class Align:
                 rt.delete(rot_dum_point)
     
     def align_to_last_sel_rot(self):
-        """
-        선택된 객체들을 마지막 선택된 객체의 회전으로 정렬 (위치는 유지).
-        
-        회전은 마지막 선택된 객체를 따르고,
-        위치는 원래 객체의 위치를 유지합니다.
+        """선택된 객체들을 마지막 선택 객체의 회전으로 정렬한다 (위치는 유지).
+
+        선택이 2개 이상일 때만 동작한다.
         """
         selection_count = rt.selection.count
         

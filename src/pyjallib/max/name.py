@@ -12,18 +12,14 @@ from pymxs import runtime as rt
 from pyjallib.naming import Naming
 
 class Name(Naming):
-    """
-    3ds Max 노드 이름 관리를 위한 클래스
-    Naming 클래스를 상속받으며, Max 특화 기능 제공
-    """
-    
+    """Naming을 상속하여 3ds Max 특화 노드 네이밍 기능을 제공한다."""
+
     def __init__(self, configPath=None):
-        """
-        클래스 초기화
-        
+        """Name 클래스를 초기화한다.
+
         Args:
-            configPath: 설정 파일 경로 (기본값: None)
-                        설정 파일이 제공되면 해당 파일에서 설정을 로드함
+            configPath (str | None): 네이밍 설정 JSON 파일 경로. None이면 기본
+                3DSMaxNamingConfig.json을 로드한다.
         """
         # 기본 설정값
         self._paddingNum = 2
@@ -43,348 +39,322 @@ class Name(Naming):
     # NamePart 직접 액세스 메소드들
     # get_<NamePart 이름>_values 메소드들
     def get_Base_values(self):
-        """
-        Base 부분의 사전 정의 값 목록 반환
-        
+        """Base 부분의 사전 정의 값 목록을 반환한다.
+
         Returns:
-            Base 부분의 사전 정의 값 목록
+            list[str]: Base 부분의 사전 정의 값 목록
         """
         return self.get_name_part_predefined_values("Base")
     
     def get_Type_values(self):
-        """
-        Type 부분의 사전 정의 값 목록 반환
-        
+        """Type 부분의 사전 정의 값 목록을 반환한다.
+
         Returns:
-            Type 부분의 사전 정의 값 목록
+            list[str]: Type 부분의 사전 정의 값 목록
         """
         return self.get_name_part_predefined_values("Type")
     
     def get_Side_values(self):
-        """
-        Side 부분의 사전 정의 값 목록 반환
-        
+        """Side 부분의 사전 정의 값 목록을 반환한다.
+
         Returns:
-            Side 부분의 사전 정의 값 목록
+            list[str]: Side 부분의 사전 정의 값 목록
         """
         return self.get_name_part_predefined_values("Side")
     
     def get_FrontBack_values(self):
-        """
-        FrontBack 부분의 사전 정의 값 목록 반환
-        
+        """FrontBack 부분의 사전 정의 값 목록을 반환한다.
+
         Returns:
-            FrontBack 부분의 사전 정의 값 목록
+            list[str]: FrontBack 부분의 사전 정의 값 목록
         """
         return self.get_name_part_predefined_values("FrontBack")
     
     def get_Nub_values(self):
-        """
-        Nub 부분의 사전 정의 값 목록 반환
-        
+        """Nub 부분의 사전 정의 값 목록을 반환한다.
+
         Returns:
-            Nub 부분의 사전 정의 값 목록
+            list[str]: Nub 부분의 사전 정의 값 목록
         """
         return self.get_name_part_predefined_values("Nub")
     
     # is_<NamePart 이름> 메소드들
     def is_Base(self, inStr):
-        """
-        문자열이 Base 부분의 사전 정의 값인지 확인
-        
+        """문자열이 Base 부분의 사전 정의 값인지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Base 부분의 사전 정의 값이면 True, 아니면 False
+            bool: Base 부분의 사전 정의 값이면 True
         """
         return self.is_in_name_part_predefined_values("Base", inStr)
     
     def is_Type(self, inStr):
-        """
-        문자열이 Type 부분의 사전 정의 값인지 확인
-        
+        """문자열이 Type 부분의 사전 정의 값인지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Type 부분의 사전 정의 값이면 True, 아니면 False
+            bool: Type 부분의 사전 정의 값이면 True
         """
         return self.is_in_name_part_predefined_values("Type", inStr)
     
     def is_Side(self, inStr):
-        """
-        문자열이 Side 부분의 사전 정의 값인지 확인
-        
+        """문자열이 Side 부분의 사전 정의 값인지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Side 부분의 사전 정의 값이면 True, 아니면 False
+            bool: Side 부분의 사전 정의 값이면 True
         """
         return self.is_in_name_part_predefined_values("Side", inStr)
     
     def is_FrontBack(self, inStr):
-        """
-        문자열이 FrontBack 부분의 사전 정의 값인지 확인
-        
+        """문자열이 FrontBack 부분의 사전 정의 값인지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            FrontBack 부분의 사전 정의 값이면 True, 아니면 False
+            bool: FrontBack 부분의 사전 정의 값이면 True
         """
         return self.is_in_name_part_predefined_values("FrontBack", inStr)
     
     def is_Nub(self, inStr):
-        """
-        문자열이 Nub 부분의 사전 정의 값인지 확인
-        
+        """문자열이 Nub 부분의 사전 정의 값인지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Nub 부분의 사전 정의 값이면 True, 아니면 False
+            bool: Nub 부분의 사전 정의 값이면 True
         """
         return self.is_in_name_part_predefined_values("Nub", inStr)
     
     # has_<NamePart 이름> 메소드들
     def has_Base(self, inStr):
-        """
-        문자열에 Base 부분의 사전 정의 값이 포함되어 있는지 확인
-        
+        """문자열에 Base 부분의 사전 정의 값이 포함되어 있는지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Base 부분의 사전 정의 값이 포함되어 있으면 True, 아니면 False
+            bool: Base 부분의 사전 정의 값이 포함되어 있으면 True
         """
         return self.has_name_part("Base", inStr)
     
     def has_Type(self, inStr):
-        """
-        문자열에 Type 부분의 사전 정의 값이 포함되어 있는지 확인
-        
+        """문자열에 Type 부분의 사전 정의 값이 포함되어 있는지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Type 부분의 사전 정의 값이 포함되어 있으면 True, 아니면 False
+            bool: Type 부분의 사전 정의 값이 포함되어 있으면 True
         """
         return self.has_name_part("Type", inStr)
     
     def has_Side(self, inStr):
-        """
-        문자열에 Side 부분의 사전 정의 값이 포함되어 있는지 확인
-        
+        """문자열에 Side 부분의 사전 정의 값이 포함되어 있는지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Side 부분의 사전 정의 값이 포함되어 있으면 True, 아니면 False
+            bool: Side 부분의 사전 정의 값이 포함되어 있으면 True
         """
         return self.has_name_part("Side", inStr)
     
     def has_FrontBack(self, inStr):
-        """
-        문자열에 FrontBack 부분의 사전 정의 값이 포함되어 있는지 확인
-        
+        """문자열에 FrontBack 부분의 사전 정의 값이 포함되어 있는지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            FrontBack 부분의 사전 정의 값이 포함되어 있으면 True, 아니면 False
+            bool: FrontBack 부분의 사전 정의 값이 포함되어 있으면 True
         """
         return self.has_name_part("FrontBack", inStr)
     
     def has_Nub(self, inStr):
-        """
-        문자열에 Nub 부분의 사전 정의 값이 포함되어 있는지 확인
-        
+        """문자열에 Nub 부분의 사전 정의 값이 포함되어 있는지 확인한다.
+
         Args:
-            inStr: 확인할 문자열
-            
+            inStr (str): 확인할 문자열
+
         Returns:
-            Nub 부분의 사전 정의 값이 포함되어 있으면 True, 아니면 False
+            bool: Nub 부분의 사전 정의 값이 포함되어 있으면 True
         """
         return self.has_name_part("Nub", inStr)
     
     # replace_<NamePart 이름> 메소드들
     def replace_Base(self, inStr, inNewName):
-        """
-        문자열의 Base 부분을 새 이름으로 변경
-        
+        """문자열의 Base 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("Base", inStr, inNewName)
     
     def replace_Type(self, inStr, inNewName):
-        """
-        문자열의 Type 부분을 새 이름으로 변경
-        
+        """문자열의 Type 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("Type", inStr, inNewName)
     
     def replace_Side(self, inStr, inNewName):
-        """
-        문자열의 Side 부분을 새 이름으로 변경
-        
+        """문자열의 Side 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("Side", inStr, inNewName)
     
     def replace_FrontBack(self, inStr, inNewName):
-        """
-        문자열의 FrontBack 부분을 새 이름으로 변경
-        
+        """문자열의 FrontBack 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("FrontBack", inStr, inNewName)
     
     def replace_RealName(self, inStr, inNewName):
-        """
-        문자열의 RealName 부분을 새 이름으로 변경
-        
+        """문자열의 RealName 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("RealName", inStr, inNewName)
     
     def replace_Index(self, inStr, inNewName):
-        """
-        문자열의 Index 부분을 새 이름으로 변경
-        
+        """문자열의 Index 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름 (숫자 문자열)
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름 (숫자 문자열)
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("Index", inStr, inNewName)
     
     def replace_Nub(self, inStr, inNewName):
-        """
-        문자열의 Nub 부분을 새 이름으로 변경
-        
+        """문자열의 Nub 부분을 새 이름으로 변경한다.
+
         Args:
-            inStr: 처리할 문자열
-            inNewName: 새 이름
-            
+            inStr (str): 처리할 문자열
+            inNewName (str): 새 이름
+
         Returns:
-            변경된 문자열
+            str: 변경된 문자열
         """
         return self.replace_name_part("Nub", inStr, inNewName)
     
     # remove_<NamePart 이름> 메소드들
     def remove_Base(self, inStr):
-        """
-        문자열에서 Base 부분 제거
-        
+        """문자열에서 Base 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            Base 부분이 제거된 문자열
+            str: Base 부분이 제거된 문자열
         """
         return self.remove_name_part("Base", inStr)
     
     def remove_Type(self, inStr):
-        """
-        문자열에서 Type 부분 제거
-        
+        """문자열에서 Type 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            Type 부분이 제거된 문자열
+            str: Type 부분이 제거된 문자열
         """
         return self.remove_name_part("Type", inStr)
     
     def remove_Side(self, inStr):
-        """
-        문자열에서 Side 부분 제거
-        
+        """문자열에서 Side 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            Side 부분이 제거된 문자열
+            str: Side 부분이 제거된 문자열
         """
         return self.remove_name_part("Side", inStr)
     
     def remove_FrontBack(self, inStr):
-        """
-        문자열에서 FrontBack 부분 제거
-        
+        """문자열에서 FrontBack 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            FrontBack 부분이 제거된 문자열
+            str: FrontBack 부분이 제거된 문자열
         """
         return self.remove_name_part("FrontBack", inStr)
     
     def remove_Index(self, inStr):
-        """
-        문자열에서 Index 부분 제거
-        
+        """문자열에서 Index 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            Index 부분이 제거된 문자열
+            str: Index 부분이 제거된 문자열
         """
         return self.remove_name_part("Index", inStr)
     
     def remove_Nub(self, inStr):
-        """
-        문자열에서 Nub 부분 제거
-        
+        """문자열에서 Nub 부분을 제거한다.
+
         Args:
-            inStr: 처리할 문자열
-            
+            inStr (str): 처리할 문자열
+
         Returns:
-            Nub 부분이 제거된 문자열
+            str: Nub 부분이 제거된 문자열
         """
         return self.remove_name_part("Nub", inStr)
     
     # pymxs 의존적인 메소드 구현
     
     def gen_unique_name(self, inStr):
-        """
-        고유한 이름 생성
-        
+        """씬 내 동일 패턴 객체 수를 세어 고유한 이름을 생성한다.
+
+        Index 부분을 와일드카드로 바꿔 이름이 일치하는 객체를 검색하고,
+        일치 개수 + 1을 새 Index로 지정한다.
+
         Args:
-            inStr: 기준 이름 문자열
-            
+            inStr (str): 기준 이름 문자열
+
         Returns:
-            고유한 이름 문자열
+            str: 고유한 이름 문자열
         """
         pattern_str = self.replace_Index(inStr, "*")
         
@@ -399,44 +369,42 @@ class Name(Naming):
         return self.replace_Index(inStr, str(len(matched_objects) + 1))
     
     def compare_name(self, inObjA, inObjB):
-        """
-        두 객체의 이름 비교 (정렬용)
-        
+        """두 객체의 이름을 대소문자 구분 없이 비교한다 (정렬용).
+
         Args:
-            inObjA: 첫 번째 객체
-            inObjB: 두 번째 객체
-            
+            inObjA (rt.Node): 첫 번째 객체
+            inObjB (rt.Node): 두 번째 객체
+
         Returns:
-            비교 결과 (inObjA.name < inObjB.name: 음수, inObjA.name == inObjB.name: 0, inObjA.name > inObjB.name: 양수)
+            int: inObjA 이름이 크면 1, 작으면 -1, 같으면 0
         """
         # Python에서는 대소문자 구분 없는 비교를 위해 lower() 사용
         return 1 if inObjA.name.lower() > inObjB.name.lower() else -1 if inObjA.name.lower() < inObjB.name.lower() else 0
     
     def sort_by_name(self, inArray):
-        """
-        객체 배열을 이름 기준으로 정렬
-        
+        """객체 배열을 이름 기준으로 정렬한다 (대소문자 구분 없음).
+
         Args:
-            inArray: 정렬할 객체 배열
-            
+            inArray (list[rt.Node]): 정렬할 객체 배열
+
         Returns:
-            이름 기준으로 정렬된 객체 배열
+            list[rt.Node]: 이름 기준으로 정렬된 객체 리스트
         """
         # Python의 sorted 함수와 key를 사용하여 이름 기준 정렬
         return sorted(inArray, key=lambda obj: obj.name.lower())
         
     def gen_mirroring_name(self, inStr):
-        """
-        미러링된 이름 생성 (측면 또는 앞/뒤 변경)
-        
-        이름에서 Side와 FrontBack namePart를 자동으로 검색하고,
-        발견된 값의 semanticmapping weight와 가장 차이가 큰 값으로 교체합니다.
-        
+        """미러링된 이름을 생성한다 (Side 또는 FrontBack 교체).
+
+        기반 클래스의 미러링으로 이름이 변경되지 않으면, Side/FrontBack이
+        있는 경우 고유한 이름을 생성하고, 없는 경우 RealName에 "Mirrored"
+        접미사를 추가한다.
+
         Args:
-            inStr: 처리할 이름 문자열
-            
+            inStr (str): 처리할 이름 문자열
+
         Returns:
-            미러링된 이름 문자열
+            str: 미러링된 이름 문자열
         """
         return_name = super().gen_mirroring_name(inStr)
         
@@ -451,46 +419,41 @@ class Name(Naming):
     
     # Type name Part에서 Description으로 지정된 predefined value를 가져오는 메소드들
     def get_parent_value(self):
-        """
-        부모 이름 문자열 반환
-        
+        """Type 부분에서 Description이 "Parent"인 사전 정의 값을 반환한다.
+
         Returns:
-            부모 이름 문자열
+            str: 부모 타입 이름 문자열. 찾지 못하면 빈 문자열
         """
         return self.get_name_part_value_by_description("Type", "Parent")
 
     def get_dummy_value(self):
-        """
-        더미 이름 문자열 반환
-        
+        """Type 부분에서 Description이 "Dummy"인 사전 정의 값을 반환한다.
+
         Returns:
-            더미 이름 문자열
+            str: 더미 타입 이름 문자열. 찾지 못하면 빈 문자열
         """
         return self.get_name_part_value_by_description("Type", "Dummy")
 
     def get_exposeTm_value(self):
-        """
-        ExposeTm 이름 문자열 반환
-        
+        """Type 부분에서 Description이 "ExposeTM"인 사전 정의 값을 반환한다.
+
         Returns:
-            ExposeTm 이름 문자열
+            str: ExposeTm 타입 이름 문자열. 찾지 못하면 빈 문자열
         """
         return self.get_name_part_value_by_description("Type", "ExposeTM")
 
     def get_ik_value(self):
-        """
-        IK 이름 문자열 반환
-        
+        """Type 부분에서 Description이 "IK"인 사전 정의 값을 반환한다.
+
         Returns:
-            IK 이름 문자열
+            str: IK 타입 이름 문자열. 찾지 못하면 빈 문자열
         """
         return self.get_name_part_value_by_description("Type", "IK")
 
     def get_target_value(self):
-        """
-        타겟 이름 문자열 반환
-        
+        """Type 부분에서 Description이 "Target"인 사전 정의 값을 반환한다.
+
         Returns:
-            타겟 이름 문자열
+            str: 타겟 타입 이름 문자열. 찾지 못하면 빈 문자열
         """
         return self.get_name_part_value_by_description("Type", "Target")

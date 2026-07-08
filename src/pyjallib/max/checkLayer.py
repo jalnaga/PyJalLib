@@ -10,48 +10,34 @@ from pymxs import runtime as rt
 
 
 class CheckLayer:
-    """
-    레이어 검사를 위한 클래스
+    """3ds Max 레이어의 이름·계층 구조·빈 레이어를 검증하고 수정하는 클래스.
 
-    레이어 이름, 계층 구조, 빈 레이어 등을 검증하는 기능을 제공합니다.
-    딕셔너리 리스트로 유효한 레이어 계층 정의를 설정하여 검증 기준으로 사용합니다.
-
-    Attributes:
-        layerService: Layer 서비스 인스턴스
+    딕셔너리 리스트로 정의한 레이어 계층을 검증 기준으로 사용한다.
     """
 
     def __init__(self, layerService=None):
-        """
-        초기화 함수
+        """CheckLayer를 초기화한다.
 
         Args:
-            layerService: Layer 서비스 인스턴스 (빈 레이어 삭제 등에 사용)
+            layerService (Layer | None): 레이어 조회·빈 레이어 삭제에 사용하는 Layer 서비스 인스턴스
         """
         self.layerService = layerService
         self._layerHierarchy = []
 
     def set_layer_hierarchy(self, inLayerHierarchy):
-        """
-        레이어 계층 정의를 설정.
+        """레이어 계층 정의를 설정한다.
 
-        딕셔너리 리스트를 받아 내부 레이어 계층 데이터로 저장합니다.
-        각 딕셔너리는 "layer_name"과 "layer_parent" 키를 포함해야 합니다.
+        딕셔너리 리스트를 내부 레이어 계층 데이터로 저장하여 검증 기준으로 사용한다.
 
         Args:
-            inLayerHierarchy: 레이어 계층 딕셔너리 리스트
-                예: [{"layer_name": "Mesh_Body", "layer_parent": "Mesh"}, ...]
-
-        Returns:
-            None
+            inLayerHierarchy (list[dict]): {layer_name: str, layer_parent: str} 형태의 레이어 계층 리스트
         """
         self._layerHierarchy = inLayerHierarchy
 
     def has_empty_layers(self):
-        """
-        빈 레이어가 존재하는지 확인.
+        """빈 레이어가 존재하는지 확인한다.
 
-        기본 레이어(0번)를 제외한 모든 레이어를 순회하며
-        노드가 없는 레이어가 있는지 확인합니다.
+        기본 레이어(0번)를 제외한 모든 레이어를 순회하며 노드가 없는 레이어를 찾는다.
 
         Returns:
             bool: 빈 레이어가 존재하면 True
@@ -63,21 +49,15 @@ class CheckLayer:
         return False
 
     def fix_empty_layers(self):
-        """
-        빈 레이어를 반복적으로 삭제.
+        """빈 레이어가 없을 때까지 반복적으로 삭제한다.
 
-        부모-자식 관계 때문에 한 번으로 모든 빈 레이어가 삭제되지 않을 수 있으므로
-        빈 레이어가 없을 때까지 반복합니다.
-
-        Returns:
-            None
+        부모-자식 관계 때문에 한 번의 삭제로 모든 빈 레이어가 제거되지 않을 수 있으므로 반복한다.
         """
         while self.has_empty_layers():
             self.layerService.del_empty_layer()
 
     def is_default_layer_empty(self):
-        """
-        기본 레이어(0번)가 비어있는지 확인.
+        """기본 레이어(0번)가 비어있는지 확인한다.
 
         Returns:
             bool: 기본 레이어에 노드가 없으면 True
@@ -86,20 +66,16 @@ class CheckLayer:
         return len(nodes) == 0
 
     def is_correct_layer_name(self, inLayerName):
-        """
-        레이어 이름이 유효한지 계층 데이터 기준으로 검증.
+        """레이어 이름이 계층 정의 기준으로 유효한지 검증한다.
 
-        검증 절차:
-        1. 레이어가 존재하는지 확인
-        2. 계층 데이터에 레이어 이름이 등록되어 있는지 확인
-        3. 부모 레이어가 있으면 부모 이름도 등록되어 있는지 확인
-        4. 위 조건을 만족하지 않으면, parent_* 패턴 매칭을 시도
+        레이어 존재 여부, 계층 정의 내 이름 등록 여부, 부모 이름 등록 여부를 확인하고,
+        조건을 만족하지 않으면 "부모이름_*" 패턴 매칭을 추가로 시도한다.
 
         Args:
-            inLayerName: 검증할 레이어 이름
+            inLayerName (str): 검증할 레이어 이름
 
         Returns:
-            bool: 레이어 이름이 유효하면 True
+            bool: 레이어 이름이 유효하면 True. 레이어가 존재하지 않으면 False
         """
         layerIndex = self.layerService.get_layer_number(inLayerName)
         if layerIndex is False:
@@ -129,10 +105,9 @@ class CheckLayer:
         return False
 
     def has_correct_layer_names(self):
-        """
-        모든 레이어 이름이 유효한지 확인.
+        """모든 레이어 이름이 유효한지 확인한다.
 
-        기본 레이어(0번)를 제외한 모든 레이어에 is_correct_layer_name을 적용합니다.
+        기본 레이어(0번)를 제외한 모든 레이어에 is_correct_layer_name을 적용한다.
 
         Returns:
             bool: 모든 레이어 이름이 유효하면 True
@@ -145,18 +120,16 @@ class CheckLayer:
         return True
 
     def is_object_in_layer(self, inObj, inExpectedLayerName):
-        """
-        오브젝트가 특정 레이어에 있는지만 확인.
+        """오브젝트가 특정 레이어에 속해 있는지 확인한다.
 
-        레이어 계층 검증이나 규칙 적용 없이 단순히 오브젝트가
-        지정된 레이어에 속해있는지만 확인합니다.
+        레이어 계층 검증이나 규칙 적용 없이 오브젝트의 레이어 이름만 비교한다.
 
         Args:
-            inObj: 검증할 3ds Max 오브젝트
-            inExpectedLayerName: 기대하는 레이어 이름
+            inObj (rt.Node): 검증할 오브젝트
+            inExpectedLayerName (str): 기대하는 레이어 이름
 
         Returns:
-            bool: 오브젝트가 해당 레이어에 있으면 True
+            bool: 오브젝트가 해당 레이어에 있으면 True. 오브젝트나 레이어가 None이면 False
         """
         if inObj is None or inObj.layer is None:
             return False
@@ -164,14 +137,14 @@ class CheckLayer:
         return inObj.layer.name == inExpectedLayerName
 
     def is_object_in_correct_layer_by_type(self, inObj):
-        """
-        오브젝트 타입에 따라 올바른 레이어에 있는지 확인.
+        """오브젝트 타입에 따라 올바른 레이어에 있는지 확인한다.
 
-        Geometry(Biped/BoneGeometry 제외) -> Mesh_* 레이어
-        Bone/Point/Biped/Dummy(Biped 자식) -> Bone_* 레이어
+        Geometry(Biped/BoneGeometry 제외)는 Mesh_* 레이어 또는 Utility 최상위 레이어,
+        Point/BoneGeometry/Biped/Dummy(Biped 자식)는 Bone_* 레이어에 있어야 한다.
+        레이어 이름 자체가 계층 정의 기준으로 유효하지 않으면 False를 반환한다.
 
         Args:
-            inObj: 검증할 3ds Max 오브젝트
+            inObj (rt.Node): 검증할 오브젝트
 
         Returns:
             bool: 오브젝트가 올바른 레이어에 있으면 True
@@ -214,14 +187,13 @@ class CheckLayer:
         return False
 
     def _get_top_parent_layer_name(self, inLayerName):
-        """
-        레이어의 최상위 부모 레이어 이름을 반환.
+        """레이어의 최상위 부모 레이어 이름을 반환한다.
 
         Args:
-            inLayerName: 레이어 이름
+            inLayerName (str): 레이어 이름
 
         Returns:
-            str: 최상위 부모 레이어 이름. 부모가 없으면 자기 자신의 이름 반환.
+            str: 최상위 부모 레이어 이름. 부모가 없으면 자기 자신의 이름, 레이어가 존재하지 않으면 빈 문자열
         """
         layerIndex = self.layerService.get_layer_number(inLayerName)
         if layerIndex is False:

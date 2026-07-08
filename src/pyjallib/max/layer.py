@@ -9,26 +9,14 @@ Layer 모듈 - 3ds Max 레이어 관리 기능
 from pymxs import runtime as rt
 
 class Layer:
-    """
-    레이어 관련 기능을 위한 클래스
-    MAXScript의 _Layer 구조체를 Python 클래스로 변환
-    
-    pymxs 모듈을 통해 3ds Max의 레이어 관리 기능을 제어합니다.
-    """
-    
+    """3ds Max 레이어의 생성·삭제·노드 이동·조회 등 레이어 관리 기능을 제공한다."""
+
     def __init__(self):
-        """
-        초기화 함수
-        """
+        """Layer 클래스를 초기화한다."""
         pass
-    
+
     def reset_layer(self):
-        """
-        모든 레이어를 초기화하고 기본 레이어로 객체 이동
-        
-        Returns:
-            None
-        """
+        """모든 레이어를 삭제하고 소속 객체를 기본 레이어(0번)로 이동한다."""
         # 기본 레이어(0번 레이어) 가져오기
         defaultLayer = rt.layerManager.getLayer(0)
         layerNameArray = []
@@ -55,14 +43,13 @@ class Layer:
                 rt.LayerManager.deleteLayerByName(item)
     
     def get_nodes_from_layer(self, inLayerNum):
-        """
-        레이어 번호로 해당 레이어의 노드들을 가져옴
-        
+        """레이어 번호로 해당 레이어의 유효한 노드들을 수집한다.
+
         Args:
-            inLayerNum: 레이어 번호
-            
+            inLayerNum (int | False | None): 레이어 번호. False나 None이면 빈 리스트를 반환한다.
+
         Returns:
-            레이어에 포함된 노드 배열 또는 빈 배열
+            list[rt.Node]: 레이어에 포함된 노드 리스트. 빈 리스트 가능
         """
         returnVal = []
         
@@ -84,14 +71,13 @@ class Layer:
         return returnVal
     
     def get_layer_number(self, inLayerName):
-        """
-        레이어 이름으로 레이어 번호를 찾음
-        
+        """레이어 이름으로 레이어 번호를 찾는다.
+
         Args:
-            inLayerName: 레이어 이름
-            
+            inLayerName (str): 레이어 이름
+
         Returns:
-            레이어 번호 또는 False (없는 경우)
+            int | False: 레이어 번호. 해당 이름의 레이어가 없으면 False
         """
         # 모든 레이어를 순회하며 이름 비교
         for i in range(rt.LayerManager.count):
@@ -102,14 +88,13 @@ class Layer:
         return False
     
     def get_layer_by_namepattern(self, inLayerNamePattern):
-        """
-        레이어 이름 패턴으로 해당 레이어를 가져옴
-        
+        """이름 패턴과 일치하는 레이어들의 이름을 수집한다.
+
         Args:
-            inLayerNamePattern: 레이어 이름 패턴
-            
+            inLayerNamePattern (str): 레이어 이름 패턴 (와일드카드 사용 가능)
+
         Returns:
-            레이어 배열
+            list[str]: 패턴과 일치하는 레이어 이름 리스트
         """
         returnVal = []
         for i in range(rt.LayerManager.count):
@@ -120,26 +105,21 @@ class Layer:
         return returnVal
     
     def get_nodes_by_layername(self, inLayerName):
-        """
-        레이어 이름으로 해당 레이어의 노드들을 가져옴
-        
+        """레이어 이름으로 해당 레이어의 노드들을 수집한다.
+
         Args:
-            inLayerName: 레이어 이름
-            
+            inLayerName (str): 레이어 이름
+
         Returns:
-            레이어에 포함된 노드 배열
+            list[rt.Node]: 레이어에 포함된 노드 리스트. 레이어가 없으면 빈 리스트
         """
         return self.get_nodes_from_layer(self.get_layer_number(inLayerName))
     
     def del_empty_layer(self, showLog=False):
-        """
-        빈 레이어 삭제
-        
+        """노드가 없는 빈 레이어를 모두 삭제한다.
+
         Args:
-            showLog: 삭제 결과 메시지 표시 여부
-            
-        Returns:
-            None
+            showLog (bool): True면 삭제된 레이어 수를 출력한다.
         """
         deleted_layer_count = 0
         deflayer = rt.layermanager.getlayer(0)
@@ -161,15 +141,16 @@ class Layer:
             print(f"Number of layers removed = {deleted_layer_count}")
     
     def create_layer_from_array(self, inArray, inLayerName):
-        """
-        객체 배열로 새 레이어 생성
-        
+        """객체 배열로 레이어를 생성하고 객체들을 추가한다.
+
+        동일 이름의 레이어가 이미 있으면 새로 만들지 않고 그 레이어에 객체를 추가한다.
+
         Args:
-            inArray: 레이어에 추가할 객체 배열
-            inLayerName: 생성할 레이어 이름
-            
+            inArray (list[rt.Node]): 레이어에 추가할 객체 배열
+            inLayerName (str): 생성할 레이어 이름
+
         Returns:
-            생성된 레이어
+            rt.MixinInterface: 생성되었거나 기존에 존재하던 레이어 객체
         """
         new_layer = None
         layer_index = self.get_layer_number(inLayerName)
@@ -188,15 +169,14 @@ class Layer:
         return new_layer
     
     def delete_layer(self, inLayerName, forceDelete=False):
-        """
-        레이어 삭제
-        
+        """레이어를 삭제하고 소속 객체를 삭제하거나 기본 레이어로 이동한다.
+
         Args:
-            inLayerName: 삭제할 레이어 이름
-            forceDelete: 레이어 내 객체도 함께 삭제할지 여부 (False면 기본 레이어로 이동)
-            
+            inLayerName (str): 삭제할 레이어 이름
+            forceDelete (bool): True면 레이어 내 객체도 함께 삭제한다. False면 객체를 기본 레이어로 이동한다.
+
         Returns:
-            성공 여부
+            bool: 레이어 삭제 성공 여부
         """
         return_val = False
         deflayer = rt.layermanager.getlayer(0)
@@ -221,15 +201,14 @@ class Layer:
         return return_val
     
     def set_parent_layer(self, inLayerName, inParentName):
-        """
-        레이어 부모 설정
-        
+        """레이어의 부모 레이어를 설정한다.
+
         Args:
-            inLayerName: 자식 레이어 이름
-            inParentName: 부모 레이어 이름
-            
+            inLayerName (str): 자식 레이어 이름
+            inParentName (str): 부모 레이어 이름
+
         Returns:
-            성공 여부
+            bool: 두 레이어가 모두 존재하여 부모 설정에 성공하면 True
         """
         returnVal = False
         
@@ -245,16 +224,12 @@ class Layer:
         return returnVal
     
     def rename_layer_from_index(self, inLayerIndex, searchFor, replaceWith):
-        """
-        레이어 이름의 특정 부분을 교체
-        
+        """레이어 이름에서 특정 문자열을 찾아 교체한다.
+
         Args:
-            inLayerIndex: 레이어 인덱스
-            searchFor: 검색할 문자열
-            replaceWith: 교체할 문자열
-            
-        Returns:
-            None
+            inLayerIndex (int): 레이어 인덱스
+            searchFor (str): 검색할 문자열
+            replaceWith (str): 교체할 문자열
         """
         targetLayer = rt.LayerManager.getLayer(inLayerIndex)
         layerName = targetLayer.name
@@ -274,10 +249,10 @@ class Layer:
         노드까지 재귀적으로 모두 수집하여 반환한다.
 
         Args:
-            inLayerName: 대상 레이어 이름
+            inLayerName (str): 대상 레이어 이름
 
         Returns:
-            수집된 노드 리스트. 레이어가 존재하지 않으면 빈 리스트.
+            list[rt.Node]: 수집된 노드 리스트. 레이어가 존재하지 않으면 빈 리스트
         """
         rootLayer = rt.LayerManager.getLayerFromName(inLayerName)
         if rootLayer is None:
@@ -312,15 +287,14 @@ class Layer:
         return nodeList
 
     def is_valid_layer(self, inLayerName=None, inLayerIndex=None):
-        """
-        유효한 레이어인지 확인
-        
+        """이름 또는 인덱스로 레이어의 존재 여부를 확인한다.
+
         Args:
-            inLayerName: 레이어 이름 (선택)
-            inLayerIndex: 레이어 인덱스 (선택)
-            
+            inLayerName (str | None): 레이어 이름. None이면 inLayerIndex로 확인한다.
+            inLayerIndex (int | None): 레이어 인덱스
+
         Returns:
-            유효 여부
+            bool: 레이어가 존재하면 True
         """
         layer = None
         

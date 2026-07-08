@@ -22,28 +22,19 @@ from .boneChain import BoneChain
 
 
 class VolumeBone:  # Updated class name to match the new file name
-    """
-    관절 부피 유지 본(Volume preserve Bone) 클래스
-    
-    3ds Max에서 관절의 부피를 유지하기 위해 추가되는 중간본들을 위한 클래스입니다.
-    이 클래스는 관절이 회전할 때 자동으로 부피감을 유지하도록 하는 보조 본 시스템을 생성하고
-    관리합니다. 부모 관절과 자식 관절 사이에 부피 유지 본을 배치하여 관절 변형 시 부피 감소를
-    방지하고 더 자연스러운 움직임을 구현합니다.
+    """관절 회전 시 부피 감소를 보정하는 볼륨 본 시스템을 생성·관리하는 클래스.
+
+    루트 본과 위치 스크립트 컨트롤러를 이용해 관절 굽힘 정도에 따라 밀려나는 보조 본을 만든다.
     """
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
-        """
-        클래스 초기화.
-        
-        필요한 서비스 객체들을 초기화하거나 외부에서 제공받습니다. 
-        각 서비스 객체들은 본 생성, 이름 관리, 애니메이션 제어, 제약 조건 적용 등의 
-        기능을 담당합니다.
-        
+        """VolumeBone 클래스를 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -79,12 +70,12 @@ class VolumeBone:  # Updated class name to match the new file name
         )
     
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            VolumeBone: 메서드 체이닝을 위한 자기 자신
         """
         self.rootBone = None
         self.rotHelper = None
@@ -100,6 +91,19 @@ class VolumeBone:  # Updated class name to match the new file name
         return self
     
     def create_root_bone(self, inObj, inParent, inRotScale=0.5):
+        """볼륨 본들의 부모가 되는 루트 본과 회전 헬퍼를 생성한다.
+
+        루트 본의 회전은 대상 관절과 회전 헬퍼에 가중치 회전 제약으로 연결된다.
+        이미 유효한 루트 본과 회전 헬퍼가 있으면 기존 루트 본을 그대로 반환한다.
+
+        Args:
+            inObj (rt.Node): 볼륨 본을 붙일 대상 관절
+            inParent (rt.Node): 대상 관절의 부모
+            inRotScale (float): 대상 관절 회전을 따라가는 비율 (0.0~1.0)
+
+        Returns:
+            rt.Node | False: 생성된(또는 기존) 루트 본. 유효하지 않은 노드가 있으면 False
+        """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return False
         
@@ -137,6 +141,25 @@ class VolumeBone:  # Updated class name to match the new file name
         return self.rootBone
     
     def create_bone(self, inObj, inParent, inRotScale=0.5, inVolumeSize=5.0, inRotAxis="Z", inTransAxis="PosY", inTransScale=1.0, useRootBone=True, inRootBone=None):
+        """단일 볼륨 본을 생성하고 위치 스크립트 컨트롤러를 할당한다.
+
+        루트 본 기준으로 이동 축 방향에 본을 배치하고, 관절 굽힘 각도에
+        비례해 밀려나도록 위치 스크립트를 설정한다.
+
+        Args:
+            inObj (rt.Node): 볼륨 본을 붙일 대상 관절
+            inParent (rt.Node): 대상 관절의 부모
+            inRotScale (float): 루트 본 생성 시 사용하는 회전 반영 비율
+            inVolumeSize (float): 볼륨 크기 (이동 거리)
+            inRotAxis (str): 굽힘을 측정할 회전 축 ("X", "Y", "Z")
+            inTransAxis (str): 본이 밀려나는 이동 축 ("PosX", "NegX", "PosY", "NegY", "PosZ", "NegZ")
+            inTransScale (float): 이동 스케일
+            useRootBone (bool): True면 기존 루트 본(또는 inRootBone)을 사용한다.
+            inRootBone (rt.Node | None): 사용할 루트 본. None이면 새로 생성한다.
+
+        Returns:
+            bool: 성공하면 True. 노드가 유효하지 않거나 사용할 루트 본이 없으면 False
+        """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return False
         
@@ -206,20 +229,19 @@ class VolumeBone:  # Updated class name to match the new file name
         return True
     
     def create_bones(self, inObj, inParent, inRotScale=0.5, inVolumeSize=5.0, inRotAxises=["Z"], inTransAxises=["PosY"], inTransScales=[1.0]):
-        """
-        여러 개의 부피 유지 본을 생성합니다.
-        
+        """루트 본과 여러 개의 볼륨 본을 생성한다.
+
         Args:
-            inObj: 본을 생성할 객체
-            inParent: 부모 객체
-            inRotScale: 회전 비율
-            inVolumeSize: 부피 크기
-            inRotAxises: 회전 축 리스트
-            inTransAxises: 변환 축 리스트
-            inTransScales: 변환 비율 리스트
-        
+            inObj (rt.Node): 볼륨 본을 붙일 대상 관절
+            inParent (rt.Node): 대상 관절의 부모
+            inRotScale (float): 회전 반영 비율
+            inVolumeSize (float): 볼륨 크기
+            inRotAxises (list[str]): 회전 축 리스트 ("X", "Y", "Z")
+            inTransAxises (list[str]): 이동 축 리스트 ("PosX"~"NegZ")
+            inTransScales (list[float]): 이동 스케일 리스트
+
         Returns:
-            BoneChain: 생성된 볼륨 본 체인 객체
+            BoneChain | None: 생성된 볼륨 본 체인. 노드가 유효하지 않거나 축 리스트 길이가 다르거나 루트 본 생성에 실패하면 None
         """
         if rt.isValidNode(inObj) == False or rt.isValidNode(inParent) == False:
             return None
@@ -280,15 +302,15 @@ class VolumeBone:  # Updated class name to match the new file name
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 볼륨 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 볼륨 본 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 볼륨 본을 재생성한다.
+
+        기존 설정을 복원하거나 저장된 데이터에서 볼륨 본 셋업을 재생성할 때 사용한다.
+
         Args:
             inBoneChain (BoneChain): 볼륨 본 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본 또는 파라미터가 부족하면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None

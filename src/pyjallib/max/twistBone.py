@@ -23,30 +23,20 @@ from .boneChain import BoneChain
 
 
 class TwistBone:
+    """팔·다리의 트위스트 본을 생성하는 클래스.
+
+    상체(Upper)·하체(Lower) 타입별 회전 표현식을 사용해 회전을 분산하는 트위스트 본 체인을 구성한다.
     """
-    트위스트 뼈대(Twist Bone) 관련 기능을 제공하는 클래스.
-    
-    이 클래스는 3ds Max에서 트위스트 뼈대를 생성하고 제어하는 다양한 기능을 제공합니다.
-    MAXScript의 _TwistBone 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    
-    트위스트 뼈대는 상체(Upper)와 하체(Lower) 두 가지 타입으로 생성이 가능하며,
-    각각 다른 회전 표현식을 사용하여 자연스러운 회전 움직임을 구현합니다.
-    """
-    
+
     def __init__(self, nameService=None, animService=None, constraintService=None, bipService=None, boneService=None):
-        """
-        TwistBone 클래스 초기화.
-        
-        의존성 주입 방식으로 필요한 서비스들을 외부에서 제공받거나 내부에서 생성합니다.
-        서비스들이 제공되지 않을 경우 각 서비스의 기본 인스턴스를 생성하여 사용합니다.
-        
+        """TwistBone 클래스를 초기화한다.
+
         Args:
-            nameService (Name, optional): 이름 처리 서비스. 기본값은 None이며, 제공되지 않으면 새로 생성됩니다.
-            animService (Anim, optional): 애니메이션 서비스. 기본값은 None이며, 제공되지 않으면 새로 생성됩니다.
-            constraintService (Constraint, optional): 제약 서비스. 기본값은 None이며, 제공되지 않으면 새로 생성됩니다.
-            bipService (Bip, optional): 바이페드 서비스. 기본값은 None이며, 제공되지 않으면 새로 생성됩니다.
-            boneService (Bone, optional): 뼈대 서비스. 기본값은 None이며, 제공되지 않으면 새로 생성됩니다.
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Biped 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
@@ -93,12 +83,10 @@ class TwistBone:
         )
             
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            TwistBone: 메서드 체이닝을 위한 자기 자신
         """
         self.limb = None
         self.child = None
@@ -109,21 +97,18 @@ class TwistBone:
         return self
             
     def create_upper_limb_bones(self, inObj, inChild, twistNum=4):
-        """
-        상체(팔, 어깨 등) 부분의 트위스트 뼈대를 생성하는 메소드.
-        
-        상체용 트위스트 뼈대는 부모 객체(inObj)의 위치에서 시작하여 
-        자식 객체(inChild) 방향으로 여러 개의 뼈대를 생성합니다.
-        생성된 뼈대들은 스크립트 컨트롤러를 통해 자동으로 회전되어
-        자연스러운 트위스트 움직임을 표현합니다.
-        
+        """팔·다리 상부(상완, 대퇴부 등)의 트위스트 본들을 생성한다.
+
+        부모 객체 위치에서 자식 객체 방향으로 본들을 배치하고,
+        상체용 회전 표현식의 스크립트 컨트롤러로 회전을 분산한다.
+
         Args:
-            inObj: 트위스트 뼈대의 부모 객체(뼈). 일반적으로 상완 또는 대퇴부에 해당합니다.
-            inChild: 자식 객체(뼈). 일반적으로 전완 또는 하퇴부에 해당합니다.
-            twistNum (int, optional): 생성할 트위스트 뼈대의 개수. 기본값은 4입니다.
-        
+            inObj (rt.Node): 트위스트 본의 부모 객체. 일반적으로 상완 또는 대퇴부.
+            inChild (rt.Node): 자식 객체. 일반적으로 전완 또는 하퇴부.
+            twistNum (int): 생성할 트위스트 본의 개수
+
         Returns:
-            BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
+            BoneChain: 생성된 트위스트 본 체인
         """
         limb = inObj
         
@@ -214,20 +199,18 @@ class TwistBone:
         return BoneChain.from_result(result)
 
     def create_lower_limb_bones(self, inObj, inChild, twistNum=4):
-        """
-        하체(팔뚝, 다리 등) 부분의 트위스트 뼈대를 생성하는 메소드.
-        
-        하체용 트위스트 뼈대는 부모 객체(inObj)의 위치에서 시작하여 
-        자식 객체(inChild) 쪽으로 여러 개의 뼈대를 생성합니다.
-        상체와는 다른 회전 표현식을 사용하여 하체에 적합한 트위스트 움직임을 구현합니다.
-        
+        """팔·다리 하부(전완, 하퇴부 등)의 트위스트 본들을 생성한다.
+
+        부모 객체 위치에서 자식 객체 쪽으로 본들을 배치하고,
+        상체용과 다른 하체용 회전 표현식의 스크립트 컨트롤러로 회전을 분산한다.
+
         Args:
-            inObj: 트위스트 뼈대의 부모 객체(뼈). 일반적으로 전완 또는 하퇴부에 해당합니다.
-            inChild: 자식 객체(뼈). 일반적으로 손목 또는 발목에 해당합니다.
-            twistNum (int, optional): 생성할 트위스트 뼈대의 개수. 기본값은 4입니다.
-        
+            inObj (rt.Node): 트위스트 본의 부모 객체. 일반적으로 전완 또는 하퇴부.
+            inChild (rt.Node): 자식 객체. 일반적으로 손목 또는 발목.
+            twistNum (int): 생성할 트위스트 본의 개수
+
         Returns:
-            BoneChain: 생성된 트위스트 뼈대 BoneChain 객체
+            BoneChain: 생성된 트위스트 본 체인
         """
         limb = inChild
         
@@ -323,15 +306,16 @@ class TwistBone:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 트위스트 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 트위스트 본 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 트위스트 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 파라미터의 타입("Upper"/"Lower")에 따라
+        상부·하부용 생성 메서드로 셋업을 다시 만든다.
+
         Args:
             inBoneChain (BoneChain): 트위스트 본 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 트위스트 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None

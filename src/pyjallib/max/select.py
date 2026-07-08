@@ -17,71 +17,50 @@ from .layer import Layer
 
 
 class Select:
-    """
-    객체 선택 관련 기능을 제공하는 클래스.
-    MAXScript의 _Select 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
-    
+    """3ds Max 객체의 선택 필터링·정렬과 dependency 노드 수집 기능을 제공한다."""
+
     def __init__(self, nameService=None, boneService=None, layerService=None):
-        """
-        클래스 초기화
+        """Select 클래스를 초기화한다.
 
         Args:
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            layerService: Layer 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): Name 서비스 인스턴스. None이면 새로 생성한다.
+            boneService (Bone | None): Bone 서비스 인스턴스. None이면 새로 생성한다.
+            layerService (Layer | None): Layer 서비스 인스턴스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
         self.bone = boneService if boneService else Bone(nameService=self.name)
         self.layer = layerService if layerService else Layer()
     
     def set_selectionSet_to_all(self):
-        """
-        모든 유형의 객체를 선택하도록 필터 설정
-        """
+        """모든 유형의 객체를 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(1)
     
     def set_selectionSet_to_bone(self):
-        """
-        뼈대 객체만 선택하도록 필터 설정
-        """
+        """뼈대 객체만 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(8)
     
     def reset_selectionSet(self):
-        """
-        선택 필터를 기본값으로 재설정
-        """
+        """선택 필터를 기본값(모든 객체)으로 재설정한다."""
         rt.SetSelectFilter(1)
     
     def set_selectionSet_to_helper(self):
-        """
-        헬퍼 객체만 선택하도록 필터 설정
-        """
+        """헬퍼 객체만 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(6)
     
     def set_selectionSet_to_point(self):
-        """
-        포인트 객체만 선택하도록 필터 설정
-        """
+        """포인트 객체만 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(10)
     
     def set_selectionSet_to_spline(self):
-        """
-        스플라인 객체만 선택하도록 필터 설정
-        """
+        """스플라인 객체만 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(3)
     
     def set_selectionSet_to_mesh(self):
-        """
-        메시 객체만 선택하도록 필터 설정
-        """
+        """메시 객체만 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(2)
     
     def filter_bip(self):
-        """
-        현재 선택 항목에서 Biped 객체만 필터링하여 선택
-        """
+        """현재 선택에서 Biped 객체만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if rt.classOf(item) == rt.Biped_Object]
@@ -89,9 +68,7 @@ class Select:
             rt.select(filtered_sel)
     
     def filter_bone(self):
-        """
-        현재 선택 항목에서 뼈대 객체만 필터링하여 선택
-        """
+        """현재 선택에서 BoneGeometry 객체만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if rt.classOf(item) == rt.BoneGeometry]
@@ -99,9 +76,7 @@ class Select:
             rt.select(filtered_sel)
             
     def filter_end_bone(self):
-        """
-        현재 선택 항목에서 뼈대 객체만 필터링하여 선택
-        """
+        """현재 선택에서 끝 본(end bone)만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if self.bone.is_end_bone(item)]
@@ -109,9 +84,7 @@ class Select:
             rt.select(filtered_sel)
     
     def filter_helper(self):
-        """
-        현재 선택 항목에서 헬퍼 객체(Point, IK_Chain)만 필터링하여 선택
-        """
+        """현재 선택에서 헬퍼 객체(Point, IK_Chain)만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if rt.classOf(item) == rt.Point or rt.classOf(item) == rt.IK_Chain_Object]
@@ -119,9 +92,7 @@ class Select:
             rt.select(filtered_sel)
     
     def filter_expTm(self):
-        """
-        현재 선택 항목에서 ExposeTm 객체만 필터링하여 선택
-        """
+        """현재 선택에서 ExposeTm 객체만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if rt.classOf(item) == rt.ExposeTm]
@@ -129,9 +100,7 @@ class Select:
             rt.select(filtered_sel)
     
     def filter_spline(self):
-        """
-        현재 선택 항목에서 스플라인 객체만 필터링하여 선택
-        """
+        """현재 선택에서 스플라인(shape) 객체만 남기고 다시 선택한다."""
         sel_array = rt.getCurrentSelection()
         if len(sel_array) > 0:
             filtered_sel = [item for item in sel_array if rt.superClassOf(item) == rt.shape]
@@ -139,29 +108,27 @@ class Select:
             rt.select(filtered_sel)
     
     def select_children(self, inObj, includeSelf=False):
-        """
-        객체의 모든 자식을 선택
-        
+        """객체의 모든 자식을 재귀적으로 선택한다.
+
         Args:
-            in_obj: 부모 객체
-            include_self: 자신도 포함할지 여부 (기본값: False)
-            
+            inObj (rt.Node): 부모 객체
+            includeSelf (bool): True면 자신도 선택에 포함한다.
+
         Returns:
-            선택된 자식 객체 리스트
+            list[rt.Node]: 선택된 자식 객체 리스트
         """
         children = self.bone.select_every_children(inObj=inObj, includeSelf=includeSelf)
         
         return children
     
     def distinguish_hierachy_objects(self, inArray):
-        """
-        계층이 있는 객체와 없는 객체 구분
-        
+        """계층 구조가 없는 객체와 있는 객체를 구분한다.
+
         Args:
-            inArray: 검사할 객체 배열
-            
+            inArray (list[rt.Node]): 검사할 객체 배열
+
         Returns:
-            [계층이 없는 객체 배열, 계층이 있는 객체 배열]
+            list[list[rt.Node]]: [계층이 없는 객체 리스트, 계층이 있는 객체 리스트]
         """
         return_array = [[], []]  # 첫 번째는 독립 객체, 두 번째는 계층 객체
         
@@ -174,50 +141,46 @@ class Select:
         return return_array
     
     def get_nonLinked_objects(self, inArray):
-        """
-        링크(계층구조)가 없는 독립 객체만 반환
-        
+        """링크(계층구조)가 없는 독립 객체만 반환한다.
+
         Args:
-            inArray: 검사할 객체 배열
-            
+            inArray (list[rt.Node]): 검사할 객체 배열
+
         Returns:
-            독립적인 객체 배열
+            list[rt.Node]: 독립적인 객체 리스트
         """
         return self.distinguish_hierachy_objects(inArray)[0]
     
     def get_linked_objects(self, inArray):
-        """
-        링크(계층구조)가 있는 객체만 반환
-        
+        """링크(계층구조)가 있는 객체만 반환한다.
+
         Args:
-            inArray: 검사할 객체 배열
-            
+            inArray (list[rt.Node]): 검사할 객체 배열
+
         Returns:
-            계층 구조를 가진 객체 배열
+            list[rt.Node]: 계층 구조를 가진 객체 리스트
         """
         return self.distinguish_hierachy_objects(inArray)[1]
     
     def sort_by_hierachy(self, inArray):
-        """
-        객체를 계층 구조에 따라 정렬
-        
+        """객체를 계층 구조에 따라 정렬한다.
+
         Args:
-            inArray: 정렬할 객체 배열
-            
+            inArray (list[rt.Node]): 정렬할 객체 배열
+
         Returns:
-            계층 순서대로 정렬된 객체 배열
+            list[rt.Node]: 계층 순서대로 정렬된 객체 리스트
         """
         return self.bone.sort_bones_as_hierarchy(inArray)
     
     def sort_by_index(self, inArray):
-        """
-        객체를 이름에 포함된 인덱스 번호에 따라 정렬
-        
+        """객체를 이름에 포함된 인덱스 번호에 따라 정렬한다.
+
         Args:
-            inArray: 정렬할 객체 배열
-            
+            inArray (list[rt.Node]): 정렬할 객체 배열
+
         Returns:
-            인덱스 순서대로 정렬된 객체 배열
+            list[rt.Node]: 인덱스 순서대로 정렬된 객체 리스트. 입력이 비면 빈 리스트
         """
         if len(inArray) == 0:
             return []
@@ -234,14 +197,15 @@ class Select:
         return sortedArray
     
     def sort_objects(self, inArray):
-        """
-        객체를 적절한 방법으로 정렬 (독립 객체와 계층 객체 모두 고려)
-        
+        """독립 객체와 계층 객체를 각각 정렬한 뒤 첫 인덱스가 작은 그룹부터 합친다.
+
+        독립 객체는 이름 인덱스 기준, 계층 객체는 계층 구조 기준으로 정렬한다.
+
         Args:
-            inArray: 정렬할 객체 배열
-            
+            inArray (list[rt.Node]): 정렬할 객체 배열
+
         Returns:
-            정렬된 객체 배열
+            list[rt.Node]: 정렬된 객체 리스트
         """
         returnArray = []
         
@@ -300,13 +264,11 @@ class Select:
         Biped_Object는 스킵한다.
 
         Args:
-            inObjs: 단일 오브젝트 또는 오브젝트 리스트
-            inVisited: 이미 방문한 노드의 handle set (재사용 가능)
+            inObjs (rt.Node | list[rt.Node]): 단일 오브젝트 또는 오브젝트 리스트
+            inVisited (set[int] | None): 이미 방문한 노드의 handle set. None이면 새로 생성하며, 재사용 가능하다.
 
         Returns:
-            tuple: (node_array, visited)
-                - node_array: 수집된 노드 리스트
-                - visited: 업데이트된 visited set
+            tuple[list[rt.Node], set[int]]: (수집된 dependency 노드 리스트, 업데이트된 visited set)
         """
         if inVisited is None:
             inVisited = set()
@@ -385,10 +347,10 @@ class Select:
         Handle 기반 O(1) 중복 체크를 사용한다.
 
         Args:
-            inObjs: 오브젝트 리스트
+            inObjs (list[rt.Node]): 오브젝트 리스트
 
         Returns:
-            list: 수집된 dependent 노드 리스트 (children + DependentNodes)
+            list[rt.Node]: 수집된 dependent 노드 리스트 (children + DependentNodes)
         """
         objs = list(inObjs)
         objsHandles = {rt.getHandleByAnim(o) for o in objs}
@@ -436,10 +398,10 @@ class Select:
         해당 레이어의 모든 Helper 클래스 노드를 수집한다.
 
         Args:
-            inDeps: dependency 노드 리스트
+            inDeps (list[rt.Node]): dependency 노드 리스트
 
         Returns:
-            set: 수집된 AddOn Helper 노드 set
+            set[rt.Node]: 수집된 AddOn Helper 노드 set
         """
         addonHelper = set()
         processedLayers = set()
@@ -465,24 +427,22 @@ class Select:
         collect_addon_helpers -> 결합 순서로 dependency를 수집한다.
 
         Args:
-            inObjs: 선택된 오브젝트 리스트
+            inObjs (list[rt.Node]): 선택된 오브젝트 리스트
 
         Returns:
-            dict: {
-                'nodes': 최종 노드 리스트 (combined),
-                'stats': {
-                    'selected_count': 선택된 오브젝트 수,
-                    'dependents_count': dependents 수,
-                    'dependencies_1st_count': 1차 dependencies 수,
-                    'dependencies_2nd_count': 2차 dependencies 수,
-                    'addon_helpers_count': AddOn Helper 수,
-                    'total_count': 최종 노드 수,
-                    'time_dependents_ms': get_dependents 소요 시간 (ms),
-                    'time_dependencies_1st_ms': 1차 dependencies 소요 시간 (ms),
-                    'time_dependencies_2nd_ms': 2차 dependencies 소요 시간 (ms),
-                    'time_total_ms': 전체 소요 시간 (ms)
-                }
-            }
+            dict: 수집 결과와 단계별 통계
+                - nodes (list[rt.Node]): 최종 결합된 노드 리스트
+                - stats (dict): 단계별 수집 통계
+                    - selected_count (int): 선택된 오브젝트 수
+                    - dependents_count (int): dependents 수
+                    - dependencies_1st_count (int): 1차 dependencies 수
+                    - dependencies_2nd_count (int): 2차 dependencies 수
+                    - addon_helpers_count (int): AddOn Helper 수
+                    - total_count (int): 최종 노드 수
+                    - time_dependents_ms (float): get_dependents 소요 시간 (ms)
+                    - time_dependencies_1st_ms (float): 1차 dependencies 소요 시간 (ms)
+                    - time_dependencies_2nd_ms (float): 2차 dependencies 소요 시간 (ms)
+                    - time_total_ms (float): 전체 소요 시간 (ms)
         """
         tTotal = time.time()
         stats = {}

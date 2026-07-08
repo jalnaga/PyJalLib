@@ -12,13 +12,10 @@ from pathlib import Path
 from typing import Optional
 
 class FBXHandler:
-    """
-    3ds Max FBX 파일 익스포트/임포트를 위한 클래스
-    pymxs를 사용하여 3ds Max와 통신
-    """
-    
+    """3ds Max의 FBX 익스포트/임포트를 pymxs로 제어하는 클래스. 사전 정의된 옵션 프리셋으로 파일을 익스포트/임포트한다."""
+
     def __init__(self):
-        """FBX 핸들러 초기화"""
+        """FBX 익스포터/임포터 플러그인을 로드하여 핸들러를 초기화한다."""
         self._setup_fbx_plugin()
     
     def _setup_fbx_plugin(self):
@@ -116,11 +113,11 @@ class FBXHandler:
         rt.FBXImporterSetParam("UpAxis", inUpAxis)
     
     def set_fbx_exporting_anim_range(self, inStartFrame: Optional[int] = None, inEndFrame: Optional[int] = None):
-        """애니메이션 범위 설정
-        
+        """FBX 익스포트의 베이크 애니메이션 프레임 범위를 설정한다.
+
         Args:
-            inStartFrame: 시작 프레임 (None이면 현재 애니메이션 범위 사용)
-            inEndFrame: 끝 프레임 (None이면 현재 애니메이션 범위 사용)
+            inStartFrame (int | None): 시작 프레임. None이면 현재 애니메이션 범위의 시작 프레임을 사용한다.
+            inEndFrame (int | None): 끝 프레임. None이면 현재 애니메이션 범위의 끝 프레임을 사용한다.
         """
         if inStartFrame is None or inEndFrame is None:
             # 매개변수가 없으면 현재 Max 파일의 애니메이션 범위 사용
@@ -143,18 +140,17 @@ class FBXHandler:
         inEndFrame: Optional[int] = None,
         inSmoothingGroups: bool = True,
     ) -> bool:
-        """
-        선택된 오브젝트를 FBX로 익스포트
+        """선택된 오브젝트들을 FBX 파일로 익스포트한다.
 
         Args:
-            inExportFile: 익스포트할 파일 경로
-            inMatchAnimRange: 현재 애니메이션 범위에 맞출지 여부
-            inStartFrame: 시작 프레임 (None이면 현재 애니메이션 범위 사용)
-            inEndFrame: 끝 프레임 (None이면 현재 애니메이션 범위 사용)
-            inSmoothingGroups: SmoothingGroups 익스포트 여부. 기본값 True.
+            inExportFile (str): 익스포트할 파일 경로. 상위 디렉토리가 없으면 생성한다.
+            inMatchAnimRange (bool): 베이크 애니메이션 프레임 범위를 설정할지 여부
+            inStartFrame (int | None): 시작 프레임. None이면 현재 애니메이션 범위를 사용한다.
+            inEndFrame (int | None): 끝 프레임. None이면 현재 애니메이션 범위를 사용한다.
+            inSmoothingGroups (bool): SmoothingGroups 익스포트 여부
 
         Returns:
-            bool: 익스포트 성공 여부
+            bool: 익스포트 성공 여부. 선택된 오브젝트가 없거나 FBX 익스포터를 찾지 못하면 False
         """
         # 파일 경로 검증 및 디렉토리 생성
         filePath = Path(inExportFile)
@@ -188,15 +184,16 @@ class FBXHandler:
         return result
     
     def import_fbx(self, inImportFile: str, inImportMode: str = "add_and_update_animation", inUpAxis: str = "Z") -> bool:
-        """
-        FBX 파일을 임포트
-        
+        """FBX 파일을 현재 씬으로 임포트한다.
+
         Args:
-            inImportFile: 임포트할 파일 경로
-            inImportMode: 임포트 모드 ('add_and_update_animation' 또는 'update_animation')
-                
+            inImportFile (str): 임포트할 파일 경로
+            inImportMode (str): 임포트 모드. 'update_animation'이면 exmerge(Update Animation),
+                그 외에는 merge(Add and Update Animation) 모드를 사용한다.
+            inUpAxis (str): 업 축 ('Z' 또는 'Y')
+
         Returns:
-            bool: 임포트 성공 여부
+            bool: 임포트 성공 여부. 파일이 없거나 FBX 임포터를 찾지 못하면 False
         """
         # 파일 존재 여부 확인
         filePath = Path(inImportFile)
@@ -222,5 +219,5 @@ class FBXHandler:
         return result
     
     def reset_import_options(self):
-        """FBX 임포트 옵션을 기본값으로 리셋"""
+        """FBX 임포트 옵션을 기본값으로 리셋한다."""
         rt.FBXImporterSetParam("ResetImport")

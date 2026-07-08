@@ -19,16 +19,21 @@ from .align import Align
 from .boneChain import BoneChain
 
 class Armpit:
+    """겨드랑이 본을 생성하는 클래스.
+
+    어깨 본에 링크된 LookAt 헬퍼가 몸통을 바라보게 하여, 어깨 높이 변화에 따라 몸통 바깥면을 따라 움직이는 본 셋업을 구성한다.
+    """
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, alignService=None):
-        """
-        Armpit 클래스의 주요 컴포넌트들을 초기화합니다.
-        
+        """Armpit 클래스를 초기화한다.
+
         Args:
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            animService: Anim 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            helperService: Helper 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            constraintService: Constraint 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            alignService (Align | None): 정렬 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -50,10 +55,7 @@ class Armpit:
         self.genHelpers = []
         
     def reset(self):
-        """
-        Armpit 클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        """
+        """클래스의 작업 데이터를 초기 상태로 되돌린다."""
         self.boneSize = 2.0
         
         self.shoulder = None
@@ -65,14 +67,19 @@ class Armpit:
         
     
     def create_bones(self, inShoulder, inSpine, inNeck, inSpineLengthScale=0.67):
-        """
-        Armpit 본들을 생성합니다.
-        
+        """겨드랑이 본과 보조 헬퍼들을 생성한다.
+
+        어깨에 링크된 LookAt 헬퍼가 몸통쪽 타겟을 바라보게 하고,
+        그 아래 위치 헬퍼를 따라가는 겨드랑이 본을 몸통의 자식으로 구성한다.
+
         Args:
-            inShoulder: 어깨 본
-            inNeck: 목 본
-            inSpine: 몸통 본
-            inSpineLengthScale: 몸통 길이 비율 (기본값: 0.67)
+            inShoulder (rt.Node): 어깨 본
+            inSpine (rt.Node): 몸통 본
+            inNeck (rt.Node): 목 본
+            inSpineLengthScale (float): 몸통 길이 비율. 헬퍼 배치 거리 계산에 사용한다.
+
+        Returns:
+            BoneChain | False: 생성된 겨드랑이 본 체인. 입력 노드가 유효하지 않으면 False
         """
         if not rt.isValidNode(inShoulder) or not rt.isValidNode(inNeck) or not rt.isValidNode(inSpine):
             return False
@@ -163,15 +170,15 @@ class Armpit:
         return BoneChain.from_result(result)
         
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 Armpit 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 Armpit 본 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 겨드랑이 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
         Args:
-            inBoneChain (BoneChain): Armpit 본 정보를 포함한 BoneChain 객체
-        
+            inBoneChain (BoneChain): 겨드랑이 본 정보를 포함한 BoneChain 객체
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 겨드랑이 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None

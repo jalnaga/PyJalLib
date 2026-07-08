@@ -20,17 +20,21 @@ from .align import Align
 from .boneChain import BoneChain
 
 class JacketPanel:
+    """어깨를 들어올릴 때 자켓이 따라 올라가는 효과를 내는 자켓 패널 본을 생성하는 클래스.
+
+    쇄골 기반의 좌우 패널 4개와 좌우를 블렌드한 중앙 패널 2개를 만든다.
+    """
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, alignService=None):
-        """
-        JacketPanel 클래스의 주요 컴포넌트들을 초기화합니다.
-        
+        """JacketPanel 클래스를 초기화한다.
+
         Args:
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            animService: Anim 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            helperService: Helper 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            constraintService: Constraint 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            alignService: Align 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            alignService (Align | None): 정렬 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -48,9 +52,9 @@ class JacketPanel:
         self.genHelpers = []
         
     def reset(self):
-        """
-        JacketPanel 클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
         """
         self.boneSize = 2.0
         
@@ -59,21 +63,27 @@ class JacketPanel:
         
     
     def create_side_panel(self, inClavicle, inUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67):
-        """
-        좌우 자켓 패널 본들을 생성합니다 (앞/뒤 2개).
-        
+        """한쪽(좌 또는 우) 자켓 패널 본을 앞·뒤 2개 생성한다.
+
+        쇄골에 연결된 LookAt 헬퍼와 척추에 연결된 타겟 헬퍼로 패널 방향을 만들고,
+        포지션 헬퍼에 위치 제약된 패널 본을 생성한다.
+
         Args:
-            inClavicle: 쇄골 본
-            inUpperArm: 상완 본 (clavicle 길이 계산용)
-            inSpine: 척추 본
-            inNeck: 목 본
-            inWidthScale: clavicle 길이 기반 너비 스케일 (기본값: 1.65)
-            inForwardScale: 앞쪽 방향 스케일 (기본값: 0.5)
-            inBackwardScale: 뒤쪽 방향 스케일 (기본값: 0.5)
-            inHeightScale: 높이 스케일 (기본값: 0.67)
-            
+            inClavicle (rt.Node): 쇄골 본
+            inUpperArm (rt.Node): 상완 본. 쇄골 길이 계산에 사용된다.
+            inSpine (rt.Node): 척추 본
+            inNeck (rt.Node): 목 본. 척추 길이 계산에 사용된다.
+            inWidthScale (float): 쇄골 길이 기반 너비 스케일
+            inForwardScale (float): 앞쪽 방향 스케일
+            inBackwardScale (float): 뒤쪽 방향 스케일
+            inHeightScale (float): 높이 스케일
+
         Returns:
-            dict: 생성된 본, 헬퍼, 포지션 헬퍼 참조
+            dict | None: 생성 결과. 유효하지 않은 노드가 있으면 None
+                - Bones (list[rt.Node]): 앞·뒤 패널 본
+                - Helpers (list[rt.Node]): 생성된 헬퍼들
+                - FrontPosHelper (rt.Node): 앞쪽 포지션 헬퍼
+                - BackPosHelper (rt.Node): 뒤쪽 포지션 헬퍼
         """
         if not rt.isValidNode(inClavicle) or not rt.isValidNode(inUpperArm) or not rt.isValidNode(inSpine) or not rt.isValidNode(inNeck):
             return None
@@ -249,21 +259,24 @@ class JacketPanel:
         return result
         
     def create_center_panel(self, inLeftFrontPosHelper, inRightFrontPosHelper, inLeftBackPosHelper, inRightBackPosHelper, inSpine, inFrontCenterPushScale=1.1, inBackCenterPushScale=1.1):
-        """
-        가운데 자켓 패널 본들을 생성합니다 (앞/뒤 2개).
-        좌우 포지션 헬퍼를 50:50으로 블렌드합니다.
-        
+        """가운데 자켓 패널 본을 앞·뒤 2개 생성한다.
+
+        좌우 포지션 헬퍼를 50:50으로 블렌드하고, 패널이 몸통 안으로
+        파고들지 않도록 클램프 위치 스크립트를 할당한다.
+
         Args:
-            inLeftFrontPosHelper: 왼쪽 앞쪽 포지션 헬퍼
-            inRightFrontPosHelper: 오른쪽 앞쪽 포지션 헬퍼
-            inLeftBackPosHelper: 왼쪽 뒤쪽 포지션 헬퍼
-            inRightBackPosHelper: 오른쪽 뒤쪽 포지션 헬퍼
-            inSpine: 척추 본
-            inFrontCenterPushScale: 앞쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
-            inBackCenterPushScale: 뒤쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
-            
+            inLeftFrontPosHelper (rt.Node): 왼쪽 앞쪽 포지션 헬퍼
+            inRightFrontPosHelper (rt.Node): 오른쪽 앞쪽 포지션 헬퍼
+            inLeftBackPosHelper (rt.Node): 왼쪽 뒤쪽 포지션 헬퍼
+            inRightBackPosHelper (rt.Node): 오른쪽 뒤쪽 포지션 헬퍼
+            inSpine (rt.Node): 척추 본
+            inFrontCenterPushScale (float): 앞쪽 중앙 패널 Y축 푸시 스케일
+            inBackCenterPushScale (float): 뒤쪽 중앙 패널 Y축 푸시 스케일
+
         Returns:
-            dict: 생성된 본, 헬퍼
+            dict | None: 생성 결과. 유효하지 않은 노드가 있으면 None
+                - Bones (list[rt.Node]): 앞·뒤 중앙 패널 본
+                - Helpers (list[rt.Node]): 생성된 헬퍼들
         """
         if not rt.isValidNode(inLeftFrontPosHelper) or not rt.isValidNode(inRightFrontPosHelper) or \
            not rt.isValidNode(inLeftBackPosHelper) or not rt.isValidNode(inRightBackPosHelper) or \
@@ -400,25 +413,24 @@ class JacketPanel:
         return result
         
     def create_bones(self, inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67, inFrontCenterPushScale=1.1, inBackCenterPushScale=1.1):
-        """
-        자켓 패널 본들을 생성합니다 (총 6개: 좌앞, 좌뒤, 우앞, 우뒤, 중앙앞, 중앙뒤).
-        
+        """자켓 패널 본 6개(좌앞·좌뒤·우앞·우뒤·중앙앞·중앙뒤)를 생성한다.
+
         Args:
-            inLClavicle: 왼쪽 쇄골 본
-            inLUpperArm: 왼쪽 상완 본
-            inRClavicle: 오른쪽 쇄골 본
-            inRUpperArm: 오른쪽 상완 본
-            inSpine: 척추 본
-            inNeck: 목 본
-            inWidthScale: clavicle 길이 기반 너비 스케일 (기본값: 1.65)
-            inForwardScale: 앞쪽 방향 스케일 (기본값: 0.5)
-            inBackwardScale: 뒤쪽 방향 스케일 (기본값: 0.5)
-            inHeightScale: 높이 스케일 (기본값: 0.67)
-            inFrontCenterPushScale: 앞쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
-            inBackCenterPushScale: 뒤쪽 중앙 패널 Y축 푸시 스케일 (기본값: 1.1)
-            
+            inLClavicle (rt.Node): 왼쪽 쇄골 본
+            inLUpperArm (rt.Node): 왼쪽 상완 본
+            inRClavicle (rt.Node): 오른쪽 쇄골 본
+            inRUpperArm (rt.Node): 오른쪽 상완 본
+            inSpine (rt.Node): 척추 본
+            inNeck (rt.Node): 목 본
+            inWidthScale (float): 쇄골 길이 기반 너비 스케일
+            inForwardScale (float): 앞쪽 방향 스케일
+            inBackwardScale (float): 뒤쪽 방향 스케일
+            inHeightScale (float): 높이 스케일
+            inFrontCenterPushScale (float): 앞쪽 중앙 패널 Y축 푸시 스케일
+            inBackCenterPushScale (float): 뒤쪽 중앙 패널 Y축 푸시 스케일
+
         Returns:
-            BoneChain: 생성된 본 체인
+            BoneChain | None: 생성된 자켓 패널 본 체인. 노드가 유효하지 않거나 패널 생성에 실패하면 None
         """
         if not rt.isValidNode(inLClavicle) or not rt.isValidNode(inLUpperArm) or \
            not rt.isValidNode(inRClavicle) or not rt.isValidNode(inRUpperArm) or \
@@ -474,14 +486,13 @@ class JacketPanel:
         return BoneChain.from_result(result)
         
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        BoneChain으로부터 자켓 패널 본들을 재생성합니다.
-        
+        """기존 BoneChain 객체에서 자켓 패널 본들을 재생성한다.
+
         Args:
-            inBoneChain: 기존 본 체인
-            
+            inBoneChain (BoneChain): 자켓 패널 정보를 포함한 BoneChain 객체
+
         Returns:
-            BoneChain: 재생성된 본 체인
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None
