@@ -12,11 +12,43 @@ from .volumeBone import VolumeBone
 from .boneChain import BoneChain
 
 class Ankle(VolumeBone):
+    """발과 종아리 본을 기반으로 발목 볼륨 본을 자동 생성하는 클래스.
+
+    VolumeBone을 상속해 발목 앞·뒤 두 방향의 볼륨 본을 만들고 발목 이름 규칙으로 정리한다.
+    """
+
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
+        """Ankle 클래스를 초기화한다.
+
+        Args:
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 서비스. None이면 새로 생성한다.
+        """
         super().__init__(nameService=nameService, animService=animService, constraintService=constraintService, boneService=boneService, helperService=helperService)
     
     def create_bones(self, inFoot, inCalf, inRotScale=0.5, inVolumeSize=4.0, inRotAxis="Z", inAnkleTransAxis="PosY", inInnerAnkleTransAxis="NegY", inAnkleTransScale=1.5, inInnerAnkleTransScale=1.0):
-        """발목 볼륨 본들을 생성합니다."""
+        """발목 볼륨 본들을 생성한다.
+
+        부모 클래스(VolumeBone)의 create_bones로 앞·뒤 볼륨 본을 만든 뒤
+        발목 이름 규칙으로 이름을 바꾼다.
+
+        Args:
+            inFoot (rt.Node): 발 본
+            inCalf (rt.Node): 종아리 본
+            inRotScale (float): 회전 반영 비율
+            inVolumeSize (float): 볼륨 크기
+            inRotAxis (str): 회전 축 ("X", "Y", "Z"). 두 볼륨 본에 동일하게 적용된다.
+            inAnkleTransAxis (str): 발목 앞쪽 본의 이동 축 ("PosX"~"NegZ")
+            inInnerAnkleTransAxis (str): 발목 안쪽(뒤쪽) 본의 이동 축 ("PosX"~"NegZ")
+            inAnkleTransScale (float): 발목 앞쪽 본의 이동 스케일
+            inInnerAnkleTransScale (float): 발목 안쪽 본의 이동 스케일
+
+        Returns:
+            BoneChain | None | False: 생성된 발목 본 체인. 유효하지 않은 노드가 있으면 False, 볼륨 본 생성에 실패하면 None
+        """
         if not rt.isValidNode(inFoot) or not rt.isValidNode(inCalf):
             return False
         
@@ -88,7 +120,14 @@ class Ankle(VolumeBone):
         return volumeBoneResult
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain에서 발목 본들을 재생성합니다."""
+        """기존 BoneChain 객체에서 발목 본들을 재생성한다.
+
+        Args:
+            inBoneChain (BoneChain): 발목 본 정보를 포함한 BoneChain 객체
+
+        Returns:
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         

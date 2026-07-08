@@ -17,23 +17,20 @@ from .constraint import Constraint
 from .boneChain import BoneChain
 
 class GroinBone:
+    """골반과 좌우 허벅지 트위스트 본을 기반으로 고간 부 본을 생성하는 클래스.
+
+    헬퍼 3개와 가중치 회전 제약으로 고간 본이 골반·허벅지 회전을 따라가도록 구성한다.
     """
-    고간 부 본 관련 기능을 위한 클래스
-    3DS Max에서 고간 부 본을 생성하고 관리하는 기능을 제공합니다.
-    """
-    
+
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
-        """
-        클래스 초기화.
-        
+        """GroinBone 클래스를 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            bipService: Biped 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            twistBoneService: 트위스트 본 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -54,12 +51,12 @@ class GroinBone:
         self.thighWeight = 60.0
     
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            GroinBone: 메서드 체이닝을 위한 자기 자신
         """
         self.pelvis = None
         self.lThighTwist = None
@@ -72,18 +69,17 @@ class GroinBone:
         return self
     
     def create_bone(self, inPelvis, inLThighTwist, inRThighTwist, inPelvisWeight=40.0, inThighWeight=60.0):
-        """
-        고간 부 본을 생성하는 메소드.
-        
+        """골반과 좌우 허벅지 트위스트 본을 기반으로 고간 부 본을 생성한다.
+
         Args:
-            inPelvis: Biped 객체
-            inLThighTwist: 왼쪽 허벅지 트위스트 본
-            inRThighTwist: 오른쪽 허벅지 트위스트 본
-            inPelvisWeight: 골반 가중치 (기본값: 40.0)
-            inThighWeight: 허벅지 가중치 (기본값: 60.0)
-        
+            inPelvis (rt.Node): 골반 본
+            inLThighTwist (rt.Node): 왼쪽 허벅지 트위스트 본
+            inRThighTwist (rt.Node): 오른쪽 허벅지 트위스트 본
+            inPelvisWeight (float): 골반 회전 가중치
+            inThighWeight (float): 허벅지 회전 가중치. 좌우에 절반씩 분배된다.
+
         Returns:
-            BoneChain: 생성된 고간 부 본 체인 객체 또는 실패 시 False
+            BoneChain | False: 생성된 고간 부 본 체인. 유효하지 않은 노드가 있으면 False
         """
         
         if rt.isValidNode(inPelvis) == False or rt.isValidNode(inLThighTwist) == False or rt.isValidNode(inRThighTwist) == False:
@@ -170,15 +166,15 @@ class GroinBone:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 고간 부 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 고간 부 본 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 고간 부 본을 재생성한다.
+
+        기존 설정을 복원하거나 저장된 데이터에서 고간 부 본 셋업을 재생성할 때 사용한다.
+
         Args:
             inBoneChain (BoneChain): 고간 부 본 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None

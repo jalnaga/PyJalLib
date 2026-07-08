@@ -12,11 +12,45 @@ from .volumeBone import VolumeBone
 from .boneChain import BoneChain
 
 class Inguinal(VolumeBone):
+    """허벅지 트위스트 본을 기반으로 서혜부 볼륨 본을 자동 생성하는 클래스.
+
+    VolumeBone을 상속해 앞(Fwd)·바깥(Out) 두 방향의 볼륨 본을 만들고, 다리를 드는 방향에서만 동작하도록 위치 스크립트를 조정한다.
+    """
+
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
+        """Inguinal 클래스를 초기화한다.
+
+        Args:
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 서비스. None이면 새로 생성한다.
+        """
         super().__init__(nameService=nameService, animService=animService, constraintService=constraintService, boneService=boneService, helperService=helperService)
     
     def create_bones(self, inThighTwist, inPelvis, inCalf, inRotScale=0.5, inVolumeSize=10.0, inFwdRotAxis="Z", inOutRotAxis="Y", inFwdTransAxis="PosY", inOutTransAxis="PosZ", inFwdTransScale=2.0, inOutTransScale=2.5):
-        """서혜부 볼륨 본들을 생성합니다."""
+        """서혜부 볼륨 본들을 생성한다.
+
+        부모 클래스(VolumeBone)의 create_bones로 앞·바깥 볼륨 본을 만든 뒤,
+        서혜부 이름 규칙으로 이름을 바꾸고 특정 회전 방향에서만 밀리도록 위치 스크립트를 수정한다.
+
+        Args:
+            inThighTwist (rt.Node): 허벅지 트위스트 본
+            inPelvis (rt.Node): 골반 본
+            inCalf (rt.Node): 종아리 본. 방향 판별에 사용된다.
+            inRotScale (float): 회전 반영 비율
+            inVolumeSize (float): 볼륨 크기
+            inFwdRotAxis (str): 앞쪽 본의 회전 축 ("X", "Y", "Z")
+            inOutRotAxis (str): 바깥쪽 본의 회전 축 ("X", "Y", "Z")
+            inFwdTransAxis (str): 앞쪽 본의 이동 축 ("PosX"~"NegZ")
+            inOutTransAxis (str): 바깥쪽 본의 이동 축 ("PosX"~"NegZ")
+            inFwdTransScale (float): 앞쪽 본의 이동 스케일
+            inOutTransScale (float): 바깥쪽 본의 이동 스케일
+
+        Returns:
+            BoneChain | None | False: 생성된 서혜부 본 체인. 유효하지 않은 노드가 있으면 False, 볼륨 본 생성에 실패하면 None
+        """
         if not rt.isValidNode(inThighTwist) or not rt.isValidNode(inPelvis) or not rt.isValidNode(inCalf):
             return False
         
@@ -108,7 +142,14 @@ class Inguinal(VolumeBone):
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain에서 서혜부 본들을 재생성합니다."""
+        """기존 BoneChain 객체에서 서혜부 본들을 재생성한다.
+
+        Args:
+            inBoneChain (BoneChain): 서혜부 본 정보를 포함한 BoneChain 객체
+
+        Returns:
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         

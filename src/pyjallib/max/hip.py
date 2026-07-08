@@ -19,23 +19,20 @@ from .boneChain import BoneChain
 
 
 class Hip:
+    """골반과 허벅지 사이에 배치되는 Hip 보조 본을 생성하는 클래스.
+
+    헬퍼와 스크립트 제약을 이용해 허벅지 회전에 따라 밀려나는 Hip 본 셋업을 구성한다.
     """
-    Hip 관련 기능을 제공하는 클래스.
-    MAXScript의 _Hip 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
-    
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None):
-        """
-        클래스 초기화.
-        
+        """Hip 클래스를 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 관련 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 관련 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 관련 서비스 (제공되지 않으면 새로 생성)
-            bipService: Biped 관련 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -89,12 +86,12 @@ class Hip:
         )
         
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            Hip: 메서드 체이닝을 위한 자기 자신
         """
         self.pelvisWeight = 0.4
         self.thighWeight = 0.6
@@ -118,6 +115,19 @@ class Hip:
         return self
     
     def create_helper(self, inPelvis, inThigh, inThighTwist):
+        """Hip 셋업에 필요한 헬퍼 포인트들을 생성한다.
+
+        골반·허벅지 트위스트·회전·위치·회전 루트 헬퍼를 생성해 멤버 변수와
+        helpers 리스트에 저장한다.
+
+        Args:
+            inPelvis (rt.Node): 골반 본
+            inThigh (rt.Node): 허벅지 본
+            inThighTwist (rt.Node): 허벅지 트위스트 본
+
+        Returns:
+            None | False: 유효하지 않은 노드가 있으면 False. 성공 시 반환값 없음.
+        """
         if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
             return False
         
@@ -178,6 +188,17 @@ class Hip:
         self.helpers.append(thighRotRootHelper)
     
     def assing_constraint(self, inCalf, inPelvisWeight=60.0, inThighWeight=40.0, inPushAmount=5.0):
+        """Hip 헬퍼들에 회전 제약과 위치 스크립트 컨트롤러를 할당한다.
+
+        회전 헬퍼에는 골반·허벅지 트위스트 헬퍼 가중치 회전 제약을,
+        위치 헬퍼에는 허벅지 회전량에 따라 밀려나는 위치 스크립트를 적용한다.
+
+        Args:
+            inCalf (rt.Node): 종아리 본. 밀림 방향 판별에 사용된다.
+            inPelvisWeight (float): 골반 회전 가중치
+            inThighWeight (float): 허벅지 회전 가중치
+            inPushAmount (float): 밀림 크기
+        """
         self.calf = inCalf
         self.pelvisWeight = inPelvisWeight
         self.thighWeight = inThighWeight
@@ -201,6 +222,20 @@ class Hip:
         posConst.update()
         
     def create_bone(self, inPelvis, inThigh, inThighTwist, inCalf, pushAmount=5.0, inPelvisWeight=60.0, inThighWeight=40.0):
+        """헬퍼와 제약을 구성하고 Hip 본을 생성한다.
+
+        Args:
+            inPelvis (rt.Node): 골반 본
+            inThigh (rt.Node): 허벅지 본
+            inThighTwist (rt.Node): 허벅지 트위스트 본
+            inCalf (rt.Node): 종아리 본
+            pushAmount (float): 밀림 크기
+            inPelvisWeight (float): 골반 회전 가중치
+            inThighWeight (float): 허벅지 회전 가중치
+
+        Returns:
+            BoneChain | False: 생성된 Hip 본 체인. 유효하지 않은 노드가 있으면 False
+        """
         if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
             return False
         
@@ -246,15 +281,15 @@ class Hip:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 Hip 본을 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 Hip 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 Hip 본을 재생성한다.
+
+        기존 설정을 복원하거나 저장된 데이터에서 Hip 셋업을 재생성할 때 사용한다.
+
         Args:
             inBoneChain (BoneChain): Hip 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None
