@@ -19,7 +19,22 @@ from .bip import Bip
 from .boneChain import BoneChain
 
 class Shoulder:
+    """자동 어깨 본을 생성하는 클래스.
+
+    쇄골-상완 사이에 LookAt 헬퍼와 상완 트위스트 가중치 기반 회전 제약으로 움직이는 어깨 본 셋업을 구성한다.
+    """
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, bipService=None):
+        """Shoulder 클래스를 초기화한다.
+
+        Args:
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Biped 서비스. None이면 새로 생성한다.
+        """
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
         self.helper = helperService if helperService else Helper(nameService=self.name)
@@ -43,6 +58,11 @@ class Shoulder:
         self.shoulderLookAtTargetPosConstExpression += "[xPos, 0.0, 0.0]\n"
     
     def reset(self):
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
+        Returns:
+            Shoulder: 메서드 체이닝을 위한 자기 자신
+        """
         self.genBones = []
         self.genHelpers = []
         self.clavicle = None
@@ -54,6 +74,21 @@ class Shoulder:
         return self
     
     def create_bones(self, inClavicle, inUpperArm, inAutoClavicle, inUpperArmTwist, inTwistWeight=0.7):
+        """어깨 본과 보조 헬퍼들을 생성한다.
+
+        쇄골-상완 방향을 기준으로 LookAt 타겟·회전 헬퍼를 구성하고,
+        LookAt 헬퍼와 상완 트위스트 본에 가중치를 나눠 어깨 본의 회전을 제어한다.
+
+        Args:
+            inClavicle (rt.Node): 쇄골 본
+            inUpperArm (rt.Node): 상완 본
+            inAutoClavicle (rt.Node): 자동 쇄골 본. 생성되는 어깨 본의 부모가 된다.
+            inUpperArmTwist (rt.Node): 상완 트위스트 본
+            inTwistWeight (float): 트위스트 회전 가중치 (0.0~1.0)
+
+        Returns:
+            BoneChain | False: 생성된 어깨 본 체인. 입력 노드가 유효하지 않으면 False
+        """
         if not rt.isValidNode(inClavicle) or not rt.isValidNode(inUpperArm) or not rt.isValidNode(inAutoClavicle) or not rt.isValidNode(inUpperArmTwist):
             return False
         
@@ -152,6 +187,16 @@ class Shoulder:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
+        """기존 BoneChain 객체에서 어깨 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
+        Args:
+            inBoneChain (BoneChain): 어깨 본 정보를 포함한 BoneChain 객체
+
+        Returns:
+            BoneChain | None: 재생성된 어깨 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         

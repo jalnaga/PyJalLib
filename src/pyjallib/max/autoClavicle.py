@@ -20,23 +20,21 @@ from .boneChain import BoneChain
 
 
 class AutoClavicle:
+    """자동 쇄골 본을 생성하는 클래스.
+
+    상완의 움직임에 따라 LookAt 헬퍼로 자동 회전하는 쇄골 본 셋업을 구성한다.
     """
-    자동 쇄골(AutoClavicle) 관련 기능을 제공하는 클래스.
-    MAXScript의 _AutoClavicleBone 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
-    
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, bipService=None):
-        """
-        클래스 초기화
-        
+        """AutoClavicle 클래스를 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
-            boneService: 뼈대 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            bipService: Biped 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Biped 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -61,12 +59,10 @@ class AutoClavicle:
         self.liftScale = 0.8
         
     def reset(self):
-        """
-        클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        
+        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+
         Returns:
-            self: 메소드 체이닝을 위한 자기 자신 반환
+            AutoClavicle: 메서드 체이닝을 위한 자기 자신
         """
         self.genBones = []
         self.genHelpers = []
@@ -77,16 +73,18 @@ class AutoClavicle:
         return self
     
     def create_bones(self, inClavicle, inUpperArm, liftScale=0.8):
-        """
-        자동 쇄골 뼈를 생성하고 설정합니다.
-        
+        """자동 쇄골 본과 보조 헬퍼들을 생성한다.
+
+        쇄골·상완에 타겟 헬퍼를 배치하고 LookAt 제약으로 회전하는
+        자동 쇄골 본을 쇄골의 자식으로 구성한다.
+
         Args:
-            inClavicle: 쇄골 뼈 객체
-            inUpperArm: 상완 뼈 객체
-            liftScale: 들어올림 스케일 (기본값: 0.8)
-            
+            inClavicle (rt.Node): 쇄골 본
+            inUpperArm (rt.Node): 상완 본
+            liftScale (float): 상완 타겟의 들어올림 스케일
+
         Returns:
-            생성된 자동 쇄골 뼈대 배열 또는 AutoClavicleChain 클래스에 전달할 수 있는 딕셔너리
+            BoneChain | False: 생성된 자동 쇄골 본 체인. 입력 노드가 유효하지 않으면 False
         """
         if not rt.isValidNode(inClavicle) or not rt.isValidNode(inUpperArm):
             return False
@@ -198,15 +196,15 @@ class AutoClavicle:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        기존 BoneChain 객체에서 자동 쇄골 뼈를 생성합니다.
-        기존 설정을 복원하거나 저장된 데이터에서 쇄골 셋업을 재생성할 때 사용합니다.
-        
+        """기존 BoneChain 객체에서 자동 쇄골 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
         Args:
             inBoneChain (BoneChain): 자동 쇄골 정보를 포함한 BoneChain 객체
-        
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 자동 쇄골 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None

@@ -12,11 +12,44 @@ from .volumeBone import VolumeBone
 from .boneChain import BoneChain
 
 class Wrist(VolumeBone):
+    """손목 볼륨 본을 생성하는 클래스.
+
+    VolumeBone을 상속하여 손목 굽힘에 따라 앞/뒤(FB)·안/바깥(IO) 방향으로 밀리는 볼륨 본 4개를 구성한다.
+    """
+
     def __init__(self, nameService=None, animService=None, constraintService=None, boneService=None, helperService=None):
+        """Wrist 클래스를 초기화한다.
+
+        Args:
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+        """
         super().__init__(nameService=nameService, animService=animService, constraintService=constraintService, boneService=boneService, helperService=helperService)
     
     def create_bones(self, inHand, inForeArm, inRotScale=0.5, inVolumeSize=4.0, inFBRotAxis="Y", inIORotAxis="Z", inFBTransAxis="Z", inIOTransAxis="Y", inFBTransScale=1.0, inIOTransScale=1.0):
-        """손목 볼륨 본들을 생성합니다."""
+        """손목 볼륨 본들을 생성한다.
+
+        VolumeBone.create_bones로 FB(앞/뒤)·IO(안/바깥) 방향 볼륨 본 4개를 만든 뒤
+        손목 명명 규칙에 맞게 본·헬퍼의 이름을 변경한다. 손 방향에 따라 이름 매핑을 자동으로 뒤집는다.
+
+        Args:
+            inHand (rt.Node): 손 본. 볼륨 본의 기준 객체가 된다.
+            inForeArm (rt.Node): 전완 본. 볼륨 본의 부모 기준이 된다.
+            inRotScale (float): 회전 반영 비율
+            inVolumeSize (float): 볼륨 본 크기
+            inFBRotAxis (str): 앞/뒤 방향 회전 감지 축 ("X", "Y", "Z")
+            inIORotAxis (str): 안/바깥 방향 회전 감지 축 ("X", "Y", "Z")
+            inFBTransAxis (str): 앞/뒤 방향 본 이동 축. "Pos"/"Neg" 접두사가 자동으로 붙는다.
+            inIOTransAxis (str): 안/바깥 방향 본 이동 축. "Pos"/"Neg" 접두사가 자동으로 붙는다.
+            inFBTransScale (float): 앞/뒤 방향 본 이동 스케일
+            inIOTransScale (float): 안/바깥 방향 본 이동 스케일
+
+        Returns:
+            BoneChain | None | False: 생성된 손목 본 체인. 입력 노드가 유효하지 않으면 False, 볼륨 본 생성에 실패하면 None
+        """
         if not rt.isValidNode(inHand) or not rt.isValidNode(inForeArm):
             return False
         
@@ -94,7 +127,16 @@ class Wrist(VolumeBone):
         return volumeBoneResult
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain에서 손목 본들을 재생성합니다."""
+        """기존 BoneChain 객체에서 손목 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
+        Args:
+            inBoneChain (BoneChain): 손목 본 정보를 포함한 BoneChain 객체
+
+        Returns:
+            BoneChain | None: 재생성된 손목 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
+        """
         if not inBoneChain or inBoneChain.is_empty():
             return None
         

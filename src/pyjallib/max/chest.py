@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-가슴 본(Armpit) 모듈 - 3ds Max용 가슴 본 기능 제공
-해부학적인 척추 위치에서 대흉근 쪽을 바라보는 헬퍼를 사용해서, 어깨 움직임에 따라 늘어나거사 수축하는 대흉근용 본을 만든다.
+가슴 본(Chest) 모듈 - 3ds Max용 가슴 본 기능 제공
+해부학적인 척추 위치에서 대흉근 쪽을 바라보는 헬퍼를 사용해서, 어깨 움직임에 따라 늘어나거나 수축하는 대흉근용 본을 만든다.
 """
 
 from pymxs import runtime as rt
@@ -19,17 +19,21 @@ from .align import Align
 from .boneChain import BoneChain
 
 class Chest:
+    """대흉근용 가슴 본을 생성하는 클래스.
+
+    척추 위치의 LookAt 헬퍼가 대흉근 쪽을 바라보게 하여, 어깨 움직임에 따라 늘어나거나 수축하는 가슴 본 셋업을 구성한다.
+    """
+
     def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, alignService=None):
-        """
-        Chest 클래스의 주요 컴포넌트들을 초기화합니다.
-        
+        """Chest 클래스를 초기화한다.
+
         Args:
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            animService: Anim 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            helperService: Helper 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            constraintService: Constraint 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            alignService: Align 서비스 인스턴스 (제공되지 않으면 새로 생성) 
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            alignService (Align | None): 정렬 서비스. None이면 새로 생성한다.
         """
         # 서비스 인스턴스 설정 또는 생성
         self.name = nameService if nameService else Name()
@@ -53,10 +57,7 @@ class Chest:
         self.upperArm = None
     
     def reset(self) -> None:
-        """
-        Chest 클래스의 주요 컴포넌트들을 초기화합니다.
-        서비스가 아닌 클래스 자체의 작업 데이터를 초기화하는 함수입니다.
-        """
+        """클래스의 작업 데이터를 초기 상태로 되돌린다."""
         self.boneSize = 2.0
         
         self.genBones = []
@@ -73,21 +74,26 @@ class Chest:
                      inFrontWeight: float = 60.0, inShoulderWeight: float = 40.0,
                      inChestMusclePushScale: float = 1.0, inChestMuscleHeightScale: float = 0.15,
                      inShoulderPushScale: float = 0.25) -> BoneChain:
-        """
-        Chest 본들을 생성합니다.
-        
+        """가슴(대흉근) 본과 보조 헬퍼들을 생성한다.
+
+        척추 뒤쪽의 LookAt 헬퍼가 앞쪽 타겟과 어깨 타겟을 가중치로 바라보게 하고,
+        그 아래 대흉근 헬퍼를 향하는 몸통쪽(In)·어깨쪽(Out) 본 2개를 구성한다.
+
         Args:
-            inSpine: 몸통 본
-            inNeck: 목 본
-            inAutoClavicle: 자동 쇄골 본
-            inUpperArm: 상완 본
-            inSpineHeightScale: 척추 높이 비율 (기본값: 0.33)
-            inSpinePushScale: 척추 앞뒤 밀림 비율 (기본값: 0.5)
-            inFrontWeight: 가슴쪽 LookAt 웨이트 (기본값: 60.0)
-            inShoulderWeight: 어깨쪽 LookAt 웨이트 (기본값: 40.0)
-            inChestMusclePushScale: 대흉근 X축 밀림 비율 (기본값: 1.0)
-            inChestMuscleHeightScale: 대흉근 높이 비율 (기본값: 0.15)
-            inShoulderPushScale: 어깨 밀림 비율 (기본값: 0.25)
+            inSpine (rt.Node): 몸통 본
+            inNeck (rt.Node): 목 본
+            inAutoClavicle (rt.Node): 자동 쇄골 본
+            inUpperArm (rt.Node): 상완 본
+            inSpineHeightScale (float): 척추 높이 비율
+            inSpinePushScale (float): 척추 앞뒤 밀림 비율
+            inFrontWeight (float): 가슴쪽 LookAt 웨이트
+            inShoulderWeight (float): 어깨쪽 LookAt 웨이트
+            inChestMusclePushScale (float): 대흉근 X축 밀림 비율
+            inChestMuscleHeightScale (float): 대흉근 높이 비율
+            inShoulderPushScale (float): 어깨 밀림 비율
+
+        Returns:
+            BoneChain | None: 생성된 가슴 본 체인. 입력 노드가 유효하지 않으면 None
         """
         
         if not rt.isValidNode(inSpine) or not rt.isValidNode(inNeck) or not rt.isValidNode(inAutoClavicle) or not rt.isValidNode(inUpperArm):
@@ -212,14 +218,15 @@ class Chest:
         return BoneChain.from_result(result)
     
     def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """
-        Chest 본들을 기존 BoneChain에서 재생성합니다.
-        
+        """기존 BoneChain 객체에서 가슴 본을 재생성한다.
+
+        기존 본과 헬퍼를 삭제한 뒤 소스 본과 파라미터로 셋업을 다시 만든다.
+
         Args:
-            inBoneChain: 기존 BoneChain
-            
+            inBoneChain (BoneChain): 가슴 본 정보를 포함한 BoneChain 객체
+
         Returns:
-            BoneChain: 업데이트된 BoneChain 객체 또는 실패 시 None
+            BoneChain | None: 재생성된 가슴 본 체인. 체인이 비었거나 소스 본이 유효하지 않으면 None
         """
         if not inBoneChain or inBoneChain.is_empty():
             return None
