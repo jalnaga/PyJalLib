@@ -18,19 +18,13 @@ from pymxs import runtime as rt
 
 
 class BoneChain:
-    """
-    뼈대 체인을 관리하는 기본 클래스
-    
-    다양한 뼈대 체인의 공통 기능을 담당하는 부모 클래스입니다.
-    뼈대와 헬퍼를 저장하고 기본적인 조작 기능을 제공합니다.
-    """
+    """뼈대 체인의 뼈대와 헬퍼를 보관하고 비우기, 삭제 등 공통 관리 기능을 제공하는 기본 클래스. AutoClavicleChain, GroinBoneChain 등 특수 목적 체인 클래스들의 부모 클래스로 사용된다."""
     
     def __init__(self, inResult=None):
-        """
-        클래스 초기화
-        
+        """결과 딕셔너리로부터 체인 속성을 초기화한다.
+
         Args:
-            inResult (dict, optional): 뼈대 생성 결과 데이터를 담은 딕셔너리. 기본값은 None
+            inResult (dict | None): 뼈대 생성 결과 딕셔너리(Bones, Helpers, SourceBones, Parameters 키). None이면 빈 상태로 초기화한다.
         """
         # 기본 속성 초기화
         if inResult is None:
@@ -48,27 +42,25 @@ class BoneChain:
             self.parameters = inResult.get("Parameters", [])
         
     def is_empty(self):
-        """
-        체인이 비어있는지 확인
-        
+        """체인이 비어있는지 확인한다.
+
         Returns:
-            bool: 체인이 비어있으면 True, 아니면 False
+            bool: 뼈대가 하나도 없으면 True
         """
         return len(self.bones) == 0
     
     def clear(self):
-        """체인의 모든 뼈대와 헬퍼 참조 제거"""
+        """체인의 모든 뼈대와 헬퍼 참조를 제거한다."""
         self.bones = []
         self.helpers = []
         self.sourceBones = []
         self.parameters = []
         
     def delete(self):
-        """
-        체인의 모든 뼈대와 헬퍼를 3ds Max 씬에서 삭제
-        
+        """체인의 모든 뼈대와 헬퍼를 3ds Max 씬에서 삭제한다.
+
         Returns:
-            bool: 삭제 성공 여부
+            bool: 삭제 성공 시 True. 체인이 비어있거나 예외 발생 시 False
         """
         if self.is_empty() and not self.helpers:
             return False
@@ -99,11 +91,10 @@ class BoneChain:
             return False
     
     def delete_all(self):
-        """
-        체인의 모든 뼈대와 헬퍼를 3ds Max 씬에서 삭제하고 소스본과 파라미터도 초기화
-        
+        """체인의 뼈대·헬퍼를 씬에서 삭제하고 소스본과 파라미터도 초기화한다.
+
         Returns:
-            bool: 삭제 성공 여부
+            bool: 삭제 성공 시 True. 체인이 비어있거나 예외 발생 시 False
         """
         if self.is_empty() and not self.helpers:
             return False
@@ -121,11 +112,10 @@ class BoneChain:
             return False
     
     def get_bones(self):
-        """
-        체인의 모든 뼈대 가져오기
-        
+        """체인의 모든 뼈대를 가져온다.
+
         Returns:
-            list: 모든 뼈대 객체의 배열
+            list[rt.Node]: 뼈대 배열. 체인이 비어있으면 빈 리스트
         """
         if self.is_empty():
             return []
@@ -133,11 +123,10 @@ class BoneChain:
         return self.bones
     
     def get_helpers(self):
-        """
-        체인의 모든 헬퍼 가져오기
-        
+        """체인의 모든 헬퍼를 가져온다.
+
         Returns:
-            list: 모든 헬퍼 객체의 배열
+            list[rt.Node]: 헬퍼 배열. 헬퍼가 없으면 빈 리스트
         """
         if not self.helpers:
             return []
@@ -146,28 +135,24 @@ class BoneChain:
     
     @classmethod
     def from_result(cls, inResult):
-        """
-        결과 딕셔너리로부터 체인 인스턴스 생성
-        
+        """결과 딕셔너리로부터 체인 인스턴스를 생성한다.
+
         Args:
-            inResult (dict): 뼈대 생성 결과를 담은 딕셔너리
-            
+            inResult (dict): 뼈대 생성 결과 딕셔너리(Bones, Helpers, SourceBones, Parameters 키)
+
         Returns:
             BoneChain: 생성된 체인 인스턴스
         """
         return cls(inResult)
     
     def update_from_result(self, inResult):
-        """
-        기존 체인 인스턴스를 결과 딕셔너리로부터 업데이트
-        
-        이미 생성된 체인 객체의 내용을 새로운 결과 데이터로 갱신합니다.
-        
+        """기존 체인 인스턴스를 결과 딕셔너리로 갱신한다.
+
         Args:
-            inResult (dict): 뼈대 생성 결과를 담은 딕셔너리
-            
+            inResult (dict | None): 뼈대 생성 결과 딕셔너리. None이면 아무것도 갱신하지 않는다.
+
         Returns:
-            self: 메서드 체이닝을 위한 자기 자신 반환
+            BoneChain: 메서드 체이닝을 위한 자기 자신
         """
         if inResult is None:
             return self

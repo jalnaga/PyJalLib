@@ -15,32 +15,24 @@ from .helper import Helper
 
 
 class Constraint:
-    """
-    제약(Constraint) 관련 기능을 제공하는 클래스.
-    MAXScript의 _Constraint 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
+    """3ds Max 객체의 위치·회전 제약과 LookAt, Attachment 등 컨트롤러 할당·조회 기능을 제공하는 클래스."""
     
     def __init__(self, nameService=None, helperService=None):
-        """
-        클래스 초기화.
-        
+        """서비스 인스턴스들을 주입받아 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 관련 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
         self.helper = helperService if helperService else Helper(nameService=self.name) # Pass the potentially newly created nameService
     
     def collapse(self, inObj, inUseTCBRot=False):
-        """
-        비 Biped 객체의 트랜스폼 컨트롤러를 기본 컨트롤러로 초기화하고 현재 변환 상태 유지.
-        
+        """비 Biped 객체의 위치·회전·스케일 컨트롤러를 기본 컨트롤러로 초기화하고 현재 변환을 유지한다.
+
         Args:
-            inObj: 초기화할 대상 객체
-            
-        Returns:
-            None
+            inObj (rt.Node): 초기화할 대상 객체
+            inUseTCBRot (bool): 현재 구현에서는 사용되지 않는다.
         """
         if rt.isValidNode(inObj):
             obj = inObj
@@ -55,14 +47,10 @@ class Constraint:
             rt.execute(source)
     
     def set_active_last(self, inObj):
-        """
-        객체의 위치와 회전 컨트롤러 리스트에서 마지막 컨트롤러를 활성화.
-        
+        """객체의 위치·회전 컨트롤러 리스트에서 마지막 컨트롤러를 활성화한다.
+
         Args:
-            inObj: 대상 객체
-            
-        Returns:
-            None
+            inObj (rt.Node): 대상 객체
         """
         # 위치 컨트롤러가 리스트 형태면 마지막 컨트롤러 활성화
         pos_controller = rt.getPropertyController(inObj.controller, "Position")
@@ -75,14 +63,13 @@ class Constraint:
             rot_controller.setActive(rot_controller.count)
     
     def get_pos_list_controller(self, inObj):
-        """
-        객체의 위치 리스트 컨트롤러를 반환.
-        
+        """객체의 위치 리스트 컨트롤러를 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            위치 리스트 컨트롤러 (없으면 None)
+            rt.Position_list | None: 위치 리스트 컨트롤러. 리스트 형태가 아니면 None
         """
         returnPosListCtr = None
         
@@ -94,14 +81,13 @@ class Constraint:
         return returnPosListCtr
     
     def assign_pos_list(self, inObj):
-        """
-        객체에 위치 리스트 컨트롤러를 할당하거나 기존 것을 반환.
-        
+        """객체에 위치 리스트 컨트롤러를 할당하거나 기존 것을 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            위치 리스트 컨트롤러
+            rt.Position_list: 위치 리스트 컨트롤러
         """
         returnPosListCtr = None
         
@@ -121,14 +107,13 @@ class Constraint:
         return returnPosListCtr
     
     def get_pos_const(self, inObj):
-        """
-        객체의 위치 제약 컨트롤러를 찾아 반환.
-        
+        """객체의 위치 제약 컨트롤러를 찾아 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            위치 제약 컨트롤러 (없으면 None)
+            rt.Position_Constraint | None: 위치 제약 컨트롤러. 없으면 None
         """
         returnConst = None
         
@@ -155,16 +140,17 @@ class Constraint:
         return returnConst
     
     def assign_pos_const(self, inObj, inTarget, keepInit=False):
-        """
-        객체에 위치 제약 컨트롤러를 할당하고 지정된 타겟을 추가.
-        
+        """객체에 위치 제약 컨트롤러를 할당하고 타겟을 추가한다.
+
+        기존 타겟이 있으면 가중치를 균등하게 재조정한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTarget: 타겟 객체
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTarget (rt.Node): 타겟 객체
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            위치 제약 컨트롤러
+            rt.Position_Constraint: 위치 제약 컨트롤러
         """
         # 위치 컨트롤러가 리스트 형태가 아니면 변환
         pos_controller = rt.getPropertyController(inObj.controller, "Position")
@@ -199,16 +185,15 @@ class Constraint:
         return targetPosConstraint
     
     def assign_pos_const_multi(self, inObj, inTargetArray, keepInit=False):
-        """
-        객체에 여러 타겟을 가진 위치 제약 컨트롤러를 할당.
-        
+        """객체에 여러 타겟을 가진 위치 제약 컨트롤러를 할당한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTargetArray: 타겟 객체 배열
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTargetArray (list[rt.Node]): 타겟 객체 배열
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            None
+            rt.Position_Constraint | None: 위치 제약 컨트롤러. 없으면 None
         """
         for item in inTargetArray:
             self.assign_pos_const(inObj, item, keepInit=keepInit)
@@ -216,16 +201,15 @@ class Constraint:
         return self.get_pos_const(inObj)
     
     def add_target_to_pos_const(self, inObj, inTarget, inWeight):
-        """
-        기존 위치 제약 컨트롤러에 새 타겟을 추가하고 지정된 가중치 설정.
-        
+        """기존 위치 제약 컨트롤러에 새 타겟을 추가하고 지정 가중치를 설정한다.
+
         Args:
-            inObj: 제약이 적용된 객체
-            inTarget: 추가할 타겟 객체
-            inWeight: 적용할 가중치 값
-            
+            inObj (rt.Node): 제약이 적용된 객체
+            inTarget (rt.Node): 추가할 타겟 객체
+            inWeight (float): 마지막 타겟에 적용할 가중치
+
         Returns:
-            None
+            rt.Position_Constraint: 위치 제약 컨트롤러
         """
         # 위치 제약 컨트롤러에 타겟 추가
         targetPosConst = self.assign_pos_const(inObj, inTarget)
@@ -237,14 +221,13 @@ class Constraint:
         return targetPosConst
     
     def assign_pos_xyz(self, inObj):
-        """
-        객체에 위치 XYZ 컨트롤러를 할당.
-        
+        """객체의 위치 리스트에 Position_XYZ 컨트롤러를 추가하고 활성화한다.
+
         Args:
-            inObj: 컨트롤러를 할당할 객체
-            
+            inObj (rt.Node): 컨트롤러를 할당할 객체
+
         Returns:
-            None
+            rt.Position_XYZ: 생성된 Position_XYZ 컨트롤러
         """
         # 위치 컨트롤러가 리스트 형태가 아니면 변환
         pos_controller = rt.getPropertyController(inObj.controller, "Position")
@@ -262,14 +245,13 @@ class Constraint:
         return posXYZ
     
     def assign_pos_script_controller(self, inObj):
-        """
-        객체에 스크립트 기반 위치 컨트롤러를 할당.
-        
+        """객체의 위치 리스트에 스크립트 위치 컨트롤러를 추가하고 활성화한다.
+
         Args:
-            inObj: 컨트롤러를 할당할 객체
-            
+            inObj (rt.Node): 컨트롤러를 할당할 객체
+
         Returns:
-            None
+            rt.Position_Script: 생성된 스크립트 위치 컨트롤러
         """
         # 위치 컨트롤러가 리스트 형태가 아니면 변환
         pos_controller = rt.getPropertyController(inObj.controller, "Position")
@@ -287,14 +269,13 @@ class Constraint:
         return scriptPos
     
     def get_rot_list_controller(self, inObj):
-        """
-        객체의 회전 리스트 컨트롤러를 반환.
-        
+        """객체의 회전 리스트 컨트롤러를 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            회전 리스트 컨트롤러 (없으면 None)
+            rt.Rotation_list | None: 회전 리스트 컨트롤러. 리스트 형태가 아니면 None
         """
         returnRotListCtr = None
         
@@ -306,14 +287,13 @@ class Constraint:
         return returnRotListCtr
     
     def assign_rot_list(self, inObj):
-        """
-        객체에 회전 리스트 컨트롤러를 할당하거나 기존 것을 반환.
-        
+        """객체에 회전 리스트 컨트롤러를 할당하거나 기존 것을 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            회전 리스트 컨트롤러
+            rt.Rotation_list: 회전 리스트 컨트롤러
         """
         returnRotListCtr = None
         
@@ -333,14 +313,13 @@ class Constraint:
         return returnRotListCtr
     
     def get_rot_const(self, inObj):
-        """
-        객체의 회전 제약 컨트롤러를 찾아 반환.
-        
+        """객체의 회전 제약 컨트롤러를 찾아 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            회전 제약 컨트롤러 (없으면 None)
+            rt.Orientation_Constraint | None: 회전 제약 컨트롤러. 없으면 None
         """
         returnConst = None
         
@@ -367,16 +346,17 @@ class Constraint:
         return returnConst
     
     def assign_rot_const(self, inObj, inTarget, keepInit=False):
-        """
-        객체에 회전 제약 컨트롤러를 할당하고 지정된 타겟을 추가.
-        
+        """객체에 회전 제약 컨트롤러를 할당하고 타겟을 추가한다.
+
+        기존 타겟이 있으면 가중치를 균등하게 재조정한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTarget: 타겟 객체
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTarget (rt.Node): 타겟 객체
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            회전 제약 컨트롤러
+            rt.Orientation_Constraint: 회전 제약 컨트롤러
         """
         # 회전 컨트롤러가 리스트 형태가 아니면 변환
         rot_controller = rt.getPropertyController(inObj.controller, "Rotation")
@@ -411,16 +391,15 @@ class Constraint:
         return targetRotConstraint
     
     def assign_rot_const_multi(self, inObj, inTargetArray, keepInit=False):
-        """
-        객체에 여러 타겟을 가진 회전 제약 컨트롤러를 할당.
-        
+        """객체에 여러 타겟을 가진 회전 제약 컨트롤러를 할당한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTargetArray: 타겟 객체 배열
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTargetArray (list[rt.Node]): 타겟 객체 배열
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            None
+            rt.Orientation_Constraint | None: 회전 제약 컨트롤러. 없으면 None
         """
         for item in inTargetArray:
             self.assign_rot_const(inObj, item, keepInit=keepInit)
@@ -428,16 +407,15 @@ class Constraint:
         return self.get_rot_const(inObj)
     
     def add_target_to_rot_const(self, inObj, inTarget, inWeight):
-        """
-        기존 회전 제약 컨트롤러에 새 타겟을 추가하고 지정된 가중치 설정.
-        
+        """기존 회전 제약 컨트롤러에 새 타겟을 추가하고 지정 가중치를 설정한다.
+
         Args:
-            inObj: 제약이 적용된 객체
-            inTarget: 추가할 타겟 객체
-            inWeight: 적용할 가중치 값
-            
+            inObj (rt.Node): 제약이 적용된 객체
+            inTarget (rt.Node): 추가할 타겟 객체
+            inWeight (float): 마지막 타겟에 적용할 가중치
+
         Returns:
-            None
+            rt.Orientation_Constraint: 회전 제약 컨트롤러
         """
         # 회전 제약 컨트롤러에 타겟 추가
         targetRotConstraint = self.assign_rot_const(inObj, inTarget)
@@ -449,14 +427,13 @@ class Constraint:
         return targetRotConstraint
     
     def assign_euler_xyz(self, inObj):
-        """
-        객체에 오일러 XYZ 회전 컨트롤러를 할당.
-        
+        """객체의 회전 리스트에 Euler_XYZ 컨트롤러를 추가하고 활성화한다.
+
         Args:
-            inObj: 컨트롤러를 할당할 객체
-            
+            inObj (rt.Node): 컨트롤러를 할당할 객체
+
         Returns:
-            None
+            rt.Euler_XYZ: 생성된 Euler_XYZ 컨트롤러
         """
         # 회전 컨트롤러가 리스트 형태가 아니면 변환
         rot_controller = rt.getPropertyController(inObj.controller, "Rotation")
@@ -474,11 +451,13 @@ class Constraint:
         return eulerXYZ
     
     def assign_tcb_rot(self, inObj):
-        """
-        객체에 TCB 회전 컨트롤러를 할당.
-        
+        """객체의 회전 리스트에 TCB 회전 컨트롤러를 추가하고 활성화한다.
+
         Args:
-            inObj: 컨트롤러를 할당할 객체
+            inObj (rt.Node): 컨트롤러를 할당할 객체
+
+        Returns:
+            rt.TCB_Rotation: 생성된 TCB 회전 컨트롤러
         """
         # 회전 컨트롤러가 리스트 형태가 아니면 변환
         rot_controller = rt.getPropertyController(inObj.controller, "Rotation")
@@ -496,14 +475,13 @@ class Constraint:
         return tcbRot
     
     def get_lookat(self, inObj):
-        """
-        객체의 LookAt 제약 컨트롤러를 찾아 반환.
-        
+        """객체의 LookAt 제약 컨트롤러를 찾아 반환한다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            LookAt 제약 컨트롤러 (없으면 None)
+            rt.LookAt_Constraint | None: LookAt 제약 컨트롤러. 없으면 None
         """
         returnConst = None
         
@@ -530,16 +508,17 @@ class Constraint:
         return returnConst
     
     def assign_lookat(self, inObj, inTarget, keepInit=False):
-        """
-        객체에 LookAt 제약 컨트롤러를 할당하고 지정된 타겟을 추가.
-        
+        """객체에 LookAt 제약 컨트롤러를 할당하고 타겟을 추가한다.
+
+        기존 타겟이 있으면 가중치를 균등하게 재조정하며, lookat_vector_length는 0으로 설정한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTarget: 타겟 객체
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTarget (rt.Node): 타겟 객체
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            LookAt 제약 컨트롤러
+            rt.LookAt_Constraint: LookAt 제약 컨트롤러
         """
         # 회전 컨트롤러가 리스트 형태가 아니면 변환
         rot_controller = rt.getPropertyController(inObj.controller, "Rotation")
@@ -576,16 +555,15 @@ class Constraint:
         return targetRotConstraint
     
     def assign_lookat_multi(self, inObj, inTargetArray, keepInit=False):
-        """
-        객체에 여러 타겟을 가진 LookAt 제약 컨트롤러를 할당.
-        
+        """객체에 여러 타겟을 가진 LookAt 제약 컨트롤러를 할당한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTargetArray: 타겟 객체 배열
-            keepInit: 기존 변환 유지 여부 (기본값: False)
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTargetArray (list[rt.Node]): 타겟 객체 배열
+            keepInit (bool): True면 relative 모드로 기존 변환을 유지한다.
+
         Returns:
-            None
+            rt.LookAt_Constraint | None: LookAt 제약 컨트롤러. 없으면 None
         """
         for item in inTargetArray:
             self.assign_lookat(inObj, item, keepInit=keepInit)
@@ -593,16 +571,16 @@ class Constraint:
         return self.get_lookat(inObj)
     
     def assign_lookat_flipless(self, inObj, inTarget):
-        """
-        플립 없는 LookAt 제약 컨트롤러를 스크립트 기반으로 구현하여 할당.
-        부모가 있는 객체에만 적용 가능.
-        
+        """플립이 발생하지 않는 스크립트 기반 LookAt 제약을 할당한다.
+
+        부모가 있는 객체에만 적용된다.
+
         Args:
-            inObj: 제약을 적용할 객체 (부모가 있어야 함)
-            inTarget: 바라볼 타겟 객체
-            
+            inObj (rt.Node): 제약을 적용할 객체 (부모가 있어야 한다)
+            inTarget (rt.Node): 바라볼 타겟 객체
+
         Returns:
-            None
+            rt.Rotation_Script | None: 생성된 회전 스크립트 컨트롤러. 부모가 없으면 None
         """
         # 객체에 부모가 있는 경우에만 실행
         if inObj.parent is not None:
@@ -639,16 +617,16 @@ class Constraint:
             return targetRotConstraint
     
     def assign_rot_const_scripted(self, inObj, inTarget):
-        """
-        스크립트 기반 회전 제약을 구현하여 할당.
-        ExposeTransform을 활용한 고급 회전 제약 구현.
-        
+        """ExposeTm 헬퍼를 활용한 스크립트 기반 회전 제약을 할당한다.
+
+        더미 포인트·측정 포인트·ExposeTm 헬퍼를 생성하여 타겟의 로컬 오일러 회전을 추출한다.
+
         Args:
-            inObj: 제약을 적용할 객체
-            inTarget: 회전 참조 타겟 객체
-            
+            inObj (rt.Node): 제약을 적용할 객체
+            inTarget (rt.Node): 회전 참조 타겟 객체
+
         Returns:
-            생성된 회전 스크립트 컨트롤러
+            rt.Rotation_Script: 생성된 회전 스크립트 컨트롤러
         """
         # 회전 스크립트 컨트롤러 생성
         targetRotConstraint = rt.Rotation_Script()
@@ -812,18 +790,19 @@ class Constraint:
         return {"lookAt":lookAtPoint_rot_controller, "x":x_controller, "y":y_controller, "z":z_controller}
     
     def assign_attachment(self, inPlacedObj, inSurfObj, bAlign=False, shiftAxis=(0, 0, 1), shiftAmount=3.0):
-        """
-        객체를 다른 객체의 표면에 부착하는 Attachment 제약 컨트롤러 할당.
-        
+        """객체를 다른 객체의 표면에 부착하는 Attachment 제약을 할당한다.
+
+        지정 축 방향의 레이와 표면의 교차점에 부착 키를 생성한다.
+
         Args:
-            inPlacedObj: 부착될 객체
-            inSurfObj: 표면 객체
-            bAlign: 표면 법선에 맞춰 정렬할지 여부
-            shiftAxis: 레이 방향 축 (기본값: Z축)
-            shiftAmount: 레이 거리 (기본값: 3.0)
-            
+            inPlacedObj (rt.Node): 부착될 객체
+            inSurfObj (rt.Node): 표면 객체
+            bAlign (bool): True면 표면 법선에 맞춰 정렬한다.
+            shiftAxis (tuple[float, float, float]): 레이 방향 축
+            shiftAmount (float): 레이 거리
+
         Returns:
-            생성된 Attachment 컨트롤러 또는 None (실패 시)
+            rt.Attachment | None: 생성된 Attachment 컨트롤러. 교차점이 없으면 None
         """
         # 현재 변환 행렬 백업 및 시작 위치 계산
         placedObjTm = rt.getProperty(inPlacedObj, "transform")
@@ -865,14 +844,13 @@ class Constraint:
             return None
     
     def get_pos_controllers_name_from_list(self, inObj):
-        """
-        객체의 위치 컨트롤러 리스트에서 각 컨트롤러의 이름을 가져옴.
-        
+        """객체의 위치 컨트롤러 리스트에서 각 컨트롤러의 이름을 가져온다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            컨트롤러 이름 배열
+            list[str]: 컨트롤러 이름 배열. 리스트 형태가 아니면 빈 배열
         """
         returnNameArray = []
         
@@ -888,14 +866,13 @@ class Constraint:
         return returnNameArray
     
     def get_pos_controllers_weight_from_list(self, inObj):
-        """
-        객체의 위치 컨트롤러 리스트에서 각 컨트롤러의 가중치를 가져옴.
-        
+        """객체의 위치 컨트롤러 리스트에서 각 컨트롤러의 가중치를 가져온다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            컨트롤러 가중치 배열
+            list[float]: 컨트롤러 가중치 배열. 리스트 형태가 아니면 빈 배열
         """
         returnWeightArray = []
         
@@ -910,16 +887,12 @@ class Constraint:
         return returnWeightArray
     
     def set_pos_controllers_name_in_list(self, inObj, inLayerNum, inNewName):
-        """
-        객체의 위치 컨트롤러 리스트에서 특정 컨트롤러의 이름을 설정.
-        
+        """객체의 위치 컨트롤러 리스트에서 특정 컨트롤러의 이름을 설정한다.
+
         Args:
-            inObj: 대상 객체
-            inLayerNum: 컨트롤러 인덱스 (1부터 시작)
-            inNewName: 새 이름
-            
-        Returns:
-            None
+            inObj (rt.Node): 대상 객체
+            inLayerNum (int): 컨트롤러 인덱스 (1부터 시작)
+            inNewName (str): 새 이름
         """
         # 위치 컨트롤러 리스트 가져오기
         listCtr = self.get_pos_list_controller(inObj)
@@ -929,16 +902,12 @@ class Constraint:
             listCtr.setName(inLayerNum, inNewName)
     
     def set_pos_controllers_weight_in_list(self, inObj, inLayerNum, inNewWeight):
-        """
-        객체의 위치 컨트롤러 리스트에서 특정 컨트롤러의 가중치를 설정.
-        
+        """객체의 위치 컨트롤러 리스트에서 특정 컨트롤러의 가중치를 설정한다.
+
         Args:
-            inObj: 대상 객체
-            inLayerNum: 컨트롤러 인덱스 (1부터 시작)
-            inNewWeight: 새 가중치
-            
-        Returns:
-            None
+            inObj (rt.Node): 대상 객체
+            inLayerNum (int): 컨트롤러 인덱스 (1부터 시작)
+            inNewWeight (float): 새 가중치
         """
         # 위치 컨트롤러 리스트 가져오기
         listCtr = self.get_pos_list_controller(inObj)
@@ -948,14 +917,13 @@ class Constraint:
             listCtr.weight[inLayerNum] = inNewWeight
     
     def get_rot_controllers_name_from_list(self, inObj):
-        """
-        객체의 회전 컨트롤러 리스트에서 각 컨트롤러의 이름을 가져옴.
-        
+        """객체의 회전 컨트롤러 리스트에서 각 컨트롤러의 이름을 가져온다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            컨트롤러 이름 배열
+            list[str]: 컨트롤러 이름 배열. 리스트 형태가 아니면 빈 배열
         """
         returnNameArray = []
         
@@ -971,14 +939,13 @@ class Constraint:
         return returnNameArray
     
     def get_rot_controllers_weight_from_list(self, inObj):
-        """
-        객체의 회전 컨트롤러 리스트에서 각 컨트롤러의 가중치를 가져옴.
-        
+        """객체의 회전 컨트롤러 리스트에서 각 컨트롤러의 가중치를 가져온다.
+
         Args:
-            inObj: 대상 객체
-            
+            inObj (rt.Node): 대상 객체
+
         Returns:
-            컨트롤러 가중치 배열
+            list[float]: 컨트롤러 가중치 배열. 리스트 형태가 아니면 빈 배열
         """
         returnWeightArray = []
         
@@ -993,16 +960,12 @@ class Constraint:
         return returnWeightArray
     
     def set_rot_controllers_name_in_list(self, inObj, inLayerNum, inNewName):
-        """
-        객체의 회전 컨트롤러 리스트에서 특정 컨트롤러의 이름을 설정.
-        
+        """객체의 회전 컨트롤러 리스트에서 특정 컨트롤러의 이름을 설정한다.
+
         Args:
-            inObj: 대상 객체
-            inLayerNum: 컨트롤러 인덱스 (1부터 시작)
-            inNewName: 새 이름
-            
-        Returns:
-            None
+            inObj (rt.Node): 대상 객체
+            inLayerNum (int): 컨트롤러 인덱스 (1부터 시작)
+            inNewName (str): 새 이름
         """
         # 회전 컨트롤러 리스트 가져오기
         listCtr = self.get_rot_list_controller(inObj)
@@ -1012,16 +975,12 @@ class Constraint:
             listCtr.setName(inLayerNum, inNewName)
     
     def set_rot_controllers_weight_in_list(self, inObj, inLayerNum, inNewWeight):
-        """
-        객체의 회전 컨트롤러 리스트에서 특정 컨트롤러의 가중치를 설정.
-        
+        """객체의 회전 컨트롤러 리스트에서 특정 컨트롤러의 가중치를 설정한다.
+
         Args:
-            inObj: 대상 객체
-            inLayerNum: 컨트롤러 인덱스 (1부터 시작)
-            inNewWeight: 새 가중치
-            
-        Returns:
-            None
+            inObj (rt.Node): 대상 객체
+            inLayerNum (int): 컨트롤러 인덱스 (1부터 시작)
+            inNewWeight (float): 새 가중치
         """
         # 회전 컨트롤러 리스트 가져오기
         listCtr = self.get_rot_list_controller(inObj)

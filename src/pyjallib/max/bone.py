@@ -16,21 +16,16 @@ from .constraint import Constraint
 
 
 class Bone:
-    """
-    뼈대(Bone) 관련 기능을 제공하는 클래스.
-    MAXScript의 _Bone 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
+    """3ds Max 뼈대(Bone)의 생성·설정·계층 관리와 스킨 본 생성·연결 기능을 제공하는 클래스."""
     
     def __init__(self, nameService=None, animService=None, helperService=None, constraintService=None):
-        """
-        클래스 초기화.
-        
+        """서비스 인스턴스들을 주입받아 초기화한다.
+
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
@@ -38,25 +33,25 @@ class Bone:
         self.const = constraintService if constraintService else Constraint(nameService=self.name, helperService=self.helper)
     
     def remove_ik(self, inBone):
-        """
-        뼈대에서 IK 체인을 제거.
-        
+        """뼈대에서 IK 체인을 제거한다.
+
+        pos 또는 rotation 속성이 없는 경우에만 IK 체인을 제거한다.
+
         Args:
-            inBone: IK 체인을 제거할 뼈대 객체
+            inBone (rt.Node): IK 체인을 제거할 뼈대 객체
         """
         # pos 또는 rotation 속성이 없는 경우에만 IK 체인 제거
         if (not rt.isProperty(inBone, "pos")) or (not rt.isProperty(inBone, "rotation")):
             rt.HDIKSys.RemoveChain(inBone)
     
     def get_bone_assemblyHead(self, inBone):
-        """
-        뼈대 어셈블리의 헤드를 가져옴.
-        
+        """뼈대가 속한 어셈블리의 헤드 뼈대를 찾아 반환한다.
+
         Args:
-            inBone: 대상 뼈대 객체
-            
+            inBone (rt.Node): 대상 뼈대 객체
+
         Returns:
-            어셈블리 헤드 또는 None
+            rt.Node | None: 어셈블리 헤드 뼈대. 찾지 못하면 None
         """
         tempBone = inBone
         while tempBone is not None:
@@ -69,25 +64,25 @@ class Bone:
         return None
     
     def put_child_into_bone_assembly(self, inBone):
-        """
-        자식 뼈대를 어셈블리에 추가.
-        
+        """부모가 어셈블리 멤버인 경우 자식 뼈대를 어셈블리에 추가한다.
+
         Args:
-            inBone: 어셈블리에 추가할 자식 뼈대
+            inBone (rt.Node): 어셈블리에 추가할 자식 뼈대
         """
         if inBone.parent is not None and inBone.parent.assemblyMember:
             inBone.assemblyMember = True
             inBone.assemblyMemberOpen = True
     
     def sort_bones_as_hierarchy(self, inBoneArray):
-        """
-        뼈대 배열을 계층 구조에 따라 정렬.
-        
+        """뼈대 배열을 계층 구조 깊이 순으로 정렬한다.
+
+        각 뼈대의 조상 수를 계산하여 루트에 가까운 순서대로 정렬한다.
+
         Args:
-            inBoneArray: 정렬할 뼈대 객체 배열
-            
+            inBoneArray (list[rt.Node]): 정렬할 뼈대 객체 배열
+
         Returns:
-            계층 구조에 따라 정렬된 뼈대 배열
+            list[rt.Node]: 계층 구조에 따라 정렬된 뼈대 배열
         """
         # BoneLevel 구조체 정의 (Python 클래스로 구현)
         @dataclass
@@ -123,15 +118,11 @@ class Bone:
         return returnBonesArray
     
     def correct_negative_stretch(self, bone, ask=True):
-        """
-        뼈대의 음수 스케일 보정.
-        
+        """뼈대 축의 음수 오브젝트 오프셋 스케일을 보정한다.
+
         Args:
-            bone: 보정할 뼈대 객체
-            ask: 사용자에게 확인 요청 여부 (기본값: True)
-            
-        Returns:
-            None
+            bone (rt.Node): 보정할 뼈대 객체
+            ask (bool): True면 보정 전 사용자에게 확인 다이얼로그를 표시한다.
         """
         axisIndex = 0
         
@@ -155,14 +146,10 @@ class Bone:
             bone.objectOffsetScale = ooscale
     
     def reset_scale_of_selected_bones(self, ask=True):
-        """
-        선택된 뼈대들의 스케일 초기화.
-        
+        """선택된 뼈대들의 스케일을 계층 순서대로 초기화한다.
+
         Args:
-            ask: 음수 스케일 보정 확인 요청 여부 (기본값: True)
-            
-        Returns:
-            None
+            ask (bool): True면 각 뼈대에 대해 음수 스케일 보정을 확인 없이 함께 수행한다.
         """
         # 선택된 객체 중 BoneGeometry 타입만 수집
         bones = [item for item in rt.selection if rt.classOf(item) == rt.BoneGeometry]
@@ -177,15 +164,13 @@ class Bone:
                 self.correct_negative_stretch(bones[i], False)
     
     def is_nub_bone(self, inputBone):
-        """
-        뼈대가 Nub 뼈대인지 확인 (부모 및 자식이 없는 단일 뼈대).
-        
+        """뼈대가 부모와 자식이 없는 단일(Nub) 뼈대인지 확인한다.
+
         Args:
-            inputBone: 확인할 뼈대 객체
-            
+            inputBone (rt.Node): 확인할 뼈대 객체
+
         Returns:
-            True: Nub 뼈대인 경우
-            False: 그 외의 경우
+            bool: Nub 뼈대면 True, 아니면 False
         """
         if rt.classOf(inputBone) == rt.BoneGeometry:
             if inputBone.parent is None and inputBone.children.count == 0:
@@ -195,15 +180,13 @@ class Bone:
         return False
     
     def is_end_bone(self, inputBone):
-        """
-        뼈대가 End 뼈대인지 확인 (부모는 있지만 자식이 없는 뼈대).
-        
+        """뼈대가 부모는 있지만 자식이 없는 End 뼈대인지 확인한다.
+
         Args:
-            inputBone: 확인할 뼈대 객체
-            
+            inputBone (rt.Node): 확인할 뼈대 객체
+
         Returns:
-            True: End 뼈대인 경우
-            False: 그 외의 경우
+            bool: End 뼈대면 True, 아니면 False
         """
         if rt.classOf(inputBone) == rt.BoneGeometry:
             if inputBone.parent is not None and inputBone.children.count == 0:
@@ -213,15 +196,15 @@ class Bone:
         return False
     
     def create_nub_bone(self, inName, inSize, inBoneScaleType=rt.Name("none")):
-        """
-        Nub 뼈대 생성.
-        
+        """Nub 뼈대를 원점에 생성한다.
+
         Args:
-            inName: 뼈대 이름
-            inSize: 뼈대 크기
-            inBoneScaleType: 뼈대 스케일 타입 (기본값: rt.Name("none"))
+            inName (str): 뼈대 이름. Index와 Nub namePart는 제거되고 고유 이름으로 생성된다.
+            inSize (float): 뼈대 크기
+            inBoneScaleType (rt.Name): 뼈대 스케일 타입
+
         Returns:
-            생성된 Nub 뼈대
+            rt.Node: 생성된 Nub 뼈대
         """
         nubBone = None
         
@@ -252,15 +235,14 @@ class Bone:
         return nubBone
     
     def create_nub_bone_on_obj(self, inObj, inSize=1):
-        """
-        객체 위치에 Nub 뼈대 생성.
-        
+        """객체의 트랜스폼 위치에 Nub 뼈대를 생성한다.
+
         Args:
-            inObj: 위치를 참조할 객체
-            inSize: 뼈대 크기 (기본값: 1)
-            
+            inObj (rt.Node): 위치를 참조할 객체
+            inSize (float): 뼈대 크기
+
         Returns:
-            생성된 Nub 뼈대
+            rt.Node: 생성된 Nub 뼈대
         """
         boneName = self.name.get_string(inObj.name)
         newBone = self.create_nub_bone(boneName, inSize)
@@ -269,14 +251,13 @@ class Bone:
         return newBone
     
     def create_end_bone(self, inBone):
-        """
-        뼈대의 끝에 End 뼈대 생성.
-        
+        """뼈대의 끝에 End 뼈대를 생성하여 자식으로 연결한다.
+
         Args:
-            inBone: 부모가 될 뼈대 객체
-            
+            inBone (rt.Node): 부모가 될 뼈대 객체
+
         Returns:
-            생성된 End 뼈대
+            rt.Node: 생성된 End 뼈대
         """
         parentBone = inBone
         parentTrans = parentBone.transform
@@ -309,20 +290,20 @@ class Bone:
         return newBone
     
     def create_bone(self, inPointArray, inName, end=True, delPoint=False, parent=False, size=2, normals=None, inBoneScaleType=rt.Name("none")):
-        """
-        포인트 배열을 따라 뼈대 체인 생성.
-        
+        """포인트 배열을 따라 뼈대 체인을 생성한다.
+
         Args:
-            inPointArray: 뼈대 위치를 정의하는 포인트 배열
-            inName: 뼈대 기본 이름
-            end: End 뼈대 생성 여부 (기본값: True)
-            delPoint: 포인트 삭제 여부 (기본값: False)
-            parent: 부모 Nub 포인트 생성 여부 (기본값: False)
-            size: 뼈대 크기 (기본값: 2)
-            normals: 법선 벡터 배열 (기본값: None)
-            inBoneScaleType: 뼈대 스케일 타입 (기본값: rt.Name("none"))
+            inPointArray (list[rt.Node]): 뼈대 위치를 정의하는 포인트 객체 배열
+            inName (str): 뼈대 기본 이름. Index namePart가 순번으로 치환된다.
+            end (bool): True면 마지막에 End 뼈대를 추가로 생성한다.
+            delPoint (bool): True면 생성 후 포인트 객체(Dummy, ExposeTm, Point)를 삭제한다.
+            parent (bool): True면 첫 뼈대의 부모가 될 Nub 포인트를 생성한다.
+            size (float): 뼈대 크기
+            normals (list[rt.Point3] | None): 법선 벡터 배열. 포인트 배열과 길이가 같으면 Z축 방향 계산에 사용한다.
+            inBoneScaleType (rt.Name): 뼈대 스케일 타입
+
         Returns:
-            생성된 뼈대 배열 또는 False (실패 시)
+            list[rt.Node] | False: 생성된 뼈대 배열. 포인트가 1개면 False
         """
         if normals is None:
             normals = []
@@ -389,17 +370,16 @@ class Bone:
             return False
     
     def create_simple_bone(self, inLength, inName, end=True, size=1):
-        """
-        간단한 뼈대 생성 (시작점과 끝점 지정).
-        
+        """시작점과 끝점을 지정하여 간단한 뼈대를 생성한다.
+
         Args:
-            inLength: 뼈대 길이
-            inName: 뼈대 이름
-            end: End 뼈대 생성 여부 (기본값: True)
-            size: 뼈대 크기 (기본값: 1)
-            
+            inLength (float): 뼈대 길이
+            inName (str): 뼈대 이름
+            end (bool): True면 End 뼈대를 추가로 생성한다.
+            size (float): 뼈대 크기
+
         Returns:
-            생성된 뼈대 배열
+            list[rt.Node] | False: 생성된 뼈대 배열. 실패 시 False
         """
         startPoint = self.helper.create_point("tempStart")
         endPoint = self.helper.create_point("tempEnd", pos=(inLength, 0, 0))
@@ -408,16 +388,17 @@ class Bone:
         return returnBoneArray
     
     def create_stretch_bone(self, inPointArray, inName, size=2):
-        """
-        스트레치 뼈대 생성 (포인트를 따라 움직이는 뼈대).
-        
+        """포인트를 따라 움직이는 스트레치 뼈대를 생성한다.
+
+        각 뼈대에 위치 제약과 LookAt 제약을 할당한다.
+
         Args:
-            inPointArray: 뼈대 위치를 정의하는 포인트 배열
-            inName: 뼈대 기본 이름
-            size: 뼈대 크기 (기본값: 2)
-            
+            inPointArray (list[rt.Node]): 뼈대 위치를 정의하는 포인트 배열
+            inName (str): 뼈대 기본 이름
+            size (float): 뼈대 크기
+
         Returns:
-            생성된 스트레치 뼈대 배열
+            list[rt.Node]: 생성된 스트레치 뼈대 배열
         """
         tempBone = []
         tempBone = self.create_bone(inPointArray, inName, size=size)
@@ -430,18 +411,17 @@ class Bone:
         return tempBone
     
     def create_simple_stretch_bone(self, inStart, inEnd, inName, squash=False, size=1):
-        """
-        간단한 스트레치 뼈대 생성 (시작점과 끝점 지정).
-        
+        """시작점과 끝점을 지정하여 간단한 스트레치 뼈대를 생성한다.
+
         Args:
-            inStart: 시작 포인트
-            inEnd: 끝 포인트
-            inName: 뼈대 이름
-            squash: 스쿼시 효과 적용 여부 (기본값: False)
-            size: 뼈대 크기 (기본값: 1)
-            
+            inStart (rt.Node): 시작 포인트
+            inEnd (rt.Node): 끝 포인트
+            inName (str): 뼈대 이름
+            squash (bool): True면 첫 뼈대의 스케일 타입을 squash로 설정한다.
+            size (float): 뼈대 크기
+
         Returns:
-            생성된 스트레치 뼈대 배열
+            list[rt.Node]: 생성된 스트레치 뼈대 배열
         """
         returnArray = []
         returnArray = self.create_stretch_bone([inStart, inEnd], inName, size=size)
@@ -451,14 +431,15 @@ class Bone:
         return returnArray
     
     def get_bone_shape(self, inBone):
-        """
-        뼈대의 형태 속성 가져오기.
-        
+        """뼈대의 형태 속성 16개를 배열로 가져온다.
+
+        폭·높이·테이퍼·길이와 측면/전면/후면 핀 속성을 순서대로 담는다.
+
         Args:
-            inBone: 속성을 가져올 뼈대 객체
-            
+            inBone (rt.Node): 속성을 가져올 뼈대 객체
+
         Returns:
-            뼈대 형태 속성 배열
+            list: 뼈대 형태 속성 배열. BoneGeometry가 아니면 빈 배열
         """
         returnArray = []
         if rt.classOf(inBone) == rt.BoneGeometry:
@@ -483,16 +464,16 @@ class Bone:
         return returnArray
     
     def pasete_bone_shape(self, targetBone, shapeArray):
-        """
-        뼈대에 형태 속성 적용.
-        
+        """뼈대에 형태 속성 배열을 적용한다.
+
+        길이는 변경하지 않으며, End 뼈대인 경우 핀을 끄고 Nub 형태로 보정한다.
+
         Args:
-            targetBone: 속성을 적용할 뼈대 객체
-            shapeArray: 적용할 뼈대 형태 속성 배열
-            
+            targetBone (rt.Node): 속성을 적용할 뼈대 객체
+            shapeArray (list): get_bone_shape로 얻은 형태 속성 배열
+
         Returns:
-            True: 성공
-            False: 실패
+            bool: 성공하면 True, BoneGeometry가 아니면 False
         """
         if rt.classOf(targetBone) == rt.BoneGeometry:
             targetBone.width = shapeArray[0]
@@ -523,16 +504,17 @@ class Bone:
         return False
     
     def set_fin_on(self, inBone, side=True, front=True, back=False, inSize=2.0, inTaper=0.0):
-        """
-        뼈대의 핀(fin) 설정 활성화.
-        
+        """뼈대의 핀(fin)을 활성화하고 크기와 테이퍼를 설정한다.
+
+        End 뼈대에는 적용하지 않는다.
+
         Args:
-            inBone: 핀을 설정할 뼈대 객체
-            side: 측면 핀 활성화 여부 (기본값: True)
-            front: 전면 핀 활성화 여부 (기본값: True)
-            back: 후면 핀 활성화 여부 (기본값: False)
-            inSize: 핀 크기 (기본값: 2.0)
-            inTaper: 핀 테이퍼 (기본값: 0.0)
+            inBone (rt.Node): 핀을 설정할 뼈대 객체
+            side (bool): 측면 핀 활성화 여부
+            front (bool): 전면 핀 활성화 여부
+            back (bool): 후면 핀 활성화 여부
+            inSize (float): 핀 크기
+            inTaper (float): 핀 테이퍼 값
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             if not self.is_end_bone(inBone):
@@ -552,11 +534,10 @@ class Bone:
                 inBone.backfinendtaper = inTaper
     
     def set_fin_off(self, inBone):
-        """
-        뼈대의 모든 핀(fin) 비활성화.
-        
+        """뼈대의 모든 핀(fin)을 비활성화한다.
+
         Args:
-            inBone: 핀을 비활성화할 뼈대 객체
+            inBone (rt.Node): 핀을 비활성화할 뼈대 객체
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.frontfin = False
@@ -564,12 +545,13 @@ class Bone:
             inBone.backfin = False
     
     def set_bone_size(self, inBone, inSize):
-        """
-        뼈대 크기 설정.
-        
+        """뼈대의 폭과 높이를 설정한다.
+
+        End 또는 Nub 뼈대인 경우 길이도 같은 크기로 설정한다.
+
         Args:
-            inBone: 크기를 설정할 뼈대 객체
-            inSize: 설정할 크기
+            inBone (rt.Node): 크기를 설정할 뼈대 객체
+            inSize (float): 설정할 크기
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.width = inSize
@@ -580,23 +562,25 @@ class Bone:
                 inBone.length = inSize
     
     def set_bone_taper(self, inBone, inTaper):
-        """
-        뼈대 테이퍼 설정.
-        
+        """뼈대의 테이퍼 값을 설정한다.
+
+        End 뼈대에는 적용하지 않는다.
+
         Args:
-            inBone: 테이퍼를 설정할 뼈대 객체
-            inTaper: 설정할 테이퍼 값
+            inBone (rt.Node): 테이퍼를 설정할 뼈대 객체
+            inTaper (float): 설정할 테이퍼 값
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             if not self.is_end_bone(inBone):
                 inBone.taper = inTaper
     
     def delete_bones_safely(self, inBoneArray):
-        """
-        뼈대 배열을 안전하게 삭제.
-        
+        """뼈대 배열의 컨트롤러를 초기화하고 부모 관계를 해제한 뒤 삭제한다.
+
+        입력 배열은 삭제 후 비워진다.
+
         Args:
-            inBoneArray: 삭제할 뼈대 배열
+            inBoneArray (list[rt.Node]): 삭제할 뼈대 배열
         """
         if len(inBoneArray) > 0:
             for targetBone in inBoneArray:
@@ -607,15 +591,13 @@ class Bone:
             inBoneArray.clear()
     
     def select_first_children(self, inObj):
-        """
-        객체의 첫 번째 자식들을 재귀적으로 선택.
-        
+        """객체를 선택에 추가하고 자식들을 재귀적으로 선택한다.
+
         Args:
-            inObj: 시작 객체
-            
+            inObj (rt.Node): 시작 객체
+
         Returns:
-            True: 자식이 있는 경우
-            False: 자식이 없는 경우
+            bool | None: 재귀 판정에 사용되는 중간 결과. 자식이 없으면 None
         """
         rt.selectmore(inObj)
         
@@ -627,14 +609,13 @@ class Bone:
                 return False
     
     def get_every_children(self, inObj):
-        """
-        객체의 모든 자식들을 가져옴.
-        
+        """객체의 모든 하위 자식들을 재귀적으로 수집한다.
+
         Args:
-            inObj: 시작 객체
-            
+            inObj (rt.Node): 시작 객체
+
         Returns:
-            자식 객체 배열
+            list[rt.Node]: 모든 하위 자식 객체 배열
         """
         children = []
         
@@ -646,15 +627,11 @@ class Bone:
         return children
     
     def select_every_children(self, inObj, includeSelf=False):
-        """
-        객체의 모든 자식들을 선택.
-        
+        """객체의 모든 하위 자식들을 선택한다.
+
         Args:
-            inObj: 시작 객체
-            includeSelf: 자신도 포함할지 여부 (기본값: False)
-            
-        Returns:
-            선택된 자식 객체 배열
+            inObj (rt.Node): 시작 객체
+            includeSelf (bool): True면 자신도 선택에 포함한다.
         """
         children = self.get_every_children(inObj)
         
@@ -665,14 +642,13 @@ class Bone:
         rt.select(children)
     
     def get_bone_end_position(self, inBone):
-        """
-        뼈대 끝 위치 가져오기.
-        
+        """뼈대의 끝 위치를 월드 좌표로 계산한다.
+
         Args:
-            inBone: 대상 뼈대 객체
-            
+            inBone (rt.Node): 대상 뼈대 객체
+
         Returns:
-            뼈대 끝 위치 좌표
+            rt.Point3: 뼈대 끝 위치. BoneGeometry가 아니면 트랜스폼의 이동 값
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             return rt.Point3(inBone.length, 0, 0) * inBone.objectTransform
@@ -680,12 +656,11 @@ class Bone:
             return inBone.transform.translation
     
     def link_skin_bone(self, inSkinBone, inOriBone):
-        """
-        스킨 뼈대를 원본 뼈대에 연결.
-        
+        """스킨 뼈대를 링크 제약으로 원본 뼈대에 연결한다.
+
         Args:
-            inSkinBone: 연결할 스킨 뼈대
-            inOriBone: 원본 뼈대
+            inSkinBone (rt.Node): 연결할 스킨 뼈대
+            inOriBone (rt.Node): 원본 뼈대
         """
         self.anim.save_xform(inSkinBone)
         self.anim.set_xform(inSkinBone, space="World")
@@ -702,16 +677,14 @@ class Bone:
         self.anim.set_xform(inSkinBone, space="World")
     
     def link_skin_bones(self, inSkinBoneArray, inOriBoneArray):
-        """
-        스킨 뼈대 배열을 원본 뼈대 배열에 연결.
-        
+        """스킨 뼈대 배열을 이름 패턴 매칭으로 원본 뼈대 배열에 연결한다.
+
         Args:
-            inSkinBoneArray: 연결할 스킨 뼈대 배열
-            inOriBoneArray: 원본 뼈대 배열
-            
+            inSkinBoneArray (list[rt.Node]): 연결할 스킨 뼈대 배열
+            inOriBoneArray (list[rt.Node]): 원본 뼈대 배열
+
         Returns:
-            True: 성공
-            False: 실패
+            bool: 성공하면 True, 두 배열의 길이가 다르면 False
         """
         if len(inSkinBoneArray) != len(inOriBoneArray):
             print("Error: Skin bone array and original bone array must have the same length.")
@@ -760,11 +733,13 @@ class Bone:
         return True
     
     def unlink_skin_bone(self, inSkinBone):
-        """
-        스킨 뼈대를 원본 뼈대에서 연결 해제.
-        
+        """스킨 뼈대의 링크 제약을 해제하고 기본 PRS 컨트롤러로 되돌린다.
+
         Args:
-            inSkinBone: 연결 해제할 스킨 뼈대
+            inSkinBone (rt.Node): 연결 해제할 스킨 뼈대
+
+        Returns:
+            bool: 항상 True
         """
         self.anim.save_xform(inSkinBone)
         self.anim.set_xform(inSkinBone)
@@ -775,11 +750,13 @@ class Bone:
         return True
     
     def unlink_skin_bones(self, inSkinBoneArray):
-        """
-        스킨 뼈대 배열을 원본 뼈대에서 연결 해제.
-        
+        """스킨 뼈대 배열의 링크 제약을 일괄 해제한다.
+
         Args:
-            inSkinBoneArray: 연결 해제할 스킨 뼈대 배열
+            inSkinBoneArray (list[rt.Node]): 연결 해제할 스킨 뼈대 배열
+
+        Returns:
+            bool: 항상 True
         """
         for item in inSkinBoneArray:
             if rt.isValidObj(item):
@@ -788,6 +765,15 @@ class Bone:
         return True
     
     def gen_skin_bone_name(self, inName, inSkinBoneBaseName=None):
+        """원본 이름의 Base 부분을 스킨 본 이름으로 치환하여 스킨 뼈대 이름을 생성한다.
+
+        Args:
+            inName (str): 원본 뼈대 이름
+            inSkinBoneBaseName (str | None): 스킨 본 Base 이름. None이면 Name 서비스의 SkinBone 값을 사용한다.
+
+        Returns:
+            str: 생성된 스킨 뼈대 이름
+        """
         skinBoneBaseName = self.name.get_name_part_value_by_description("Base", "SkinBone")
         if inSkinBoneBaseName is not None:
             skinBoneBaseName = inSkinBoneBaseName
@@ -797,10 +783,27 @@ class Bone:
         return skinBoneName
     
     def set_skin_bone_property(self, inSkinBone, inSkinBoneBool):
+        """객체에 스킨 본 여부를 사용자 프로퍼티(IsSkinBone)로 기록한다.
+
+        Args:
+            inSkinBone (rt.Node): 대상 스킨 뼈대
+            inSkinBoneBool (bool): 스킨 본 여부 값
+
+        Returns:
+            rt.Node: 프로퍼티가 설정된 스킨 뼈대
+        """
         rt.setUserProp(inSkinBone, rt.Name("IsSkinBone"), str(inSkinBoneBool))
         return inSkinBone
     
     def is_skin_bone(self, inSkinBone):
+        """객체의 사용자 프로퍼티(IsSkinBone)로 스킨 본인지 확인한다.
+
+        Args:
+            inSkinBone (rt.Node): 확인할 객체
+
+        Returns:
+            bool: 스킨 본이면 True, 아니면 False
+        """
         result = rt.getUserProp(inSkinBone, rt.Name("IsSkinBone"))
         if result == True:
             return True
@@ -808,6 +811,15 @@ class Bone:
             return False
     
     def set_skin_bone_ori_bone(self, inSkinBone, inOriBone=None):
+        """스킨 뼈대에 원본 뼈대 참조를 사용자 프로퍼티(OriBone)로 기록한다.
+
+        Args:
+            inSkinBone (rt.Node): 대상 스킨 뼈대
+            inOriBone (rt.Node | None): 원본 뼈대. None이면 "undefined"로 기록한다.
+
+        Returns:
+            rt.Node: 프로퍼티가 설정된 스킨 뼈대
+        """
         oriBoneName = "undefined"
         if inOriBone is not None:
             oriBoneName = f"$'{inOriBone.name}'"
@@ -816,6 +828,14 @@ class Bone:
         return inSkinBone
     
     def get_skin_bone_ori_bone(self, inSkinBone):
+        """스킨 뼈대의 사용자 프로퍼티(OriBone)에서 원본 뼈대를 가져온다.
+
+        Args:
+            inSkinBone (rt.Node): 대상 스킨 뼈대
+
+        Returns:
+            rt.Node | None: 원본 뼈대 노드. 프로퍼티가 없으면 None
+        """
         result = rt.getUserProp(inSkinBone, rt.Name("OriBone"))
         if result:
             return rt.execute(rt.getUserProp(inSkinBone, rt.Name("OriBone")))
@@ -823,6 +843,15 @@ class Bone:
             return None
     
     def set_skin_bone_parent(self, inSkinBone, inParentBone=None):
+        """스킨 뼈대의 부모를 설정하고 사용자 프로퍼티(Parent)로 기록한다.
+
+        Args:
+            inSkinBone (rt.Node): 대상 스킨 뼈대
+            inParentBone (rt.Node | None): 부모로 설정할 뼈대. None이면 기존 부모의 이름만 기록한다.
+
+        Returns:
+            rt.Node: 프로퍼티가 설정된 스킨 뼈대
+        """
         parentName = "undefined"
         if inParentBone is not None and rt.isValidNode(inParentBone):
             inSkinBone.parent = inParentBone
@@ -834,6 +863,14 @@ class Bone:
         return inSkinBone
     
     def get_skin_bone_parent(self, inSkinBone):
+        """스킨 뼈대의 사용자 프로퍼티(Parent)에서 부모 뼈대를 가져온다.
+
+        Args:
+            inSkinBone (rt.Node): 대상 스킨 뼈대
+
+        Returns:
+            rt.Node | None: 부모 뼈대 노드. 프로퍼티가 없으면 None
+        """
         result = rt.getUserProp(inSkinBone, rt.Name("Parent"))
         if result:
             return rt.execute(rt.getUserProp(inSkinBone, rt.Name("Parent")))
@@ -841,11 +878,16 @@ class Bone:
             return None
     
     def create_skin_bone(self, inBone, inMesh=True, inLink=True, inSkinBoneBaseName=None):
-        """
-        스킨 뼈대 생성.
-        
+        """원본 뼈대와 같은 트랜스폼의 스킨 뼈대를 생성한다.
+
         Args:
-            inBoneArray: 원본 뼈대 배열
+            inBone (rt.Node): 원본 뼈대
+            inMesh (bool): True면 원본 메시 스냅샷을 생성하고 스킨 뼈대에 Edit_Poly 모디파이어를 추가한다.
+            inLink (bool): True면 원본 뼈대에 링크 제약으로 연결한다.
+            inSkinBoneBaseName (str | None): 스킨 본 Base 이름. None이면 Name 서비스의 SkinBone 값을 사용한다.
+
+        Returns:
+            rt.Node: 생성된 스킨 뼈대
         """
         skinBoneFilteringChar = "_"
         skinBonePushAmount = -0.02
@@ -884,18 +926,17 @@ class Bone:
         
     
     def create_skin_bones(self, inBoneArray, inSkipNub=True, inMesh=True, inLink=True, inSkinBoneBaseName=None):
-        """
-        스킨 뼈대 생성.
-        
+        """원본 뼈대 배열로부터 스킨 뼈대들을 생성하고 계층을 연결한다.
+
         Args:
-            inBoneArray: 원본 뼈대 배열
-            skipNub: Nub 뼈대 건너뛰기 (기본값: True)
-            mesh: 메시 스냅샷 사용 (기본값: True)
-            link: 원본 뼈대에 연결 (기본값: True)
-            skinBoneBaseName: 스킨 뼈대 기본 이름 (기본값: "b")
-            
+            inBoneArray (list[rt.Node]): 원본 뼈대 배열
+            inSkipNub (bool): True면 End 뼈대를 건너뛴다.
+            inMesh (bool): True면 메시 스냅샷 기반 처리를 사용한다.
+            inLink (bool): True면 원본 뼈대에 연결한다.
+            inSkinBoneBaseName (str | None): 스킨 본 Base 이름. None이면 Name 서비스의 SkinBone 값을 사용한다.
+
         Returns:
-            생성된 스킨 뼈대 배열
+            list[rt.Node]: 생성된 스킨 뼈대 배열
         """
         returnBones = []
         targetBones = self.sort_bones_as_hierarchy(inBoneArray)
@@ -921,18 +962,19 @@ class Bone:
         return returnBones
     
     def create_skin_bone_from_bip(self, inBoneArray, inSkipNub=True, inMesh=False, inLink=True, inSkinBoneBaseName=None):
-        """
-        바이페드 객체에서 스킨 뼈대 생성.
-        
+        """바이페드 객체 배열로부터 스킨 뼈대들을 생성한다.
+
+        Twist 뼈대와 루트 노드를 제외한 Biped_Object만 대상으로 한다.
+
         Args:
-            inBoneArray: 바이페드 객체 배열
-            skipNub: Nub 뼈대 건너뛰기 (기본값: True)
-            mesh: 메시 스냅샷 사용 (기본값: False)
-            link: 원본 뼈대에 연결 (기본값: True)
-            skinBoneBaseName: 스킨 뼈대 기본 이름 (기본값: "")
-            
+            inBoneArray (list[rt.Node]): 바이페드 객체 배열
+            inSkipNub (bool): True면 End 뼈대를 건너뛴다.
+            inMesh (bool): True면 메시 스냅샷 기반 처리를 사용한다.
+            inLink (bool): True면 원본 뼈대에 연결한다.
+            inSkinBoneBaseName (str | None): 스킨 본 Base 이름. None이면 Name 서비스의 SkinBone 값을 사용한다.
+
         Returns:
-            생성된 스킨 뼈대 배열
+            list[rt.Node]: 생성된 스킨 뼈대 배열
         """
         # 바이페드 객체만 필터링, Twist 뼈대 제외, 루트 노드 제외
         targetBones = [item for item in inBoneArray 
@@ -945,6 +987,14 @@ class Bone:
         return returnSkinBones
     
     def is_bip_skin_bone(self, inSkinBone):
+        """스킨 뼈대의 원본이 바이페드 계열 컨트롤러인지 확인한다.
+
+        Args:
+            inSkinBone (rt.Node): 확인할 스킨 뼈대
+
+        Returns:
+            bool: 원본 컨트롤러가 BipSlave_control, Footsteps, Vertical_Horizontal_Turn 중 하나면 True
+        """
         if self.is_skin_bone(inSkinBone):
             oriObj = self.get_skin_bone_ori_bone(inSkinBone)
             if not rt.isValidNode(oriObj):
@@ -958,84 +1008,73 @@ class Bone:
         return False
     
     def set_bone_on(self, inBone):
-        """
-        뼈대 활성화.
-        
+        """뼈대를 활성화한다.
+
         Args:
-            inBone: 활성화할 뼈대 객체
+            inBone (rt.Node): 활성화할 뼈대 객체
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.boneEnable = True
     
     def set_bone_off(self, inBone):
-        """
-        뼈대 비활성화.
-        
+        """뼈대를 비활성화한다.
+
         Args:
-            inBone: 비활성화할 뼈대 객체
+            inBone (rt.Node): 비활성화할 뼈대 객체
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.boneEnable = False
     
     def set_bone_on_selection(self):
-        """
-        선택된 모든 뼈대 활성화.
-        """
+        """선택된 모든 뼈대를 활성화한다."""
         selArray = list(rt.getCurrentSelection())
         for item in selArray:
             self.set_bone_on(item)
     
     def set_bone_off_selection(self):
-        """
-        선택된 모든 뼈대 비활성화.
-        """
+        """선택된 모든 뼈대를 비활성화한다."""
         selArray = list(rt.getCurrentSelection())
         for item in selArray:
             self.set_bone_off(item)
     
     def set_freeze_length_on(self, inBone):
-        """
-        뼈대 길이 고정 활성화.
-        
+        """뼈대의 길이 고정을 활성화한다.
+
         Args:
-            inBone: 길이를 고정할 뼈대 객체
+            inBone (rt.Node): 길이를 고정할 뼈대 객체
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.boneFreezeLength = True
     
     def set_freeze_length_off(self, inBone):
-        """
-        뼈대 길이 고정 비활성화.
-        
+        """뼈대의 길이 고정을 비활성화한다.
+
         Args:
-            inBone: 길이 고정을 해제할 뼈대 객체
+            inBone (rt.Node): 길이 고정을 해제할 뼈대 객체
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             inBone.boneFreezeLength = False
     
     def set_freeze_length_on_selection(self):
-        """
-        선택된 모든 뼈대의 길이 고정 활성화.
-        """
+        """선택된 모든 뼈대의 길이 고정을 활성화한다."""
         selArray = list(rt.getCurrentSelection())
         for item in selArray:
             self.set_freeze_length_on(item)
     
     def set_freeze_length_off_selection(self):
-        """
-        선택된 모든 뼈대의 길이 고정 비활성화.
-        """
+        """선택된 모든 뼈대의 길이 고정을 비활성화한다."""
         selArray = list(rt.getCurrentSelection())
         for item in selArray:
             self.set_freeze_length_off(item)
             
     def turn_bone(self, inBone, inAngle):
-        """
-        입력된 각도만큼 입력된 본의 로컬 X 축을 회전 합니다.
-        
+        """뼈대의 로컬 X축을 입력된 각도만큼 회전한다.
+
+        자식에는 영향을 주지 않는다.
+
         Args:
-            inBone: 회전할 뼈대 객체
-            inAngle: 회전할 각도
+            inBone (rt.Node): 회전할 뼈대 객체
+            inAngle (float): 회전 각도(도 단위)
         """
         if rt.classOf(inBone) == rt.BoneGeometry:
             self.anim.rotate_local(inBone, inAngle, 0, 0, dontAffectChildren=True)
