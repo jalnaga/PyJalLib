@@ -12,28 +12,23 @@ from pymxs import runtime as rt
 
 
 class CheckMaterial:
-    """
-    머티리얼 검사를 위한 클래스
+    """오브젝트에 할당된 머티리얼의 유효성(Material ID 연속성, 머티리얼 타입)을 검증하는 클래스.
 
-    오브젝트에 할당된 머티리얼의 유효성(Material ID 연속성, 머티리얼 타입)을 검증합니다.
-    외부 서비스 의존 없이 pymxs로 직접 판별합니다.
+    외부 서비스 의존 없이 pymxs로 직접 판별한다.
     """
 
     def __init__(self):
-        """
-        초기화 함수
-        """
+        """CheckMaterial을 초기화한다."""
         pass
 
     def is_mat_ids_continued(self, inObj):
-        """
-        오브젝트의 Material ID가 1부터 연속적인지 확인.
+        """오브젝트의 Material ID가 1부터 연속적인지 확인한다.
 
-        snapshotasmesh로 메쉬를 복제한 후 페이스별 MatID를 수집하고,
-        1부터 max(ID)까지 연속된 ID인지 검증합니다.
+        snapshotAsMesh로 메쉬를 복제한 후 페이스별 MatID를 수집하고,
+        1부터 max(ID)까지 빠짐없이 존재하는지 검증한다.
 
         Args:
-            inObj: 검증할 3ds Max 오브젝트
+            inObj (rt.Node): 검증할 오브젝트
 
         Returns:
             bool: Material ID가 1부터 max(ID)까지 연속이면 True
@@ -52,18 +47,16 @@ class CheckMaterial:
         return matIDSet == expectedSet
 
     def has_correct_material(self, inObj):
-        """
-        오브젝트의 머티리얼이 유효한지 확인.
+        """오브젝트의 머티리얼이 유효한지 확인한다.
 
-        유효 조건:
-        - Multimaterial이면 유효
-        - DirectX_9_Shader이면서 effectFile 파일명이 "ORV"로 시작하면 유효
+        Multimaterial이거나, DirectX_9_Shader이면서 effectFile 파일명이
+        "ORV"(대소문자 무시)로 시작하면 유효하다.
 
         Args:
-            inObj: 검증할 3ds Max 오브젝트
+            inObj (rt.Node): 검증할 오브젝트
 
         Returns:
-            bool: 머티리얼이 유효하면 True
+            bool: 머티리얼이 유효하면 True. 머티리얼이 없으면 False
         """
         objMat = inObj.material
         if objMat is None:
