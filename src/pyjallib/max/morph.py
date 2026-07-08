@@ -12,34 +12,29 @@ from pymxs import runtime as rt
 
 @dataclass
 class MorphChannel:
-    """
-    모프 채널 정보를 저장하는 데이터 클래스
-    """
+    """모프 채널의 인덱스·이름·데이터 보유 여부를 저장하는 데이터 클래스."""
     index: int = 0
     name: str = ""
     hasData: bool = False
 
 
 class Morph:
-    """
-    모프(Morph) 관련 기능을 제공하는 클래스.
-    MAXScript의 _Morph 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
+    """3ds Max Morpher 모디파이어의 채널 조회·값 설정·타겟 추가·추출 기능을 제공하는 클래스."""
     
     def __init__(self):
-        """클래스 초기화"""
+        """클래스를 초기화한다 (채널 검색 단위 channelMaxViewNum을 100으로 설정)."""
         self.channelMaxViewNum = 100
     
     def get_modifier_index(self, inObj):
-        """
-        객체에서 Morpher 모디파이어의 인덱스를 찾음
-        
+        """객체에서 Morpher 모디파이어의 인덱스를 찾는다.
+
+        Morpher가 여러 개면 마지막 Morpher의 인덱스를 반환한다.
+
         Args:
-            inObj: 검색할 객체
-            
+            inObj (rt.Node): 검색할 객체
+
         Returns:
-            Morpher 모디파이어의 인덱스 (없으면 0)
+            int: Morpher 모디파이어의 인덱스 (1 기반). 없으면 0
         """
         returnVal = 0
         if len(inObj.modifiers) > 0:
@@ -50,14 +45,13 @@ class Morph:
         return returnVal
     
     def get_modifier(self, inObj):
-        """
-        객체에서 Morpher 모디파이어를 찾음
-        
+        """객체에서 Morpher 모디파이어를 찾는다.
+
         Args:
-            inObj: 검색할 객체
-            
+            inObj (rt.Node): 검색할 객체
+
         Returns:
-            Morpher 모디파이어 (없으면 None)
+            rt.Morpher | None: Morpher 모디파이어. 없으면 None
         """
         returnVal = None
         modIndex = self.get_modifier_index(inObj)
@@ -67,14 +61,15 @@ class Morph:
         return returnVal
     
     def get_channel_num(self, inObj):
-        """
-        객체의 Morpher에 있는 채널 수를 반환
-        
+        """객체의 Morpher에서 데이터가 있는 채널 수를 반환한다.
+
+        채널을 channelMaxViewNum 단위로 순회하며 데이터가 없는 첫 채널 직전까지의 개수를 센다.
+
         Args:
-            inObj: 검색할 객체
-            
+            inObj (rt.Node): 검색할 객체
+
         Returns:
-            모프 채널 수
+            int: 연속으로 데이터가 있는 모프 채널 수. Morpher가 없으면 0
         """
         returnVal = 0
         morphMod = self.get_modifier(inObj)
@@ -94,14 +89,13 @@ class Morph:
         return returnVal
     
     def get_all_channel_info(self, inObj):
-        """
-        객체의 모든 모프 채널 정보를 가져옴
-        
+        """객체의 모든 모프 채널 정보를 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            
+            inObj (rt.Node): 검색할 객체
+
         Returns:
-            MorphChannel 객체의 리스트
+            list[MorphChannel]: 채널별 인덱스·이름·데이터 보유 여부 목록. Morpher가 없거나 채널이 없으면 빈 리스트
         """
         returnVal = []
         morphMod = self.get_modifier(inObj)
@@ -119,16 +113,15 @@ class Morph:
         return returnVal
     
     def add_target(self, inObj, inTarget, inIndex):
-        """
-        특정 인덱스에 모프 타겟 추가
-        
+        """특정 인덱스의 모프 채널에 타겟 객체를 추가한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inTarget: 타겟 객체
-            inIndex: 채널 인덱스
-            
+            inObj (rt.Node): 모프를 적용할 객체
+            inTarget (rt.Node): 타겟 객체
+            inIndex (int): 채널 인덱스 (1 기반)
+
         Returns:
-            성공 여부 (True/False)
+            bool: 추가 후 해당 채널의 데이터 보유 여부. Morpher가 없으면 False
         """
         returnVal = False
         morphMod = self.get_modifier(inObj)
@@ -140,12 +133,11 @@ class Morph:
         return returnVal
     
     def add_targets(self, inObj, inTargetArray):
-        """
-        여러 타겟 객체를 순서대로 모프 채널에 추가
-        
+        """여러 타겟 객체를 1번 채널부터 순서대로 모프 채널에 추가한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inTargetArray: 타겟 객체 배열
+            inObj (rt.Node): 모프를 적용할 객체
+            inTargetArray (list[rt.Node]): 타겟 객체 배열
         """
         morphMod = self.get_modifier(inObj)
         
@@ -154,14 +146,13 @@ class Morph:
                 rt.WM3_MC_BuildFromNode(morphMod, i + 1, inTargetArray[i])
     
     def get_all_channel_name(self, inObj):
-        """
-        객체의 모든 모프 채널 이름을 가져옴
-        
+        """객체의 모든 모프 채널 이름을 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            
+            inObj (rt.Node): 검색할 객체
+
         Returns:
-            채널 이름 리스트
+            list[str]: 채널 이름 리스트. 채널이 없으면 빈 리스트
         """
         returnVal = []
         channelArray = self.get_all_channel_info(inObj)
@@ -172,15 +163,14 @@ class Morph:
         return returnVal
     
     def get_channel_name(self, inObj, inIndex):
-        """
-        특정 인덱스의 모프 채널 이름을 가져옴
-        
+        """특정 인덱스의 모프 채널 이름을 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            inIndex: 채널 인덱스
-            
+            inObj (rt.Node): 검색할 객체
+            inIndex (int): 채널 인덱스 (1 기반)
+
         Returns:
-            채널 이름 (없으면 빈 문자열)
+            str: 채널 이름. 채널이 없거나 인덱스가 범위를 벗어나면 빈 문자열
         """
         returnVal = ""
         channelArray = self.get_all_channel_info(inObj)
@@ -194,15 +184,14 @@ class Morph:
         return returnVal
     
     def get_channelIndex(self, inObj, inName):
-        """
-        채널 이름으로 모프 채널 인덱스를 가져옴
-        
+        """채널 이름으로 모프 채널 인덱스를 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            inName: 채널 이름
-            
+            inObj (rt.Node): 검색할 객체
+            inName (str): 채널 이름
+
         Returns:
-            채널 인덱스 (없으면 0)
+            int: 채널 인덱스 (1 기반). 해당 이름의 채널이 없으면 0
         """
         returnVal = 0
         channelArray = self.get_all_channel_info(inObj)
@@ -216,15 +205,14 @@ class Morph:
         return returnVal
     
     def get_channel_value_by_name(self, inObj, inName):
-        """
-        채널 이름으로 모프 채널 값을 가져옴
-        
+        """채널 이름으로 모프 채널 값을 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            inName: 채널 이름
-            
+            inObj (rt.Node): 검색할 객체
+            inName (str): 채널 이름
+
         Returns:
-            채널 값 (0.0 ~ 100.0)
+            float: 채널 값 (0.0~100.0). 채널이 없거나 조회에 실패하면 0.0
         """
         returnVal = 0.0
         channelIndex = self.get_channelIndex(inObj, inName)
@@ -239,15 +227,14 @@ class Morph:
         return returnVal
     
     def get_channel_value_by_index(self, inObj, inIndex):
-        """
-        인덱스로 모프 채널 값을 가져옴
-        
+        """인덱스로 모프 채널 값을 가져온다.
+
         Args:
-            inObj: 검색할 객체
-            inIndex: 채널 인덱스
-            
+            inObj (rt.Node): 검색할 객체
+            inIndex (int): 채널 인덱스 (1 기반)
+
         Returns:
-            채널 값 (0.0 ~ 100.0)
+            float | int: 채널 값 (0.0~100.0). Morpher가 없거나 조회에 실패하면 0
         """
         returnVal = 0
         morphMod = self.get_modifier(inObj)
@@ -261,16 +248,15 @@ class Morph:
         return returnVal
     
     def set_channel_value_by_name(self, inObj, inName, inVal):
-        """
-        채널 이름으로 모프 채널 값을 설정
-        
+        """채널 이름으로 모프 채널 값을 설정한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inName: 채널 이름
-            inVal: 설정할 값 (0.0 ~ 100.0)
-            
+            inObj (rt.Node): 모프를 적용할 객체
+            inName (str): 채널 이름
+            inVal (float): 설정할 값 (0.0~100.0)
+
         Returns:
-            성공 여부 (True/False)
+            bool: 설정 성공 여부. 해당 이름의 채널이 없거나 설정에 실패하면 False
         """
         returnVal = False
         morphMod = self.get_modifier(inObj)
@@ -286,16 +272,15 @@ class Morph:
         return returnVal
     
     def set_channel_value_by_index(self, inObj, inIndex, inVal):
-        """
-        인덱스로 모프 채널 값을 설정
-        
+        """인덱스로 모프 채널 값을 설정한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inIndex: 채널 인덱스
-            inVal: 설정할 값 (0.0 ~ 100.0)
-            
+            inObj (rt.Node): 모프를 적용할 객체
+            inIndex (int): 채널 인덱스 (1 기반)
+            inVal (float): 설정할 값 (0.0~100.0)
+
         Returns:
-            성공 여부 (True/False)
+            bool: 설정 성공 여부. Morpher가 없거나 설정에 실패하면 False
         """
         returnVal = False
         morphMod = self.get_modifier(inObj)
@@ -310,16 +295,15 @@ class Morph:
         return returnVal
     
     def set_channel_name_by_name(self, inObj, inTargetName, inNewName):
-        """
-        채널 이름을 이름으로 검색하여 변경
-        
+        """현재 이름으로 채널을 찾아 새 이름으로 변경한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inTargetName: 대상 채널의 현재 이름
-            inNewName: 설정할 새 이름
-            
+            inObj (rt.Node): 모프를 적용할 객체
+            inTargetName (str): 대상 채널의 현재 이름
+            inNewName (str): 설정할 새 이름
+
         Returns:
-            성공 여부 (True/False)
+            bool: 변경 성공 여부. 해당 이름의 채널이 없으면 False
         """
         returnVal = False
         channelIndex = self.get_channelIndex(inObj, inTargetName)
@@ -332,16 +316,15 @@ class Morph:
         return returnVal
     
     def set_channel_name_by_index(self, inObj, inIndex, inName):
-        """
-        채널 이름을 인덱스로 검색하여 변경
-        
+        """인덱스로 채널을 찾아 이름을 변경한다.
+
         Args:
-            inObj: 모프를 적용할 객체
-            inIndex: 대상 채널 인덱스
-            inName: 설정할 이름
-            
+            inObj (rt.Node): 모프를 적용할 객체
+            inIndex (int): 대상 채널 인덱스 (1 기반)
+            inName (str): 설정할 이름
+
         Returns:
-            성공 여부 (True/False)
+            bool: 변경 성공 여부. Morpher가 없거나 설정에 실패하면 False
         """
         returnVal = False
         morphMod = self.get_modifier(inObj)
@@ -356,11 +339,10 @@ class Morph:
         return returnVal
     
     def reset_all_channel_value(self, inObj):
-        """
-        모든 모프 채널 값을 0으로 리셋
-        
+        """모든 모프 채널 값을 0으로 리셋한다.
+
         Args:
-            inObj: 리셋할 객체
+            inObj (rt.Node): 리셋할 객체
         """
         totalChannelNum = self.get_channel_num(inObj)
         
@@ -369,15 +351,16 @@ class Morph:
                 self.set_channel_value_by_index(inObj, i, 0.0)
     
     def extract_morph_channel_geometry(self, obj, _feedback_=False):
-        """
-        모프 채널의 기하학적 형태를 추출하여 개별 객체로 생성
-        
+        """데이터가 있는 각 모프 채널의 형태를 스냅샷으로 추출해 개별 객체로 생성한다.
+
+        각 채널 값을 100으로 올려 스냅샷을 만들고 채널 이름을 붙인 뒤 값을 0으로 되돌린다.
+
         Args:
-            obj: 추출 대상 객체
-            _feedback_: 피드백 메시지 출력 여부
-            
+            obj (rt.Node): 추출 대상 객체
+            _feedback_ (bool): True이면 진행 메시지를 출력한다.
+
         Returns:
-            추출된 객체 배열
+            list[rt.Node]: 추출된 스냅샷 객체 리스트. 유효한 Morpher가 없으면 빈 리스트
         """
         extractedObjs = []
         morphMod = self.get_modifier(obj)

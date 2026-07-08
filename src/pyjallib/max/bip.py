@@ -18,40 +18,33 @@ from .bone import Bone
 
 
 class Bip:
-    """
-    Biped 객체 관련 기능을 제공하는 클래스.
-    MAXScript의 _Bip 구조체 개념을 Python으로 재구현한 클래스이며,
-    3ds Max의 기능들을 pymxs API를 통해 제어합니다.
-    """
+    """3ds Max Biped 객체의 탐색·그룹화·키 조작과 BIP/FIG 파일 입출력 기능을 제공하는 클래스."""
     
     def __init__(self, animService=None, nameService=None, boneService=None):
-        """
-        클래스 초기화
-        
+        """클래스를 초기화한다.
+
         Args:
-            animService: Anim 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            nameService: Name 서비스 인스턴스 (제공되지 않으면 새로 생성)
-            boneService: Bone 서비스 인스턴스 (제공되지 않으면 새로 생성)
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            boneService (Bone | None): 본 서비스. None이면 새로 생성한다.
         """
         self.anim = animService if animService else Anim()
         self.name = nameService if nameService else Name()
         self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim) # Pass potentially new instances
     
     def get_bips(self):
-        """
-        씬 내의 모든 Biped_Object를 찾음
-        
+        """씬 내의 모든 Biped_Object를 찾는다.
+
         Returns:
-            Biped_Object 리스트
+            list[rt.Node]: 씬의 Biped_Object 리스트
         """
         return [obj for obj in rt.objects if rt.isKindOf(obj, rt.Biped_Object)]
     
     def get_coms_name(self):
-        """
-        씬 내 모든 Biped COM(Center of Mass)의 이름 리스트 반환
-        
+        """씬 내 모든 Biped COM(Center of Mass)의 이름을 반환한다.
+
         Returns:
-            Biped COM 이름 리스트
+            list[str]: 중복 제거된 Biped COM 이름 리스트
         """
         bips = self.get_bips()
         bipComsName = []
@@ -64,11 +57,10 @@ class Bip:
         return bipComsName
     
     def get_coms(self):
-        """
-        씬 내 모든 Biped COM(Center of Mass) 객체 리스트 반환
-        
+        """씬 내 모든 Biped COM(Center of Mass) 노드를 반환한다.
+
         Returns:
-            Biped COM 객체 리스트
+            list[rt.Node]: 중복 제거된 Biped COM 노드 리스트
         """
         bips = self.get_bips()
         bipComs = []
@@ -81,42 +73,41 @@ class Bip:
         return bipComs
     
     def is_biped_object(self, inObj):
-        """
-        객체가 Biped 관련 객체인지 확인
-        
+        """객체가 Biped 관련 객체인지 확인한다.
+
         Args:
-            inObj: 확인할 객체
-            
+            inObj (rt.Node): 확인할 객체
+
         Returns:
-            Biped 관련 객체이면 True, 아니면 False
+            bool: 컨트롤러가 BipSlave_control, Footsteps, Vertical_Horizontal_Turn 중 하나이면 True
         """
         return (rt.classOf(inObj.controller) == rt.BipSlave_control or 
                 rt.classOf(inObj.controller) == rt.Footsteps or 
                 rt.classOf(inObj.controller) == rt.Vertical_Horizontal_Turn)
     
     def get_com(self, inBip):
-        """
-        Biped 객체의 COM(Center of Mass) 반환
-        
+        """Biped 객체가 속한 COM(Center of Mass) 노드를 반환한다.
+
         Args:
-            inBip: COM을 찾을 Biped 객체
-            
+            inBip (rt.Node): COM을 찾을 Biped 객체
+
         Returns:
-            Biped의 COM 객체 또는 None
+            rt.Node | None: Biped의 COM 노드. Biped 관련 객체가 아니면 None
         """
         if self.is_biped_object(inBip):
             return inBip.controller.rootNode
         return None
     
     def get_all(self, inBip):
-        """
-        Biped와 관련된 모든 객체 반환
-        
+        """Biped와 연결된 모든 Biped 관련 객체를 반환한다 (더미·Footstep 포함).
+
+        COM에서 시작해 자식·부모 계층을 순회하며 Biped 관련 객체를 수집한다.
+
         Args:
-            inBip: 기준 Biped 객체
-            
+            inBip (rt.Node): 기준 Biped 객체
+
         Returns:
-            Biped 관련 모든 객체 리스트
+            list[rt.Node]: Biped 관련 객체 리스트. Biped 관련 객체가 아니면 빈 리스트
         """
         returnVal = []
         
@@ -141,14 +132,13 @@ class Bip:
         return returnVal
     
     def get_nodes(self, inBip):
-        """
-        Biped의 실제 노드만 반환 (더미나 Footstep은 제외)
-        
+        """Biped의 실제 본 노드만 반환한다 (더미·Footstep 제외).
+
         Args:
-            inBip: 기준 Biped 객체
-            
+            inBip (rt.Node): 기준 Biped 객체
+
         Returns:
-            Biped의 노드 객체 리스트
+            list[rt.Node]: Biped 본 노드 리스트. Biped 관련 객체가 아니면 빈 리스트
         """
         returnVal = []
         
@@ -175,14 +165,13 @@ class Bip:
         return returnVal
     
     def get_dummy_and_footstep(self, inBip):
-        """
-        Biped의 더미와 Footstep 객체만 반환
-        
+        """Biped의 더미와 Footstep 객체만 반환한다.
+
         Args:
-            inBip: 기준 Biped 객체
-            
+            inBip (rt.Node): 기준 Biped 객체
+
         Returns:
-            더미와 Footstep 객체 리스트
+            list[rt.Node]: 더미·Footstep 객체 리스트. Biped 관련 객체가 아니면 빈 리스트
         """
         returnVal = []
         
@@ -193,14 +182,16 @@ class Bip:
         return returnVal
     
     def get_all_grouped_nodes(self, inBip):
-        """
-        Biped의 체인 이름으로 노드 반환
-        
+        """Biped 노드를 신체 부위 그룹별로 분류하여 반환한다.
+
+        그룹 키: lArm, rArm, lFingers, rFingers, lLeg, rLeg, lToes, rToes, spine, tail,
+        head, pelvis, neck, pony1, pony2, prop1, prop2, prop3.
+
         Args:
-            inBip: 기준 Biped 객체
-            
+            inBip (rt.Node): 기준 Biped 객체
+
         Returns:
-            해당 체인에 속하는 Biped 노드 리스트
+            dict[str, list[rt.Node]]: 그룹 이름을 키로 하는 노드 리스트 dict. Biped_Object가 아니면 모든 값이 빈 리스트
         """
         # Define node categories with their corresponding index numbers
         NODE_CATEGORIES = {
@@ -253,15 +244,14 @@ class Bip:
         return nodes
     
     def get_grouped_nodes(self, inBip,inGroupName):
-        """
-        Biped의 체인 이름으로 노드 반환
-        
+        """Biped에서 지정한 그룹 이름에 속하는 노드를 반환한다.
+
         Args:
-            inBip: 기준 Biped 객체
-            inGroupName: 체인 이름 (예: "lArm", "rLeg" 등)
-            
+            inBip (rt.Node): 기준 Biped 객체
+            inGroupName (str): 그룹 이름 (예: "lArm", "rLeg", "spine")
+
         Returns:
-            해당 체인에 속하는 Biped 노드 리스트
+            list[rt.Node]: 해당 그룹의 Biped 노드 리스트. 그룹 이름이 없으면 빈 리스트
         """
         nodes = self.get_all_grouped_nodes(inBip)
         
@@ -271,14 +261,13 @@ class Bip:
         return []
     
     def is_left_node(self, inNode):
-        """
-        노드가 왼쪽인지 확인
-        
+        """노드가 Biped의 왼쪽(팔·손가락·다리·발가락) 그룹에 속하는지 확인한다.
+
         Args:
-            inNode: 확인할 노드 객체
-            
+            inNode (rt.Node): 확인할 노드
+
         Returns:
-            왼쪽 노드이면 True, 아니면 False
+            bool: 왼쪽 그룹에 속하면 True. Biped_Object가 아니면 False
         """
         if rt.classOf(inNode) != rt.Biped_Object:
             return False
@@ -294,14 +283,13 @@ class Bip:
         return False
     
     def is_right_node(self, inNode):
-        """
-        노드가 오른쪽인지 확인
-        
+        """노드가 Biped의 오른쪽(팔·손가락·다리·발가락) 그룹에 속하는지 확인한다.
+
         Args:
-            inNode: 확인할 노드 객체
-            
+            inNode (rt.Node): 확인할 노드
+
         Returns:
-            오른쪽 노드이면 True, 아니면 False
+            bool: 오른쪽 그룹에 속하면 True. Biped_Object가 아니면 False
         """
         if rt.classOf(inNode) != rt.Biped_Object:
             return False
@@ -317,14 +305,16 @@ class Bip:
         return False
     
     def get_nodes_by_skeleton_order(self, inBip):
-        """
-        스켈레톤 순서대로 Biped 노드 반환
-        
+        """Biped 노드를 정해진 스켈레톤 그룹 순서로 정렬하여 반환한다.
+
+        순서: head, pelvis, lArm, lFingers, lLeg, lToes, neck, rArm, rFingers, rLeg, rToes,
+        spine, tail, pony1, pony2, prop1, prop2, prop3.
+
         Args:
-            inBip: 기준 Biped 객체
-            
+            inBip (rt.Node): 기준 Biped 객체
+
         Returns:
-            순서대로 정렬된 Biped 노드 리스트
+            list[rt.Node]: 그룹 순서대로 정렬된 Biped 노드 리스트
         """
         nodes = self.get_all_grouped_nodes(inBip)
                     
@@ -343,12 +333,17 @@ class Bip:
         return bipNodeArray
     
     def add_offset_time_to_selected_nodes(self, inBipNodes, inOffset):
-        """
-        애니메이션에 오프셋을 추가함.
-        
+        """Biped 노드들의 애니메이션 키를 지정한 오프셋만큼 이동시킨다.
+
+        COM 노드는 horizontal·vertical·turning 컨트롤러의 키를, 그 외 노드는 자신의
+        컨트롤러 키를 전체 선택하여 이동한다.
+
         Args:
-            inBipNodes: 오프셋을 추가할 Biped 노드 리스트
-            inOffset: 오프셋 값
+            inBipNodes (list[rt.Node]): 키를 이동할 Biped 노드 리스트
+            inOffset (int): 이동할 프레임 오프셋
+
+        Returns:
+            bool: 성공 여부. 리스트가 비었거나 첫 노드가 Biped 관련 객체가 아니면 False
         """
         if not inBipNodes:
             return False
@@ -380,12 +375,14 @@ class Bip:
         return True
     
     def load_bip_file(self, inBipRoot, inFile):
-        """
-        Biped BIP 파일 로드
-        
+        """Biped에 BIP 애니메이션 파일을 로드하고 애니메이션 범위를 조정한다.
+
+        로드 후 각 노드의 마지막 키 시간을 수집하여 애니메이션 범위를 0부터 최대 키 시간까지로
+        설정하고 슬라이더를 0으로 이동한다.
+
         Args:
-            inBipRoot: 로드 대상 Biped 루트 노드
-            inFile: 로드할 BIP 파일 경로
+            inBipRoot (rt.Node): 로드 대상 Biped 루트(COM) 노드
+            inFile (str): 로드할 BIP 파일 경로
         """
         bipNodeArray = self.get_all(inBipRoot)
         
@@ -406,12 +403,11 @@ class Bip:
             rt.sliderTime = 0
     
     def load_fig_file(self, inBipRoot, inFile):
-        """
-        Biped FIG 파일 로드
-        
+        """Biped에 FIG(피규어) 파일을 로드한다.
+
         Args:
-            inBipRoot: 로드 대상 Biped 루트 노드
-            inFile: 로드할 FIG 파일 경로
+            inBipRoot (rt.Node): 로드 대상 Biped 루트(COM) 노드
+            inFile (str): 로드할 FIG 파일 경로
         """
         inBipRoot.controller.figureMode = False
         inBipRoot.controller.figureMode = True
@@ -419,42 +415,38 @@ class Bip:
         inBipRoot.controller.figureMode = False
     
     def save_fig_file(self, inBipRoot, fileName):
-        """
-        Biped FIG 파일 저장
-        
+        """Biped의 피규어를 FIG 파일로 저장한다.
+
         Args:
-            inBipRoot: 저장 대상 Biped 루트 노드
-            fileName: 저장할 FIG 파일 경로
+            inBipRoot (rt.Node): 저장 대상 Biped 루트(COM) 노드
+            fileName (str): 저장할 FIG 파일 경로
         """
         inBipRoot.controller.figureMode = False
         inBipRoot.controller.figureMode = True
         rt.biped.saveFigFile(inBipRoot.controller, fileName)
     
     def turn_on_figure_mode(self, inBipRoot):
-        """
-        Biped Figure 모드 켜기
-        
+        """Biped의 Figure 모드를 켠다.
+
         Args:
-            inBipRoot: 대상 Biped 객체
+            inBipRoot (rt.Node): 대상 Biped 루트(COM) 노드
         """
         inBipRoot.controller.figureMode = True
     
     def turn_off_figure_mode(self, inBipRoot):
-        """
-        Biped Figure 모드 끄기
-        
+        """Biped의 Figure 모드를 끈다.
+
         Args:
-            inBipRoot: 대상 Biped 객체
+            inBipRoot (rt.Node): 대상 Biped 루트(COM) 노드
         """
         inBipRoot.controller.figureMode = False
     
     def delete_copy_collection(self, inBipRoot, inName):
-        """
-        Biped 복사 컬렉션 삭제
-        
+        """이름이 일치하는 Biped 복사 컬렉션을 삭제한다.
+
         Args:
-            inBipRoot: 대상 Biped 객체
-            inName: 삭제할 컬렉션 이름
+            inBipRoot (rt.Node): 대상 Biped 루트(COM) 노드
+            inName (str): 삭제할 컬렉션 이름
         """
         if self.is_biped_object(inBipRoot):
             colNum = rt.biped.numCopyCollections(inBipRoot.controller)
@@ -465,11 +457,10 @@ class Bip:
                         break
     
     def delete_all_copy_collection(self, inBipRoot):
-        """
-        Biped 모든 복사 컬렉션 삭제
-        
+        """Biped의 모든 복사 컬렉션을 삭제한다.
+
         Args:
-            inBipRoot: 대상 Biped 객체
+            inBipRoot (rt.Node): 대상 Biped 루트(COM) 노드
         """
         if self.is_biped_object(inBipRoot):
             colNum = rt.biped.numCopyCollections(inBipRoot.controller)
@@ -477,11 +468,13 @@ class Bip:
                 rt.biped.deleteAllCopyCollections(inBipRoot.controller)
     
     def collapse_layers(self, inBipRoot):
-        """
-        Biped 레이어 병합
-        
+        """Biped의 모든 레이어를 병합한다.
+
         Args:
-            inBipRoot: 대상 Biped 객체
+            inBipRoot (rt.Node): 대상 Biped 루트(COM) 노드
+
+        Returns:
+            None | bool: Biped 관련 객체가 아니면 False. 정상 수행 시 None
         """
         if not self.is_biped_object(inBipRoot):
             return False
@@ -492,11 +485,14 @@ class Bip:
             layerNum = rt.biped.numLayers(inBipRoot.controller)
     
     def get_animation_range(self, inBipNodes):
-        """
-        Biped 애니메이션 범위 반환
-        
+        """Biped 노드들의 키 시간으로부터 애니메이션 범위를 계산한다.
+
         Args:
-            inBipNodes: 대상 Biped 노드 리스트
+            inBipNodes (list[rt.Node]): 대상 Biped 노드 리스트
+
+        Returns:
+            rt.Interval | bool: 최소~최대 키 시간 구간. 키가 없으면 (0, 1) 구간.
+                Biped 관련 객체가 아닌 노드가 하나라도 있으면 False
         """
         for item in inBipNodes:
             if not self.is_biped_object(item):
@@ -528,17 +524,20 @@ class Bip:
         return rt.interval(minFrame, maxFrame)
     
     def save_bip_file(self, inBipRoot, inFile, inBakeAllKeys=True, inCollapseLayers=True, inUseAnimationRangeOnly=True, progress_callback=None):
-        """
-        Biped BIP 파일 저장
-        
+        """Biped 애니메이션을 BIP 파일로 저장한다.
+
+        필요 시 레이어를 병합하고 저장 구간을 계산한 뒤 saveBipFileSegment로 저장한다.
+
         Args:
-            inBipRoot: 저장 대상 Biped 루트 노드
-            inFile: 저장할 BIP 파일 경로
-            inBakeAllKeys: 모든 키를 베이크할지 여부 (기본값: True)
-            inCollapseLayers: 레이어를 병합할지 여부 (기본값: True)
-            
+            inBipRoot (rt.Node): 저장 대상 Biped 루트(COM) 노드
+            inFile (str): 저장할 BIP 파일 경로. 디렉토리가 없으면 생성한다.
+            inBakeAllKeys (bool): True이면 매 프레임 키를 베이크(keyPerFrame)하여 저장한다.
+            inCollapseLayers (bool): True이면 저장 전에 레이어를 병합한다.
+            inUseAnimationRangeOnly (bool): True이면 키 범위 대신 현재 애니메이션 범위를 저장 구간으로 사용한다.
+            progress_callback (None): 사용되지 않는 파라미터
+
         Returns:
-            bool: 저장 성공 시 True, 실패 시 False
+            bool: 저장 성공 여부. Biped 관련 객체가 아니거나 디렉토리 생성에 실패하면 False
         """
         if not self.is_biped_object(inBipRoot):
             return False
@@ -573,8 +572,16 @@ class Bip:
         return True
     
     def link_base_skeleton(self, skinBoneBaseName="b"):
-        """
-        기본 스켈레톤 링크 (Biped와 일반 뼈대 연결)
+        """씬의 유일한 Biped의 본들에 대응하는 스킨 본을 찾아 링크한다.
+
+        Biped 본 이름의 Base 파트를 지정한 문자열로 치환해 대응 스킨 본을 찾고,
+        계층 순서대로 link_skin_bone을 수행한다. Twist 본과 COM은 대상에서 제외한다.
+
+        Args:
+            skinBoneBaseName (str): 스킨 본 이름의 Base 파트 문자열
+
+        Returns:
+            None | bool: 씬의 Biped COM이 정확히 1개가 아니면 False. 정상 수행 시 None
         """
         bipComs = self.get_coms()
         if len(bipComs) != 1:
@@ -604,8 +611,16 @@ class Bip:
                 self.bone.link_skin_bone(skinBones[i], item)
     
     def unlink_base_skeleton(self, skinBoneBaseName="b"):
-        """
-        기본 스켈레톤 링크 해제
+        """씬의 유일한 Biped의 본들에 대응하는 스킨 본의 링크를 해제한다.
+
+        Biped 본 이름의 Base 파트를 지정한 문자열로 치환해 대응 스킨 본을 찾고,
+        찾은 스킨 본마다 unlink_skin_bone을 수행한다. Twist 본과 COM은 대상에서 제외한다.
+
+        Args:
+            skinBoneBaseName (str): 스킨 본 이름의 Base 파트 문자열
+
+        Returns:
+            None | bool: 씬의 Biped COM이 정확히 1개가 아니면 False. 정상 수행 시 None
         """
         bipComs = self.get_coms()
         if len(bipComs) != 1:

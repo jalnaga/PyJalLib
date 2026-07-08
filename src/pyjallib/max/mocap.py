@@ -10,9 +10,10 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 class BipedBoneMapping:
-    """Biped 본 매핑 관리 클래스"""
+    """Biped 본과 FBX 본의 매핑 데이터를 생성·저장·조회하는 클래스."""
     
     def __init__(self):
+        """기본 Biped 본 매핑 구조를 생성하여 초기화한다."""
         self.mapping_data = self._create_default_mapping()
     
     def _create_default_mapping(self) -> Dict[str, Any]:
@@ -213,13 +214,13 @@ class BipedBoneMapping:
         return mapping
     
     def save_mapping(self, in_file_path: str) -> bool:
-        """매핑 데이터를 JSON 파일로 저장
-        
+        """매핑 데이터를 JSON 파일로 저장한다.
+
         Args:
-            in_file_path: 저장할 파일 경로
-            
+            in_file_path (str): 저장할 파일 경로. 상위 디렉토리가 없으면 생성한다.
+
         Returns:
-            성공 여부
+            bool: 저장 성공 여부. 예외 발생 시 False
         """
         try:
             file_path = Path(in_file_path)
@@ -234,13 +235,13 @@ class BipedBoneMapping:
             return False
     
     def load_mapping(self, in_file_path: str) -> bool:
-        """JSON 파일에서 매핑 데이터 로드
-        
+        """JSON 파일에서 매핑 데이터를 로드한다.
+
         Args:
-            in_file_path: 로드할 파일 경로
-            
+            in_file_path (str): 로드할 파일 경로
+
         Returns:
-            성공 여부
+            bool: 로드 성공 여부. 파일이 없거나 예외 발생 시 False
         """
         try:
             file_path = Path(in_file_path)
@@ -257,14 +258,14 @@ class BipedBoneMapping:
             return False
     
     def set_fbx_bone_name(self, in_bip_name: str, in_fbx_name: str) -> bool:
-        """특정 Biped 본에 FBX 본 이름 설정
-        
+        """특정 Biped 본에 대응하는 FBX 본 이름을 설정한다.
+
         Args:
-            in_bip_name: Biped 본 이름
-            in_fbx_name: 대응하는 FBX 본 이름
-            
+            in_bip_name (str): Biped 본 이름
+            in_fbx_name (str): 대응시킬 FBX 본 이름
+
         Returns:
-            성공 여부
+            bool: 설정 성공 여부. 해당 Biped 본이 없으면 False
         """
         for mapping in self.mapping_data["biped_mapping"]:
             if mapping["bip"] == in_bip_name:
@@ -275,13 +276,13 @@ class BipedBoneMapping:
         return False
     
     def get_fbx_bone_name(self, in_bip_name: str) -> Optional[str]:
-        """특정 Biped 본에 대응하는 FBX 본 이름 반환
-        
+        """특정 Biped 본에 대응하는 FBX 본 이름을 반환한다.
+
         Args:
-            in_bip_name: Biped 본 이름
-            
+            in_bip_name (str): Biped 본 이름
+
         Returns:
-            FBX 본 이름 또는 None
+            str | None: FBX 본 이름. 매핑이 없거나 이름이 빈 문자열이면 None
         """
         for mapping in self.mapping_data["biped_mapping"]:
             if mapping["bip"] == in_bip_name:
@@ -290,13 +291,17 @@ class BipedBoneMapping:
         return None
     
     def get_biped_info(self, in_bip_name: str) -> Optional[Dict[str, Any]]:
-        """특정 Biped 본의 정보 반환
-        
+        """특정 Biped 본의 매핑 정보를 반환한다.
+
         Args:
-            in_bip_name: Biped 본 이름
-            
+            in_bip_name (str): Biped 본 이름
+
         Returns:
-            Biped 본 정보 딕셔너리 또는 None
+            dict | None: 매핑 정보의 사본. 해당 본이 없으면 None
+                - bip (str): Biped 본 이름
+                - fbx (str): 대응 FBX 본 이름 (미설정 시 빈 문자열)
+                - biped_index (int): Biped 파트 인덱스
+                - biped_link (int): 파트 내 링크 번호
         """
         for mapping in self.mapping_data["biped_mapping"]:
             if mapping["bip"] == in_bip_name:
@@ -305,67 +310,64 @@ class BipedBoneMapping:
         return None
     
     def get_all_mappings(self) -> List[Dict[str, Any]]:
-        """모든 매핑 데이터 반환
-        
+        """모든 Biped-FBX 매핑 데이터를 반환한다.
+
         Returns:
-            매핑 데이터 리스트
+            list[dict]: {bip: str, fbx: str, biped_index: int, biped_link: int} 형태의 매핑 리스트 사본
         """
         return self.mapping_data["biped_mapping"].copy()
     
     def clear_all_fbx_mappings(self):
-        """모든 FBX 매핑을 빈 문자열로 초기화"""
+        """모든 매핑의 FBX 본 이름을 빈 문자열로 초기화한다."""
         for mapping in self.mapping_data["biped_mapping"]:
             mapping["fbx"] = ""
 
 
 class MocapRetargeter:
-    """모션 캡처 리타겟팅 클래스"""
+    """FBX 모션 캡처 데이터를 3ds Max Biped로 리타겟팅하는 클래스. 핵심 로직은 아직 미구현(TODO) 상태이다."""
     
     def __init__(self):
+        """BipedBoneMapping 인스턴스를 생성하여 초기화한다."""
         self.bone_mapping = BipedBoneMapping()
     
     def analyze_fbx_structure(self, in_fbx_nodes: List[str]) -> Dict[str, Any]:
-        """FBX 본 구조 분석
-        
+        """FBX 본 구조를 분석한다 (미구현).
+
+        현재 구현이 없어 항상 None을 반환한다.
+
         Args:
-            in_fbx_nodes: FBX 노드 이름 리스트
-            
-        Returns:
-            분석 결과 딕셔너리
+            in_fbx_nodes (list[str]): FBX 노드 이름 리스트
         """
         # TODO: FBX 본 구조 분석 로직 구현
         pass
     
     def create_biped(self, in_height: float = 170.0) -> bool:
-        """Biped 생성
-        
+        """Biped를 생성한다 (미구현).
+
+        현재 구현이 없어 항상 None을 반환한다.
+
         Args:
-            in_height: Biped 높이
-            
-        Returns:
-            성공 여부
+            in_height (float): 생성할 Biped 높이
         """
         # TODO: Biped 생성 로직 구현
         pass
     
     def resize_biped(self) -> bool:
-        """Biped 크기 조정
-        
-        Returns:
-            성공 여부
+        """Biped 크기를 조정한다 (미구현).
+
+        현재 구현이 없어 항상 None을 반환한다.
         """
         # TODO: Biped 크기 조정 로직 구현
         pass
     
     def retarget_animation(self, in_start_frame: int, in_end_frame: int) -> bool:
-        """애니메이션 리타겟팅
-        
+        """애니메이션을 리타겟팅한다 (미구현).
+
+        현재 구현이 없어 항상 None을 반환한다.
+
         Args:
-            in_start_frame: 시작 프레임
-            in_end_frame: 종료 프레임
-            
-        Returns:
-            성공 여부
+            in_start_frame (int): 시작 프레임
+            in_end_frame (int): 종료 프레임
         """
         # TODO: 애니메이션 리타겟팅 로직 구현
         pass

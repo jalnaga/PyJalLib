@@ -16,21 +16,17 @@ from .constraint import Constraint
 from .bip import Bip
 
 class RootMotion:
-    """
-    Root Motion 관련 기능을 위한 클래스
-    3DS Max에서 Root Motion을 처리하는 기능을 제공합니다.
-    """
+    """Biped 애니메이션에서 루트 모션을 추출해 루트 본에 키프레임으로 적용하는 클래스. 바운딩 박스 기반 위치 계산, 로코모션 모드 변환, 키프레임 적용 기능을 제공한다."""
 
     def __init__(self, nameService=None, animService=None, constraintService=None, helperService=None, bipService=None):
-        """
-        클래스 초기화.
+        """클래스를 초기화한다.
 
         Args:
-            nameService: 이름 처리 서비스 (제공되지 않으면 새로 생성)
-            animService: 애니메이션 서비스 (제공되지 않으면 새로 생성)
-            constraintService: 제약 서비스 (제공되지 않으면 새로 생성)
-            bipService: Biped 서비스 (제공되지 않으면 새로 생성)
-            helperService: 헬퍼 객체 서비스 (제공되지 않으면 새로 생성)
+            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
+            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
+            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
+            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
+            bipService (Bip | None): Biped 서비스. None이면 새로 생성한다.
         """
         self.name = nameService if nameService else Name()
         self.anim = animService if animService else Anim()
@@ -54,18 +50,19 @@ class RootMotion:
         self.accelerationFrameRange = 1 # 가속도 계산 프레임 범위 (기본값: convert_keyframe_data_for_locomotion의 기본값)
 
     def is_foot_planted(self, footBone, frameTime, floorThreshold=2.0, fps=60.0, footSpeedThreshold=0.1):
-        """
-        발이 바닥에 고정되어 있는지 확인하는 함수
-        
+        """지정 프레임에서 발이 바닥에 고정되어 있는지 판정한다.
+
+        발 높이가 바닥 임계값 이하이고 직전 프레임 대비 XY 이동량이 속도 임계값 이하이면 고정으로 본다.
+
         Args:
-            footBone (node): 발 본 객체
-            frameTime (int): 현재 프레임 시간
-            floorThreshold (float): 바닥 접촉 임계값 (기본값: 2.0)
-            fps (float): 초당 프레임 수 (기본값: 60.0)
-            footSpeedThreshold (float): 발 속도 임계값 (기본값: 0.1)
-        
+            footBone (rt.Node): 발 본 객체
+            frameTime (int): 판정할 프레임
+            floorThreshold (float): 바닥 접촉 임계값
+            fps (float): 초당 프레임 수
+            footSpeedThreshold (float): 발 속도 임계값
+
         Returns:
-            bool: 발이 바닥에 고정되어 있으면 True, 그렇지 않으면 False
+            bool: 발이 바닥에 고정되어 있으면 True
         """
         footPosCurrentWorld = footBone.transform.position
         footPosPrevWorld = footBone.transform.position
@@ -94,21 +91,28 @@ class RootMotion:
         return isPlanted
 
     def create_root_motion_from_bounding_box(self, bipCom, rootBone, startFrame, endFrame, floorThreshold=2.0, footSpeedThreshold=1.0, keepZAtZero=True, followZRotation=False):
-        """
-        Root Motion을 Bounding Box를 기반으로 생성하는 함수 (키프레임 데이터만 생성)
-        
+        """Biped 바운딩 박스를 기반으로 루트 모션 키프레임 데이터를 생성한다 (키 적용은 하지 않음).
+
+        시작 프레임에서 루트와 바운딩 박스 중심의 상대 오프셋을 구한 뒤, 양발이 모두 바닥에
+        고정되지 않은 프레임마다 새 루트 위치·회전을 계산한다. 양발이 모두 고정된 프레임은 제외된다.
+
         Args:
-            bipCom (node): Biped COM 객체
-            rootBone (node): 루트 본 객체
+            bipCom (rt.Node): Biped COM 객체
+            rootBone (rt.Node): 루트 본 객체
             startFrame (int): 시작 프레임
             endFrame (int): 끝 프레임
-            floorThreshold (float): 바닥 접촉 임계값 (기본값: 2.0)
-            footSpeedThreshold (float): 발 속도 임계값 (기본값: 1.0)
-            keepZAtZero (bool): Z축을 0으로 유지할지 여부 (기본값: True)
-            followZRotation (bool): Z축 회전을 따라갈지 여부 (기본값: False)
-        
+            floorThreshold (float): 바닥 접촉 임계값
+            footSpeedThreshold (float): 발 속도 임계값
+            keepZAtZero (bool): True이면 루트 Z 위치를 0으로 유지한다.
+            followZRotation (bool): True이면 COM의 Z축 회전을 따라간다.
+
         Returns:
-            dict: 키프레임 데이터 딕셔너리 (실패시 None)
+            dict[int, dict] | None: 프레임 번호를 키로 하는 키프레임 데이터. 입력이 유효하지
+                않거나 발 본·바운딩 박스를 구할 수 없으면 None. 각 프레임 값의 키:
+                - position (rt.Point3): 계산된 루트 위치
+                - rotation (rt.EulerAngles): 계산된 루트 회전
+                - bipComPos (rt.Point3): 해당 프레임의 COM 위치
+                - bipComRot (rt.Quat): 해당 프레임의 COM 회전
         """
         # 입력 검증
         if not rt.isValidNode(rootBone) or startFrame >= endFrame or not rt.isValidNode(bipCom):
@@ -217,20 +221,36 @@ class RootMotion:
         return keyframe_data
     
     def convert_keyframe_data_for_locomotion(self, bipCom, keyframe_data, acceleration_threshold=3.0, direction_threshold=0.005, acceleration_frame_range=1, followZRotation=False):
-        """
-        로코모션 모드에 맞게 키프레임 데이터를 변환하는 함수
-        
+        """키프레임 데이터를 로코모션 모드에 맞게 변환한다.
+
+        COM 이동 방향을 전후좌우로 분류해 활성 방향 축의 위치만 갱신하고, 속도·가속도를
+        계산하여 키프레임이 필요한 프레임을 표시한다. 첫/마지막 프레임은 항상 키프레임 대상이 된다.
+
         Args:
-            bipCom (node): Biped COM 객체
-            keyframe_data (dict): 키프레임 데이터 딕셔너리
-            acceleration_threshold (float): 가속도 변화 임계값 (기본값: 3.0)
-            direction_threshold (float): 방향 감지 임계값 (기본값: 0.005, 0.0~1.0).
-                                         Strict activation uses (1.0 - direction_threshold).
-            acceleration_frame_range (int): 가속도 계산을 위한 프레임 범위 (기본값: 1)
-            followZRotation (bool): Z축 회전을 따라갈지 여부 (기본값: False)
-        
+            bipCom (rt.Node): Biped COM 객체
+            keyframe_data (dict[int, dict]): create_root_motion_from_bounding_box가 생성한 키프레임 데이터
+            acceleration_threshold (float): 키프레임 필요 판단에 쓰는 가속도 변화 임계값
+            direction_threshold (float): 방향 감지 임계값 (0.0~1.0). 활성 판정에는 (1.0 - 값)을 사용한다.
+            acceleration_frame_range (int): 속도·가속도 계산에 사용할 프레임 범위
+            followZRotation (bool): True이면 이동 방향에 따라 Z축 회전을 재계산한다.
+
         Returns:
-            dict: 변환된 키프레임 데이터 딕셔너리
+            dict[int, dict]: 프레임 번호를 키로 하는 변환된 키프레임 데이터. 입력이 유효하지
+                않거나 프레임 수가 (2 * 프레임 범위 + 1)보다 적으면 빈 dict. 각 프레임 값의 키:
+                - position (rt.Point3): 로코모션 규칙이 적용된 루트 위치
+                - rotation (rt.EulerAngles): 최종 회전
+                - bipComPos (rt.Point3): COM 위치
+                - bipComRot (rt.Quat): COM 회전
+                - direction (str): 주 이동 방향 ("forward"/"backward"/"left"/"right"/"Transition")
+                - direction_changed (bool): 이전 프레임 대비 방향 변경 여부
+                - active_directions (list[str]): 임계값을 넘은 활성 방향 목록 (Transition이면 빈 리스트)
+                - dot_values (dict): {forward: float, backward: float, right: float, left: float} 방향별 내적 값
+                - direction_threshold (float): 입력한 방향 감지 임계값
+                - strict_activation_threshold (float): 실제 활성 판정에 사용한 임계값
+                - velocity (rt.Point3): 계산된 속도
+                - acceleration (rt.Point3): 계산된 가속도
+                - acceleration_magnitude (float): 가속도 크기
+                - needs_keyframe (bool): 키프레임 생성 필요 여부
         """
         if not keyframe_data or not rt.isValidNode(bipCom):
             return {}
@@ -468,14 +488,17 @@ class RootMotion:
         return converted_data
 
     def apply_keyframes_locomotion_mode(self, keyframeData, keySmoothness=10.0):
-        """
-        로코모션 모드로 키프레임을 적용하는 함수 (needs_keyframe이 True인 프레임에만 키 생성)
-        
+        """로코모션 모드로 키프레임을 적용한다 (needs_keyframe이 True인 프레임에만 키 생성).
+
+        MAXScript를 두 번 실행(3ds Max 버그 우회)하며 실행 사이에 구간 내 기존 키를 삭제하고,
+        마지막에 reduceKeys로 키를 정리한다.
+
         Args:
-            keyframeData (dict): 키프레임 데이터 딕셔너리 (convert_keyframe_data_for_locomotion에서 변환된 데이터)
-        
+            keyframeData (dict[int, dict]): convert_keyframe_data_for_locomotion이 변환한 키프레임 데이터
+            keySmoothness (float): reduceKeys에 사용할 키 감소 임계값
+
         Returns:
-            bool: 성공 여부
+            bool: 적용 성공 여부. 데이터가 없거나 루트 노드가 설정되지 않았거나 예외가 발생하면 False
         """
         if not keyframeData or not self.rootNode:
             return False
@@ -554,14 +577,17 @@ class RootMotion:
             return False
 
     def apply_keyframes_normal_mode(self, keyframeData, keySmoothness=10.0):
-        """
-        일반 모드로 키프레임을 적용하는 함수 (모든 키프레임에 키 생성)
-        
+        """일반 모드로 키프레임을 적용한다 (모든 프레임에 키 생성).
+
+        MAXScript를 두 번 실행(3ds Max 버그 우회)하며 실행 사이에 구간 내 기존 키를 삭제하고,
+        마지막에 reduceKeys로 키를 정리한다.
+
         Args:
-            keyframeData (dict): 키프레임 데이터 딕셔너리
-        
+            keyframeData (dict[int, dict]): 키프레임 데이터 딕셔너리 (position·rotation 키 필요)
+            keySmoothness (float): reduceKeys에 사용할 키 감소 임계값
+
         Returns:
-            bool: 성공 여부
+            bool: 적용 성공 여부. 데이터가 없거나 루트 노드가 설정되지 않았거나 예외가 발생하면 False
         """
         if not keyframeData or not self.rootNode:
             return False
@@ -624,14 +650,13 @@ class RootMotion:
             return False
     
     def get_bipcom_position(self, frame_time):
-        """
-        특정 프레임에서 bipCom의 위치를 가져오는 헬퍼 함수
-        
+        """특정 프레임에서 펠비스 노드의 월드 위치를 반환한다.
+
         Args:
             frame_time (int): 프레임 시간
-        
+
         Returns:
-            Point3: bipCom의 위치
+            rt.Point3: 펠비스의 월드 위치. 펠비스가 설정되지 않았거나 유효하지 않으면 (0, 0, 0)
         """
         if hasattr(self, 'pelvis') and self.pelvis and rt.isValidNode(self.pelvis):
             with attime(frame_time):
