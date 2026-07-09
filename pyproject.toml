@@ -1,6 +1,6 @@
 [project]
 name = "pyjallib"
-version = "0.2.2"
+version = "0.3.0"
 description = "A utility library for 3D game character development pipelines."
 readme = "README.md"
 license = "MIT"
