@@ -5,7 +5,7 @@ P4Python을 사용하여 Perforce 작업을 수행하는 단일 클래스
 
 from P4 import P4, P4Exception
 from pathlib import Path
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Tuple
 
 
 class Perforce:
@@ -739,6 +739,70 @@ class Perforce:
             return True
         except P4Exception as e:
             print(f"파일 삭제 실패: {e}")
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def move_files(self, source_target_pairs: List[Tuple[str, str]], change_list_number: int) -> bool:
+        """
+        파일들을 새 경로로 이동/개명 (p4 edit → p4 move, 이력 보존)
+
+        각 (source, target) 쌍에 대해 source를 지정 체인지리스트로 edit한 뒤 move한다.
+        p4 move는 depot 경로와 워크스페이스의 실제 파일을 함께 이동하므로 별도의
+        파일시스템 조작이 필요 없다(add/delete와 달리 rename 이력이 보존된다).
+
+        Args:
+            source_target_pairs: (원본 경로, 대상 경로) 튜플 리스트
+            change_list_number: 체인지리스트 번호
+
+        Returns:
+            bool: 성공 여부
+
+        Raises:
+            ValueError: source_target_pairs가 리스트가 아닌 경우
+            P4Exception: 파일이 다른 체인지리스트에 열려있거나 이동에 실패한 경우
+        """
+        if not isinstance(source_target_pairs, list):
+            raise ValueError("source_target_pairs must be a list")
+
+        if not source_target_pairs:
+            return False
+
+        p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
+        p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
+        try:
+            p4.connect()
+
+            sources = [self._normalize_path(src) for src, _dst in source_target_pairs]
+
+            # 원본이 다른 체인지리스트에 이미 열려있는지 체크
+            try:
+                opened = p4.run("opened", *sources)
+                for file_info in opened:
+                    existing_cl = file_info.get('change')
+                    if existing_cl != str(change_list_number) and existing_cl != 'default':
+                        depotFile = file_info.get('depotFile', 'unknown')
+                        print(f"파일이 다른 체인지리스트에 열려있음: {depotFile} (CL: {existing_cl})")
+                        raise P4Exception(f"파일이 체인지리스트 {existing_cl}에 이미 열려있습니다")
+            except P4Exception as e:
+                # 파일이 열려있지 않으면 에러가 발생할 수 있음 (정상)
+                if "not opened" not in str(e):
+                    raise
+
+            # 각 쌍에 대해 edit 후 move (move는 원본이 edit 상태여야 함)
+            for src, dst in source_target_pairs:
+                normSource = self._normalize_path(src)
+                normTarget = self._normalize_path(dst)
+                p4.run("edit", "-c", str(change_list_number), normSource)
+                p4.run("move", "-c", str(change_list_number), normSource, normTarget)
+            return True
+        except P4Exception as e:
+            print(f"파일 이동 실패: {e}")
             raise
         finally:
             if p4.connected():
