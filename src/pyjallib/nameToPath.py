@@ -63,20 +63,35 @@ class NameToPath(Naming):
     def generate_path(self, inputName: str, inIncludeRealName: bool = False) -> str:
         """
         입력된 이름을 기반으로 경로를 생성
-        
+
+        pathConfig의 partOrder를 순서대로 순회하며 각 파트를 자신의 위치에 폴더로
+        배치한다. 일반 파트(PREFIX/SUFFIX)는 description을 폴더명으로 쓰고, RealName은
+        description이 없으므로 value 자체를 폴더명으로 쓴다. RealName도 partOrder상의
+        위치를 그대로 따르므로, RealName 뒤에 선언된 파트(예: Slot)는 RealName 하위
+        폴더로 배치된다. inIncludeRealName은 RealName 폴더의 포함 여부만 결정한다.
+
         :param inputName: 파싱할 입력 이름
-        :param inIncludeRealName: 실제 이름을 경로에 포함할지 여부
+        :param inIncludeRealName: 실제 이름(RealName)을 경로에 포함할지 여부
         :return: 생성된 경로
         """
         parsedDict = self.parse_name(inputName)
-        nameParts = self.pathConfig.get_part_order()
-        folders = [
-            self._sanitize_folder_name(self.pathConfig.get_part(part).get_description_by_value(parsedDict[part]))
-            for part in nameParts if part in parsedDict and self.pathConfig.get_part(part).get_description_by_value(parsedDict[part])
-        ]
-        if inIncludeRealName:
-            folders.append(self._sanitize_folder_name(parsedDict["RealName"]))
-        
+        folders = []
+        for part in self.pathConfig.get_part_order():
+            if part not in parsedDict:
+                continue
+            partObj = self.pathConfig.get_part(part)
+            if partObj is None:
+                continue
+            value = parsedDict[part]
+            if partObj.is_realname():
+                # RealName은 predefined 값이 없어 description을 못 만들므로 value를 폴더명으로 사용
+                if inIncludeRealName and value:
+                    folders.append(self._sanitize_folder_name(value))
+            else:
+                description = partObj.get_description_by_value(value)
+                if description:
+                    folders.append(self._sanitize_folder_name(description))
+
         if self.rootPath:
             fullPath = os.path.join(self.rootPath, *folders)
         else:
