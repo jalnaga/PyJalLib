@@ -49,6 +49,47 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             assetList = ", ".join(inAssetFullPaths[:3]) + f" ... (and {totalCount - 3} more)"
             return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
 
+    def _resolve_skeleton_object(self, inSkeletonAsset, inSkeletonPath: str):
+        """로드된 스켈레톤 에셋에서 실제 unreal.Skeleton 오브젝트를 해석합니다.
+
+        스켈레톤 경로가 SkeletalMesh 에셋을 가리키는 경우(신 스킴 폴더에는
+        SK_ SkeletalMesh만 있고 Skeleton 에셋이 없음), 그 메시의 skeleton
+        프로퍼티에서 실제 Skeleton을 추출한다. Skeleton 에셋이 직접 오면
+        그대로 반환한다 (기존 동작 호환).
+
+        Args:
+            inSkeletonAsset: 로드된 에셋 (unreal.Skeleton 또는 unreal.SkeletalMesh)
+            inSkeletonPath: 로그/에러용 원본 Content 경로
+
+        Returns:
+            unreal.Skeleton: 해석된 스켈레톤 오브젝트
+
+        Raises:
+            ValueError: Skeleton으로 해석할 수 없는 에셋 타입이거나
+                SkeletalMesh에 skeleton이 설정되어 있지 않은 경우
+        """
+        if isinstance(inSkeletonAsset, unreal.Skeleton):
+            return inSkeletonAsset
+
+        if isinstance(inSkeletonAsset, unreal.SkeletalMesh):
+            resolvedSkeleton = inSkeletonAsset.get_editor_property('skeleton')
+            if resolvedSkeleton is None:
+                error_msg = f"SkeletalMesh에 skeleton이 설정되어 있지 않음: {inSkeletonPath}"
+                unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
+                raise ValueError(error_msg)
+            unreal.log(
+                f"[LegacyAnimationImporter] SkeletalMesh에서 Skeleton 해석: "
+                f"{inSkeletonPath} -> {resolvedSkeleton.get_path_name()}"
+            )
+            return resolvedSkeleton
+
+        error_msg = (
+            f"Skeleton으로 해석할 수 없는 에셋 타입: {inSkeletonPath} "
+            f"(type={type(inSkeletonAsset).__name__})"
+        )
+        unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
+        raise ValueError(error_msg)
+
     def create_import_task(self, inFbxFile: str, inDestinationPath: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None):
         """애니메이션 임포트를 위한 태스크 생성 - 스켈레톤 필수 지정"""
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 태스크 생성 시작: {inFbxFile}")
@@ -71,7 +112,10 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
 
-        animSkeleton = skeletonAssetData.get_asset()
+        # SkeletalMesh 경로가 와도 실제 Skeleton 오브젝트로 해석 (신 스킴 대응)
+        animSkeleton = self._resolve_skeleton_object(
+            skeletonAssetData.get_asset(), skeletonPath
+        )
         unreal.log(f"[LegacyAnimationImporter] 스켈레톤 로드됨: {animSkeleton.get_name()}")
 
         # FbxImportUI 직접 생성 및 설정
@@ -148,7 +192,10 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         if not skeletonAssetData.is_valid():
             raise ValueError(f"스켈레톤 에셋을 찾을 수 없음: {skeletonPath}")
 
-        return skeletonPath, skeletonAssetData.get_asset()
+        # SkeletalMesh 경로가 와도 실제 Skeleton 오브젝트로 해석 (신 스킴 대응)
+        return skeletonPath, self._resolve_skeleton_object(
+            skeletonAssetData.get_asset(), skeletonPath
+        )
 
     def _needs_skeleton_swap(self, assetFullPath: str, targetSkeleton) -> bool:
         """
