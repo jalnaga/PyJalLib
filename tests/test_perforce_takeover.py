@@ -283,3 +283,107 @@ def test_move_skips_reedit_for_opened_source():
 def test_comparable_path_absorbs_separator_and_case_differences():
     """경로 비교 키가 구분자/대소문자 차이를 흡수한다."""
     assert Perforce._comparable_path(r"C:\WS\Proj\A.max") == Perforce._comparable_path("c:/ws/proj/a.max")
+
+
+# ============================================================================
+# 4.2 이어받기로 비게 된 원본 CL 정리
+# ============================================================================
+
+def _make_p4_mock_with_cl_state(inOpenedResult, inWhereResult, inRemainingByCl, inChangeDeleteError=None):
+    """빈 CL 정리 분기까지 제어하는 P4 mock을 만든다.
+
+    Args:
+        inOpenedResult: `p4 opened <files>` 반환값
+        inWhereResult: `p4 where` 반환값
+        inRemainingByCl: {CL번호: `p4 opened -c CL` 반환값} 딕셔너리
+        inChangeDeleteError: `p4 change -d` 호출 시 던질 예외 (None이면 정상)
+
+    Returns:
+        MagicMock: P4 mock
+    """
+    mock_p4 = MagicMock()
+    mock_p4.connected.return_value = True
+
+    def _run(command, *args):
+        if command == "opened":
+            if args and args[0] == "-c":
+                return inRemainingByCl.get(args[1], [])
+            return inOpenedResult
+        if command == "where":
+            return inWhereResult
+        if command == "change" and args and args[0] == "-d":
+            if inChangeDeleteError is not None:
+                raise inChangeDeleteError
+            return []
+        return []
+
+    mock_p4.run.side_effect = _run
+    return mock_p4
+
+
+def test_emptied_source_changelist_is_deleted():
+    """이어받기 후 원본 CL이 비었으면 삭제한다."""
+    p4wrap = _make_wrap()
+    normA = p4wrap._normalize_path(_LOCAL_A)
+    mock_p4 = _make_p4_mock_with_cl_state(
+        inOpenedResult=[_opened_entry(_DEPOT_A, "99", "edit")],
+        inWhereResult=[_where_entry(_DEPOT_A, normA)],
+        inRemainingByCl={"99": []},
+    )
+
+    with patch("pyjallib.perforce.P4", return_value=mock_p4):
+        result = p4wrap.checkout_files([_LOCAL_A], 42)
+
+    assert result is True
+    mock_p4.run.assert_any_call("change", "-d", "99")
+
+
+def test_source_changelist_with_remaining_files_is_kept():
+    """원본 CL에 다른 파일이 남아 있으면 삭제하지 않는다."""
+    p4wrap = _make_wrap()
+    normA = p4wrap._normalize_path(_LOCAL_A)
+    mock_p4 = _make_p4_mock_with_cl_state(
+        inOpenedResult=[_opened_entry(_DEPOT_A, "99", "edit")],
+        inWhereResult=[_where_entry(_DEPOT_A, normA)],
+        inRemainingByCl={"99": [_opened_entry(_DEPOT_B, "99", "edit")]},
+    )
+
+    with patch("pyjallib.perforce.P4", return_value=mock_p4):
+        result = p4wrap.checkout_files([_LOCAL_A], 42)
+
+    assert result is True
+    assert _calls_of(mock_p4, "change") == []
+
+
+def test_source_changelist_delete_failure_does_not_break_flow():
+    """빈 CL 삭제가 실패해도(셸브 등) 본 작업은 성공으로 계속된다."""
+    p4wrap = _make_wrap()
+    normA = p4wrap._normalize_path(_LOCAL_A)
+    mock_p4 = _make_p4_mock_with_cl_state(
+        inOpenedResult=[_opened_entry(_DEPOT_A, "99", "edit")],
+        inWhereResult=[_where_entry(_DEPOT_A, normA)],
+        inRemainingByCl={"99": []},
+        inChangeDeleteError=P4Exception("Change 99 has shelved files associated with it and can't be deleted."),
+    )
+
+    with patch("pyjallib.perforce.P4", return_value=mock_p4):
+        result = p4wrap.checkout_files([_LOCAL_A], 42)
+
+    assert result is True
+
+
+def test_default_source_changelist_is_not_delete_target():
+    """default CL에서 이어받은 경우 default는 삭제 시도 대상이 아니다."""
+    p4wrap = _make_wrap()
+    normA = p4wrap._normalize_path(_LOCAL_A)
+    mock_p4 = _make_p4_mock_with_cl_state(
+        inOpenedResult=[_opened_entry(_DEPOT_A, "default", "edit")],
+        inWhereResult=[_where_entry(_DEPOT_A, normA)],
+        inRemainingByCl={},
+    )
+
+    with patch("pyjallib.perforce.P4", return_value=mock_p4):
+        result = p4wrap.checkout_files([_LOCAL_A], 42)
+
+    assert result is True
+    assert _calls_of(mock_p4, "change") == []

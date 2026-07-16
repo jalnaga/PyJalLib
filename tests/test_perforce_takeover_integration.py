@@ -49,6 +49,7 @@ def test_reexport_conflict_scenario_takes_over_to_new_changelist():
 
     clA = None
     clB = None
+    clC = None
     try:
         tempDir.mkdir(parents=True, exist_ok=True)
         testFile.write_text("p4 takeover integration test", encoding="utf-8")
@@ -63,16 +64,22 @@ def test_reexport_conflict_scenario_takes_over_to_new_changelist():
         clB = p4wrap.create_change_list("[TA 김동석] pyjallib takeover 통합테스트 CL B (자동 정리됨)")["id"]
         assert p4wrap.add_files([str(testFile)], clB) is True
 
-        # 3) 파일이 CL B로 이어받아졌는지 확인 (CL A에는 더 이상 없음)
+        # 3) 파일이 CL B로 이어받아졌는지 + 비게 된 CL A가 자동 삭제됐는지 확인 (S-1)
         assert p4wrap.is_file_in_pending_changelist(str(testFile), clB) is True
-        assert p4wrap.is_file_in_pending_changelist(str(testFile), clA) is False
+        pendingIds = {cl.get("id") for cl in p4wrap.get_pending_change_list()}
+        assert clA not in pendingIds
+        clA = None  # 자동 삭제 확인됨 - finally 정리 대상에서 제외
 
-        # 4) checkout_files 경로도 동일 시나리오로 확인 (add로 열린 파일을 CL A로 재이동)
-        assert p4wrap.checkout_files([str(testFile)], clA) is True
-        assert p4wrap.is_file_in_pending_changelist(str(testFile), clA) is True
+        # 4) checkout_files 경로도 동일 시나리오로 확인 (add로 열린 파일을 새 CL C로 이동)
+        clC = p4wrap.create_change_list("[TA 김동석] pyjallib takeover 통합테스트 CL C (자동 정리됨)")["id"]
+        assert p4wrap.checkout_files([str(testFile)], clC) is True
+        assert p4wrap.is_file_in_pending_changelist(str(testFile), clC) is True
+        pendingIds = {cl.get("id") for cl in p4wrap.get_pending_change_list()}
+        assert clB not in pendingIds
+        clB = None  # 자동 삭제 확인됨
     finally:
         # 정리: 전부 revert 후 CL 삭제, 로컬 파일 제거 (depot에 아무것도 남기지 않음)
-        for cl in (clA, clB):
+        for cl in (clA, clB, clC):
             if cl is not None:
                 try:
                     p4wrap.revert_files(cl)

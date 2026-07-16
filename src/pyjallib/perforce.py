@@ -643,6 +643,7 @@ class Perforce:
 
         opened_actions: Dict[str, str] = {}
         reopen_targets = []
+        source_changelists = set()
         for file_info in opened:
             if not isinstance(file_info, dict):
                 continue
@@ -653,12 +654,36 @@ class Perforce:
             existing_cl = file_info.get("change", "")
             if existing_cl != target_cl:
                 reopen_targets.append(depot_file)
+                if existing_cl and existing_cl != "default":
+                    source_changelists.add(existing_cl)
                 print(f"파일이 체인지리스트 {existing_cl}에 열려있어 {target_cl}(으)로 이어받음(reopen): {depot_file}")
 
         if reopen_targets:
             p4.run("reopen", "-c", target_cl, *reopen_targets)
+            self._delete_emptied_changelists(p4, source_changelists)
 
         return opened_actions
+
+    def _delete_emptied_changelists(self, p4: P4, changelist_numbers) -> None:
+        """이어받기로 파일이 빠져나가 비게 된 pending CL들을 삭제한다.
+
+        고아 빈 CL이 누적되는 것을 막는 정리 단계다. 조회/삭제 실패는
+        본 작업에 영향을 주지 않도록 경고만 남기고 계속한다
+        (셸브 파일이 있는 CL 등은 p4가 삭제를 거부한다).
+
+        Args:
+            p4: 연결된 P4 인스턴스
+            changelist_numbers: 파일이 빠져나간 원본 CL 번호 목록 (default 제외)
+        """
+        for changelist in changelist_numbers:
+            try:
+                remaining = p4.run("opened", "-c", str(changelist))
+                if remaining:
+                    continue
+                p4.run("change", "-d", str(changelist))
+                print(f"이어받기로 비게 된 체인지리스트 삭제: {changelist}")
+            except P4Exception as e:
+                print(f"체인지리스트 {changelist} 정리 실패 (무시하고 계속): {e}")
 
     def checkout_files(self, file_paths: List[str], change_list_number: int) -> bool:
         """
