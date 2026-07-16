@@ -599,7 +599,7 @@ class Perforce:
         """
         return str(path).replace("\\", "/").lower()
 
-    def _takeover_opened_files(self, p4: P4, file_paths: List[str], change_list_number) -> Dict[str, str]:
+    def _takeover_opened_files(self, p4: P4, file_paths: List[str], change_list_number: Union[int, str]) -> Dict[str, str]:
         """대상 체인지리스트가 아닌 곳에 열려 있는 파일들을 대상 CL로 이어받는다.
 
         `p4 opened`(-a 미사용)는 현재 워크스페이스의 오픈만 반환하므로, 여기서
@@ -664,7 +664,7 @@ class Perforce:
 
         return opened_actions
 
-    def _delete_emptied_changelists(self, p4: P4, changelist_numbers) -> None:
+    def _delete_emptied_changelists(self, p4: P4, changelist_numbers: Union[set, List[str]]) -> None:
         """이어받기로 파일이 빠져나가 비게 된 pending CL들을 삭제한다.
 
         고아 빈 CL이 누적되는 것을 막는 정리 단계다. 조회/삭제 실패는
@@ -717,8 +717,18 @@ class Perforce:
             # 다른 CL에 이미 열린 파일은 대상 CL로 이어받는다 (자기 클라이언트의 오픈만 해당)
             opened_actions = self._takeover_opened_files(p4, normalized, change_list_number)
 
-            # 아직 열려 있지 않은 파일만 체크아웃 실행
-            to_edit = [f for f in normalized if self._comparable_path(f) not in opened_actions]
+            # 아직 열려 있지 않은 파일만 체크아웃 실행.
+            # delete로 열린 파일에 체크아웃(edit) 의도가 오면 삭제 마크가 남지 않도록
+            # revert -k(로컬 파일 유지)로 되돌린 후 edit로 다시 연다.
+            to_edit = []
+            for filePath in normalized:
+                action = opened_actions.get(self._comparable_path(filePath))
+                if action is None:
+                    to_edit.append(filePath)
+                elif action in ("delete", "move/delete"):
+                    p4.run("revert", "-k", filePath)
+                    print(f"delete로 열려있던 파일을 edit로 전환: {filePath}")
+                    to_edit.append(filePath)
             if to_edit:
                 p4.run("edit", "-c", str(change_list_number), *to_edit)
             return True

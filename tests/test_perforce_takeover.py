@@ -261,6 +261,24 @@ def test_delete_cancels_add_opened_file_without_delete():
     assert _calls_of(mock_p4, "delete") == []
 
 
+def test_checkout_converts_delete_opened_file_to_edit():
+    """delete로 열린 파일에 체크아웃 의도가 오면 revert -k 후 edit로 전환한다."""
+    p4wrap = _make_wrap()
+    normA = p4wrap._normalize_path(_LOCAL_A)
+    mock_p4 = _make_p4_mock(
+        inOpenedResult=[_opened_entry(_DEPOT_A, "99", "delete")],
+        inWhereResult=[_where_entry(_DEPOT_A, normA)],
+    )
+
+    with patch("pyjallib.perforce.P4", return_value=mock_p4):
+        result = p4wrap.checkout_files([_LOCAL_A], 42)
+
+    assert result is True
+    mock_p4.run.assert_any_call("reopen", "-c", "42", _DEPOT_A)
+    mock_p4.run.assert_any_call("revert", "-k", normA)
+    mock_p4.run.assert_any_call("edit", "-c", "42", normA)
+
+
 def test_move_skips_reedit_for_opened_source():
     """이미 열린 원본은 재-edit 없이 바로 move한다."""
     p4wrap = _make_wrap()
