@@ -246,7 +246,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         tempFolder = f"{destinationPath}/_SkeletonSwapTemp"
         tempPath = f"{tempFolder}/{assetName}"
 
-        unreal.log(f"[LegacyAnimationImporter] ========== Consolidate+Rename 시작 ==========")
+        unreal.log("[LegacyAnimationImporter] ========== Consolidate+Rename 시작 ==========")
         unreal.log(f"[LegacyAnimationImporter] 대상 에셋: {assetFullPath}")
         unreal.log(f"[LegacyAnimationImporter] 임시 경로: {tempPath}")
         unreal.log(f"[LegacyAnimationImporter] FBX 파일: {inFbxFile}")
@@ -307,7 +307,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         unreal.log(f"[LegacyAnimationImporter] [반환값] consolidate_assets() 결과: {consolidateSuccess}")
 
         if not consolidateSuccess:
-            unreal.log_error(f"[LegacyAnimationImporter] Consolidate 실패!")
+            unreal.log_error("[LegacyAnimationImporter] Consolidate 실패!")
             # 임시 에셋 정리
             unreal.EditorAssetLibrary.delete_asset(tempPath)
             raise ValueError(f"Consolidate 실패: {assetFullPath}")
@@ -350,7 +350,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
                 unreal.log(f"[LegacyAnimationImporter] 디스크 파일 직접 삭제 시도: {diskPath}")
                 try:
                     os.remove(diskPath)
-                    unreal.log(f"[LegacyAnimationImporter] [반환값] 디스크 파일 삭제 성공")
+                    unreal.log("[LegacyAnimationImporter] [반환값] 디스크 파일 삭제 성공")
                 except OSError as e:
                     unreal.log_error(f"[LegacyAnimationImporter] 디스크 파일 삭제 실패: {e}")
 
@@ -358,11 +358,11 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             unreal.log(f"[LegacyAnimationImporter] AssetRegistry 갱신 시도: {destinationPath}")
             assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
             assetRegistry.scan_paths_synchronous([destinationPath], force_rescan=True)
-            unreal.log(f"[LegacyAnimationImporter] [반환값] AssetRegistry 갱신 완료")
+            unreal.log("[LegacyAnimationImporter] [반환값] AssetRegistry 갱신 완료")
 
             # Garbage Collection 실행
             unreal.SystemLibrary.collect_garbage()
-            unreal.log(f"[LegacyAnimationImporter] Garbage Collection 완료")
+            unreal.log("[LegacyAnimationImporter] Garbage Collection 완료")
 
         # 삭제 후 상태 체크
         oldPathExistsAfterDelete = unreal.EditorAssetLibrary.does_asset_exist(assetFullPath)
@@ -398,7 +398,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
                 unreal.log(f"[LegacyAnimationImporter] 임시 디스크 파일 직접 삭제 시도: {tempDiskPath}")
                 try:
                     os.remove(tempDiskPath)
-                    unreal.log(f"[LegacyAnimationImporter] [반환값] 임시 디스크 파일 삭제 성공")
+                    unreal.log("[LegacyAnimationImporter] [반환값] 임시 디스크 파일 삭제 성공")
                 except OSError as e:
                     unreal.log_error(f"[LegacyAnimationImporter] 임시 디스크 파일 삭제 실패: {e}")
 
@@ -421,7 +421,10 @@ class LegacyAnimationImporter(LegacyBaseImporter):
                 deleteFolderResult = unreal.EditorAssetLibrary.delete_directory(tempFolder)
                 unreal.log(f"[LegacyAnimationImporter] [반환값] 임시 폴더 삭제 결과: {deleteFolderResult}")
 
-        unreal.log(f"[LegacyAnimationImporter] ========== Consolidate+Rename 완료 ==========")
+        # 저장 실패 silent success 방지: 최종 에셋의 디스크 반영 명시 검증 (실패 시 예외 전파)
+        self.verify_asset_saved(assetFullPath)
+
+        unreal.log("[LegacyAnimationImporter] ========== Consolidate+Rename 완료 ==========")
         unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 성공: {assetFullPath}")
 
         return True
@@ -438,7 +441,7 @@ class LegacyAnimationImporter(LegacyBaseImporter):
 
         if needsSwap:
             # Consolidate + Rename 방식으로 스켈레톤 변경
-            unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 필요 - Consolidate+Rename 플로우 진입")
+            unreal.log("[LegacyAnimationImporter] 스켈레톤 변경 필요 - Consolidate+Rename 플로우 진입")
             self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
 
             # 변경된 에셋에 대해 소스 컨트롤 처리
@@ -483,6 +486,10 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             error_msg = f"애니메이션 임포트 실패: {inFbxFile}"
             unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
             raise ValueError(error_msg)
+
+        # 임포트 태스크의 저장이 파일 잠금 등으로 실패해도 예외가 없어(silent)
+        # 성공으로 오판되므로, 디스크 반영을 명시 검증한다 (실패 시 예외 전파)
+        self.verify_asset_saved(assetFullPath)
 
         importedObjectPaths = task.imported_object_paths
         refObjectPaths = self.get_dirty_deps(assetFullPath)
@@ -571,6 +578,9 @@ class LegacyAnimationImporter(LegacyBaseImporter):
                 error_msg = f"애니메이션 임포트 실패: {inFbxFiles[index]}"
                 unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
                 raise ValueError(error_msg)
+
+            # 저장 실패 silent success 방지: 디스크 반영 명시 검증 (실패 시 예외 전파)
+            self.verify_asset_saved(assetFullPaths[index])
 
             importedObjectPaths = task.imported_object_paths
             refObjectPaths = self.get_dirty_deps(assetFullPaths[index])
