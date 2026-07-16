@@ -247,6 +247,27 @@ class LegacyBaseImporter(ABC):
         skeletonFullPath = f"{destinationPath}/{assetName}"
         return skeletonFullPath
 
+    def verify_asset_saved(self, inAssetPath: str) -> None:
+        """임포트된 에셋이 디스크에 저장되었는지 검증하고, 실패 시 예외를 던진다.
+
+        임포트 태스크(save=True)의 저장이 파일 잠금 등으로 실패해도 파이썬
+        예외가 발생하지 않아(silent 실패) 툴이 성공으로 오판한다. 패키지가
+        dirty로 남아 있으면 재저장을 1회 시도하고, 그래도 실패하면 ValueError를
+        던져 호출 스크립트가 에러로 종료(stdout 에러 마커 감지)되게 한다.
+
+        Args:
+            inAssetPath: 검증할 에셋의 Content 경로 (/Game/...)
+
+        Raises:
+            ValueError: 에셋 저장에 실패한 경우 (디스크 미반영)
+        """
+        saved = unreal.EditorAssetLibrary.save_asset(inAssetPath, only_if_is_dirty=True)
+        if not saved:
+            error_msg = f"에셋 저장 실패 - 디스크에 반영되지 않음 (파일 잠금 등 확인 필요): {inAssetPath}"
+            unreal.log_error(f"[LegacyBaseImporter] {error_msg}")
+            raise ValueError(error_msg)
+        unreal.log(f"[LegacyBaseImporter] 에셋 저장 확인: {inAssetPath}")
+
     def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True):
         """결과 딕셔너리를 생성하는 공통 메서드"""
         result = {
