@@ -22,3 +22,6 @@ reports/
 
 # Temporary generated files
 temp/
+
+# P4 deploy mapping (per-machine config)
+.p4deploy.json
