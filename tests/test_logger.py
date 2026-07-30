@@ -7,14 +7,20 @@
 
 import re
 import logging
+from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 
-from pyjallib.logger import Logger
+from pyjallib.logger import DatedTimedRotatingFileHandler, Logger
+
+
+def _dated_log_name(fileName="pyjallib"):
+    """오늘 일자를 담은 로그 파일명을 만든다 (`{fileName}_{YYYYMMDD}.log`)."""
+    return f"{fileName}_{datetime.now().strftime('%Y%m%d')}.log"
 
 
 def _read_log(logPath, fileName="pyjallib"):
     """tmp_path에 기록된 로그 파일 내용을 UTF-8로 읽어 반환한다."""
-    return (logPath / f"{fileName}.log").read_text(encoding="utf-8")
+    return (logPath / _dated_log_name(fileName)).read_text(encoding="utf-8")
 
 
 def test_six_methods_write_to_file(tmp_path):
@@ -106,7 +112,7 @@ def test_log_format(tmp_path):
 
 
 def test_handler_configuration(tmp_path):
-    """핸들러 구성 검증: 파일 핸들러는 일자 suffix를 갖는 TimedRotatingFileHandler."""
+    """핸들러 구성 검증: 파일 핸들러는 자정 롤오버·7일 보관의 일자 파일명 핸들러."""
     logger = Logger(
         inLogPath=str(tmp_path), inLogFileName="pyjallib", inEnableConsole=True
     )
@@ -119,8 +125,8 @@ def test_handler_configuration(tmp_path):
         ]
         assert len(fileHandlers) == 1
         fileHandler = fileHandlers[0]
-        # 일자 suffix가 지정되어야 백업 파일명에 일자가 드러난다.
-        assert fileHandler.suffix == "%Y%m%d"
+        # 활성 파일명 자체가 일자를 담는다(백업 rename 규약이 아니다).
+        assert isinstance(fileHandler, DatedTimedRotatingFileHandler)
         assert fileHandler.when == "MIDNIGHT"
         assert fileHandler.backupCount == 7
 
@@ -143,6 +149,89 @@ def test_console_disabled_single_handler(tmp_path):
     try:
         assert len(logger._handlers) == 1
         assert isinstance(logger._handlers[0], TimedRotatingFileHandler)
+    finally:
+        logger.remove_handlers()
+
+
+def test_active_log_file_name_carries_date(tmp_path):
+    """활성 로그 파일명이 `{파일명}_{YYYYMMDD}.log`여야 한다.
+
+    프로덕션 로그 수집 관행이 이 이름에 맞춰져 있다(2026-07-30 마스터 결정).
+    무일자 `{파일명}.log`가 만들어지면 회귀다.
+    """
+    logger = Logger(
+        inLogPath=str(tmp_path), inLogFileName="AnimExporter", inEnableConsole=False
+    )
+    try:
+        logger.info("일자 파일명 확인")
+
+        expectedName = _dated_log_name("AnimExporter")
+        createdNames = sorted(p.name for p in tmp_path.iterdir())
+
+        assert createdNames == [expectedName]
+        assert "AnimExporter.log" not in createdNames
+    finally:
+        logger.remove_handlers()
+
+
+def test_rollover_switches_to_new_dated_file_without_rename(tmp_path):
+    """롤오버가 백업 rename이 아니라 새 일자 파일로 전환해야 한다.
+
+    표준 핸들러라면 활성 파일을 `{name}.log.{YYYYMMDD}`로 rename한다. 활성 파일명이
+    이미 일자를 담으므로 rename하면 `AnimExporter_20260730.log.20260731` 같은 산물이
+    남는다 - 긴 DCC 세션에서 실제로 발생하는 흠이라 이 단정으로 막는다.
+    """
+    logger = Logger(
+        inLogPath=str(tmp_path), inLogFileName="AnimExporter", inEnableConsole=False
+    )
+    try:
+        logger.info("롤오버 전")
+        fileHandler = logger._handlers[0]
+
+        # 어제 일자 파일에 쓰고 있던 상황을 만든 뒤 롤오버를 강제한다.
+        yesterdayPath = tmp_path / "AnimExporter_20260729.log"
+        fileHandler.stream.close()
+        fileHandler.stream = None
+        (tmp_path / _dated_log_name("AnimExporter")).rename(yesterdayPath)
+        fileHandler.baseFilename = str(yesterdayPath)
+        fileHandler.stream = fileHandler._open()
+
+        fileHandler.doRollover()
+        logger.info("롤오버 후")
+
+        # 새 일자 파일로 넘어갔고, 어제 파일은 rename되지 않고 그대로 남는다.
+        assert fileHandler.baseFilename.endswith(_dated_log_name("AnimExporter"))
+        assert yesterdayPath.exists()
+        assert "롤오버 후" in _read_log(tmp_path, "AnimExporter")
+        assert "롤오버 후" not in yesterdayPath.read_text(encoding="utf-8")
+
+        # `.log.{YYYYMMDD}` 형태의 백업 산물이 생기지 않아야 한다.
+        assert [p.name for p in tmp_path.glob("*.log.*")] == []
+    finally:
+        logger.remove_handlers()
+
+
+def test_rollover_purges_files_beyond_backup_count(tmp_path):
+    """보관 개수(활성 1 + 백업 7)를 넘는 과거 일자 파일이 정리되어야 한다."""
+    # 과거 일자 파일 12개를 미리 만들어 둔다.
+    for day in range(1, 13):
+        (tmp_path / f"AnimExporter_202607{day:02d}.log").write_text(
+            "과거 로그", encoding="utf-8"
+        )
+
+    logger = Logger(
+        inLogPath=str(tmp_path), inLogFileName="AnimExporter", inEnableConsole=False
+    )
+    try:
+        fileHandler = logger._handlers[0]
+        fileHandler.doRollover()
+
+        remaining = sorted(p.name for p in tmp_path.glob("AnimExporter_*.log"))
+
+        # 활성 파일 1개 + 백업 7개 = 8개만 남고, 남은 것은 가장 최근 일자들이다.
+        assert len(remaining) == 8
+        assert _dated_log_name("AnimExporter") in remaining
+        assert "AnimExporter_20260701.log" not in remaining
     finally:
         logger.remove_handlers()
 
