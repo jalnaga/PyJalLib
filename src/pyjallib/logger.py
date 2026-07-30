@@ -10,17 +10,124 @@ UE5/3ds Max 등 추가 패키지를 설치할 수 없는 DCC 내장 Python 환�
 
 자동 제공 기능:
     - 타임스탬프/레벨 자동 포맷 (``%Y-%m-%d %H:%M:%S [LEVEL] 메시지``)
-    - 일자별 로그 파일 롤오버 + 7일 보관 (TimedRotatingFileHandler)
+    - 일자 파일명 + 자정 롤오버 + 7일 보관 (``{파일명}_{YYYYMMDD}.log``)
     - UTF-8 인코딩 (한글 로그 보존)
     - 인스턴스별 named logger 격리 (멀티 인스턴스 간 로그 혼선/콘솔 중복 차단)
 """
 
+import os
 import sys
+import time
 import uuid
 import logging
+from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from typing import Optional
+
+# 로그 파일명에 붙는 일자 포맷 (예: AnimExporter_20260730.log)
+_LOG_DATE_FORMAT = "%Y%m%d"
+
+
+class DatedTimedRotatingFileHandler(TimedRotatingFileHandler):
+    """활성 로그 파일명에 일자를 담고, 자정마다 새 일자 파일로 넘어가는 핸들러.
+
+    표준 ``TimedRotatingFileHandler``는 활성 파일을 고정 이름(``{name}.log``)으로 두고
+    롤오버 시 ``{name}.log.{YYYYMMDD}``로 rename한다. 반면 이 핸들러는 **활성 파일명
+    자체에 일자를 담고**(``{name}_{YYYYMMDD}.log``), 롤오버 시 rename 없이 다음 일자
+    파일로 전환한다. 결과적으로 하루에 파일 하나가 남는다.
+
+    왜 이 규약인가 (2026-07-30):
+        프로덕션(DevStorage에 배포된 3ds Max 툴)의 로그 수집 관행이 ``{name}_{날짜}.log``
+        이름에 맞춰져 있다. 2026-06-17 loguru -> 표준 logging 전환에서 파일명이
+        ``{name}.log`` + 백업 ``.log.{YYYYMMDD}``로 바뀌었는데, **파일명 규약만** 구
+        형태로 되돌린다. loguru로 되돌리는 것이 아니라 표준 logging으로 같은 이름을
+        재현하는 것이므로, 외부 의존성 0이라는 성질은 유지된다.
+
+    왜 base 이름만 일자로 만들고 표준 핸들러를 그대로 쓰지 않는가:
+        생성 시점의 일자로 파일명을 만들어 표준 핸들러에 넘기면, 자정을 넘긴 롤오버가
+        그 **굳은 일자 이름**을 백업으로 rename하고 같은 이름을 다시 열어
+        ``AnimExporter_20260730.log.20260731`` 같은 산물이 남는다. 긴 DCC 세션에서
+        실제로 발생하므로 롤오버 동작 자체를 바꾼다.
+    """
+
+    def __init__(
+        self,
+        inLogDirPath: Path,
+        inLogFileName: str,
+        inBackupCount: int = 7,
+        inEncoding: str = "utf-8",
+    ) -> None:
+        """일자 파일명 핸들러 초기화
+
+        Args:
+            inLogDirPath: 로그 파일을 둘 디렉토리
+            inLogFileName: 일자 앞에 붙는 기본 파일명 (확장자·일자 제외)
+            inBackupCount: 보관할 과거 일자 파일 개수. 기본값 7
+            inEncoding: 파일 인코딩. 기본값 "utf-8"
+        """
+        self._logDirPath = Path(inLogDirPath)
+        self._logFileBaseName = inLogFileName
+
+        super().__init__(
+            self._build_log_file_path(),
+            when="midnight",
+            backupCount=inBackupCount,
+            encoding=inEncoding,
+        )
+
+    def _build_log_file_path(self) -> str:
+        """오늘 일자를 담은 로그 파일 경로를 만든다.
+
+        Returns:
+            ``{로그디렉토리}/{기본파일명}_{YYYYMMDD}.log`` 절대 경로 문자열
+        """
+        today = datetime.now().strftime(_LOG_DATE_FORMAT)
+        return str(self._logDirPath / f"{self._logFileBaseName}_{today}.log")
+
+    def doRollover(self) -> None:
+        """자정 롤오버 - rename 없이 새 일자 파일로 전환한다.
+
+        활성 파일명이 이미 일자를 담고 있으므로 백업 rename이 필요 없다. 스트림을 닫고
+        새 일자 경로로 ``baseFilename``을 갱신한 뒤 다시 열고, 보관 개수를 넘는 과거
+        일자 파일을 정리한다.
+        """
+        if self.stream is not None:
+            self.stream.close()
+            self.stream = None
+
+        self.baseFilename = os.path.abspath(self._build_log_file_path())
+        if not self.delay:
+            self.stream = self._open()
+
+        self._purge_old_log_files()
+
+        # 다음 자정으로 롤오버 시각을 재계산한다.
+        self.rolloverAt = self.computeRollover(int(time.time()))
+
+    def _purge_old_log_files(self) -> None:
+        """보관 개수를 넘는 과거 일자 파일을 삭제한다.
+
+        일자 파일명은 ``{기본파일명}_{YYYYMMDD}.log``라 사전순 정렬이 곧 시간순이다.
+        활성 파일은 보관 개수에 포함하지 않는다(표준 핸들러의 ``backupCount``가 활성
+        ``{name}.log``를 세지 않는 것과 같은 의미).
+        """
+        if self.backupCount <= 0:
+            return
+
+        datedFilePaths = sorted(self._logDirPath.glob(f"{self._logFileBaseName}_*.log"))
+
+        # 활성 파일 1개 + 백업 backupCount개를 남기고 나머지를 지운다.
+        keepCount = self.backupCount + 1
+        if len(datedFilePaths) <= keepCount:
+            return
+
+        for oldFilePath in datedFilePaths[:-keepCount]:
+            try:
+                oldFilePath.unlink()
+            except OSError:
+                # 다른 프로세스가 잡고 있으면 다음 롤오버에서 다시 시도한다.
+                pass
 
 
 class Logger:
@@ -114,17 +221,15 @@ class Logger:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # 파일 핸들러 설정 (일자별 롤오버 + 7일 보관)
-        # 매일 자정 새 파일로 롤오버하고, 7일 지난 백업 파일은 자동 삭제한다.
-        logFilePath = self._logPath / f"{self._logFileName}.log"
-        fileHandler = TimedRotatingFileHandler(
-            str(logFilePath),
-            when="midnight",
-            backupCount=7,
-            encoding="utf-8",
+        # 파일 핸들러 설정 (일자 파일명 + 자정 롤오버 + 7일 보관)
+        # 활성 파일명 자체가 일자를 담으므로(예: pyjallib_20260730.log) 하루에 파일 하나가
+        # 남는다. 프로덕션 로그 수집 관행에 맞춘 규약이다(DatedTimedRotatingFileHandler 참조).
+        fileHandler = DatedTimedRotatingFileHandler(
+            self._logPath,
+            self._logFileName,
+            inBackupCount=7,
+            inEncoding="utf-8",
         )
-        # 롤오버된 백업 파일명에 일자가 드러나도록 suffix 지정 (예: pyjallib.log.20260617)
-        fileHandler.suffix = "%Y%m%d"
         fileHandler.setLevel(self._logLevel)
         fileHandler.setFormatter(formatter)
         self._logger.addHandler(fileHandler)
