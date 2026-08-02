@@ -252,6 +252,23 @@ class Header:
         """
         self.name.load_from_config_file(configPath)
 
+    def configure_node_collect_policy(self, inPolicy) -> None:
+        """노드 수집 확장 정서를 dependent와 sel 양쪽에 함께 배선한다.
+
+        두 서비스는 싱글톤 Header를 경유해 얻어지므로 생성자에 정서를 넣을 자리가
+        없다. 그래서 설정 메서드를 둔다.
+
+        **한 지점에서 두 서비스에 함께 배선하는 것이 이 메서드의 존재 이유다.**
+        서비스별 setter만 두면 한쪽 설정 누락이 잠복하는데, 그것이 두 서비스의 수집
+        로직이 서로 어긋났던 경로와 같다.
+
+        Args:
+            inPolicy (NodeCollectPolicy | None): 배선할 정서. None을 주면 규칙을
+                해제한다(확장 없음)
+        """
+        self.dependent.collectPolicy = inPolicy
+        self.sel.collectPolicy = inPolicy
+
 
 # 모듈 레벨에서 전역 인스턴스 생성
 _pyjallibmaxheader = Header.get_instance()

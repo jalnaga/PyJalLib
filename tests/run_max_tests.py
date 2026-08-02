@@ -48,6 +48,10 @@ TEST_SCRIPTS = [
     "test_align.py",
     "test_select.py",
     "test_select_dependency.py",
+    "test_node_collect_resolver.py",
+    "test_node_collect_policy_max.py",
+    # 실기 씬 호환성 검사. PYJALLIB_COMPAT_SCENE 미설정이면 스스로 SKIP한다.
+    "test_addon_compat_realscene.py",
     "test_mirror.py",
     "test_attribute.py",
     "test_ui_fuzzy_search_combo_box.py",
@@ -58,6 +62,9 @@ TEST_SCRIPTS = [
 # key: 스크립트 파일명 (확장자 포함), value: TestReporter SuiteName
 LOG_NAME_OVERRIDES = {
     "test_select_dependency.py": "SelectDependency",
+    "test_node_collect_resolver.py": "NodeCollectResolver",
+    "test_node_collect_policy_max.py": "NodeCollectPolicyMax",
+    "test_addon_compat_realscene.py": "AddonCompatRealScene",
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
 }
 
