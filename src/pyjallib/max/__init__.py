@@ -50,6 +50,11 @@ from pyjallib.max.rootMotion import RootMotion
 
 from pyjallib.max.dependent import Dependent
 
+# 노드 수집 확장 규칙. 정서(NodeCollectPolicy)는 순수 모듈 소속이라 pymxs 없이도
+# import할 수 있고, 어댑터(NodeCollectResolver)는 씬 접근을 담당한다.
+from pyjallib.max.nodeCollectPolicy import NodeCollectPolicy
+from pyjallib.max.nodeCollectResolver import NodeCollectResolver, build_policy
+
 from pyjallib.max.checkViewport import CheckViewport
 from pyjallib.max.checkLayer import CheckLayer
 from pyjallib.max.checkMaterial import CheckMaterial
@@ -102,6 +107,9 @@ __all__ = [
     "UE5Skeleton",
     "RootMotion",
     "Dependent",
+    "NodeCollectPolicy",
+    "NodeCollectResolver",
+    "build_policy",
     "CheckViewport",
     "CheckLayer",
     "CheckMaterial",

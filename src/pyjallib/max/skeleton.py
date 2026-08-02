@@ -154,25 +154,31 @@ class Skeleton:
         rt.execute(maxcriptCode)
         return rt.pyjallib_max_skeleton_get_dependencies(targetObjs)
     
-    def get_all_dependencies(self, inObjs, inAddonLayerName="Rig_AddOn"):
+    def get_all_dependencies(self, inObjs, inAddonLayerName=None):
         """객체의 의존성 노드에 애드온 레이어 노드들의 의존성까지 합쳐서 가져온다.
+
+        애드온 레이어 이름은 **호출부가 지정한다.** 기본값이 None인 이유는 pyjallib이
+        범용 오픈소스 라이브러리라 특정 프로젝트의 레이어 규약을 기본값 자리에 둘 수
+        없기 때문이다. 미지정이면 애드온 병합을 건너뛰고 1차 의존성만 반환한다.
 
         Args:
             inObjs (list[rt.Node]): 의존성을 확인할 객체 배열
-            inAddonLayerName (str): 애드온 레이어 이름 접두사 패턴
+            inAddonLayerName (str | None): 애드온 레이어 이름 접두사. 뒤에 ``*``가
+                붙어 패턴으로 쓰인다. None이면 애드온 병합을 하지 않는다
 
         Returns:
             list[rt.Node]: 모든 의존성 노드 배열 (중복 제거됨)
         """
         returnArray = []
         nodeArray = self.get_dependencies(inObjs)
-        
-        # 애드온 레이어의 노드들만 필터링
+
+        # 애드온 레이어의 노드들만 필터링 (레이어 이름 미지정이면 병합 없음)
         addOnArray = []
-        for item in nodeArray:
-            if rt.matchPattern(item.layer.name, pattern=(inAddonLayerName+"*")):
-                addOnArray.append(item)
-        
+        if inAddonLayerName is not None:
+            for item in nodeArray:
+                if rt.matchPattern(item.layer.name, pattern=(inAddonLayerName+"*")):
+                    addOnArray.append(item)
+
         # 애드온 노드들의 의존성 가져오기
         addOnRefArray = self.get_dependencies(addOnArray)
             

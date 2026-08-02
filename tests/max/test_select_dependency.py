@@ -7,8 +7,13 @@ Select 서비스 - dependency 수집 기능 테스트 스크립트 (Type C 헤�
 pyjallib.max.select.Select 클래스의 dependency 관련 메서드를 검증한다:
 - get_all_dependencies_optimized()
 - get_dependents()
-- collect_addon_helpers()
+- collect_addon_helpers()  (정서 기반으로 재구현됨)
 - select_dependencies()
+
+``collect_addon_helpers()``는 더 이상 라이브러리가 아는 레이어 접두로 수집하지 않고,
+호출부가 주입한 정서(``NodeCollectPolicy``)의 규칙으로 수집한다. 인터페이스가 의도적으로
+바뀌었으므로 이 스위트는 **셋업을 정서 주입 형태로 고쳤다** - 판정 기준을 낮춘 것이
+아니라, 정서 미주입(확장 없음)과 정서 주입(확장 발동) 두 갈래를 모두 단정한다.
 
 3ds Max 내부에서 실행되며, TestReporter를 통해 결과를 로그에 기록한다.
 
@@ -30,14 +35,43 @@ if _srcPath not in sys.path:
 from pymxs import runtime as rt  # noqa: E402
 from pyjallib.testKit import TestReporter  # noqa: E402
 
-# 3ds Max 기동 시 pyjallib이 사전 캐시되므로, 수정된 select.py를 importlib로 강제 로드
+# 3ds Max 기동 시 pyjallib이 사전 캐시되므로, 수정된 소스를 importlib로 강제 로드
 # (pymxs_pitfalls.md 섹션 8 패턴)
-_selectPath = Path(__file__).parent.parent.parent / "src" / "pyjallib" / "max" / "select.py"
-_selectSpec = importlib.util.spec_from_file_location("pyjallib.max.select", _selectPath)
-_selectMod = importlib.util.module_from_spec(_selectSpec)
-sys.modules["pyjallib.max.select"] = _selectMod
-_selectSpec.loader.exec_module(_selectMod)
+
+
+def _force_load(inModuleName, inRelativePath):
+    """워크스페이스 소스 파일을 importlib로 강제 로드해 sys.modules에 등록한다.
+
+    ``select.py``가 ``nodeCollectResolver``를 상대 import하므로 **의존 모듈을 먼저
+    등록해야 한다.** 등록하지 않으면 상대 import가 선캐시된 배포본 패키지 경로를 뒤져
+    신규 모듈을 찾지 못한다.
+
+    Args:
+        inModuleName (str): sys.modules에 등록할 모듈 이름
+        inRelativePath (str): src 아래 상대 경로
+
+    Returns:
+        로드된 모듈 객체
+    """
+    modulePath = Path(_srcPath) / inRelativePath
+    moduleSpec = importlib.util.spec_from_file_location(inModuleName, modulePath)
+    module = importlib.util.module_from_spec(moduleSpec)
+    sys.modules[inModuleName] = module
+    moduleSpec.loader.exec_module(module)
+    return module
+
+
+_policyMod = _force_load(
+    "pyjallib.max.nodeCollectPolicy", "pyjallib/max/nodeCollectPolicy.py"
+)
+_resolverMod = _force_load(
+    "pyjallib.max.nodeCollectResolver", "pyjallib/max/nodeCollectResolver.py"
+)
+_selectMod = _force_load("pyjallib.max.select", "pyjallib/max/select.py")
+
 Select = _selectMod.Select
+build_policy = _resolverMod.build_policy
+RULE_ALL_OR_NOTHING = _policyMod.RULE_ALL_OR_NOTHING
 
 from pyjallib.max.name import Name  # noqa: E402
 from pyjallib.max.bone import Bone  # noqa: E402
@@ -54,8 +88,12 @@ def _reset_scene():
     rt.resetMaxFile(rt.Name("noPrompt"))
 
 
-def _make_select_service():
-    """Select 서비스 인스턴스를 생성하여 반환한다."""
+def _make_select_service(inPolicy=None):
+    """Select 서비스 인스턴스를 생성하여 반환한다.
+
+    Args:
+        inPolicy: 주입할 노드 수집 확장 정서. None이면 규칙 발동 없음
+    """
     nameService = Name()
     boneService = Bone(nameService=nameService)
     layerService = Layer()
@@ -63,6 +101,7 @@ def _make_select_service():
         nameService=nameService,
         boneService=boneService,
         layerService=layerService,
+        inCollectPolicy=inPolicy,
     )
 
 
@@ -317,17 +356,24 @@ except Exception as e:
 
 
 # ============================================================
-# TC08: collect_addon_helpers - Rig_AddOn 레이어 없을 때
+# TC08: collect_addon_helpers - 정서 미주입이면 확장 없음
 # ============================================================
 try:
     _reset_scene()
     sel = _make_select_service()
+    layerService = Layer()
 
-    # 일반 노드들 (Rig_AddOn 레이어에 속하지 않음)
-    point1 = rt.Point(name="regularPoint", pos=rt.Point3(0, 0, 0))
-    point2 = rt.Point(name="anotherPoint", pos=rt.Point3(10, 0, 0))
+    # 규칙 대상이 될 만한 레이어가 씬에 있어도, 정서가 없으면 발동하지 않는다.
+    addonBone = rt.BoneSys.createBone(
+        rt.Point3(0, 0, 0), rt.Point3(10, 0, 0), rt.Point3(0, 0, 1)
+    )
+    addonBone.name = "tc08AddonBone"
+    addonHelperNode = rt.Point(name="tc08AddonHelper", pos=rt.Point3(0, 0, 0))
+    layerService.create_layer_from_array(
+        [addonBone, addonHelperNode], "Tc08_AddOn_Face"
+    )
 
-    addonHelpers = sel.collect_addon_helpers([point1, point2])
+    addonHelpers = sel.collect_addon_helpers([addonBone])
 
     reporter.assert_test(
         isinstance(addonHelpers, set),
@@ -336,11 +382,55 @@ try:
     )
     reporter.assert_test(
         len(addonHelpers) == 0,
-        "TC08-b Rig_AddOn 레이어 없을 때 빈 set",
+        "TC08-b 정서 미주입 -> 규칙 대상 레이어가 있어도 빈 set",
         f"결과 크기: {len(addonHelpers)}"
     )
 except Exception as e:
-    reporter.error("TC08 collect_addon_helpers Rig_AddOn 없음", str(e))
+    reporter.error("TC08 collect_addon_helpers 정서 미주입", str(e))
+
+
+# ============================================================
+# TC08b: collect_addon_helpers - 정서 주입이면 규칙이 발동한다
+# ============================================================
+try:
+    _reset_scene()
+    layerService = Layer()
+
+    addonBone = rt.BoneSys.createBone(
+        rt.Point3(0, 0, 0), rt.Point3(10, 0, 0), rt.Point3(0, 0, 1)
+    )
+    addonBone.name = "tc08bAddonBone"
+    helperInLayer = rt.Point(name="tc08bHelperInLayer", pos=rt.Point3(0, 0, 0))
+    helperOther = rt.Point(name="tc08bHelperOther", pos=rt.Point3(30, 0, 0))
+    layerService.create_layer_from_array(
+        [addonBone, helperInLayer], "Tc08b_AddOn_Face"
+    )
+    layerService.create_layer_from_array([helperOther], "Tc08b_Other")
+
+    sel = _make_select_service(
+        build_policy(
+            inAllOrNothingLayers=["Tc08b_AddOn_*"],
+            inAllOrNothingAddSuperClass="Helper",
+        )
+    )
+    addonHelpers = sel.collect_addon_helpers([addonBone])
+    addonHelperNames = sorted(str(n.name) for n in addonHelpers)
+
+    reporter.assert_test(
+        addonHelperNames == ["tc08bHelperInLayer"],
+        "TC08b 정서 주입 -> 본이 판정을 발동시키고 같은 레이어 Helper만 수집",
+        f"결과: {addonHelperNames}"
+    )
+
+    collectedNodes, byRule = sel.collect_by_rule([addonBone])
+    reporter.assert_test(
+        len(byRule.get(RULE_ALL_OR_NOTHING, [])) == 1,
+        "TC08b-b collect_by_rule이 규칙별 집계를 돌려준다",
+        f"byRule: {{k: len(v) for k, v in byRule.items()}} -> "
+        f"{ {ruleKey: len(handles) for ruleKey, handles in byRule.items()} }"
+    )
+except Exception as e:
+    reporter.error("TC08b collect_addon_helpers 정서 주입", str(e))
 
 
 # ============================================================
@@ -486,6 +576,7 @@ try:
         "dependencies_1st_count",
         "dependencies_2nd_count",
         "addon_helpers_count",
+        "collected_by_rule",
         "total_count",
         "time_dependents_ms",
         "time_dependencies_1st_ms",

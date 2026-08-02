@@ -14,23 +14,46 @@ from pymxs import runtime as rt
 from .name import Name
 from .bone import Bone
 from .layer import Layer
+from .nodeCollectResolver import NodeCollectResolver
 
 
 class Select:
     """3ds Max 객체의 선택 필터링·정렬과 dependency 노드 수집 기능을 제공한다."""
 
-    def __init__(self, nameService=None, boneService=None, layerService=None):
+    def __init__(
+        self, nameService=None, boneService=None, layerService=None, inCollectPolicy=None
+    ):
         """Select 클래스를 초기화한다.
 
         Args:
             nameService (Name | None): Name 서비스 인스턴스. None이면 새로 생성한다.
             boneService (Bone | None): Bone 서비스 인스턴스. None이면 새로 생성한다.
             layerService (Layer | None): Layer 서비스 인스턴스. None이면 새로 생성한다.
+            inCollectPolicy (NodeCollectPolicy | None): 노드 수집 확장 정서.
+                None이면 규칙이 하나도 발동하지 않고 순수 의존성 탐색 결과가 나온다.
         """
         self.name = nameService if nameService else Name()
         self.bone = boneService if boneService else Bone(nameService=self.name)
         self.layer = layerService if layerService else Layer()
-    
+        self.collectPolicy = inCollectPolicy
+        self._collectResolver = None
+
+    @property
+    def collectResolver(self):
+        """수집 확장 어댑터를 지연 생성해 반환한다.
+
+        ``Dependent``와 같은 어댑터 클래스를 쓴다. 두 서비스가 같은 수집 로직을
+        각자 들고 있던 것이 서로 어긋난 원인이었으므로 확장 경로를 하나로 접는다.
+        ``Dependent``에 위임하지 않는 이유는 ``header``가 ``Select``를
+        ``Dependent``보다 먼저 만들기 때문이다 - 독립 어댑터면 생성 순서 의존이 없다.
+
+        Returns:
+            NodeCollectResolver: 어댑터 인스턴스
+        """
+        if self._collectResolver is None:
+            self._collectResolver = NodeCollectResolver(layerService=self.layer)
+        return self._collectResolver
+
     def set_selectionSet_to_all(self):
         """모든 유형의 객체를 선택하도록 선택 필터를 설정한다."""
         rt.SetSelectFilter(1)
@@ -392,39 +415,53 @@ class Select:
         return dependentsNodes
 
     def collect_addon_helpers(self, inDeps):
-        """Rig_AddOn_* 레이어에서 Helper 클래스 노드를 수집한다.
+        """주입된 정서의 수집 확장 규칙으로 추가할 노드를 수집한다.
 
-        dependency 노드 리스트에서 Rig_AddOn_* 레이어에 속한 노드를 찾고,
-        해당 레이어의 모든 Helper 클래스 노드를 수집한다.
+        이름은 하위 호환을 위해 유지한다. pyjallib은 워크스페이스 밖 호출부를
+        확인할 수 없는 오픈소스 라이브러리이므로 공개 메서드 이름을 지우지 않는다.
+        다만 동작은 정서 기반으로 바뀌어, **어떤 레이어에서 무엇을 수집할지는
+        호출부가 정한다.**
+
+        규칙별 집계가 필요하면 :meth:`collect_by_rule`을 쓴다. 이 메서드는 하위
+        호환 형태(set 반환)를 유지한다.
 
         Args:
             inDeps (list[rt.Node]): dependency 노드 리스트
 
         Returns:
-            set[rt.Node]: 수집된 AddOn Helper 노드 set
+            set[rt.Node]: 규칙으로 추가된 노드 set. 정서 미주입 시 빈 set
         """
-        addonHelper = set()
-        processedLayers = set()
-        helperClass = rt.helper
-        superClassof = rt.superClassof
+        collectedNodes, _ = self.collect_by_rule(inDeps)
+        return set(collectedNodes)
 
-        for item in inDeps:
-            layerName = item.layer.name
-            if layerName.startswith('Rig_AddOn_') and layerName not in processedLayers:
-                processedLayers.add(layerName)
-                objsInLayer = self.layer.get_nodes_by_layername(layerName)
-                for obj in objsInLayer:
-                    if superClassof(obj) == helperClass:
-                        addonHelper.add(obj)
+    def collect_by_rule(self, inDeps):
+        """수집 확장 규칙으로 추가할 노드와 규칙별 집계를 함께 반환한다.
 
-        return addonHelper
+        ``select_dependencies()``가 통계에 규칙별 기여를 담기 위해 쓴다.
+
+        Args:
+            inDeps (list[rt.Node]): dependency 노드 리스트
+
+        Returns:
+            tuple[list, dict]: ``([추가된 노드], {규칙키: [추가된 핸들]})``.
+                정서 미주입 시 ``([], {})``
+        """
+        if self.collectPolicy is None:
+            return [], {}
+
+        resolver = self.collectResolver
+        resolved = resolver.resolve(self.collectPolicy)
+        if resolved is None:
+            return [], {}
+
+        return resolver.collect_additions(inDeps, resolved)
 
     def select_dependencies(self, inObjs):
         """전체 플로우를 실행하여 dependency를 수집한다.
 
         get_dependents -> get_all_dependencies_optimized (1차) ->
         get_all_dependencies_optimized (2차, visited 재사용) ->
-        collect_addon_helpers -> 결합 순서로 dependency를 수집한다.
+        수집 확장 규칙 적용 -> 결합 순서로 dependency를 수집한다.
 
         Args:
             inObjs (list[rt.Node]): 선택된 오브젝트 리스트
@@ -437,7 +474,11 @@ class Select:
                     - dependents_count (int): dependents 수
                     - dependencies_1st_count (int): 1차 dependencies 수
                     - dependencies_2nd_count (int): 2차 dependencies 수
-                    - addon_helpers_count (int): AddOn Helper 수
+                    - addon_helpers_count (int): 규칙 확장으로 추가된 노드 수.
+                      하위 호환으로 유지되는 키 이름이며, 정서에 따라 Helper가
+                      아닌 노드가 들어갈 수 있다. 규칙별 내역은
+                      collected_by_rule을 본다
+                    - collected_by_rule (dict[str, int]): 규칙별 추가 노드 수
                     - total_count (int): 최종 노드 수
                     - time_dependents_ms (float): get_dependents 소요 시간 (ms)
                     - time_dependencies_1st_ms (float): 1차 dependencies 소요 시간 (ms)
@@ -469,12 +510,16 @@ class Select:
         stats['dependencies_2nd_count'] = len(allDeps)
         stats['time_dependencies_2nd_ms'] = (time.time() - t3) * 1000
 
-        # AddOn Helpers 수집
-        addonHelpers = self.collect_addon_helpers(allDeps)
-        stats['addon_helpers_count'] = len(addonHelpers)
+        # 수집 확장 규칙 적용 (정서 미주입이면 추가 없음)
+        collectedNodes, byRule = self.collect_by_rule(allDeps)
+        collectedSet = set(collectedNodes)
+        stats['addon_helpers_count'] = len(collectedSet)
+        stats['collected_by_rule'] = {
+            ruleKey: len(addedHandles) for ruleKey, addedHandles in byRule.items()
+        }
 
         # 최종 결합
-        combined = list(addonHelpers | set(allDeps) | set(dependsOn) | set(objs))
+        combined = list(collectedSet | set(allDeps) | set(dependsOn) | set(objs))
         stats['total_count'] = len(combined)
         stats['time_total_ms'] = (time.time() - tTotal) * 1000
 
