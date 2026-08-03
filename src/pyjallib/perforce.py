@@ -256,9 +256,17 @@ class Perforce:
         """
         체인지리스트 제출
 
+        `auto_revert_unchanged=True`(기본)이면 제출 전에 `p4 revert -a`를 실행한다.
+        이는 **내용이 depot과 같아진 파일을 체인지리스트에서 내린다**는 뜻이다.
+        다른 경로(예: 에디터 내부 자동 서밋)가 이미 같은 내용을 제출한 뒤라면
+        워크스페이스 = depot이 되어 CL의 파일이 전부 내려가고, 남은 빈 CL은
+        `p4 change -d`로 삭제된 뒤 `False`가 반환된다. 즉 **"서밋했다고 믿었는데
+        depot 이력에 CL이 없다"는 증상의 정상 동작 경로**다.
+        내용 무변경 파일까지 이력에 남겨야 하면 `False`를 전달한다.
+
         Args:
             change_list_number: 제출할 체인지리스트 번호
-            auto_revert_unchanged: 변경되지 않은 파일 자동 리버트 여부
+            auto_revert_unchanged: 변경되지 않은 파일 자동 리버트 여부. 기본값 True.
 
         Returns:
             bool: 제출 성공 여부 (False인 경우 빈 체인지리스트로 삭제됨)
@@ -388,6 +396,174 @@ class Perforce:
         finally:
             if p4.connected():
                 p4.disconnect()
+
+    def move_opened_files_to_new_change_list(self, inDescription: str, inFilePaths: List[str]) -> Dict:
+        """이미 열려 있는 파일들을 새 체인지리스트로 옮긴다 (서밋하지 않음).
+
+        입력이 **이미 열린 파일**이라는 것이 이 메서드의 계약이다. 그래서
+        `p4 reopen` 하나로 끝나며, 파일 상태를 몰라서 하던 3연타
+        (reopen -> edit -> add)나 `sync -k` -> `reconcile` 같은 보정이 필요 없다.
+
+        전형적인 소비처는 UE5 임포트 흐름이다. 에디터 내부 Python API에는
+        체인지리스트를 만들거나 옮기는 수단이 없어 임포터가 연 파일이 default
+        체인지리스트에 남는데, 그 파일들을 에디터 밖에서 이름 붙은 CL로 모을 때
+        쓴다. 다만 계약 자체에 UE5 색채는 없다 - "열린 파일 목록을 새 CL로
+        모은다"는 범용 P4 연산이다.
+        (Max 에셋처럼 툴 프로세스가 직접 파일을 여는 흐름에서는 최종 CL을 먼저
+        만들어 체크아웃하면 되므로 이 메서드가 필요 없다.)
+
+        서밋은 포함하지 않는다. 호출자가 검수 후 `submit_change_list`를 따로
+        부르거나, pending 상태로 남겨 사람이 확인한다.
+
+        CL 생성 -> 이동 -> 사후 대조를 **한 연결 안에서** 처리한다.
+        사후 대조는 `p4 opened -c`의 `depotFile`을 `p4 where`로 로컬 경로에
+        되돌려 비교한다 (`clientFile`은 클라이언트 문법이라 대조에 쓸 수 없다).
+
+        Args:
+            inDescription: 새 체인지리스트 설명 (툴 접두사 등은 호출자가 구성)
+            inFilePaths: 이미 열려 있는 파일들의 로컬 경로 리스트
+
+        Returns:
+            Dict: 이동 결과
+                - `succeeded` (bool): 입력 전량이 대상 CL에 들어갔으면 True
+                - `changelist` (Optional[int]): 생성된 체인지리스트 번호
+                - `movedCount` (int): 대상 CL에서 확인된 파일 수
+                - `missingPaths` (List[str]): 대상 CL에서 확인되지 않은 입력 경로
+
+        Raises:
+            ValueError: inFilePaths가 리스트가 아닌 경우
+            P4Exception: P4 작업이 실패한 경우. 이때 옮긴 파일을 default
+                체인지리스트로 되돌리고 빈 CL을 삭제한 뒤 예외를 전파한다
+                (파일 내용은 리버트하지 않는다 - 이동만 되돌린다).
+
+        Note:
+            일부 파일이 열려 있지 않아 이동되지 않은 경우는 예외가 아니라
+            `succeeded=False` + `missingPaths`로 보고하고 CL을 유지한다.
+            호출자가 원인을 진단할 수 있도록 남기는 것이며, 이 상태로 서밋하면
+            누락된 파일 없이 부분 제출이 되므로 서밋 전에 반드시 확인해야 한다.
+        """
+        if not isinstance(inFilePaths, list):
+            raise ValueError("inFilePaths must be a list")
+
+        if not inFilePaths:
+            print("이동할 파일 목록이 비어 있어 체인지리스트를 만들지 않음")
+            return {'succeeded': False, 'changelist': None, 'movedCount': 0, 'missingPaths': []}
+
+        p4 = P4()
+        p4.port = self.port
+        p4.user = self.user
+        p4.client = self.workspace_name
+        p4.charset = self.charset
+        p4.exception_level = self.exception_level
+
+        changeListNumber = None
+        try:
+            p4.connect()
+
+            normalized = self._normalize_paths(inFilePaths)
+
+            # 1. 새 체인지리스트 생성 (default CL의 파일이 딸려오지 않도록 Files 제거)
+            changeSpec = p4.run("change", "-o")[0]
+            changeSpec["Description"] = inDescription
+            if "Files" in changeSpec:
+                del changeSpec["Files"]
+            changeListNumber = int(p4.save_change(changeSpec)[0].split()[1])
+            print(f"체인지리스트 생성: {changeListNumber}")
+
+            # 2. 열린 파일 이동 (reopen 단독 - 입력이 '열린 파일'임이 계약)
+            p4.run("reopen", "-c", str(changeListNumber), *normalized)
+
+            # 3. 사후 대조 - "예외 안 났다"는 "옮겨졌다"가 아니다
+            movedComparable = self._collect_comparable_paths_in_change_list(
+                p4, changeListNumber, normalized
+            )
+            missingPaths = [
+                path for path in normalized
+                if self._comparable_path(path) not in movedComparable
+            ]
+
+            if missingPaths:
+                print(f"체인지리스트 {changeListNumber}로 이동되지 않은 파일 {len(missingPaths)}개: {missingPaths}")
+
+            return {
+                'succeeded': not missingPaths,
+                'changelist': changeListNumber,
+                'movedCount': len(normalized) - len(missingPaths),
+                'missingPaths': missingPaths
+            }
+        except P4Exception as e:
+            print(f"열린 파일의 체인지리스트 이동 실패: {e}")
+            if changeListNumber is not None:
+                self._rollback_change_list_move(p4, changeListNumber, inFilePaths)
+            raise
+        finally:
+            if p4.connected():
+                p4.disconnect()
+
+    def _collect_comparable_paths_in_change_list(self, p4: P4, change_list_number: int,
+                                                 file_paths: List[str]) -> set:
+        """대상 체인지리스트에 실제로 들어간 파일들의 비교 키 집합을 만든다.
+
+        `p4 opened -c`의 `clientFile`은 클라이언트 문법이라 로컬 경로와 대조할 수
+        없으므로, `depotFile`을 `p4 where` 매핑으로 로컬 경로에 되돌린 뒤
+        `_comparable_path`로 정규화한다.
+
+        Args:
+            p4: 연결된 P4 인스턴스
+            change_list_number: 확인할 체인지리스트 번호
+            file_paths: 정규화된 로컬 파일 경로 리스트
+
+        Returns:
+            set: 대상 CL에 열려 있는 파일들의 비교용 경로 키 집합
+        """
+        try:
+            opened = p4.run("opened", "-c", str(change_list_number), *file_paths)
+        except P4Exception as e:
+            # 대상 CL에 파일이 하나도 없으면 에러가 날 수 있다 (정상 - 전량 미이동)
+            print(f"체인지리스트 {change_list_number} 사후 대조 조회 결과 없음: {e}")
+            return set()
+
+        if not opened:
+            return set()
+
+        depot_to_local = self._map_depot_to_local(p4, file_paths)
+
+        movedComparable = set()
+        for file_info in opened:
+            if not isinstance(file_info, dict):
+                continue
+            local_file = depot_to_local.get(file_info.get("depotFile", ""), "")
+            if local_file:
+                movedComparable.add(self._comparable_path(local_file))
+        return movedComparable
+
+    def _rollback_change_list_move(self, p4: P4, change_list_number: int,
+                                   file_paths: List[str]) -> None:
+        """이동 실패 시 파일을 default CL로 되돌리고 빈 체인지리스트를 삭제한다.
+
+        **파일 내용은 리버트하지 않는다.** 갓 임포트된 에셋을 리버트하면 디스크의
+        작업 결과가 사라지므로, 되돌리는 대상은 "CL 이동"뿐이다. 먼저 파일을
+        default로 빼내 CL을 비운 뒤 삭제하므로 `delete_change_list` 내부의
+        `revert`는 대상이 없어 무해하게 지나간다.
+
+        정리 실패는 본래 예외를 가리지 않도록 경고만 남긴다.
+
+        Args:
+            p4: 연결된 P4 인스턴스
+            change_list_number: 되돌릴 체인지리스트 번호
+            file_paths: 이동을 시도했던 파일 경로 리스트
+        """
+        try:
+            normalized = self._normalize_paths(file_paths)
+            p4.run("reopen", "-c", "default", *normalized)
+        except P4Exception as e:
+            print(f"이동 롤백(default 복귀) 실패 (무시하고 계속): {e}")
+
+        try:
+            p4.run("change", "-d", str(change_list_number))
+            print(f"이동 실패로 생성된 체인지리스트 삭제: {change_list_number}")
+        except P4Exception as e:
+            print(f"체인지리스트 {change_list_number} 삭제 실패 (무시하고 계속): {e}")
 
     # ============================================================================
     # 체인지리스트 조회
@@ -599,6 +775,30 @@ class Perforce:
         """
         return str(path).replace("\\", "/").lower()
 
+    def _map_depot_to_local(self, p4: P4, file_paths: List[str]) -> Dict[str, str]:
+        """`p4 where`로 depot 경로 -> 로컬 절대경로 매핑을 만든다.
+
+        `p4 opened` 출력의 `clientFile`은 클라이언트 문법
+        (`//워크스페이스명/...`)이라 로컬 절대경로와 직접 대조할 수 없다.
+        열린 파일을 입력 경로와 맞추려면 `depotFile`을 키로 삼고 `p4 where`가
+        돌려주는 `path`(로컬 절대경로)로 변환해야 한다.
+
+        Args:
+            p4: 연결된 P4 인스턴스
+            file_paths: 정규화된 로컬 파일 경로 리스트
+
+        Returns:
+            Dict[str, str]: {depot 경로: 로컬 절대경로}. 매핑 실패 시 빈 딕셔너리.
+        """
+        depot_to_local: Dict[str, str] = {}
+        try:
+            for mapping in p4.run("where", *file_paths):
+                if isinstance(mapping, dict) and "unmap" not in mapping and mapping.get("depotFile"):
+                    depot_to_local[mapping["depotFile"]] = mapping.get("path", "")
+        except P4Exception as e:
+            print(f"p4 where 매핑 실패 (열린 파일 식별이 depot 경로 기준으로 동작): {e}")
+        return depot_to_local
+
     def _takeover_opened_files(self, p4: P4, file_paths: List[str], change_list_number: Union[int, str]) -> Dict[str, str]:
         """대상 체인지리스트가 아닌 곳에 열려 있는 파일들을 대상 CL로 이어받는다.
 
@@ -633,13 +833,7 @@ class Perforce:
             return {}
 
         # opened 출력은 depot/client 문법이므로 로컬 경로 매핑을 만든다
-        depot_to_local = {}
-        try:
-            for mapping in p4.run("where", *file_paths):
-                if isinstance(mapping, dict) and "unmap" not in mapping and mapping.get("depotFile"):
-                    depot_to_local[mapping["depotFile"]] = mapping.get("path", "")
-        except P4Exception as e:
-            print(f"p4 where 매핑 실패 (열린 파일 식별이 depot 경로 기준으로 동작): {e}")
+        depot_to_local = self._map_depot_to_local(p4, file_paths)
 
         opened_actions: Dict[str, str] = {}
         reopen_targets = []
@@ -997,13 +1191,20 @@ class Perforce:
 
     def check_files_checked_out(self, file_paths: List[str]) -> Dict[str, bool]:
         """
-        여러 파일의 체크아웃 상태 확인
+        여러 파일의 체크아웃 상태 확인 (현재 클라이언트 기준)
+
+        `p4 opened`의 `clientFile`은 클라이언트 문법(`//워크스페이스명/...`)이라
+        로컬 절대경로와 대조하면 어떤 경우에도 매칭되지 않는다(전부 False 오탐).
+        따라서 `depotFile`을 키로 `p4 where` 매핑을 거쳐 로컬 절대경로로 되돌린 뒤
+        구분자/대소문자를 흡수하는 비교 키(`_comparable_path`)로 대조한다.
 
         Args:
             file_paths: 확인할 파일 경로 리스트
 
         Returns:
-            Dict[str, bool]: 파일 경로별 체크아웃 여부
+            Dict[str, bool]: 정규화된 파일 경로별 체크아웃 여부.
+                열려 있어도 대상이 다른 체인지리스트면 True다(열림 여부만 본다).
+                특정 CL 소속까지 확인하려면 `is_file_in_pending_changelist`를 쓴다.
         """
         if not isinstance(file_paths, list):
             raise ValueError("file_paths must be a list")
@@ -1019,19 +1220,28 @@ class Perforce:
 
             normalized = self._normalize_paths(file_paths)
             result = {path: False for path in normalized}
+            # 비교 키 -> 결과 딕셔너리 키 매핑 (구분자/대소문자 차이 흡수)
+            comparable_to_key = {self._comparable_path(path): path for path in normalized}
 
             try:
                 opened = p4.run("opened", *normalized)
-                for file_info in opened:
-                    client_file = file_info.get('clientFile', '')
-                    if client_file:
-                        # 경로 정규화 후 매칭
-                        norm_client = self._normalize_path(client_file)
-                        if norm_client in result:
-                            result[norm_client] = True
             except P4Exception:
-                # 파일이 하나도 열려있지 않으면 에러 발생
-                pass
+                # 파일이 하나도 열려있지 않으면 에러 발생 (정상)
+                opened = []
+
+            if opened:
+                depot_to_local = self._map_depot_to_local(p4, normalized)
+                for file_info in opened:
+                    if not isinstance(file_info, dict):
+                        continue
+                    depot_file = file_info.get('depotFile', '')
+                    local_file = depot_to_local.get(depot_file, '')
+                    if not local_file:
+                        print(f"열린 파일의 로컬 경로 매핑 실패 (판정 제외): {depot_file}")
+                        continue
+                    matched_key = comparable_to_key.get(self._comparable_path(local_file))
+                    if matched_key is not None:
+                        result[matched_key] = True
 
             return result
         except P4Exception as e:

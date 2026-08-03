@@ -37,6 +37,14 @@ if is_ue5_available():
         pathUtils = None
         print(f"[PyJalLib] pathUtils 임포트 실패: {e}")
 
+    # importResultWriter - 임포트 결과 JSON 기록 (툴 프로세스 핸드오프)
+    try:
+        from . import importResultWriter
+        __all__.append('importResultWriter')
+    except ImportError as e:
+        importResultWriter = None
+        print(f"[PyJalLib] importResultWriter 임포트 실패: {e}")
+
     # Interchange Pipeline Settings
     try:
         from .interchangePipelineSettings import InterchangePipelineSettings, InterchangePipelinePreset
@@ -130,6 +138,7 @@ if is_ue5_available():
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     pathUtils = None
+    importResultWriter = None
     InterchangePipelineSettings = None
     InterchangePipelinePreset = None
     InterchangeImporterBase = None
@@ -154,6 +163,8 @@ def get_available_modules() -> list:
     available = []
     if 'pathUtils' in __all__ and pathUtils is not None:
         available.append('pathUtils')
+    if 'importResultWriter' in __all__ and importResultWriter is not None:
+        available.append('importResultWriter')
     if 'InterchangePipelineSettings' in __all__ and InterchangePipelineSettings is not None:
         available.append('InterchangePipelineSettings')
     if 'InterchangePipelinePreset' in __all__ and InterchangePipelinePreset is not None:

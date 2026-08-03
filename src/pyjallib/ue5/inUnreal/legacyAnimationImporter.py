@@ -25,30 +25,6 @@ class LegacyAnimationImporter(LegacyBaseImporter):
     def asset_type(self) -> str:
         return "Animation"
 
-    def _create_batch_import_description(self, inFbxFiles: list[str], inAssetFullPaths: list[str]) -> str:
-        """
-        배치 임포트용 간결한 디스크립션 생성
-
-        Args:
-            inFbxFiles (list[str]): 임포트된 FBX 파일 목록
-            inAssetFullPaths (list[str]): 임포트된 에셋 전체 경로 목록
-
-        Returns:
-            str: 간결한 디스크립션
-        """
-        totalCount = len(inFbxFiles)
-
-        if totalCount <= 3:
-            # 3개 이하면 모든 경로 표시
-            fbxList = ", ".join(inFbxFiles)
-            assetList = ", ".join(inAssetFullPaths)
-            return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
-        else:
-            # 3개 초과면 처음 3개만 표시하고 나머지는 개수로 표시
-            fbxList = ", ".join(inFbxFiles[:3]) + f" ... (and {totalCount - 3} more)"
-            assetList = ", ".join(inAssetFullPaths[:3]) + f" ... (and {totalCount - 3} more)"
-            return f"Animation Batch Import ({totalCount} files): {fbxList} -> {assetList}"
-
     def _resolve_skeleton_object(self, inSkeletonAsset, inSkeletonPath: str):
         """로드된 스켈레톤 에셋에서 실제 unreal.Skeleton 오브젝트를 해석합니다.
 
@@ -430,6 +406,29 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         return True
 
     def import_animation(self, inFbxFile: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None, inAssetName: str = None, inDescription: str = None):
+        """애니메이션 FBX를 임포트하고 연 파일 목록을 결과에 담아 반환합니다.
+
+        이 메서드는 **임포트와 체크아웃만** 수행한다. 서밋(`check_in_files`)은
+        하지 않는다 - 에디터 안에는 체인지리스트 API가 없어 자동 서밋이
+        바깥 툴의 CL 관리를 무력화시켰기 때문이다. 연 파일은 default
+        체인지리스트에 남고, 이름 붙은 CL로의 이동과 서밋은 호출자(툴 프로세스)가
+        `pyjallib.perforce.Perforce`로 처리한다.
+
+        Args:
+            inFbxFile: 애니메이션 FBX 파일의 절대 경로
+            inFbxSkeletonPath: 스켈레톤 FBX 경로 (Content 경로로 변환됨)
+            inSkeletonContentPath: 스켈레톤 Content 경로 (직접 사용, 우선)
+            inAssetName: 에셋 이름 (선택적, None이면 FBX 파일명 사용)
+            inDescription: 호출부 호환을 위해 유지되는 인자. 서밋이 임포터에서
+                제거되어 더 이상 사용하지 않는다 (CL 설명은 툴 프로세스가 구성).
+
+        Returns:
+            dict: 임포트 결과 딕셔너리. `OpenedFiles`에 연 파일의 로컬 절대경로
+                (임포트 결과 + dirty deps)가 들어간다.
+
+        Raises:
+            ValueError: 스켈레톤 해석 실패, 임포트 실패, 디스크 저장 실패 시
+        """
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 시작: {inFbxFile}")
 
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -444,32 +443,18 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             unreal.log("[LegacyAnimationImporter] 스켈레톤 변경 필요 - Consolidate+Rename 플로우 진입")
             self._swap_skeleton_via_consolidate(inFbxFile, assetFullPath, inFbxSkeletonPath, inSkeletonContentPath)
 
-            # 변경된 에셋에 대해 소스 컨트롤 처리
+            # 변경된 에셋에 대해 소스 컨트롤 처리 (체크아웃까지만 - 서밋 없음)
             importedObjectPaths = [assetFullPath]
             refObjectPaths = self.get_dirty_deps(assetFullPath)
             allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
 
-            for assetPath in allImportRelatedPaths:
-                unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+            allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
 
-            checkInDescription = f"Animation Skeleton Changed via Consolidate+Rename: {inFbxFile} to {assetFullPath}"
-            if inDescription is not None:
-                checkInDescription = inDescription
+            unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 완료: {assetFullPath}")
 
-            allImportAbsPaths = []
-            for assetPath in allImportRelatedPaths:
-                assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
-                if assetObj is not None:
-                    absPath = unreal.SystemLibrary.get_system_path(assetObj)
-                    allImportAbsPaths.append(absPath)
-
-            if self.is_development_mode():
-                unreal.log(f"[LegacyAnimationImporter] 개발 모드 - 스켈레톤 변경 완료: {assetFullPath}")
-            else:
-                unreal.SourceControl.check_in_files(allImportAbsPaths, checkInDescription, silent=True)
-                unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 완료: {assetFullPath}")
-
-            return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
+            return self._create_result_dict(
+                inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+            )
 
         # 기존 방식: 일반 임포트 (스켈레톤 동일 또는 새 에셋)
         # 기존 에셋이 있는 경우 소스 컨트롤에서 체크아웃
@@ -494,120 +479,12 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         importedObjectPaths = task.imported_object_paths
         refObjectPaths = self.get_dirty_deps(assetFullPath)
 
+        # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음)
         allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
-        for assetPath in allImportRelatedPaths:
-            unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+        allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
 
-        checkInDescription = f"Animation Imported by {inFbxFile} to {assetFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
+        unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
 
-        allImportAbsPaths = []
-        for assetPath in allImportRelatedPaths:
-            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
-            if assetObj is not None:
-                absPath = unreal.SystemLibrary.get_system_path(assetObj)
-                allImportAbsPaths.append(absPath)
-
-        if self.is_development_mode():
-            unreal.log(f"[LegacyAnimationImporter] 개발 모드 - 애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        else:
-            unreal.SourceControl.check_in_files(allImportAbsPaths, checkInDescription, silent=True)
-            unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-
-        return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
-
-    def import_animations(self, inFbxFiles: list[str], inFbxSkeletonPaths: list[str] = None, inSkeletonContentPaths: list[str] = None, inAssetNames: list[str] = None, inDescription: str = None):
-        unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 시작: {inFbxFiles}")
-
-        # 스켈레톤 경로 검증: 하나는 반드시 제공되어야 함
-        if inSkeletonContentPaths is None and inFbxSkeletonPaths is None:
-            error_msg = "애니메이션 임포트에는 스켈레톤 경로가 필요합니다 (inSkeletonContentPaths 또는 inFbxSkeletonPaths 중 하나)"
-            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
-            raise ValueError(error_msg)
-
-        # inSkeletonContentPaths가 제공되었으면 길이 검증
-        if inSkeletonContentPaths is not None and len(inFbxFiles) != len(inSkeletonContentPaths):
-            error_msg = "애니메이션 임포트에는 파일과 스켈레톤이 같은 개수여야 합니다"
-            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
-            raise ValueError(error_msg)
-
-        # inFbxSkeletonPaths가 제공되었으면 길이 검증
-        if inFbxSkeletonPaths is not None and len(inFbxFiles) != len(inFbxSkeletonPaths):
-            error_msg = "애니메이션 임포트에는 파일과 스켈레톤이 같은 개수여야 합니다"
-            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
-            raise ValueError(error_msg)
-
-        if inAssetNames is not None and len(inFbxFiles) != len(inAssetNames):
-            error_msg = "애니메이션 임포트에는 파일과 에셋 이름이 같은 개수여야 합니다"
-            unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
-            raise ValueError(error_msg)
-
-        destinationPaths = []
-        assetNames = []
-        assetFullPaths = []
-        tasks = []
-        for index, fbxFile in enumerate(inFbxFiles):
-            cusAssetName = None
-            if inAssetNames is not None:
-                cusAssetName = inAssetNames[index]
-            destinationPath, assetName = self._prepare_import_paths(fbxFile, cusAssetName)
-
-            destinationPaths.append(destinationPath)
-            assetNames.append(assetName)
-            assetFullPath = f"{destinationPath}/{assetName}"
-            assetFullPaths.append(assetFullPath)
-
-            if unreal.Paths.file_exists(assetFullPath):
-                unreal.SourceControl.check_out_or_add_file(assetFullPath, silent=True)
-
-            # 스켈레톤 경로 결정
-            fbxSkeletonPath = inFbxSkeletonPaths[index] if inFbxSkeletonPaths is not None else None
-            skeletonContentPath = inSkeletonContentPaths[index] if inSkeletonContentPaths is not None else None
-
-            task = self.create_import_task(fbxFile, destinationPath, fbxSkeletonPath, skeletonContentPath)
-            tasks.append(task)
-
-        unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks(tasks)
-
-        batchImportedAssetPaths = []
-        batchImporteAbsPaths = []
-        for index, task in enumerate(tasks):
-            result = task.get_objects()
-            if len(result) == 0:
-                error_msg = f"애니메이션 임포트 실패: {inFbxFiles[index]}"
-                unreal.log_error(f"[LegacyAnimationImporter] {error_msg}")
-                raise ValueError(error_msg)
-
-            # 저장 실패 silent success 방지: 디스크 반영 명시 검증 (실패 시 예외 전파)
-            self.verify_asset_saved(assetFullPaths[index])
-
-            importedObjectPaths = task.imported_object_paths
-            refObjectPaths = self.get_dirty_deps(assetFullPaths[index])
-
-
-            allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
-            for assetPath in allImportRelatedPaths:
-                unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
-                batchImportedAssetPaths.append(assetPath)
-
-        batchImportedAssetPaths = list(dict.fromkeys(batchImportedAssetPaths))
-        for assetPath in batchImportedAssetPaths:
-            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
-            if assetObj is not None:
-                absPath = unreal.SystemLibrary.get_system_path(assetObj)
-                batchImporteAbsPaths.append(absPath)
-
-        # 배치 임포트용 간결한 디스크립션 생성
-        if inDescription is not None:
-            checkInDescription = inDescription
-        else:
-            checkInDescription = self._create_batch_import_description(inFbxFiles, assetFullPaths)
-
-        if self.is_development_mode():
-            unreal.log(f"[LegacyAnimationImporter] 개발 모드 - 배치 임포트 체크인 결과: {checkInDescription}")
-        else:
-            checkinResult = unreal.SourceControl.check_in_files(batchImporteAbsPaths, checkInDescription, silent=True)
-            unreal.log(f"[LegacyAnimationImporter] 배치 임포트 체크인 결과: {checkinResult}")
-
-        unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 완료: {inFbxFiles}")
+        return self._create_result_dict(
+            inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+        )

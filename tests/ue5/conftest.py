@@ -18,9 +18,11 @@ from unittest.mock import MagicMock
 # legacyBaseImporter.py는 모듈 최상단에서 다음을 import:
 #   - import unreal
 #   - from legacyImporterSettings import LegacyImporterSettings
+#   - from pathUtils import open_for_source_control
 _UE5_MOCK_MODULES = [
     "unreal",
     "legacyImporterSettings",
+    "pathUtils",
 ]
 
 for _modName in _UE5_MOCK_MODULES:

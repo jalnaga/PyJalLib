@@ -15,6 +15,7 @@ import unreal
 
 # UE5 모듈 import
 from legacyImporterSettings import LegacyImporterSettings
+from pathUtils import open_for_source_control
 
 
 class LegacyBaseImporter(ABC):
@@ -151,6 +152,14 @@ class LegacyBaseImporter(ABC):
         bool로 반환한다. 섹션/키가 누락되거나 ini 파일 자체가 없으면
         `False`로 fallback (비-개발 모드 가정).
 
+        Note:
+            과거에는 이 값이 임포터 내부 자동 서밋(`check_in_files`)의 유일한
+            차단 수단이었다. 임포터가 순수화되어 서밋을 하지 않게 된 뒤로는
+            **서밋 게이트 역할이 이 메서드에서 툴 프로세스로 이동**했다
+            (호출자가 `submit_change_list` 호출 여부를 직접 결정한다).
+            머신 전역 ini에 의존하던 차단이 호출 단위 결정으로 바뀐 것이며,
+            메서드 자체는 로그/임시파일 보존 등 다른 개발 모드 분기를 위해 유지한다.
+
         Returns:
             개발 모드이면 True, 아니면 False.
         """
@@ -268,14 +277,43 @@ class LegacyBaseImporter(ABC):
             raise ValueError(error_msg)
         unreal.log(f"[LegacyBaseImporter] 에셋 저장 확인: {inAssetPath}")
 
-    def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True):
-        """결과 딕셔너리를 생성하는 공통 메서드"""
+    def open_for_source_control(self, inAssetPaths: list[str]) -> list[str]:
+        """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
+
+        구현은 `pathUtils.open_for_source_control`에 위임한다 - 임포터가 아닌
+        경로(MeshValidator의 텍스쳐·머티리얼 등)에서도 같은 계약이 필요해
+        모듈 함수를 정본으로 둔다.
+
+        Args:
+            inAssetPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+
+        Returns:
+            list[str]: 연 파일의 로컬 절대경로 리스트
+        """
+        return open_for_source_control(inAssetPaths)
+
+    def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True,
+                            inOpenedFiles: list[str] = None):
+        """결과 딕셔너리를 생성하는 공통 메서드
+
+        Args:
+            inSourceFile: 임포트 원본 파일 경로
+            inPath: 임포트된 에셋의 Content 목적지 경로
+            inName: 임포트된 에셋 이름
+            inSuccess: 임포트 성공 여부. 기본값 True.
+            inOpenedFiles: 소스 컨트롤에 연 파일의 로컬 절대경로 리스트.
+                None이면 빈 리스트로 채운다 (키는 항상 존재).
+
+        Returns:
+            dict: 임포트 결과 딕셔너리
+        """
         result = {
             "SourceFile": inSourceFile,
             "Path": inPath,
             "Name": inName,
             "Type": self.asset_type,
-            "Success": inSuccess
+            "Success": inSuccess,
+            "OpenedFiles": list(inOpenedFiles) if inOpenedFiles else []
         }
         unreal.log(f"[LegacyBaseImporter] 결과 딕셔너리 생성: {result}")
         return result

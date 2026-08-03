@@ -283,6 +283,9 @@ class TemplateProcessor:
                 - inDestinationPath: /Game/... 형식의 목적지 경로
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로. 템플릿이 성공 여부와
+                  연 파일 절대경로 목록(`openedFiles`)을 기록한다. 누락하면 기록을
+                  생략하므로 구 호출부와 하위호환된다.
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
@@ -295,6 +298,10 @@ class TemplateProcessor:
         # 선택적 키에 기본값 설정
         if 'inAssetName' not in inTemplateData:
             inTemplateData['inAssetName'] = ''
+
+        # 결과 JSON 경로는 선택 키 - 누락 시 빈 문자열로 채워 템플릿이 기록을 생략한다
+        if 'inResultJsonPath' not in inTemplateData:
+            inTemplateData['inResultJsonPath'] = ''
 
         template_path = get_template_path(LEGACY_SKELETON_IMPORT_TEMPLATE)
 
@@ -320,6 +327,9 @@ class TemplateProcessor:
                 - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로. 템플릿이 성공 여부와
+                  연 파일 절대경로 목록(`openedFiles`)을 기록한다. 누락하면 기록을
+                  생략하므로 구 호출부와 하위호환된다.
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
@@ -332,6 +342,10 @@ class TemplateProcessor:
         # 선택적 키에 기본값 설정
         if 'inAssetName' not in inTemplateData:
             inTemplateData['inAssetName'] = ''
+
+        # 결과 JSON 경로는 선택 키 - 누락 시 빈 문자열로 채워 템플릿이 기록을 생략한다
+        if 'inResultJsonPath' not in inTemplateData:
+            inTemplateData['inResultJsonPath'] = ''
 
         template_path = get_template_path(LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE)
 
@@ -357,6 +371,9 @@ class TemplateProcessor:
                 - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로. 템플릿이 성공 여부와
+                  연 파일 절대경로 목록(`openedFiles`)을 기록한다. 누락하면 기록을
+                  생략하므로 구 호출부와 하위호환된다.
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
@@ -369,6 +386,10 @@ class TemplateProcessor:
         # 선택적 키에 기본값 설정
         if 'inAssetName' not in inTemplateData:
             inTemplateData['inAssetName'] = ''
+
+        # 결과 JSON 경로는 선택 키 - 누락 시 빈 문자열로 채워 템플릿이 기록을 생략한다
+        if 'inResultJsonPath' not in inTemplateData:
+            inTemplateData['inResultJsonPath'] = ''
 
         template_path = get_template_path(LEGACY_ANIM_IMPORT_TEMPLATE)
 
@@ -393,6 +414,9 @@ class TemplateProcessor:
                 - inDestinationPath: /Game/... 형식의 목적지 경로
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로. 템플릿이 성공 여부와
+                  연 파일 절대경로 목록(`openedFiles`)을 기록한다. 누락하면 기록을
+                  생략하므로 구 호출부와 하위호환된다.
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
@@ -404,6 +428,10 @@ class TemplateProcessor:
 
         if 'inAssetName' not in inTemplateData:
             inTemplateData['inAssetName'] = ''
+
+        # 결과 JSON 경로는 선택 키 - 누락 시 빈 문자열로 채워 템플릿이 기록을 생략한다
+        if 'inResultJsonPath' not in inTemplateData:
+            inTemplateData['inResultJsonPath'] = ''
 
         template_path = get_template_path(LEGACY_STATIC_MESH_IMPORT_TEMPLATE)
 
@@ -427,6 +455,10 @@ class TemplateProcessor:
                 - inFbxPaths: FBX 파일 절대 경로 리스트 (Python 리스트 문자열)
                 - inDestinationPath: /Game/... 형식의 목적지 경로
                 - inSkeletonPath: /Game/... 형식의 스켈레톤 경로
+                선택 키:
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로. 템플릿이 성공 여부와
+                  연 파일 절대경로 목록(`openedFiles`)을 기록한다. 누락하면 기록을
+                  생략하므로 구 호출부와 하위호환된다.
             inOutputPath (Optional[str]): 출력 파일 경로. None인 경우 기본 경로 사용
 
         Returns:
@@ -435,6 +467,10 @@ class TemplateProcessor:
         required_keys = ['inExtPackagePath', 'inFbxPaths', 'inDestinationPath', 'inSkeletonPath']
         if not self.validate_template_data(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE, inTemplateData, required_keys):
             raise ValueError(f"Legacy 배치 애니메이션 템플릿에 필요한 키가 누락되었습니다: {required_keys}")
+
+        # 결과 JSON 경로는 선택 키 - 누락 시 빈 문자열로 채워 템플릿이 기록을 생략한다
+        if 'inResultJsonPath' not in inTemplateData:
+            inTemplateData['inResultJsonPath'] = ''
 
         template_path = get_template_path(LEGACY_BATCH_ANIM_IMPORT_TEMPLATE)
 
@@ -464,6 +500,9 @@ class TemplateProcessor:
                 - inDestinationPath: /Game/... 형식의 목적지 경로 (Interchange 방식)
                 선택 키:
                 - inAssetName: 에셋 이름 (빈 문자열이면 자동 생성)
+                - inResultJsonPath: 임포트 결과 JSON 파일 경로 (legacy 템플릿 한정).
+                  템플릿이 성공 여부와 연 파일 절대경로 목록(`openedFiles`)을 기록한다.
+                  누락하면 기록을 생략하므로 구 호출부와 하위호환된다.
                 - inSkeletonPath: /Game/... 형식의 스켈레톤 경로 (skeletal_mesh, animation 필요)
             output_path (Optional[str]): 출력 파일 경로. None인 경우 자동 생성
 
@@ -484,6 +523,8 @@ class TemplateProcessor:
         # 선택적 키에 기본값 설정
         if 'inAssetName' not in template_data:
             template_data['inAssetName'] = ''
+        if 'inResultJsonPath' not in template_data:
+            template_data['inResultJsonPath'] = ''
 
         # 템플릿 경로 가져오기
         template_path = get_template_path(template_name)
