@@ -151,6 +151,14 @@ class LegacyBaseImporter(ABC):
         bool로 반환한다. 섹션/키가 누락되거나 ini 파일 자체가 없으면
         `False`로 fallback (비-개발 모드 가정).
 
+        Note:
+            과거에는 이 값이 임포터 내부 자동 서밋(`check_in_files`)의 유일한
+            차단 수단이었다. 임포터가 순수화되어 서밋을 하지 않게 된 뒤로는
+            **서밋 게이트 역할이 이 메서드에서 툴 프로세스로 이동**했다
+            (호출자가 `submit_change_list` 호출 여부를 직접 결정한다).
+            머신 전역 ini에 의존하던 차단이 호출 단위 결정으로 바뀐 것이며,
+            메서드 자체는 로그/임시파일 보존 등 다른 개발 모드 분기를 위해 유지한다.
+
         Returns:
             개발 모드이면 True, 아니면 False.
         """
@@ -268,14 +276,66 @@ class LegacyBaseImporter(ABC):
             raise ValueError(error_msg)
         unreal.log(f"[LegacyBaseImporter] 에셋 저장 확인: {inAssetPath}")
 
-    def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True):
-        """결과 딕셔너리를 생성하는 공통 메서드"""
+    def open_for_source_control(self, inAssetPaths: list[str]) -> list[str]:
+        """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
+
+        UE5 에디터 내부 Python API에는 체인지리스트를 만들거나 옮기는 수단이
+        없다. 그래서 임포터는 파일을 **default 체인지리스트에 열어두기만** 하고,
+        이름 붙은 CL로의 이동과 서밋은 에디터 밖 툴 프로세스가 맡는다
+        (`pyjallib.perforce.Perforce.move_opened_files_to_new_change_list`).
+        여기서 돌려주는 절대경로 목록이 그 핸드오프의 입력이다.
+
+        경로를 사전 계산하지 않고 **실제로 연 파일을 그대로 보고**하므로,
+        의존성 부수 체크아웃(dirty deps)이 목록에서 누락되지 않는다.
+
+        Args:
+            inAssetPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+
+        Returns:
+            list[str]: 연 파일의 로컬 절대경로 리스트. 에셋 로드나 시스템 경로
+                해석에 실패한 항목은 경고를 남기고 제외한다.
+        """
+        openedAbsPaths = []
+        for assetPath in inAssetPaths:
+            unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+
+            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
+            if assetObj is None:
+                unreal.log_warning(f"[LegacyBaseImporter] 에셋 로드 실패로 목록에서 제외: {assetPath}")
+                continue
+
+            absPath = unreal.SystemLibrary.get_system_path(assetObj)
+            if not absPath:
+                unreal.log_warning(f"[LegacyBaseImporter] 시스템 경로 해석 실패로 목록에서 제외: {assetPath}")
+                continue
+
+            openedAbsPaths.append(absPath)
+
+        unreal.log(f"[LegacyBaseImporter] 소스 컨트롤에 연 파일: {len(openedAbsPaths)}개")
+        return openedAbsPaths
+
+    def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True,
+                            inOpenedFiles: list[str] = None):
+        """결과 딕셔너리를 생성하는 공통 메서드
+
+        Args:
+            inSourceFile: 임포트 원본 파일 경로
+            inPath: 임포트된 에셋의 Content 목적지 경로
+            inName: 임포트된 에셋 이름
+            inSuccess: 임포트 성공 여부. 기본값 True.
+            inOpenedFiles: 소스 컨트롤에 연 파일의 로컬 절대경로 리스트.
+                None이면 빈 리스트로 채운다 (키는 항상 존재).
+
+        Returns:
+            dict: 임포트 결과 딕셔너리
+        """
         result = {
             "SourceFile": inSourceFile,
             "Path": inPath,
             "Name": inName,
             "Type": self.asset_type,
-            "Success": inSuccess
+            "Success": inSuccess,
+            "OpenedFiles": list(inOpenedFiles) if inOpenedFiles else []
         }
         unreal.log(f"[LegacyBaseImporter] 결과 딕셔너리 생성: {result}")
         return result

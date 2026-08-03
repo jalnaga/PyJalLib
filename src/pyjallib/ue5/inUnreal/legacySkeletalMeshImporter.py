@@ -67,6 +67,27 @@ class LegacySkeletalMeshImporter(LegacyBaseImporter):
         return task
 
     def import_skeletal_mesh(self, inFbxFile: str, inFbxSkeletonPath: str = None, inSkeletonContentPath: str = None, inAssetName: str = None, inDescription: str = None):
+        """스켈레탈 메시 FBX를 임포트하고 연 파일 목록을 결과에 담아 반환합니다.
+
+        임포트와 체크아웃만 수행한다. 서밋(`check_in_files`)은 하지 않으며,
+        연 파일은 default 체인지리스트에 남는다. 이름 붙은 CL로의 이동과 서밋은
+        호출자(에디터 밖 툴 프로세스)가 `pyjallib.perforce.Perforce`로 처리한다.
+
+        Args:
+            inFbxFile: 스켈레탈 메시 FBX 파일의 절대 경로
+            inFbxSkeletonPath: 스켈레톤 FBX 경로 (Content 경로로 변환됨)
+            inSkeletonContentPath: 스켈레톤 Content 경로 (직접 사용, 우선)
+            inAssetName: 에셋 이름 (선택적, None이면 FBX 파일명 사용)
+            inDescription: 호출부 호환을 위해 유지되는 인자. 서밋이 임포터에서
+                제거되어 더 이상 사용하지 않는다 (CL 설명은 툴 프로세스가 구성).
+
+        Returns:
+            dict: 임포트 결과 딕셔너리. `OpenedFiles`에 연 파일의 로컬 절대경로
+                (임포트 결과 + dirty deps)가 들어간다.
+
+        Raises:
+            ValueError: 스켈레톤 미존재 또는 임포트 실패 시
+        """
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 시작: {inFbxFile}")
 
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -99,16 +120,13 @@ class LegacySkeletalMeshImporter(LegacyBaseImporter):
             unreal.log_error(f"[LegacySkeletalMeshImporter] {error_msg}")
             raise ValueError(error_msg)
 
-        importedObjectPaths = self.get_dirty_deps(assetFullPath)
-
-        skeletalMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh)
-        importedObjectPaths.append(skeletalMeshSystemFullPath)
-
-        checkInDescription = f"SkeletalMesh Imported by {inFbxFile} to {assetFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
-
-        unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
+        # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음).
+        # 경로는 Content 경로로 통일해 넘긴다 (open_for_source_control이 절대경로로 해석).
+        refObjectPaths = self.get_dirty_deps(assetFullPath)
+        allImportRelatedPaths = list(dict.fromkeys([assetFullPath] + refObjectPaths))
+        allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
 
         unreal.log(f"[LegacySkeletalMeshImporter] 스켈레탈 메시 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
+        return self._create_result_dict(
+            inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+        )

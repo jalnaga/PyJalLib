@@ -47,6 +47,25 @@ class LegacySkeletonImporter(LegacyBaseImporter):
         return task
 
     def import_skeleton(self, inFbxFile: str, inAssetName: str = None, inDescription: str = None):
+        """스켈레톤 FBX를 임포트하고 연 파일 목록을 결과에 담아 반환합니다.
+
+        임포트와 체크아웃만 수행한다. 서밋(`check_in_files`)은 하지 않으며,
+        연 파일은 default 체인지리스트에 남는다. 이름 붙은 CL로의 이동과 서밋은
+        호출자(에디터 밖 툴 프로세스)가 `pyjallib.perforce.Perforce`로 처리한다.
+
+        Args:
+            inFbxFile: 스켈레톤 FBX 파일의 절대 경로
+            inAssetName: 에셋 이름 (선택적, None이면 FBX 파일명 사용)
+            inDescription: 호출부 호환을 위해 유지되는 인자. 서밋이 임포터에서
+                제거되어 더 이상 사용하지 않는다 (CL 설명은 툴 프로세스가 구성).
+
+        Returns:
+            dict: 임포트 결과 딕셔너리. `OpenedFiles`에 연 파일의 로컬 절대경로
+                (임포트된 스켈레톤 + dirty deps)가 들어간다.
+
+        Raises:
+            ValueError: 임포트 실패 시
+        """
         unreal.log(f"[LegacySkeletonImporter] 스켈레톤 임포트 시작: {inFbxFile}")
 
         destinationPath, assetName = self._prepare_import_paths(inFbxFile, inAssetName)
@@ -80,17 +99,13 @@ class LegacySkeletonImporter(LegacyBaseImporter):
         skeletonRenameData = unreal.AssetRenameData(importedSkeleton, destinationPath, skeletonName)
         unreal.AssetToolsHelpers.get_asset_tools().rename_assets([skeletonRenameData])
 
-        skeletalMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh)
-        skeletonSystemFullPath = unreal.SystemLibrary.get_system_path(importedSkeletalMesh.skeleton)
-
-        importedObjectPaths = self.get_dirty_deps(skeletonSystemFullPath)
-        importedObjectPaths.append(skeletonSystemFullPath)
-
-        checkInDescription = f"Skeleton Imported by {inFbxFile} to {assetFullPath}"
-        if inDescription is not None:
-            checkInDescription = inDescription
-
-        unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
+        # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음).
+        # get_dirty_deps는 Content 경로를 받으므로 시스템 경로가 아닌 Content 경로를 넘긴다.
+        refObjectPaths = self.get_dirty_deps(skeletonFullPath)
+        allImportRelatedPaths = list(dict.fromkeys([skeletonFullPath] + refObjectPaths))
+        allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
 
         unreal.log(f"[LegacySkeletonImporter] 스켈레톤 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
-        return self._create_result_dict(inFbxFile, destinationPath, skeletonName, True)
+        return self._create_result_dict(
+            inFbxFile, destinationPath, skeletonName, True, allImportAbsPaths
+        )

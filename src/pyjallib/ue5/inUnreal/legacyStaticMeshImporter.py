@@ -90,14 +90,22 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
 
         Interchange를 임시 비활성화하고 Legacy FBX + FbxImportUI로 임포트합니다.
 
+        임포트와 체크아웃만 수행한다. 서밋(`check_in_files`)은 하지 않으며,
+        연 파일은 default 체인지리스트에 남는다. 이름 붙은 CL로의 이동과 서밋은
+        호출자(에디터 밖 툴 프로세스)가 `pyjallib.perforce.Perforce`로 처리한다.
+
         Args:
             inFbxFile: FBX 파일의 절대 경로
             inAssetName: 에셋 이름 (선택적, None이면 FBX 파일명 사용)
-            inDescription: 소스 컨트롤 체크인 설명 (선택적)
-            inSkipSourceControl: True이면 소스 컨트롤 체크인을 건너뜁니다
+            inDescription: 호출부 호환을 위해 유지되는 인자. 서밋이 임포터에서
+                제거되어 더 이상 사용하지 않는다 (CL 설명은 툴 프로세스가 구성).
+            inSkipSourceControl: True이면 소스 컨트롤 체크아웃을 건너뜁니다.
+                이 경우 `OpenedFiles`가 비므로 호출자가 CL 이동 대상을 얻지 못한다
+                (에디터 밖에서 별도로 파일을 열어야 한다).
 
         Returns:
-            dict: 임포트 결과 딕셔너리 (SourceFile, Path, Name, Type, Success)
+            dict: 임포트 결과 딕셔너리. `OpenedFiles`에 연 파일의 로컬 절대경로
+                (임포트 결과 + dirty deps)가 들어간다.
 
         Raises:
             ValueError: 임포트 실패 시
@@ -160,17 +168,17 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
             unreal.log_error(f"[LegacyStaticMeshImporter] {error_msg}")
             raise ValueError(error_msg)
 
-        importedObjectPaths = self.get_dirty_deps(assetFullPath)
-
-        staticMeshSystemFullPath = unreal.SystemLibrary.get_system_path(importedStaticMesh)
-        importedObjectPaths.append(staticMeshSystemFullPath)
-
+        # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음).
+        # 경로는 Content 경로로 통일해 넘긴다 (open_for_source_control이 절대경로로 해석).
+        allImportAbsPaths = []
         if not inSkipSourceControl:
-            checkInDescription = f"StaticMesh Imported by {inFbxFile} to {assetFullPath}"
-            if inDescription is not None:
-                checkInDescription = inDescription
-
-            unreal.SourceControl.check_in_files(importedObjectPaths, checkInDescription, silent=True)
+            refObjectPaths = self.get_dirty_deps(assetFullPath)
+            allImportRelatedPaths = list(dict.fromkeys([assetFullPath] + refObjectPaths))
+            allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
+        else:
+            unreal.log("[LegacyStaticMeshImporter] 소스 컨트롤 건너뜀 - 연 파일 목록이 비어 있음")
 
         unreal.log(f"[LegacyStaticMeshImporter] 스태틱 메쉬 임포트 성공: {inFbxFile}")
-        return self._create_result_dict(inFbxFile, destinationPath, assetName, True)
+        return self._create_result_dict(
+            inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+        )
