@@ -16,11 +16,8 @@ INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = "interchangeSkeletalMeshImport"
 INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = "interchangeBatchAnimImport"
 
 # Legacy 템플릿 이름 상수
-LEGACY_SKELETON_IMPORT_TEMPLATE = "legacySkeletonImport"
-LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE = "legacySkeletalMeshImport"
 LEGACY_ANIM_IMPORT_TEMPLATE = "legacyAnimImport"
 LEGACY_BATCH_ANIM_IMPORT_TEMPLATE = "legacyBatchAnimImport"
-LEGACY_STATIC_MESH_IMPORT_TEMPLATE = "legacyStaticMeshImport"
 
 # 템플릿 파일 매핑
 _TEMPLATE_FILE_MAP = {
@@ -28,11 +25,8 @@ _TEMPLATE_FILE_MAP = {
     INTERCHANGE_SKELETON_IMPORT_TEMPLATE: "interchangeSkeletonImportTemplate.py",
     INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE: "interchangeSkeletalMeshImportTemplate.py",
     INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE: "interchangeBatchAnimImportTemplate.py",
-    LEGACY_SKELETON_IMPORT_TEMPLATE: "legacySkeletonImportTemplate.py",
-    LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE: "legacySkeletalMeshImportTemplate.py",
     LEGACY_ANIM_IMPORT_TEMPLATE: "legacyAnimImportTemplate.py",
     LEGACY_BATCH_ANIM_IMPORT_TEMPLATE: "legacyBatchAnimImportTemplate.py",
-    LEGACY_STATIC_MESH_IMPORT_TEMPLATE: "legacyStaticMeshImportTemplate.py",
 }
 
 def get_template_path(template_name: str) -> str:
@@ -119,9 +113,6 @@ __all__ = [
     'INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE',
     'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE',
     # Legacy 템플릿 상수
-    'LEGACY_SKELETON_IMPORT_TEMPLATE',
-    'LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE',
     'LEGACY_ANIM_IMPORT_TEMPLATE',
     'LEGACY_BATCH_ANIM_IMPORT_TEMPLATE',
-    'LEGACY_STATIC_MESH_IMPORT_TEMPLATE',
 ]

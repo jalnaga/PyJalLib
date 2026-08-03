@@ -107,41 +107,6 @@ def test_unified_entry_point_also_defaults_result_json_path(processor, tmp_path)
     assert "{inResultJsonPath}" not in rendered
 
 
-@pytest.mark.parametrize(
-    "methodName,templateData",
-    [
-        (
-            "process_legacy_skeletal_mesh_import_template",
-            _BASE_ANIM_DATA,
-        ),
-        (
-            "process_legacy_skeleton_import_template",
-            {
-                "inExtPackagePath": _BASE_ANIM_DATA["inExtPackagePath"],
-                "inFbxPath": _BASE_ANIM_DATA["inFbxPath"],
-                "inDestinationPath": _BASE_ANIM_DATA["inDestinationPath"],
-            },
-        ),
-        (
-            "process_legacy_static_mesh_import_template",
-            {
-                "inExtPackagePath": _BASE_ANIM_DATA["inExtPackagePath"],
-                "inFbxPath": _BASE_ANIM_DATA["inFbxPath"],
-                "inDestinationPath": _BASE_ANIM_DATA["inDestinationPath"],
-            },
-        ),
-    ],
-)
-def test_sibling_templates_are_aligned(processor, tmp_path, methodName, templateData):
-    """형제 템플릿 3종도 같은 결과 JSON 구조로 정렬되어 있다."""
-    data = dict(templateData, inResultJsonPath=_RESULT_JSON_PATH)
-    rendered = _render(processor, methodName, data, tmp_path)
-
-    assert "from importResultWriter import write_import_result" in rendered
-    assert f"resultJsonPath = r'{_RESULT_JSON_PATH}'" in rendered
-    assert "write_import_result(resultJsonPath, importResults, inSuccess=True)" in rendered
-
-
 def test_templates_record_partial_result_before_reraising(processor, tmp_path):
     """실패 시에도 그 시점까지의 결과를 남기고 예외를 전파한다."""
     data = dict(_BASE_ANIM_DATA, inResultJsonPath=_RESULT_JSON_PATH)

@@ -39,80 +39,6 @@ class LegacyImporterSettings:
 
         preset_path = Path(__file__).parent / 'ConfigFiles' / f'{inPresetName}.json'
 
-    def set_options_for_skeleton_import(self):
-        """
-        스켈레톤 임포트를 위한 옵션을 설정합니다.
-
-        스켈레탈 메쉬는 임포트하고, 애니메이션은 임포트하지 않으며,
-        매테리얼이나 텍스처도 임포트하지 않고, 스켈레톤은 새로 생성합니다.
-
-        Returns:
-            unreal.FbxImportUI: 설정된 임포트 옵션
-        """
-        # FBX 임포트 옵션 설정
-        fbxImportOptions = unreal.FbxImportUI()
-        fbxImportOptions.reset_to_default()
-        fbxImportOptions.set_editor_property('original_import_type', unreal.FBXImportType.FBXIT_SKELETAL_MESH)  # 스켈레탈 메쉬 타입
-
-        # 메시 임포트 옵션 설정
-        fbxImportOptions.set_editor_property('import_mesh', True)  # 스켈레탈 메쉬 임포트
-        fbxImportOptions.set_editor_property('import_textures', False)  # 텍스처 임포트 안함
-        fbxImportOptions.set_editor_property('import_materials', False)  # 매테리얼 임포트 안함
-        fbxImportOptions.set_editor_property('import_animations', False)  # 애니메이션 임포트 안함
-        fbxImportOptions.set_editor_property('import_as_skeletal', True)  # 스켈레탈 메쉬로 임포트
-        fbxImportOptions.set_editor_property('mesh_type_to_import', unreal.FBXImportType.FBXIT_SKELETAL_MESH)  # 스켈레탈 메쉬로 임포트
-        fbxImportOptions.set_editor_property('create_physics_asset', False)  # 피직 애셋 생성 안함
-
-        # 스켈레탈 메쉬 임포트 세부 옵션
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_morph_targets', False)  # 모프 타겟 임포트 안함
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds', False)  # LOD 임포트 안함
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', False)  # 씬 단위 변환 안함
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('force_front_x_axis', False)  # X축 강제 변환 안함
-
-        # LOD 임포트 (필요하다면)
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds', False)  # LOD를 임포트하지 않음
-
-        # 스켈레톤 생성 옵션
-        fbxImportOptions.set_editor_property('skeleton', None)  # 새 스켈레톤 생성
-
-        return fbxImportOptions
-
-    def set_options_for_skeletal_mesh_import(self):
-        """
-        스켈레탈 메쉬 임포트를 위한 옵션을 설정합니다.
-
-        애니메이션은 임포트하지 않고, 메쉬만 임포트하며, 텍스처와 매테리얼은 임포트하지 않고,
-        피직 애셋은 만들지 않고, 스켈레톤은 생성하지 않으며, 모프 타겟은 임포트하고,
-        노멀과 탄젠트를 계산하여 Geometry and Skin weights로 임포트합니다.
-
-        Returns:
-            unreal.FbxImportUI: 설정된 임포트 옵션
-        """
-        # FBX 임포트 옵션 설정
-        fbxImportOptions = unreal.FbxImportUI()
-        fbxImportOptions.reset_to_default()
-        fbxImportOptions.set_editor_property('original_import_type', unreal.FBXImportType.FBXIT_SKELETAL_MESH)  # 스켈레탈 메쉬 타입
-
-        # 메시 임포트 옵션 설정
-        fbxImportOptions.set_editor_property('import_mesh', True)  # 메쉬 임포트
-        fbxImportOptions.set_editor_property('import_textures', False)  # 텍스처 임포트 안함
-        fbxImportOptions.set_editor_property('import_materials', False)  # 매테리얼 임포트 안함
-        fbxImportOptions.set_editor_property('import_animations', False)  # 애니메이션 임포트 안함
-        fbxImportOptions.set_editor_property('import_as_skeletal', True)  # 스켈레탈 메쉬로 임포트
-        fbxImportOptions.set_editor_property('create_physics_asset', False)  # 피직 애셋 생성 안함
-
-        # 스켈레탈 메쉬 임포트 세부 옵션
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_morph_targets', True)  # 모프 타겟 임포트
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('normal_import_method', unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)  # 노멀 임포트
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('normal_generation_method', unreal.FBXNormalGenerationMethod.MIKK_T_SPACE)  # 탄젠트 계산
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('preserve_smoothing_groups', True)  # 스무딩 그룹 보존
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('reorder_material_to_fbx_order', True)  # Material 순서 재정렬
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('import_mesh_lo_ds', False)  # LOD 임포트 안함
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('convert_scene_unit', False)  # 씬 단위 변환 안함
-        fbxImportOptions.skeletal_mesh_import_data.set_editor_property('force_front_x_axis', False)  # X축 강제 변환 안함
-
-        return fbxImportOptions
-
     def set_options_for_static_mesh_import(self):
         """
         스태틱 메쉬 임포트를 위한 옵션을 설정합니다.
@@ -195,14 +121,10 @@ class LegacyImporterSettings:
             raise ValueError("Preset name is required")
 
         # PresetName에 따라 적절한 메소드 호출
-        if inPresetName.lower() == "skeleton":
-            return self.set_options_for_skeleton_import()
-        elif inPresetName.lower() == "skeletalmesh":
-            return self.set_options_for_skeletal_mesh_import()
-        elif inPresetName.lower() == "staticmesh":
+        if inPresetName.lower() == "staticmesh":
             return self.set_options_for_static_mesh_import()
         elif inPresetName.lower() == "animation":
             return self.set_options_for_animation_import()
         else:
-            unreal.log_error(f"[LegacyImporterSettings] Unsupported preset name: {inPresetName}. Supported presets: Skeleton, SkeletalMesh, StaticMesh, Animation")
+            unreal.log_error(f"[LegacyImporterSettings] Unsupported preset name: {inPresetName}. Supported presets: StaticMesh, Animation")
             return None
