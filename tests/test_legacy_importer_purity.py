@@ -27,7 +27,6 @@ _MODULE_NAMES = (
     "legacyBaseImporter",
     "legacyImporterSettings",
     "legacyAnimationImporter",
-    "legacySkeletalMeshImporter",
     "legacyStaticMeshImporter",
 )
 
@@ -163,7 +162,6 @@ def inunreal_modules():
     try:
         modules = {
             "animation": importlib.import_module("legacyAnimationImporter"),
-            "skeletalMesh": importlib.import_module("legacySkeletalMeshImporter"),
             "staticMesh": importlib.import_module("legacyStaticMeshImporter"),
         }
         yield modules, unrealMock
@@ -260,24 +258,6 @@ def test_legacy_animation_importer_has_no_plural_import_method(inunreal_modules)
 # ============================================================================
 # 형제 임포터 (SkeletalMesh / StaticMesh)
 # ============================================================================
-
-def test_import_skeletal_mesh_does_not_check_in_and_reports_opened_files(
-    inunreal_modules,
-):
-    """스켈레탈 메시 임포터도 서밋 없이 연 파일 목록을 반환한다."""
-    modules, unrealMock = inunreal_modules
-    _configure_unreal_mock(unrealMock, [_FakeSkeletalMesh()], [_DEP_PATH])
-
-    importer = modules["skeletalMesh"].LegacySkeletalMeshImporter(
-        inContentRootPrefix=_CONTENT_ROOT_PREFIX, inFbxRootPrefix=_FBX_ROOT_PREFIX
-    )
-    result = importer.import_skeletal_mesh(
-        _FBX_FILE, inSkeletonContentPath=_SKELETON_CONTENT_PATH
-    )
-
-    unrealMock.SourceControl.check_in_files.assert_not_called()
-    assert result["OpenedFiles"] == _EXPECTED_OPENED_FILES
-
 
 def test_import_static_mesh_does_not_check_in_and_reports_opened_files(
     inunreal_modules,

@@ -103,22 +103,6 @@ if is_ue5_available():
         LegacyImporterSettings = None
         print(f"[PyJalLib] LegacyImporterSettings 임포트 실패: {e}")
 
-    # Legacy Skeleton Importer
-    try:
-        from .legacySkeletonImporter import LegacySkeletonImporter
-        __all__.append('LegacySkeletonImporter')
-    except ImportError as e:
-        LegacySkeletonImporter = None
-        print(f"[PyJalLib] LegacySkeletonImporter 임포트 실패: {e}")
-
-    # Legacy Skeletal Mesh Importer
-    try:
-        from .legacySkeletalMeshImporter import LegacySkeletalMeshImporter
-        __all__.append('LegacySkeletalMeshImporter')
-    except ImportError as e:
-        LegacySkeletalMeshImporter = None
-        print(f"[PyJalLib] LegacySkeletalMeshImporter 임포트 실패: {e}")
-
     # Legacy Animation Importer
     try:
         from .legacyAnimationImporter import LegacyAnimationImporter
@@ -147,8 +131,6 @@ else:
     InterchangeAnimationImporter = None
     LegacyBaseImporter = None
     LegacyImporterSettings = None
-    LegacySkeletonImporter = None
-    LegacySkeletalMeshImporter = None
     LegacyAnimationImporter = None
     LegacyStaticMeshImporter = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
@@ -181,10 +163,6 @@ def get_available_modules() -> list:
         available.append('LegacyBaseImporter')
     if 'LegacyImporterSettings' in __all__ and LegacyImporterSettings is not None:
         available.append('LegacyImporterSettings')
-    if 'LegacySkeletonImporter' in __all__ and LegacySkeletonImporter is not None:
-        available.append('LegacySkeletonImporter')
-    if 'LegacySkeletalMeshImporter' in __all__ and LegacySkeletalMeshImporter is not None:
-        available.append('LegacySkeletalMeshImporter')
     if 'LegacyAnimationImporter' in __all__ and LegacyAnimationImporter is not None:
         available.append('LegacyAnimationImporter')
     if 'LegacyStaticMeshImporter' in __all__ and LegacyStaticMeshImporter is not None:
