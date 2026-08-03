@@ -15,6 +15,7 @@ import unreal
 
 # UE5 모듈 import
 from legacyImporterSettings import LegacyImporterSettings
+from pathUtils import open_for_source_control
 
 
 class LegacyBaseImporter(ABC):
@@ -279,40 +280,17 @@ class LegacyBaseImporter(ABC):
     def open_for_source_control(self, inAssetPaths: list[str]) -> list[str]:
         """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
 
-        UE5 에디터 내부 Python API에는 체인지리스트를 만들거나 옮기는 수단이
-        없다. 그래서 임포터는 파일을 **default 체인지리스트에 열어두기만** 하고,
-        이름 붙은 CL로의 이동과 서밋은 에디터 밖 툴 프로세스가 맡는다
-        (`pyjallib.perforce.Perforce.move_opened_files_to_new_change_list`).
-        여기서 돌려주는 절대경로 목록이 그 핸드오프의 입력이다.
-
-        경로를 사전 계산하지 않고 **실제로 연 파일을 그대로 보고**하므로,
-        의존성 부수 체크아웃(dirty deps)이 목록에서 누락되지 않는다.
+        구현은 `pathUtils.open_for_source_control`에 위임한다 - 임포터가 아닌
+        경로(MeshValidator의 텍스쳐·머티리얼 등)에서도 같은 계약이 필요해
+        모듈 함수를 정본으로 둔다.
 
         Args:
             inAssetPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
 
         Returns:
-            list[str]: 연 파일의 로컬 절대경로 리스트. 에셋 로드나 시스템 경로
-                해석에 실패한 항목은 경고를 남기고 제외한다.
+            list[str]: 연 파일의 로컬 절대경로 리스트
         """
-        openedAbsPaths = []
-        for assetPath in inAssetPaths:
-            unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
-
-            assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
-            if assetObj is None:
-                unreal.log_warning(f"[LegacyBaseImporter] 에셋 로드 실패로 목록에서 제외: {assetPath}")
-                continue
-
-            absPath = unreal.SystemLibrary.get_system_path(assetObj)
-            if not absPath:
-                unreal.log_warning(f"[LegacyBaseImporter] 시스템 경로 해석 실패로 목록에서 제외: {assetPath}")
-                continue
-
-            openedAbsPaths.append(absPath)
-
-        unreal.log(f"[LegacyBaseImporter] 소스 컨트롤에 연 파일: {len(openedAbsPaths)}개")
-        return openedAbsPaths
+        return open_for_source_control(inAssetPaths)
 
     def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True,
                             inOpenedFiles: list[str] = None):

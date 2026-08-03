@@ -142,6 +142,45 @@ def checkout_or_add_file(inContentPath: str) -> bool:
     return success
 
 
+def open_for_source_control(inContentPaths: list) -> list:
+    """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
+
+    UE5 에디터 내부 Python API에는 체인지리스트를 만들거나 옮기는 수단이 없다.
+    그래서 에디터 안에서는 파일을 **default 체인지리스트에 열어두기만** 하고,
+    이름 붙은 CL로의 이동과 서밋은 에디터 밖 툴 프로세스가 맡는다
+    (`pyjallib.perforce.Perforce.move_opened_files_to_new_change_list`).
+    여기서 돌려주는 절대경로 목록이 그 핸드오프의 입력이다.
+
+    경로를 사전 계산하지 않고 **실제로 연 파일을 그대로 보고**하므로,
+    의존성 부수 체크아웃(dirty deps)이 목록에서 누락되지 않는다.
+
+    Args:
+        inContentPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+
+    Returns:
+        list: 연 파일의 로컬 절대경로 리스트. 에셋 로드나 시스템 경로 해석에
+            실패한 항목은 경고를 남기고 제외한다.
+    """
+    openedAbsPaths = []
+    for assetPath in inContentPaths:
+        unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+
+        assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
+        if assetObj is None:
+            unreal.log_warning(f"[pathUtils] 에셋 로드 실패로 목록에서 제외: {assetPath}")
+            continue
+
+        absPath = unreal.SystemLibrary.get_system_path(assetObj)
+        if not absPath:
+            unreal.log_warning(f"[pathUtils] 시스템 경로 해석 실패로 목록에서 제외: {assetPath}")
+            continue
+
+        openedAbsPaths.append(absPath)
+
+    unreal.log(f"[pathUtils] 소스 컨트롤에 연 파일: {len(openedAbsPaths)}개")
+    return openedAbsPaths
+
+
 def get_asset_name_from_path(inContentPath: str) -> Optional[str]:
     """
     Content 경로에서 에셋 이름을 추출합니다.

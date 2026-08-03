@@ -23,6 +23,7 @@ _INUNREAL_DIR = str(
 )
 _MODULE_NAMES = (
     "unreal",
+    "pathUtils",
     "legacyBaseImporter",
     "legacyImporterSettings",
     "legacyAnimationImporter",
