@@ -57,6 +57,27 @@ _TEST_PARAMS = [
     {"name": "label", "type": "string", "default": ""},
 ]
 
+# 어트리뷰트 홀더 모디파이어 대상 테스트용 정의 소스 (TC23~TC32).
+# build_param_def_string으로는 만들 수 없는 롤아웃 포함 정의를 담아,
+# add_attribute_def_from_source가 실제로 그 경로를 커버하는지 확인한다.
+_HOLDER_DEF_NAME = "HolderProbeData"
+_HOLDER_DEF_SOURCE = """
+attributes HolderProbeData
+(
+    parameters main rollout:HolderProbeRollout
+    (
+        holderWeight type:#float ui:spnHolderWeight default:0.0
+        holderCount type:#integer ui:spnHolderCount default:0
+    )
+
+    rollout HolderProbeRollout "홀더 프로브 롤아웃"
+    (
+        spinner spnHolderWeight "holderWeight" type:#float range:[-100.0, 100.0, 0.0]
+        spinner spnHolderCount "holderCount" type:#integer range:[-100, 100, 0]
+    )
+)
+"""
+
 
 # ============================================================
 # TC01: Attribute 인스턴스 생성
@@ -494,6 +515,252 @@ try:
     )
 except Exception as e:
     reporter.error("TC22 assign_float_controllers 중복 할당 방지", str(e))
+
+
+# ============================================================
+# TC23: ensure_attribute_holder - 홀더 생성
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    holderNode = rt.Point(name="HolderNode")
+
+    holder = attrService.ensure_attribute_holder(holderNode)
+
+    reporter.assert_test(
+        holder is not None
+        and str(rt.classOf(holder)) == "EmptyModifier"
+        and int(holderNode.modifiers.count) == 1,
+        "TC23 ensure_attribute_holder 홀더 생성",
+        f"holder={holder}, "
+        f"classOf={rt.classOf(holder) if holder is not None else None}, "
+        f"modifierCount={int(holderNode.modifiers.count)}",
+    )
+except Exception as e:
+    reporter.error("TC23 ensure_attribute_holder 홀더 생성", str(e))
+
+
+# ============================================================
+# TC24: ensure_attribute_holder 멱등성 - 2회 호출해도 모디파이어 1개
+# ============================================================
+try:
+    # TC23의 holderNode를 이어서 사용. 이미 홀더가 있는 상태에서 재호출.
+    secondHolder = attrService.ensure_attribute_holder(holderNode)
+
+    reporter.assert_test(
+        secondHolder is not None and int(holderNode.modifiers.count) == 1,
+        "TC24 ensure_attribute_holder 멱등성",
+        f"2회 호출 후 modifierCount={int(holderNode.modifiers.count)} (기대 1), "
+        f"secondHolder={secondHolder}",
+    )
+except Exception as e:
+    reporter.error("TC24 ensure_attribute_holder 멱등성", str(e))
+
+
+# ============================================================
+# TC25: find_attribute_holder / find_attribute_holder_index
+# ============================================================
+try:
+    foundHolder = attrService.find_attribute_holder(holderNode)
+    foundIndex = attrService.find_attribute_holder_index(holderNode)
+
+    reporter.assert_test(
+        foundHolder is not None and foundIndex == 0,
+        "TC25 find_attribute_holder / index 조회",
+        f"foundHolder={foundHolder}, foundIndex={foundIndex} (기대 0)",
+    )
+except Exception as e:
+    reporter.error("TC25 find_attribute_holder / index 조회", str(e))
+
+
+# ============================================================
+# TC26: 홀더 없는 노드 - find는 None, index는 -1, remove는 False
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    bareNode = rt.Point(name="BareNode")
+
+    bareHolder = attrService.find_attribute_holder(bareNode)
+    bareIndex = attrService.find_attribute_holder_index(bareNode)
+    bareRemove = attrService.remove_attribute_holder(bareNode)
+
+    reporter.assert_test(
+        bareHolder is None and bareIndex == -1 and bareRemove is False,
+        "TC26 홀더 부재 시 반환값",
+        f"find={bareHolder} (기대 None), index={bareIndex} (기대 -1), "
+        f"remove={bareRemove} (기대 False)",
+    )
+except Exception as e:
+    reporter.error("TC26 홀더 부재 시 반환값", str(e))
+
+
+# ============================================================
+# TC27: remove_attribute_holder - 홀더와 그 위의 CA가 함께 사라진다
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    removeNode = rt.Point(name="RemoveNode")
+    removeHolder = attrService.ensure_attribute_holder(removeNode)
+    attrService.add_attribute_def_from_source(
+        removeHolder, "HolderProbeData", _HOLDER_DEF_SOURCE
+    )
+
+    caBeforeRemove = attrService.find_attribute_def(removeHolder, "HolderProbeData")
+    removeResult = attrService.remove_attribute_holder(removeNode)
+
+    reporter.assert_test(
+        caBeforeRemove is not None
+        and removeResult is True
+        and int(removeNode.modifiers.count) == 0
+        and attrService.find_attribute_holder(removeNode) is None,
+        "TC27 remove_attribute_holder 홀더+CA 동반 제거",
+        f"caBeforeRemove={caBeforeRemove}, removeResult={removeResult}, "
+        f"modifierCount={int(removeNode.modifiers.count)} (기대 0)",
+    )
+except Exception as e:
+    reporter.error("TC27 remove_attribute_holder 홀더+CA 동반 제거", str(e))
+
+
+# ============================================================
+# TC28: add_attribute_def_from_source - 롤아웃 포함 정의를 모디파이어에 부착
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    srcNode = rt.Point(name="SrcNode")
+    srcHolder = attrService.ensure_attribute_holder(srcNode)
+
+    addResult = attrService.add_attribute_def_from_source(
+        srcHolder, "HolderProbeData", _HOLDER_DEF_SOURCE
+    )
+    srcDef = attrService.find_attribute_def(srcHolder, "HolderProbeData")
+
+    reporter.assert_test(
+        addResult is True and srcDef is not None and str(srcDef.name) == "HolderProbeData",
+        "TC28 add_attribute_def_from_source 롤아웃 포함 정의 부착",
+        f"addResult={addResult}, srcDef={srcDef}",
+    )
+except Exception as e:
+    reporter.error("TC28 add_attribute_def_from_source 롤아웃 포함 정의 부착", str(e))
+
+
+# ============================================================
+# TC29: add_attribute_def_from_source - 중복 부착 차단
+# ============================================================
+try:
+    # TC28에서 이미 부착된 상태. 같은 이름 재부착은 False여야 한다.
+    duplicateResult = attrService.add_attribute_def_from_source(
+        srcHolder, "HolderProbeData", _HOLDER_DEF_SOURCE
+    )
+
+    reporter.assert_test(
+        duplicateResult is False and rt.custAttributes.count(srcHolder) == 1,
+        "TC29 add_attribute_def_from_source 중복 차단",
+        f"duplicateResult={duplicateResult} (기대 False), "
+        f"caCount={rt.custAttributes.count(srcHolder)} (기대 1)",
+    )
+except Exception as e:
+    reporter.error("TC29 add_attribute_def_from_source 중복 차단", str(e))
+
+
+# ============================================================
+# TC30: add_attribute_def_from_source - 정의 이름 불일치 시 부착하지 않음
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    mismatchNode = rt.Point(name="MismatchNode")
+    mismatchHolder = attrService.ensure_attribute_holder(mismatchNode)
+
+    mismatchResult = attrService.add_attribute_def_from_source(
+        mismatchHolder, "WrongName", _HOLDER_DEF_SOURCE
+    )
+
+    reporter.assert_test(
+        mismatchResult is False and rt.custAttributes.count(mismatchHolder) == 0,
+        "TC30 정의 이름 불일치 시 부착 차단",
+        f"mismatchResult={mismatchResult} (기대 False), "
+        f"caCount={rt.custAttributes.count(mismatchHolder)} (기대 0)",
+    )
+except Exception as e:
+    reporter.error("TC30 정의 이름 불일치 시 부착 차단", str(e))
+
+
+# ============================================================
+# TC31: 모디파이어 대상 CRUD 왕복 (조회 -> 읽기/쓰기 -> 컨트롤러 -> 삭제)
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    crudNode = rt.Point(name="CrudNode")
+    crudHolder = attrService.ensure_attribute_holder(crudNode)
+    attrService.add_attribute_def_from_source(
+        crudHolder, "HolderProbeData", _HOLDER_DEF_SOURCE
+    )
+
+    # 프로퍼티 목록
+    propNames = set(attrService.get_all_properties(crudHolder, "HolderProbeData").keys())
+
+    # 단일 읽기/쓰기
+    setOk = attrService.set_property(crudHolder, "HolderProbeData", "holderWeight", 0.42)
+    readBack = attrService.get_property(crudHolder, "HolderProbeData", "holderWeight")
+
+    # 일괄 쓰기
+    setAllOk = attrService.set_all_properties(
+        crudHolder, "HolderProbeData", {"holderWeight": 0.8, "holderCount": 3}
+    )
+    allValues = attrService.get_all_properties(crudHolder, "HolderProbeData")
+
+    # 컨트롤러 할당
+    ctrlOk = attrService.assign_float_controllers(crudHolder, "HolderProbeData")
+    crudBlock = attrService._get_ca_block(crudHolder, "HolderProbeData")
+    weightCtrl = rt.getPropertyController(crudBlock, "holderWeight")
+
+    # 정의 삭제 (모디파이어는 남는다)
+    removeDefOk = attrService.remove_attribute_def(crudHolder, "HolderProbeData")
+
+    reporter.assert_test(
+        propNames == {"holderWeight", "holderCount"}
+        and setOk is True
+        and abs(readBack - 0.42) < 0.001
+        and setAllOk is True
+        and abs(allValues["holderWeight"] - 0.8) < 0.001
+        and allValues["holderCount"] == 3
+        and ctrlOk is True
+        and weightCtrl is not None
+        and removeDefOk is True
+        and rt.custAttributes.count(crudHolder) == 0
+        and int(crudNode.modifiers.count) == 1,
+        "TC31 모디파이어 대상 CRUD 왕복",
+        f"propNames={propNames}, setOk={setOk}, readBack={readBack}, "
+        f"setAllOk={setAllOk}, allValues={allValues}, ctrlOk={ctrlOk}, "
+        f"weightCtrl={weightCtrl}, removeDefOk={removeDefOk}, "
+        f"caCount={rt.custAttributes.count(crudHolder)}, "
+        f"modifierCount={int(crudNode.modifiers.count)}",
+    )
+except Exception as e:
+    reporter.error("TC31 모디파이어 대상 CRUD 왕복", str(e))
+
+
+# ============================================================
+# TC32: 노드 기준 조회는 모디파이어 CA를 보지 못한다 (문서화된 범위 차이)
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    scopeNode = rt.Point(name="ScopeNode")
+    scopeHolder = attrService.ensure_attribute_holder(scopeNode)
+    attrService.add_attribute_def_from_source(
+        scopeHolder, "HolderProbeData", _HOLDER_DEF_SOURCE
+    )
+
+    viaHolder = attrService.find_attribute_def(scopeHolder, "HolderProbeData")
+    viaNode = attrService.find_attribute_def(scopeNode, "HolderProbeData")
+    hasViaNode = attrService.has_attribute_def(scopeNode, "HolderProbeData")
+
+    reporter.assert_test(
+        viaHolder is not None and viaNode is None and hasViaNode is False,
+        "TC32 노드 기준 조회는 모디파이어 CA 미노출",
+        f"viaHolder={viaHolder} (기대 not None), viaNode={viaNode} (기대 None), "
+        f"hasViaNode={hasViaNode} (기대 False)",
+    )
+except Exception as e:
+    reporter.error("TC32 노드 기준 조회는 모디파이어 CA 미노출", str(e))
 
 
 # ============================================================
