@@ -764,6 +764,61 @@ except Exception as e:
 
 
 # ============================================================
+# TC33: has_attribute_def가 모디파이어 대상에서 동작한다
+#
+# 종전에는 rt.isvalidnode 가드가 살아 있는 모디파이어에도 False를 반환해
+# 어트리뷰트가 실제로 있어도 False가 나왔다. 생존 판정을 rt.isDeleted로 바꾼 뒤의
+# 회귀 게이트다.
+# ============================================================
+try:
+    hasViaHolder = attrService.has_attribute_def(scopeHolder, "HolderProbeData")
+    hasWrongName = attrService.has_attribute_def(scopeHolder, "NoSuchDefName")
+
+    reporter.assert_test(
+        hasViaHolder is True and hasWrongName is False,
+        "TC33 has_attribute_def 모디파이어 대상 동작",
+        f"hasViaHolder={hasViaHolder} (기대 True), "
+        f"hasWrongName={hasWrongName} (기대 False)",
+    )
+except Exception as e:
+    reporter.error("TC33 has_attribute_def 모디파이어 대상 동작", str(e))
+
+
+# ============================================================
+# TC34: has_attribute_def의 노드 대상 동작이 보존된다
+#
+# 살아 있는 노드는 통과하고 삭제된 노드는 차단해야 한다 (기존 동작).
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    liveNode = rt.Point(name="LiveNode")
+    attrService.add_attribute_def(liveNode, _TEST_DEF_NAME, _TEST_PARAMS)
+    hasOnLiveNode = attrService.has_attribute_def(liveNode, _TEST_DEF_NAME)
+
+    doomedNode = rt.Point(name="DoomedNode")
+    attrService.add_attribute_def(doomedNode, _TEST_DEF_NAME, _TEST_PARAMS)
+    hasBeforeDelete = attrService.has_attribute_def(doomedNode, _TEST_DEF_NAME)
+    rt.delete(doomedNode)
+    hasAfterDelete = attrService.has_attribute_def(doomedNode, _TEST_DEF_NAME)
+
+    hasOnNone = attrService.has_attribute_def(None, _TEST_DEF_NAME)
+
+    reporter.assert_test(
+        hasOnLiveNode is True
+        and hasBeforeDelete is True
+        and hasAfterDelete is False
+        and hasOnNone is False,
+        "TC34 has_attribute_def 노드 대상 동작 보존",
+        f"살아있는 노드={hasOnLiveNode} (기대 True), "
+        f"삭제 전={hasBeforeDelete} (기대 True), "
+        f"삭제 후={hasAfterDelete} (기대 False), "
+        f"None={hasOnNone} (기대 False)",
+    )
+except Exception as e:
+    reporter.error("TC34 has_attribute_def 노드 대상 동작 보존", str(e))
+
+
+# ============================================================
 # 결과 요약 및 정리
 # ============================================================
 reporter.summary()

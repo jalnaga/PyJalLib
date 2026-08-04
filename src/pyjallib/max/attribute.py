@@ -32,12 +32,14 @@ class Attribute:
     안 된다. ``find_attribute_holder``로 홀더를 얻어 그것도 함께 조회해야 한다.
 
     모디파이어 대상에서 정상 동작하는 메서드: ``find_attribute_def``,
-    ``get_all_attribute_defs``, ``remove_attribute_def``,
+    ``has_attribute_def``, ``get_all_attribute_defs``, ``remove_attribute_def``,
     ``redefine_attribute_def``, ``get_property``, ``set_property``,
     ``get_all_properties``, ``set_all_properties``, ``assign_float_controllers``,
     ``add_attribute_def_from_source``.
 
-    예외는 ``has_attribute_def``와 ``add_attribute_def``다(각 docstring 참조).
+    예외는 ``add_attribute_def``다 - 롤아웃을 포함한 정의를 만들 수 없고 중복 검사
+    범위도 좁다(그 docstring 참조). 모디파이어 대상 부착은
+    ``add_attribute_def_from_source``를 쓴다.
     """
 
     # 지원 타입 매핑 (Python 타입명 -> MaxScript 타입 문자열)
@@ -175,25 +177,30 @@ class Attribute:
         return None
 
     def has_attribute_def(self, inNode, inDefName: str) -> bool:
-        """노드에 지정된 이름의 커스텀 어트리뷰트가 존재하는지 확인한다.
+        """대상에 지정된 이름의 커스텀 어트리뷰트가 존재하는지 확인한다.
 
-        Note:
-            **이 메서드는 노드 전용이다.** ``rt.isvalidnode`` 가드를 거치므로
-            모디파이어 객체를 넘기면 어트리뷰트가 실제로 있어도 False를 반환한다.
-            모디파이어 대상 판정은 ``find_attribute_def(...) is not None``을 쓴다.
+        ``inNode`` 자리에 노드와 **모디파이어 객체**를 모두 넘길 수 있다. 조회 범위는
+        클래스 docstring의 규칙을 따른다 - 노드는 baseObject, 모디파이어는 그 모디파이어.
+
+        생존 판정은 ``rt.isvalidnode``가 아니라 ``rt.isDeleted``로 한다.
+        ``isvalidnode``는 **살아 있는 모디파이어에도 False를 반환**하므로(2026-08-04
+        프로브 실측) 모디파이어를 넘기면 어트리뷰트가 실제로 있어도 False가 나왔다.
+        노드 대상의 결과는 종전과 동일하다 - 살아 있는 노드는 ``isDeleted``가 False,
+        삭제된 노드는 True다. 노드도 모디파이어도 아닌 값은 ``isDeleted``를 통과하지만
+        ``find_attribute_def``의 조회 가드에서 걸러진다.
 
         Args:
-            inNode (rt.Node): 검색 대상 노드
+            inNode (rt.Node | rt.Modifier): 검색 대상 노드 또는 모디파이어
             inDefName (str): 어트리뷰트 정의 이름
 
         Returns:
-            bool: 존재하면 True. 없거나 노드가 유효하지 않으면 False
+            bool: 존재하면 True. 없거나 대상이 삭제되었으면 False
         """
         if inNode is None:
             return False
 
         try:
-            if not rt.isvalidnode(inNode):
+            if rt.isDeleted(inNode):
                 return False
         except Exception:
             return False
@@ -234,12 +241,9 @@ class Attribute:
         rt.execute로 정의 객체를 만들고 rt.custAttributes.add로 노드에 추가한다.
 
         Note:
-            **노드 전용으로 쓴다.** 중복 검사가 노드 전용인 ``has_attribute_def``에
-            의존하므로, 모디파이어를 넘기면 부착 자체는 되지만 중복 검사가
-            무력화된다. 모디파이어 대상 부착은 ``add_attribute_def_from_source``를
-            쓴다(그 쪽은 ``find_attribute_def`` 기반으로 중복을 검사한다).
-            또한 이 메서드는 ``parameters main`` 블록만 만들 수 있어 롤아웃을 포함한
-            정의는 부착할 수 없다.
+            이 메서드는 ``parameters main`` 블록만 만들 수 있어 **롤아웃을 포함한
+            정의는 부착할 수 없다.** 롤아웃·이벤트 핸들러·정의 레벨 함수가 필요하면
+            ``add_attribute_def_from_source``를 쓴다.
 
         Args:
             inNode (rt.Node): 대상 노드
