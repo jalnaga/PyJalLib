@@ -10,6 +10,166 @@ from pymxs import undo
 from pymxs import runtime as rt
 
 
+# ----------------------------------------------------------------------
+# 월드 트랜스폼 일괄 베이크 - MAXScript 소스 조립 (pymxs 무의존 순수부)
+#
+# 왜 MAXScript 한 블록인가: 노드 N개 x 프레임 F개를 pymxs로 돌면 IPC가
+# N*F회 발생한다(실측 84노드 x 641프레임 = 약 16만 회). 루프를 MAXScript
+# 안으로 내리면 청크당 1회로 줄고, `undo off`로 Undo 기록까지 끊긴다.
+#
+# 노드는 이름이 아니라 **핸들**로 넘긴다. 이름은 동명 노드·`mergeMAXFile`의
+# 자동 리네임에 무너진다(`max/pymxs_pitfalls_advanced.md`).
+#
+# 아래 문자열 조립부는 `rt`를 건드리지 않으므로 콘솔(Type A)에서 전수
+# 검증할 수 있다.
+# ----------------------------------------------------------------------
+
+# 한 청크의 읽기->쓰기. 읽기(소스 구간)와 쓰기(대상 구간)를 한 블록에서
+# 처리하므로 청크 간 상태 공유가 필요 없다.
+#
+# 읽기와 쓰기를 나눈 이유: 읽는 시점(프레임 k)과 쓰는 시점(k - offset)이
+# 다르므로, 먼저 값으로 확보(`copy`)한 뒤 기록해야 한다. 라이브 참조를
+# 들고 시간축을 넘나들면 기록 시점의 값으로 평가될 위험이 있다.
+_BAKE_CHUNK_SCRIPT_TEMPLATE = """(
+    local srcs = for h in #({sourceHandles}) collect (getAnimByHandle h)
+    local tgts = for h in #({targetHandles}) collect (getAnimByHandle h)
+    if (findItem srcs undefined) != 0 or (findItem tgts undefined) != 0 then (
+        throw "bake_world_transforms: 노드 핸들 해석에 실패했습니다"
+    )
+    local n = srcs.count
+    local snap = #()
+    for k = {chunkStart} to {chunkEnd} do (
+        local row = #()
+        at time k ( for i = 1 to n do row[i] = copy srcs[i].transform )
+        append snap row
+    )
+    with undo off (
+        for j = 1 to snap.count do (
+            at time ({targetChunkStart} + j - 1) (
+                with animate on ( for i = 1 to n do tgts[i].transform = snap[j][i] )
+            )
+        )
+    )
+    ok
+)"""
+
+# 대상 구간의 기존 키를 **한 번에** 지운다.
+#
+# 프레임마다 `selectKeys`/`deleteKeys`를 부르면 매번 키 테이블을 훑어
+# O(프레임²)가 된다(실측: `match_anim_transform`이 전체 시간의 88.7%).
+# `interval`로 한 번에 선택하면 노드당 4회로 끝난다.
+_CLEAR_TARGET_KEYS_SCRIPT_TEMPLATE = """(
+    local tgts = for h in #({targetHandles}) collect (getAnimByHandle h)
+    if (findItem tgts undefined) != 0 then (
+        throw "bake_world_transforms: 대상 노드 핸들 해석에 실패했습니다"
+    )
+    for t in tgts do (
+        local ctrl = t.transform.controller
+        deselectKeys ctrl
+        selectKeys ctrl (interval {startFrame} {endFrame})
+        deleteKeys ctrl #selection
+        deselectKeys ctrl
+    )
+    ok
+)"""
+
+
+def build_bake_frame_chunks(
+    inStartFrame: int, inEndFrame: int, inChunkSize: int
+) -> list:
+    """베이크 구간을 청크 경계 목록으로 나눈다.
+
+    청크로 나누는 이유는 두 가지다. ① MAXScript가 한 번에 들고 있는
+    트랜스폼 스냅샷 배열의 크기를 묶는다. ② 청크 사이에서 Python이 진행률을
+    보고할 수 있다 - 긴 베이크가 침묵하지 않는다.
+
+    Args:
+        inStartFrame: 구간 시작 프레임
+        inEndFrame: 구간 끝 프레임 (포함)
+        inChunkSize: 청크당 프레임 수 (1 이상)
+
+    Returns:
+        ``[(청크시작, 청크끝), ...]`` 목록. 각 청크는 끝 프레임을 포함한다.
+
+    Raises:
+        ValueError: 구간이 뒤집혔거나 ``inChunkSize``가 1 미만인 경우
+    """
+    if inEndFrame < inStartFrame:
+        raise ValueError(
+            f"구간이 뒤집혀 있습니다: start={inStartFrame}, end={inEndFrame}"
+        )
+    if inChunkSize < 1:
+        raise ValueError(f"청크 크기는 1 이상이어야 합니다: {inChunkSize}")
+
+    chunks = []
+    chunkStart = inStartFrame
+    while chunkStart <= inEndFrame:
+        chunkEnd = min(chunkStart + inChunkSize - 1, inEndFrame)
+        chunks.append((chunkStart, chunkEnd))
+        chunkStart = chunkEnd + 1
+    return chunks
+
+
+def build_handle_array_text(inHandles: list) -> str:
+    """노드 핸들 목록을 MAXScript 배열 원소 텍스트로 만든다.
+
+    Args:
+        inHandles: 정수로 변환 가능한 핸들 목록
+
+    Returns:
+        ``"12,34,56"`` 형태의 문자열. 빈 목록이면 빈 문자열
+    """
+    return ",".join(str(int(handle)) for handle in inHandles)
+
+
+def build_bake_chunk_script(
+    inSourceHandles: list,
+    inTargetHandles: list,
+    inChunkStart: int,
+    inChunkEnd: int,
+    inTargetChunkStart: int,
+) -> str:
+    """한 청크의 읽기->쓰기 MAXScript를 조립한다.
+
+    Args:
+        inSourceHandles: 소스 노드 핸들 목록
+        inTargetHandles: 대상 노드 핸들 목록 (소스와 1:1 대응, 같은 순서)
+        inChunkStart: 이 청크가 읽을 소스 시작 프레임
+        inChunkEnd: 이 청크가 읽을 소스 끝 프레임 (포함)
+        inTargetChunkStart: ``inChunkStart``에 대응하는 대상 프레임
+
+    Returns:
+        실행 가능한 MAXScript 소스
+    """
+    return _BAKE_CHUNK_SCRIPT_TEMPLATE.format(
+        sourceHandles=build_handle_array_text(inSourceHandles),
+        targetHandles=build_handle_array_text(inTargetHandles),
+        chunkStart=inChunkStart,
+        chunkEnd=inChunkEnd,
+        targetChunkStart=inTargetChunkStart,
+    )
+
+
+def build_clear_target_keys_script(
+    inTargetHandles: list, inTargetStartFrame: int, inTargetEndFrame: int
+) -> str:
+    """대상 구간의 기존 키를 일괄 삭제하는 MAXScript를 조립한다.
+
+    Args:
+        inTargetHandles: 대상 노드 핸들 목록
+        inTargetStartFrame: 삭제 구간 시작 (대상 시간축)
+        inTargetEndFrame: 삭제 구간 끝 (대상 시간축, 포함)
+
+    Returns:
+        실행 가능한 MAXScript 소스
+    """
+    return _CLEAR_TARGET_KEYS_SCRIPT_TEMPLATE.format(
+        targetHandles=build_handle_array_text(inTargetHandles),
+        startFrame=inTargetStartFrame,
+        endFrame=inTargetEndFrame,
+    )
+
+
 class Anim:
     """3ds Max 애니메이션의 키프레임 수집·삭제, 트랜스폼 고정·병합·매칭, 저장·로드 기능을 제공하는 클래스."""
     
@@ -299,6 +459,111 @@ class Anim:
         
         rt.execute(maxscriptCode)
     
+    def bake_world_transforms(
+        self,
+        inSourceNodes: list,
+        inTargetNodes: list,
+        inStartFrame: int,
+        inEndFrame: int,
+        inTargetStartFrame: int = 0,
+        inChunkSize: int = 50,
+        inClearTargetKeys: bool = False,
+        inProgressCallback=None,
+    ) -> None:
+        """소스 노드들의 월드 트랜스폼을 대상 노드들에 일괄 베이크한다.
+
+        소스 프레임 ``k``에서 읽은 월드 트랜스폼을 대상 프레임
+        ``inTargetStartFrame + (k - inStartFrame)``에 기록한다. 즉 구간을
+        옮겨 실을 수 있다(0기준 재기준 등).
+
+        **왜 이 메서드가 필요한가.** 같은 일을 ``match_anim_transform``으로
+        노드마다 반복하면 노드당 프레임 수에 제곱으로 커진다 - 프레임마다
+        ``selectKeys``/``deleteKeys``로 키 테이블을 훑고, 임시 포인트에 구간
+        전체를 다시 베이크하고, pos/rot/scale 키 배열을 각각 순회해 같은
+        프레임에 세 번 대입한다. 실측(84노드 x 641프레임)에서 그 경로가
+        전체 익스포트 시간의 88.7%를 썼다. 이 메서드는 루프를 MAXScript
+        한 블록으로 내리고, 키 삭제를 구간 단위 1회로 바꾸고, 프레임당
+        대입을 1회로 줄인다.
+
+        **적용 순서는 호출부 책임이다.** 대상들이 부모-자식 관계면
+        ``inTargetNodes``를 **계층 깊이 오름차순(부모 먼저)** 으로 넘겨야
+        한다. 프레임 외부·노드 내부 루프이므로 배열 순서가 곧 적용 순서이며,
+        부모를 먼저 적용해야 자식의 로컬 키가 최종 부모 애니메이션 기준으로
+        계산된다.
+
+        Args:
+            inSourceNodes: 월드 트랜스폼을 읽을 소스 노드 목록
+            inTargetNodes: 기록 대상 노드 목록. ``inSourceNodes``와 같은
+                순서로 1:1 대응해야 한다.
+            inStartFrame: 소스 구간 시작 프레임
+            inEndFrame: 소스 구간 끝 프레임 (포함)
+            inTargetStartFrame: ``inStartFrame``에 대응하는 대상 프레임.
+                기본값 0은 0기준 재기준을 뜻한다.
+            inChunkSize: 한 번의 ``rt.execute``가 처리할 프레임 수.
+                진행률 보고 간격이기도 하다.
+            inClearTargetKeys: True면 기록 전에 대상 구간의 기존 키를
+                일괄 삭제한다. 대상에 다른 애니메이션이 실려 있을 수 있는
+                **복원 경로**에서 켠다. 키가 없는 신규 헬퍼에 굽는
+                **저장 경로**에서는 불필요하다.
+            inProgressCallback: ``(완료 프레임 수, 전체 프레임 수)``로 호출되는
+                진행률 콜백. None이면 보고하지 않는다.
+
+        Raises:
+            ValueError: 소스와 대상 노드 수가 다르거나, 구간이 뒤집혔거나,
+                ``inChunkSize``가 1 미만인 경우. 어느 쪽이든 그대로 두면
+                대상이 조용히 무키로 남아 하류에서 무증상 실패하므로 즉시
+                실패한다.
+        """
+        if len(inSourceNodes) != len(inTargetNodes):
+            raise ValueError(
+                f"소스와 대상 노드 수가 다릅니다: 소스 {len(inSourceNodes)}개, "
+                f"대상 {len(inTargetNodes)}개"
+            )
+        # 구간·청크 검증은 `build_bake_frame_chunks`가 담당한다(단일 출처).
+        frameChunks = build_bake_frame_chunks(
+            inStartFrame, inEndFrame, inChunkSize
+        )
+        if not inSourceNodes:
+            return
+
+        sourceHandles = [
+            int(rt.getHandleByAnim(sourceNode)) for sourceNode in inSourceNodes
+        ]
+        targetHandles = [
+            int(rt.getHandleByAnim(targetNode)) for targetNode in inTargetNodes
+        ]
+
+        totalFrameCount = inEndFrame - inStartFrame + 1
+
+        rt.disableSceneRedraw()
+        try:
+            if inClearTargetKeys:
+                rt.execute(
+                    build_clear_target_keys_script(
+                        targetHandles,
+                        inTargetStartFrame,
+                        inTargetStartFrame + totalFrameCount - 1,
+                    )
+                )
+
+            completedFrames = 0
+            for chunkStart, chunkEnd in frameChunks:
+                rt.execute(
+                    build_bake_chunk_script(
+                        sourceHandles,
+                        targetHandles,
+                        chunkStart,
+                        chunkEnd,
+                        inTargetStartFrame + (chunkStart - inStartFrame),
+                    )
+                )
+                completedFrames += chunkEnd - chunkStart + 1
+                if inProgressCallback is not None:
+                    inProgressCallback(completedFrames, totalFrameCount)
+        finally:
+            # 되돌리지 않으면 뷰포트가 영구히 갱신되지 않는다.
+            rt.enableSceneRedraw()
+
     def create_average_pos_transform(self, inTargetArray):
         """여러 객체의 평균 위치를 계산한 변환 행렬을 생성한다.
 

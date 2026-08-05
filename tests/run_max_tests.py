@@ -40,6 +40,7 @@ TIMEOUT = 300  # 초
 TEST_SCRIPTS = [
     "test_name.py",
     "test_anim.py",
+    "test_anim_bake.py",
     "test_helper.py",
     "test_layer.py",
     "test_constraint.py",
@@ -61,6 +62,7 @@ TEST_SCRIPTS = [
 # 스크립트 파일명에서 자동 계산한 이름과 TestReporter SuiteName이 다를 때 명시적으로 지정.
 # key: 스크립트 파일명 (확장자 포함), value: TestReporter SuiteName
 LOG_NAME_OVERRIDES = {
+    "test_anim_bake.py": "AnimBake",
     "test_select_dependency.py": "SelectDependency",
     "test_node_collect_resolver.py": "NodeCollectResolver",
     "test_node_collect_policy_max.py": "NodeCollectPolicyMax",
