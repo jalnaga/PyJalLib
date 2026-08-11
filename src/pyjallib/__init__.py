@@ -11,6 +11,7 @@ __version__ = '0.2.2'
 # reload_modules 함수를 패키지 레벨에서 사용 가능하게 함
 from pyjallib.logger import Logger
 from pyjallib.progressEvent import ProgressEvent
+from pyjallib.fuzzyMatch import fuzzy_score
 from pyjallib.namePart import NamePart, NamePartType
 from pyjallib.naming import Naming
 from pyjallib.namingConfig import NamingConfig
