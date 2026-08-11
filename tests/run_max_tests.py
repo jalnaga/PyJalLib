@@ -41,6 +41,7 @@ TEST_SCRIPTS = [
     "test_name.py",
     "test_anim.py",
     "test_anim_bake.py",
+    "test_anim_match_collapse.py",
     "test_helper.py",
     "test_layer.py",
     "test_constraint.py",
@@ -63,6 +64,7 @@ TEST_SCRIPTS = [
 # key: 스크립트 파일명 (확장자 포함), value: TestReporter SuiteName
 LOG_NAME_OVERRIDES = {
     "test_anim_bake.py": "AnimBake",
+    "test_anim_match_collapse.py": "AnimMatchCollapse",
     "test_select_dependency.py": "SelectDependency",
     "test_node_collect_resolver.py": "NodeCollectResolver",
     "test_node_collect_policy_max.py": "NodeCollectPolicyMax",

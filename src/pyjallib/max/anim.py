@@ -74,6 +74,73 @@ _CLEAR_TARGET_KEYS_SCRIPT_TEMPLATE = """(
 )"""
 
 
+# 트랜스폼 컨트롤러를 빈 PRS로 갈아 끼운다 - `collape_anim_transform`의 핵심 단계.
+#
+# 두 단계인 이유는 구 코드 그대로다. `prs()`를 이미 PRS인 컨트롤러에 곧바로
+# 재대입하면 서브컨트롤러가 남을 수 있으므로, 클래스가 확실히 다른
+# `transform_script()`를 한 번 거쳐 스택을 떨어뜨린다. 등가 유지가 결정이므로
+# 이 2단 교체를 검증 없이 보존한다.
+_PRS_CONTROLLER_SWAP_SCRIPT_TEMPLATE = """(
+    local tgt = getAnimByHandle {targetHandle}
+    if tgt == undefined then (
+        throw "collape_anim_transform: 노드 핸들 해석에 실패했습니다"
+    )
+    tgt.transform.controller = transform_script()
+    tgt.transform.controller = prs()
+    ok
+)"""
+
+# 소스의 키 **시점에만** 값을 기록한다 - `match_anim_transform`의 출력 계약이다.
+#
+# 왜 3방향 병합인가: 구 코드는 pos/rot/scale 키 배열을 각각 순회해 같은 시점에
+# `transform`을 세 번 대입했다(실측 641프레임에서 1,923회). 세 배열은 Max가 항상
+# 시간 순으로 유지하므로 커서 3개로 O(키) 병합이 되고, 기록이 시점당 1회로 줄어든다.
+#
+# 왜 `sort`도 float 변환도 쓰지 않는가: `key.time as float`은 프레임이 아니라
+# **틱**을 돌려주는데 `at time <숫자>`는 숫자를 **프레임**으로 읽는다. 두 변환이
+# 서로 역이 아니라서 float를 거치면 시간축이 ticksPerFrame배로 늘어난다
+# (2026-08-11 실측). time 값을 끝까지 그대로 다룬다.
+#
+# 시작·끝 프레임은 키가 없어도 반드시 기록한다(구 동작 보존). 병합 결과가 모두
+# 구간 안이므로 앞뒤에 붙이면 정렬이 유지된다.
+_MATCH_WRITE_SCRIPT_TEMPLATE = """(
+    local keySrc = getAnimByHandle {keyTimeSourceHandle}
+    local valSrc = getAnimByHandle {valueSourceHandle}
+    local tgt = getAnimByHandle {targetHandle}
+    if keySrc == undefined or valSrc == undefined or tgt == undefined then (
+        throw "match_anim_transform: 노드 핸들 해석에 실패했습니다"
+    )
+    local tracks = #(keySrc.pos.controller.keys, keySrc.rotation.controller.keys, keySrc.scale.controller.keys)
+    local cursors = #(1, 1, 1)
+    for a = 1 to tracks.count do (
+        while cursors[a] <= tracks[a].count and tracks[a][cursors[a]].time < {startFrame} do cursors[a] += 1
+    )
+    local times = #()
+    while true do (
+        local best = undefined
+        for a = 1 to tracks.count do (
+            if cursors[a] <= tracks[a].count then (
+                local candidate = tracks[a][cursors[a]].time
+                if candidate <= {endFrame} and (best == undefined or candidate < best) then best = candidate
+            )
+        )
+        if best == undefined then exit
+        append times best
+        for a = 1 to tracks.count do (
+            if cursors[a] <= tracks[a].count and tracks[a][cursors[a]].time == best then cursors[a] += 1
+        )
+    )
+    if times.count == 0 or times[1] != {startFrame} then insertItem {startFrame} times 1
+    if times[times.count] != {endFrame} then append times {endFrame}
+    with undo off (
+        for t in times do (
+            at time t ( with animate on tgt.transform = valSrc.transform )
+        )
+    )
+    ok
+)"""
+
+
 def build_bake_frame_chunks(
     inStartFrame: int, inEndFrame: int, inChunkSize: int
 ) -> list:
@@ -168,6 +235,69 @@ def build_clear_target_keys_script(
         startFrame=inTargetStartFrame,
         endFrame=inTargetEndFrame,
     )
+
+
+def build_prs_controller_swap_script(inTargetHandle: int) -> str:
+    """트랜스폼 컨트롤러를 빈 PRS로 교체하는 MAXScript를 조립한다.
+
+    ``transform_script()`` -> ``prs()`` 2단 교체를 유지한다. 한 단계로 줄이면
+    기존 PRS에 재대입이 되어 서브컨트롤러가 남을 수 있다.
+
+    Args:
+        inTargetHandle: 컨트롤러를 교체할 노드 핸들
+
+    Returns:
+        실행 가능한 MAXScript 소스
+    """
+    return _PRS_CONTROLLER_SWAP_SCRIPT_TEMPLATE.format(
+        targetHandle=int(inTargetHandle)
+    )
+
+
+def build_match_write_script(
+    inKeyTimeSourceHandle: int,
+    inValueSourceHandle: int,
+    inTargetHandle: int,
+    inStartFrame: int,
+    inEndFrame: int,
+) -> str:
+    """소스의 키 시점에만 값을 기록하는 MAXScript를 조립한다.
+
+    ``match_anim_transform``의 출력 계약(대상 노드의 pos/rot/scale 키 시점 +
+    구간 양끝에만 키를 만든다)을 유지하면서, 같은 시점에 세 번 대입하던 것을
+    한 번으로 줄인다.
+
+    **노드가 둘로 갈리는 이유.** 키 **시점**은 원본 노드에서 읽고, 기록할
+    **값**은 임시 포인트에서 읽는다. 임시 포인트는 정수 프레임에만 키가 있어
+    서브프레임 시점에서는 보간값을 준다 - 구 동작이 그러하므로 그대로 둔다.
+
+    Args:
+        inKeyTimeSourceHandle: 키 시점을 읽을 노드 핸들 (원본 노드)
+        inValueSourceHandle: 기록할 값을 읽을 노드 핸들 (임시 포인트)
+        inTargetHandle: 키를 기록할 대상 노드 핸들
+        inStartFrame: 구간 시작 프레임 (키가 없어도 기록한다)
+        inEndFrame: 구간 끝 프레임 (포함. 키가 없어도 기록한다)
+
+    Returns:
+        실행 가능한 MAXScript 소스
+    """
+    return _MATCH_WRITE_SCRIPT_TEMPLATE.format(
+        keyTimeSourceHandle=int(inKeyTimeSourceHandle),
+        valueSourceHandle=int(inValueSourceHandle),
+        targetHandle=int(inTargetHandle),
+        startFrame=inStartFrame,
+        endFrame=inEndFrame,
+    )
+
+
+# 단일 노드 베이크의 청크 크기.
+#
+# `bake_world_transforms`의 기본값 50은 노드 약 84개를 한 번에 굽는 경우에
+# 맞춰 스냅샷 배열 크기를 묶은 값이다. `match_anim_transform` /
+# `collape_anim_transform`은 **노드 1개**만 굽기 때문에 프레임당 행렬이 하나뿐이고,
+# 50으로 쪼개면 남는 것은 청크당 `rt.execute` 파싱 비용뿐이다. 실측(2026-08-11)에서
+# 201프레임 희소 표본이 5청크 오버헤드 때문에 구 경로보다 **느렸다**.
+_SINGLE_NODE_BAKE_CHUNK_SIZE = 250
 
 
 class Anim:
@@ -316,7 +446,34 @@ class Anim:
     def collape_anim_transform(self, inObj, startFrame=None, endFrame=None):
         """객체의 애니메이션 변환을 프레임별로 베이크하여 단일 PRS 컨트롤러로 병합한다.
 
-        MAXScript를 실행해 임시 포인트에 변환을 기록한 뒤 객체의 컨트롤러를 PRS로 교체하고 프레임마다 키를 다시 생성한다.
+        임시 포인트에 월드 트랜스폼을 확보한 뒤 객체의 컨트롤러를 빈 PRS로
+        교체하고, 확보한 값을 프레임마다 되돌려 굽는다. 출력은 구간 전 프레임
+        키다.
+
+        **왜 임시 포인트가 필수인가.** 컨트롤러를 교체하는 순간 원본 애니메이션이
+        사라진다. 읽는 시점과 쓰는 시점 사이에 소스가 파괴되므로 값을 먼저
+        확보해야 한다 - ``bake_world_transforms``는 청크 안에서 읽고 바로 쓰기
+        때문에 이 함수를 한 번의 호출로 대체할 수 없다. 그래서 베이크를 두 번
+        (객체 -> 포인트, 포인트 -> 객체) 부른다.
+
+        **왜 이 구조인가 (2026-08-11 성능 수정).** 구 코드는 전 구간을 두 번
+        순회하면서 프레임마다 ``progressUpdate``를 부르고 키 생성을 전량 Undo에
+        기록했다. 두 순회를 ``bake_world_transforms``에 위임하면 청크당 1회
+        ``rt.execute``와 ``undo off``가 그대로 적용되고, 진행률 보고도 프레임당이
+        아니라 청크당이 된다. 다만 **헤드리스 실측에서 이 함수의 개선 폭은
+        작다**(baseline 641프레임 0.044초) - 프레임당 ``progressUpdate``와 Undo
+        기록은 GUI에서만 비싸다. 정직하게 기록해 둔다.
+
+        **기록 방식이 바뀐다.** 구 코드는 회전을
+        ``in coordsys (transmatrix ...) inObj.rotation = inverse p.transform.rotation``
+        으로, 위치·스케일을 따로 대입했다. 새 경로는 전체 행렬을 한 번에 대입한다.
+        갓 만든 PRS 컨트롤러에서는 등가지만 가정하지 않고 Type C 12-float 대조로
+        단정한다.
+
+        **보존한 기존 결함.** ``startFrame``이 ``animationRange.start``와 다르면
+        ``animationRange.start``의 키를 지운다. 그런데 실측(2026-08-11)에서 잉여
+        키는 **프레임 0**에 생긴다 - 구간이 0에서 시작하지 않는 씬에서 이 정리는
+        아무것도 지우지 않는다. 등가 유지 결정에 따라 그대로 옮겼다.
 
         Args:
             inObj (rt.Node): 변환을 병합할 객체
@@ -328,49 +485,99 @@ class Anim:
             startFrame = int(rt.animationRange.start)
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
-        
-        maxScriptCode = ""
-        maxScriptCode += "disableSceneRedraw()\n"
-        maxScriptCode += f"progressStart (\"Collapse transform {inObj.name}...\")\n"
-        maxScriptCode += f"inObj = $'{inObj.name}'\n"
-        maxScriptCode += "p = point()\n"
-        maxScriptCode += f"for k = {startFrame} to {endFrame} do (\n"
-        maxScriptCode += "    at time k (\n"
-        maxScriptCode += "        with animate on p.transform = inObj.transform\n"
-        maxScriptCode += "    )\n"
-        maxScriptCode += ")\n"
-        maxScriptCode += "\n"
-        maxScriptCode += "inObj.transform.controller = transform_script()\n"
-        maxScriptCode += "inObj.transform.controller = prs()\n"
-        maxScriptCode += "\n"
-        maxScriptCode += f"for k = {startFrame} to {endFrame} do (\n"
-        maxScriptCode += "    at time k (\n"
-        maxScriptCode += "        with animate on (\n"
-        maxScriptCode += "            in coordsys (transmatrix inObj.transform.pos) inObj.rotation = inverse p.transform.rotation\n"
-        maxScriptCode += "            in coordsys world inObj.position = p.transform.position\n"
-        maxScriptCode += "            inObj.scale = p.scale\n"
-        maxScriptCode += "        )\n"
-        maxScriptCode += "    )\n"
-        maxScriptCode += f"    progressUpdate (100 * k / {endFrame})\n"
-        maxScriptCode += ")\n"
-        maxScriptCode += "\n"
-        maxScriptCode += f"if {startFrame} != animationRange.start then (\n"
-        maxScriptCode += "    deselectKeys inObj.transform.controller\n"
-        maxScriptCode += "    selectKeys inObj.transform.controller animationRange.start\n"
-        maxScriptCode += "    deleteKeys inObj.transform.controller #selection\n"
-        maxScriptCode += "    deselectKeys inObj.transform.controller\n"
-        maxScriptCode += ")\n"
-        maxScriptCode += "\n"
-        maxScriptCode += "delete p\n"
-        maxScriptCode += "progressEnd()\n"
-        maxScriptCode += "enableSceneRedraw()\n"
-        
-        rt.execute(maxScriptCode)
-    
+
+        rangeStartFrame = int(rt.animationRange.start)
+        # 노드는 이름이 아니라 핸들로 넘긴다. 이름은 동명 노드에 무너진다.
+        objHandle = int(rt.getHandleByAnim(inObj))
+
+        rt.progressStart(f"Collapse transform {inObj.name}...")
+        tempPoint = rt.Point()
+        try:
+            # 1) 현재 월드 트랜스폼을 임시 포인트에 확보한다.
+            self.bake_world_transforms(
+                [inObj],
+                [tempPoint],
+                startFrame,
+                endFrame,
+                inTargetStartFrame=startFrame,
+                inChunkSize=_SINGLE_NODE_BAKE_CHUNK_SIZE,
+                inProgressCallback=lambda completedFrames, totalFrames: (
+                    rt.progressUpdate(50.0 * completedFrames / totalFrames)
+                ),
+            )
+
+            # 2) 컨트롤러를 빈 PRS로 교체한다. 여기서 원본 애니메이션이 사라진다.
+            rt.execute(build_prs_controller_swap_script(objHandle))
+
+            # 3) 확보한 트랜스폼을 되돌려 굽는다.
+            self.bake_world_transforms(
+                [tempPoint],
+                [inObj],
+                startFrame,
+                endFrame,
+                inTargetStartFrame=startFrame,
+                inChunkSize=_SINGLE_NODE_BAKE_CHUNK_SIZE,
+                inProgressCallback=lambda completedFrames, totalFrames: (
+                    rt.progressUpdate(50.0 + 50.0 * completedFrames / totalFrames)
+                ),
+            )
+
+            # 4) 잉여 키 정리 (구 동작 보존)
+            if startFrame != rangeStartFrame:
+                rt.disableSceneRedraw()
+                try:
+                    rt.execute(
+                        build_clear_target_keys_script(
+                            [objHandle], rangeStartFrame, rangeStartFrame
+                        )
+                    )
+                finally:
+                    # 되돌리지 않으면 뷰포트가 영구히 갱신되지 않는다.
+                    rt.enableSceneRedraw()
+        finally:
+            rt.delete(tempPoint)
+            rt.progressEnd()
+
+
     def match_anim_transform(self, inObj, inTarget, startFrame=None, endFrame=None):
         """객체의 애니메이션 변환을 대상 객체의 변환과 일치시킨다.
 
-        구간 내 기존 키를 제거한 뒤 대상 객체의 위치·회전·스케일 키 시점마다 변환을 복사해 키를 생성한다.
+        구간 내 기존 키를 제거한 뒤, 대상 객체의 위치·회전·스케일 **키 시점**과
+        구간 양끝에 변환을 복사해 키를 생성한다. 출력 키 밀도는 소스의 키
+        밀도를 따른다 - 전 프레임 베이크가 필요하면 ``bake_world_transforms``를
+        직접 쓴다.
+
+        **왜 이 구조인가 (2026-08-11 성능 수정).** 구 코드는 같은 일을 세 배
+        비싸게 했다. ① 프레임마다 ``selectKeys``/``deleteKeys``로 대상의 키
+        테이블을 훑어 구간 길이에 제곱으로 커졌고, ② 임시 포인트 베이크가
+        프레임마다 Undo를 기록했고, ③ pos/rot/scale 키 배열을 각각 순회해
+        **같은 시점에 세 번** 대입했다(실측 641프레임에서 1,923회). 실측
+        분해에서 ①이 20~36%, ②③이 나머지를 썼다. 새 경로는 ①을 구간 단위
+        1회 삭제로, ②를 ``bake_world_transforms``(청크 + ``undo off``)로,
+        ③을 세 키 배열의 3방향 병합으로 각각 접는다.
+
+        **Undo는 억제된다.** 구 코드도 키마다 개별 Undo 엔트리를 쌓아 한 번의
+        Ctrl+Z로 되돌릴 수 없었으므로 실질적 손실은 없고, GUI에서는 Undo 기록
+        제거가 가장 큰 이득이다(``max/blend_poses_profiling.md`` 실측 3.17배).
+
+        **임시 포인트를 남긴 이유.** 임시 포인트는 정수 프레임에만 키를 갖는다.
+        소스 키 시점이 서브프레임이면 임시 포인트는 보간값을, 소스는 정확값을
+        준다 - 값이 다르다. 구 동작이 보간값을 쓰므로 그대로 둔다.
+
+        **구 코드와 갈리는 두 지점 (등가가 아니다. 의도한 변경이다).**
+
+        1. **소스를 다 읽은 뒤 대상을 지운다.** 구 코드는 프레임 루프 안에서
+           "임시 포인트 베이크"와 "대상 키 삭제"를 교차했다. 두 노드가 독립이면
+           결과가 같고, ``inTarget``이 ``inObj``에 의존하는 순환 입력에서만
+           갈린다. 새 순서가 결정적이며 방어적이다.
+        2. **구간 내 서브프레임 키도 지워진다.** 구 코드의 프레임별 삭제는 정수
+           프레임 키만 지웠다. 남은 서브프레임 키는 결과를 오염시키므로 개선이다.
+
+        **보존한 기존 결함.** ``startFrame``이 ``animationRange.start``와 다르면
+        임시 포인트의 ``animationRange.start`` 키를 지운다. 그런데 실측
+        (2026-08-11)에서 잉여 키는 **프레임 0**에 생긴다 - 구간이 0에서 시작하지
+        않는 씬에서 이 정리는 아무것도 지우지 않는다. 등가 유지 결정에 따라
+        고치지 않고 그대로 옮겼다.
 
         Args:
             inObj (rt.Node): 변환을 적용할 객체
@@ -378,87 +585,79 @@ class Anim:
             startFrame (int | None): 시작 프레임. None이면 애니메이션 범위의 시작을 사용한다.
             endFrame (int | None): 끝 프레임. None이면 애니메이션 범위의 끝을 사용한다.
         """
+        # 어느 한쪽이 유효하지 않으면 아무것도 하지 않는다 (구 동작 보존)
+        if not rt.isValidNode(inObj) or not rt.isValidNode(inTarget):
+            return
+
         # 시작/끝 프레임 기본값 설정
         if startFrame is None:
             startFrame = int(rt.animationRange.start)
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
-            
-        maxscriptCode = ""
-        maxscriptCode += f"inObj = $'{inObj.name}'\n"
-        maxscriptCode += f"inTarget = $'{inTarget.name}'\n"
-        maxscriptCode += "if (isValidNode inObj) and (isValidNode inTarget) then (\n"
-        maxscriptCode += "    disableSceneRedraw()\n"
-        maxscriptCode += f"    progressStart (\"Match transform {inObj.name} to {inTarget.name} \")\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    p = point()\n"
-        maxscriptCode += f"    for k = {startFrame} to {endFrame} do (\n"
-        maxscriptCode += "        at time k (\n"
-        maxscriptCode += "            with animate on p.transform = inTarget.transform\n"
-        maxscriptCode += "        )\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "        deselectKeys inObj.transform.controller\n"
-        maxscriptCode += "        selectKeys inObj.transform.controller k\n"
-        maxscriptCode += "        deleteKeys inObj.transform.controller #selection\n"
-        maxscriptCode += "        deselectKeys inObj.transform.controller\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    progressUpdate 20\n"
-        maxscriptCode += "\n"
-        maxscriptCode += f"    if {startFrame} != animationRange.start then (\n"
-        maxscriptCode += "        deselectKeys p.transform.controller\n"
-        maxscriptCode += "        selectKeys p.transform.controller animationRange.start\n"
-        maxscriptCode += "        deleteKeys p.transform.controller #selection\n"
-        maxscriptCode += "        deselectKeys p.transform.controller\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    progressUpdate 25\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    local posKeyArray = inTarget.pos.controller.keys\n"
-        maxscriptCode += "    local rotKeyArray = inTarget.rotation.controller.keys\n"
-        maxscriptCode += "    local scaleKeyArray = inTarget.scale.controller.keys\n"
-        maxscriptCode += "\n"
-        maxscriptCode += f"    at time {startFrame} (\n"
-        maxscriptCode += "        with animate on inObj.transform = p.transform\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += f"    at time {endFrame} (\n"
-        maxscriptCode += "        with animate on inObj.transform = p.transform\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    for key in posKeyArray do (\n"
-        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
-        maxscriptCode += "            at time key.time (\n"
-        maxscriptCode += "                with animate on inObj.transform = p.transform\n"
-        maxscriptCode += "            )\n"
-        maxscriptCode += "        )\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "    progressUpdate 40\n"
-        maxscriptCode += "    for key in rotKeyArray do (\n"
-        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
-        maxscriptCode += "            at time key.time (\n"
-        maxscriptCode += "                with animate on inObj.transform = p.transform\n"
-        maxscriptCode += "            )\n"
-        maxscriptCode += "        )\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "    progressUpdate 60\n"
-        maxscriptCode += "    for key in scaleKeyArray do (\n"
-        maxscriptCode += f"        if key.time >= {startFrame} and key.time <= {endFrame} then (\n"
-        maxscriptCode += "            at time key.time (\n"
-        maxscriptCode += "                with animate on inObj.transform = p.transform\n"
-        maxscriptCode += "            )\n"
-        maxscriptCode += "        )\n"
-        maxscriptCode += "    )\n"
-        maxscriptCode += "    progressUpdate 80\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    delete p\n"
-        maxscriptCode += "\n"
-        maxscriptCode += "    progressUpdate 100\n"
-        maxscriptCode += "    progressEnd()\n"
-        maxscriptCode += "    enableSceneRedraw()\n"
-        maxscriptCode += ")\n"
-        
-        rt.execute(maxscriptCode)
-    
+
+        rangeStartFrame = int(rt.animationRange.start)
+        # 노드는 이름이 아니라 핸들로 넘긴다. 이름은 동명 노드에 무너진다.
+        objHandle = int(rt.getHandleByAnim(inObj))
+        targetHandle = int(rt.getHandleByAnim(inTarget))
+
+        rt.progressStart(f"Match transform {inObj.name} to {inTarget.name} ")
+        tempPoint = rt.Point()
+        try:
+            tempHandle = int(rt.getHandleByAnim(tempPoint))
+
+            # 1) 소스의 월드 트랜스폼을 임시 포인트에 전 프레임 베이크한다.
+            #    대상을 아직 건드리지 않았으므로 소스를 원본 상태로 읽는다.
+            self.bake_world_transforms(
+                [inTarget],
+                [tempPoint],
+                startFrame,
+                endFrame,
+                inTargetStartFrame=startFrame,
+                inChunkSize=_SINGLE_NODE_BAKE_CHUNK_SIZE,
+                inProgressCallback=lambda completedFrames, totalFrames: (
+                    rt.progressUpdate(80.0 * completedFrames / totalFrames)
+                ),
+            )
+
+            # `bake_world_transforms`가 자체 try/finally로 redraw를 껐다 켰으므로
+            # 여기서 다시 끈다. 겹쳐 끄지 않는 이유는 `disableSceneRedraw()`가
+            # 카운트가 아니라 `OK`를 돌려줘 중첩 여부를 관찰할 수 없기 때문이다
+            # (2026-08-11 실측). 중첩을 만들지 않으면 확인할 필요도 없다.
+            rt.disableSceneRedraw()
+            try:
+                # 2) 대상 구간의 기존 키를 구간 단위 1회로 걷는다.
+                rt.execute(
+                    build_clear_target_keys_script(
+                        [objHandle], startFrame, endFrame
+                    )
+                )
+
+                # 3) 임시 포인트의 잉여 키 정리 (구 동작 보존)
+                if startFrame != rangeStartFrame:
+                    rt.execute(
+                        build_clear_target_keys_script(
+                            [tempHandle], rangeStartFrame, rangeStartFrame
+                        )
+                    )
+
+                # 4) 소스 키 시점 + 구간 양끝에만 기록한다. 시점당 1회.
+                rt.execute(
+                    build_match_write_script(
+                        targetHandle,
+                        tempHandle,
+                        objHandle,
+                        startFrame,
+                        endFrame,
+                    )
+                )
+            finally:
+                # 되돌리지 않으면 뷰포트가 영구히 갱신되지 않는다.
+                rt.enableSceneRedraw()
+        finally:
+            rt.delete(tempPoint)
+            rt.progressEnd()
+
+
     def bake_world_transforms(
         self,
         inSourceNodes: list,
