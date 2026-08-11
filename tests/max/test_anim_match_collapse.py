@@ -258,6 +258,21 @@ def _key_ticks(inNode, inTrack: str) -> list:
     return [float(token) for token in str(raw).split(",") if token]
 
 
+def _key_frames(inNode, inTrack: str = "pos") -> list:
+    """키 시점을 프레임 단위로 돌려준다 (틱 -> 프레임 환산)."""
+    ticksPerFrame = int(rt.ticksPerFrame)
+    return [round(tick / ticksPerFrame, 4) for tick in _key_ticks(inNode, inTrack)]
+
+
+def _stray_key_frames(inNode, inStartFrame, inEndFrame) -> list:
+    """적용 구간 **밖**에 있는 키 시점을 모은다."""
+    return [
+        frame
+        for frame in _key_frames(inNode)
+        if frame < inStartFrame or frame > inEndFrame
+    ]
+
+
 def _key_ticks_all(inNode) -> dict:
     """pos/rotation/scale 키 시점을 한 번에 덤프한다."""
     return {
@@ -543,11 +558,12 @@ except Exception as e:
 
 
 # ----------------------------------------------------------------------
-# TC05: 구간이 animationRange.start와 다른 경우
+# TC05: 적용 구간이 0에서 시작하지 않는 경우 - **여기서는 구와 달라야 한다**
 #
-# 구 코드는 `selectKeys ctrl animationRange.start`(단일 시점)로 임시 포인트의
-# 잉여 키를 지웠고, 신 경로는 `selectKeys ctrl (interval S S)`로 지운다.
-# 이 표본이 그 치환을 검증한다.
+# 무키 컨트롤러에 처음 기록하면 Max가 프레임 0에 "직전 정적 포즈" 키를 하나 더
+# 만든다. 구 코드는 그것을 `animationRange.start`에서, 그나마 **대상이 아니라
+# 임시 포인트**에 지우려 했으므로 대상의 잉여 키는 한 번도 정리되지 않았다.
+# 신 경로는 프레임 0에서, 대상과 임시 포인트 양쪽을 정리한다.
 # ----------------------------------------------------------------------
 try:
     MATCH_SAMPLES["offsetRange"] = _run_match_sample(
@@ -555,12 +571,33 @@ try:
         0, 60, 10, 40,
         inBuildSource=lambda node: _animate_sparse(node, [10, 25, 40]),
     )
-    _assert_match_sample(
-        "offsetRange",
-        "TC05 구간 시작이 animationRange.start와 다를 때: 구·신 일치",
+    sample = MATCH_SAMPLES["offsetRange"]
+    ticksPerFrame = int(rt.ticksPerFrame)
+    legacyStray = [
+        round(tick / ticksPerFrame, 4)
+        for tick in sample["legacyKeyTicks"]["pos"]
+        if tick < 10 * ticksPerFrame or tick > 40 * ticksPerFrame
+    ]
+    newStray = [
+        round(tick / ticksPerFrame, 4)
+        for tick in sample["newKeyTicks"]["pos"]
+        if tick < 10 * ticksPerFrame or tick > 40 * ticksPerFrame
+    ]
+    keyTimeFidelity = _max_abs_diff(
+        sample["sourceAtKeyTimes"], sample["newAtKeyTimes"]
+    )
+    reporter.assert_test(
+        not newStray and legacyStray == [0.0] and keyTimeFidelity < TOLERANCE,
+        "TC05 구간이 0에서 시작하지 않을 때: 신 경로는 프레임 0 잉여 키를 걷고 구 경로는 남긴다",
+        inDetail=(
+            f"legacyStrayFrames={legacyStray}, newStrayFrames={newStray}, "
+            f"newKeyFrames="
+            f"{[round(t / ticksPerFrame, 4) for t in sample['newKeyTicks']['pos']]}, "
+            f"maxAbsDiffAtKeyTimes={round(keyTimeFidelity, 5)}"
+        ),
     )
 except Exception as e:
-    reporter.error("TC05 오프셋 구간", f"{e}\n{traceback.format_exc()}")
+    reporter.error("TC05 오프셋 구간 잉여 키", f"{e}\n{traceback.format_exc()}")
 
 
 # ======================================================================
@@ -968,6 +1005,179 @@ try:
     )
 except Exception as e:
     reporter.error("TC12 서브프레임 키 정리", f"{e}\n{traceback.format_exc()}")
+
+
+# ======================================================================
+# 프레임 0 잉여 키 결함 수정 (2026-08-12) 전용 TC
+#
+# 구 코드의 정리 블록은 지우는 **위치**(`animationRange.start`)와 `match`의
+# 경우 지우는 **대상**(임시 포인트)이 둘 다 어긋나 있었다. 아래 TC들이 그
+# 수정을 갈래별로 못 박는다.
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# TC14: animationRange.start != 0 인 씬의 두 갈래
+#
+# (a) startFrame != animationRange.start -> 구 코드의 삭제 블록이 발동하지만 헛돌던 갈래
+# (b) startFrame == animationRange.start -> 삭제 블록이 발동조차 안 하던 갈래
+# ----------------------------------------------------------------------
+try:
+    strayRows = {}
+    for label, applyStart, applyEnd in (
+        ("deleteBlockFired", 10, 40),
+        ("deleteBlockSkipped", 5, 40),
+    ):
+        _reset(5, 100)
+        sourceNode = rt.Point(name=f"stray_{label}_src")
+        _animate_sparse(sourceNode, [applyStart, 25, applyEnd])
+        targetNode = rt.Point(name=f"stray_{label}_tgt")
+        targetNode.position = rt.Point3(-100.0, -200.0, -300.0)
+
+        anim.match_anim_transform(targetNode, sourceNode, applyStart, applyEnd)
+        strayRows[label] = {
+            "animationRangeStart": 5,
+            "applyRange": [applyStart, applyEnd],
+            "keyFrames": _key_frames(targetNode),
+            "strayFrames": _stray_key_frames(targetNode, applyStart, applyEnd),
+        }
+
+    allClean = bool(strayRows) and all(
+        not row["strayFrames"] and len(row["keyFrames"]) > 0
+        for row in strayRows.values()
+    )
+    reporter.assert_test(
+        allClean,
+        "TC14 animationRange.start != 0: 두 갈래 모두 구간 밖 잉여 키가 0건",
+        inDetail=json.dumps(strayRows, ensure_ascii=False),
+    )
+except Exception as e:
+    reporter.error("TC14 잉여 키 정리", f"{e}\n{traceback.format_exc()}")
+
+
+# ----------------------------------------------------------------------
+# TC15: 결과가 대상의 **이전 정적 포즈**에 좌우되지 않는다
+#
+# 결함의 실질이 여기다. 잉여 키는 대상이 match 전에 갖고 있던 포즈를 담고,
+# 그것이 첫 키의 탄젠트 이웃이 되어 **구간 안 보간**을 끌어당긴다. 실측에서
+# 키 시점 값은 같은데 구간 안 최대 오차가 0.0 대 11.78로 갈렸다.
+#
+# 구 경로도 같은 입력으로 돌려 **실제로 갈린다**는 것을 같은 실행에서 보인다.
+# ----------------------------------------------------------------------
+try:
+    _reset(5, 100)
+    sourceNode = rt.Point(name="prior_src")
+    _animate_sparse(sourceNode, [10, 25, 40])
+    # 픽스처 자신도 프레임 0에 잉여 키를 갖는다(같은 Max 동작). 그것을 남겨 두면
+    # "소스와 일치하는가"가 소스 쪽 잉여 키의 탄젠트까지 요구하게 되어 판정이
+    # 흐려진다. 소스를 깨끗한 3키 커브로 만든 뒤 대조한다.
+    rt.execute(build_clear_target_keys_script([_handle(sourceNode)], 0, 0))
+
+    newA = rt.Point(name="prior_newA")
+    newB = rt.Point(name="prior_newB")
+    newB.position = rt.Point3(-1000.0, 500.0, 250.0)
+    legacyA = rt.Point(name="prior_legacyA")
+    legacyB = rt.Point(name="prior_legacyB")
+    legacyB.position = rt.Point3(-1000.0, 500.0, 250.0)
+
+    anim.match_anim_transform(newA, sourceNode, 10, 40)
+    anim.match_anim_transform(newB, sourceNode, 10, 40)
+    legacy_match_anim_transform(legacyA, sourceNode, 10, 40)
+    legacy_match_anim_transform(legacyB, sourceNode, 10, 40)
+
+    inRangeFrames = list(range(10, 41)) + [f + 0.5 for f in range(10, 40)]
+    newSpread = _max_abs_diff(
+        _snapshot(newA, inRangeFrames), _snapshot(newB, inRangeFrames)
+    )
+    legacySpread = _max_abs_diff(
+        _snapshot(legacyA, inRangeFrames), _snapshot(legacyB, inRangeFrames)
+    )
+    newVsSource = _max_abs_diff(
+        _snapshot(newB, inRangeFrames), _snapshot(sourceNode, inRangeFrames)
+    )
+
+    reporter.assert_test(
+        newSpread < TOLERANCE
+        and newVsSource < TOLERANCE
+        and legacySpread >= TOLERANCE,
+        "TC15 결과가 대상의 이전 포즈에 좌우되지 않는다 (구 경로는 좌우된다)",
+        inDetail=(
+            f"newSpread={round(newSpread, 5)}, "
+            f"legacySpread={round(legacySpread, 5)}, "
+            f"newVsSource={round(newVsSource, 5)}, "
+            f"comparedFrames={len(inRangeFrames)}"
+        ),
+    )
+except Exception as e:
+    reporter.error("TC15 이전 포즈 무관성", f"{e}\n{traceback.format_exc()}")
+
+
+# ----------------------------------------------------------------------
+# TC16: 구간 밖의 **정당한** 키는 보존한다
+#
+# 정리를 "프레임 0을 무조건 지운다"로 짜면 사용자 데이터를 지운다. 대상이
+# 기록 전에 키를 갖고 있었다면 프레임 0의 키는 우리 산물이 아니다.
+# ----------------------------------------------------------------------
+try:
+    _reset(0, 100)
+    sourceNode = rt.Point(name="preserve_src")
+    _animate_sparse(sourceNode, [10, 25, 40])
+
+    targetNode = rt.Point(name="preserve_tgt")
+    # 구간 [10,40] **밖**에 사용자 키를 심는다 (프레임 0과 50)
+    _animate_sparse(targetNode, [0, 50], inScale=-7.0)
+    beforeOutsideFrames = _stray_key_frames(targetNode, 10, 40)
+
+    anim.match_anim_transform(targetNode, sourceNode, 10, 40)
+    afterOutsideFrames = _stray_key_frames(targetNode, 10, 40)
+
+    reporter.assert_test(
+        beforeOutsideFrames == [0.0, 50.0]
+        and afterOutsideFrames == [0.0, 50.0],
+        "TC16 구간 밖 사용자 키(프레임 0 포함)는 보존된다",
+        inDetail=(
+            f"before={beforeOutsideFrames}, after={afterOutsideFrames}, "
+            f"allKeyFrames={_key_frames(targetNode)}"
+        ),
+    )
+except Exception as e:
+    reporter.error("TC16 구간 밖 키 보존", f"{e}\n{traceback.format_exc()}")
+
+
+# ----------------------------------------------------------------------
+# TC17: collapse도 같은 정리를 한다
+# ----------------------------------------------------------------------
+try:
+    collapseStrayRows = {}
+    for label, rangeStart in (("rangeStart5", 5), ("rangeStart0", 0)):
+        _reset(rangeStart, 100)
+        node = rt.Point(name=f"collapse_stray_{label}")
+        node.position = rt.Point3(-100.0, -200.0, -300.0)
+        _animate_dense(node, 10, 40)
+        beforeSnapshot = _snapshot(node, range(10, 41))
+
+        anim.collape_anim_transform(node, 10, 40)
+
+        fidelity, _ = _snapshots_match(
+            beforeSnapshot, _snapshot(node, range(10, 41))
+        )
+        collapseStrayRows[label] = {
+            "animationRangeStart": rangeStart,
+            "strayFrames": _stray_key_frames(node, 10, 40),
+            "keyCount": len(_key_frames(node)),
+            "worldTransformPreserved": fidelity,
+        }
+
+    allClean = bool(collapseStrayRows) and all(
+        not row["strayFrames"] and row["worldTransformPreserved"]
+        for row in collapseStrayRows.values()
+    )
+    reporter.assert_test(
+        allClean,
+        "TC17 collapse: animationRange.start와 무관하게 잉여 키 0건 + 월드 트랜스폼 보존",
+        inDetail=json.dumps(collapseStrayRows, ensure_ascii=False),
+    )
+except Exception as e:
+    reporter.error("TC17 collapse 잉여 키", f"{e}\n{traceback.format_exc()}")
 
 
 # ======================================================================

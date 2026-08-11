@@ -24,6 +24,7 @@
 import pytest
 
 from pyjallib.max.anim import (
+    build_has_key_at_frame_script,
     build_match_write_script,
     build_prs_controller_swap_script,
 )
@@ -324,6 +325,85 @@ def test_controller_swap_raises_on_handle_failure():
     키를 얹어 Constraint 결과와 합산된다.
     """
     script = build_prs_controller_swap_script(77)
+
+    assert "if tgt == undefined then" in script
+    assert "throw" in script
+
+
+# ======================================================================
+# `build_has_key_at_frame_script` - 프레임 0 잉여 키 정리의 판단 근거
+#
+# 무키 컨트롤러에 처음 기록하면 Max가 프레임 0에 "직전 정적 포즈" 키를
+# 하나 더 만든다. 기록 **전에** 그 자리에 키가 있었는지 알아야 그 키가 우리
+# 산물인지 사용자 데이터인지 가를 수 있다.
+# ======================================================================
+
+EXPECTED_HAS_KEY_SCRIPT = """(
+    local tgt = getAnimByHandle 99
+    if tgt == undefined then (
+        throw "has key at frame: 노드 핸들 해석에 실패했습니다"
+    )
+    local tracks = #(tgt.pos.controller.keys, tgt.rotation.controller.keys, tgt.scale.controller.keys)
+    local found = false
+    for a = 1 to tracks.count do (
+        for k in tracks[a] do (
+            if k.time == 0 then found = true
+        )
+    )
+    found
+)"""
+
+
+def test_has_key_script_matches_expected_verbatim():
+    """키 존재 조회 조립문 전문이 기대값과 일치한다."""
+    assert build_has_key_at_frame_script(99, 0) == EXPECTED_HAS_KEY_SCRIPT
+
+
+def test_has_key_script_never_reads_the_aggregate_transform_keys():
+    """``transform.controller.keys``를 읽지 않는다.
+
+    PRS 같은 집계 컨트롤러에는 키 배열 뷰가 없다 - ``count``가 **-1**이고
+    ``for k in ... do``가 **한 번도 돌지 않는다**(2026-08-12 실측). 그것으로
+    존재를 판정하면 항상 거짓이 되어 정리가 통째로 건너뛰어지거나, 반대로
+    사용자 키를 지운다. 실제로 두 번 그렇게 샜다.
+    """
+    script = build_has_key_at_frame_script(99, 0)
+
+    assert "transform.controller.keys" not in script
+    assert ".keys.count" not in script
+
+
+def test_has_key_script_checks_all_three_subtracks():
+    """pos/rotation/scale 세 서브트랙을 모두 본다.
+
+    하나만 보면 나머지 두 트랙에만 키가 있는 노드를 오판한다.
+    """
+    script = build_has_key_at_frame_script(99, 0)
+
+    for track in ("pos", "rotation", "scale"):
+        assert f"tgt.{track}.controller.keys" in script
+
+
+def test_has_key_script_uses_the_given_frame():
+    """확인 프레임이 그대로 박힌다."""
+    assert "if k.time == 17 then" in build_has_key_at_frame_script(99, 17)
+    assert "if k.time == -3 then" in build_has_key_at_frame_script(99, -3)
+
+
+def test_has_key_script_coerces_handle_to_int():
+    """float 핸들도 정수 리터럴로 조립된다."""
+    script = build_has_key_at_frame_script(99.0, 0)
+
+    assert "getAnimByHandle 99" in script
+    assert "99.0" not in script
+
+
+def test_has_key_script_raises_on_handle_failure():
+    """핸들 해석 실패를 조용히 넘기지 않는다.
+
+    실패를 삼키면 "키가 없었다"로 오판해 프레임 0의 사용자 키를 지운다.
+    """
+    script = build_has_key_at_frame_script(99, 0)
 
     assert "if tgt == undefined then" in script
     assert "throw" in script

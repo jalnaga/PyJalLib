@@ -74,6 +74,38 @@ _CLEAR_TARGET_KEYS_SCRIPT_TEMPLATE = """(
 )"""
 
 
+# 특정 프레임에 트랜스폼 키가 있는지 본다.
+#
+# 왜 필요한가: 무키 컨트롤러에 처음 `animate on`으로 쓰면 Max가 프레임 0에 키를
+# 하나 더 만든다. 그 키는 노드가 그 전에 갖고 있던 **정적 포즈**를 담는다
+# (2026-08-12 실측). 기록 **전에** 그 자리에 키가 있었는지 알아야, 기록 후의
+# 프레임 0 키가 우리 산물인지 사용자 데이터인지 가를 수 있다.
+#
+# **`transform.controller.keys`를 읽지 않는 이유(2026-08-12 실측).** PRS 같은
+# 집계 컨트롤러에는 키 배열 뷰가 없다 - `count`가 **`-1`**이고 `for k in ... do`도
+# **한 번도 돌지 않는다**(키가 실제로 있어도 빈 배열처럼 보인다). 그것으로 존재
+# 여부를 판정하면 항상 거짓이 되어 정리가 통째로 건너뛰어진다(실제로 두 번 그렇게
+# 새어 나갔다). 그래서 pos/rotation/scale **서브트랙**을 본다 - 이 경로는
+# `_MATCH_WRITE_SCRIPT_TEMPLATE`에서 이미 검증된 방식이다.
+#
+# 반대로 `selectKeys`/`deleteKeys`는 트랜스폼 컨트롤러에 걸어도 서브컨트롤러까지
+# 정상 전파된다(`_CLEAR_TARGET_KEYS_SCRIPT_TEMPLATE`가 그 위에 서 있다).
+# **읽기와 쓰기의 지원 범위가 다르다.**
+_HAS_KEY_AT_FRAME_SCRIPT_TEMPLATE = """(
+    local tgt = getAnimByHandle {targetHandle}
+    if tgt == undefined then (
+        throw "has key at frame: 노드 핸들 해석에 실패했습니다"
+    )
+    local tracks = #(tgt.pos.controller.keys, tgt.rotation.controller.keys, tgt.scale.controller.keys)
+    local found = false
+    for a = 1 to tracks.count do (
+        for k in tracks[a] do (
+            if k.time == {frame} then found = true
+        )
+    )
+    found
+)"""
+
 # 트랜스폼 컨트롤러를 빈 PRS로 갈아 끼운다 - `collape_anim_transform`의 핵심 단계.
 #
 # 두 단계인 이유는 구 코드 그대로다. `prs()`를 이미 PRS인 컨트롤러에 곧바로
@@ -234,6 +266,24 @@ def build_clear_target_keys_script(
         targetHandles=build_handle_array_text(inTargetHandles),
         startFrame=inTargetStartFrame,
         endFrame=inTargetEndFrame,
+    )
+
+
+def build_has_key_at_frame_script(inTargetHandle: int, inFrame: int) -> str:
+    """특정 프레임에 트랜스폼 키가 있는지 보는 MAXScript를 조립한다.
+
+    집계 컨트롤러의 ``keys.count``는 실제 개수가 아니라 ``-1``을 돌려주므로
+    개수를 세지 않고 **순회로 존재 여부**를 확인한다.
+
+    Args:
+        inTargetHandle: 대상 노드 핸들
+        inFrame: 확인할 프레임
+
+    Returns:
+        ``true``/``false``를 돌려주는 MAXScript 소스
+    """
+    return _HAS_KEY_AT_FRAME_SCRIPT_TEMPLATE.format(
+        targetHandle=int(inTargetHandle), frame=inFrame
     )
 
 
@@ -470,10 +520,17 @@ class Anim:
         갓 만든 PRS 컨트롤러에서는 등가지만 가정하지 않고 Type C 12-float 대조로
         단정한다.
 
-        **보존한 기존 결함.** ``startFrame``이 ``animationRange.start``와 다르면
-        ``animationRange.start``의 키를 지운다. 그런데 실측(2026-08-11)에서 잉여
-        키는 **프레임 0**에 생긴다 - 구간이 0에서 시작하지 않는 씬에서 이 정리는
-        아무것도 지우지 않는다. 등가 유지 결정에 따라 그대로 옮겼다.
+        **고친 기존 결함 - 프레임 0 잉여 키 (2026-08-12).** 컨트롤러 교체 직후
+        대상은 무키이고, 이어지는 기록이 **프레임 0**에 교체 시점의 정적 포즈를
+        담은 키를 하나 더 만든다. 구 코드는 그것을 ``animationRange.start``에서
+        지우려 했으므로 ``animationRange``가 0에서 시작할 때만 우연히 맞았다.
+        이제 위치를 프레임 0으로 고정하고, ``0``이 적용 구간 안이면 정당한
+        결과이므로 건드리지 않는다.
+
+        임시 포인트에도 같은 잉여 키가 생기지만 **정리하지 않는다.** 두 번째
+        베이크는 임시 포인트를 자기 키가 있는 정수 프레임에서만 읽으므로 잉여
+        키가 값에 닿지 않는다(``match_anim_transform``은 서브프레임 시점에서도
+        읽기 때문에 그쪽은 정리한다).
 
         Args:
             inObj (rt.Node): 변환을 병합할 객체
@@ -486,9 +543,10 @@ class Anim:
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
 
-        rangeStartFrame = int(rt.animationRange.start)
         # 노드는 이름이 아니라 핸들로 넘긴다. 이름은 동명 노드에 무너진다.
         objHandle = int(rt.getHandleByAnim(inObj))
+        # 프레임 0이 적용 구간 안이면 그 자리의 키는 정당한 결과다.
+        zeroFrameIsInRange = startFrame <= 0 <= endFrame
 
         rt.progressStart(f"Collapse transform {inObj.name}...")
         tempPoint = rt.Point()
@@ -522,14 +580,13 @@ class Anim:
                 ),
             )
 
-            # 4) 잉여 키 정리 (구 동작 보존)
-            if startFrame != rangeStartFrame:
+            # 4) 프레임 0 잉여 키 정리. 컨트롤러 교체 직후 대상은 항상 무키이므로
+            #    조건은 "프레임 0이 구간 밖인가" 하나다.
+            if not zeroFrameIsInRange:
                 rt.disableSceneRedraw()
                 try:
                     rt.execute(
-                        build_clear_target_keys_script(
-                            [objHandle], rangeStartFrame, rangeStartFrame
-                        )
+                        build_clear_target_keys_script([objHandle], 0, 0)
                     )
                 finally:
                     # 되돌리지 않으면 뷰포트가 영구히 갱신되지 않는다.
@@ -573,11 +630,22 @@ class Anim:
         2. **구간 내 서브프레임 키도 지워진다.** 구 코드의 프레임별 삭제는 정수
            프레임 키만 지웠다. 남은 서브프레임 키는 결과를 오염시키므로 개선이다.
 
-        **보존한 기존 결함.** ``startFrame``이 ``animationRange.start``와 다르면
-        임시 포인트의 ``animationRange.start`` 키를 지운다. 그런데 실측
-        (2026-08-11)에서 잉여 키는 **프레임 0**에 생긴다 - 구간이 0에서 시작하지
-        않는 씬에서 이 정리는 아무것도 지우지 않는다. 등가 유지 결정에 따라
-        고치지 않고 그대로 옮겼다.
+        **고친 기존 결함 - 프레임 0 잉여 키 (2026-08-12).** 무키 컨트롤러에 처음
+        ``animate on``으로 쓰면 Max가 **프레임 0**에 키를 하나 더 만들고, 그
+        키는 노드가 그 전에 갖고 있던 **정적 포즈**를 담는다. 구 코드는 그것을
+        ``animationRange.start``에서 지우려 했고, 그나마 **대상이 아니라 임시
+        포인트**에 걸었다. 결과적으로 대상의 잉여 키는 한 번도 정리되지 않았다.
+
+        무해한 잔재가 아니다. 그 키가 첫 키의 탄젠트 이웃이 되므로 **적용 구간
+        안 커브가 대상의 이전 포즈에 끌려간다.** 실측(같은 소스·같은 구간, 대상의
+        사전 포즈만 변경)에서 키 시점 값은 같은데 구간 안 최대 오차가 0.0 대
+        11.78로 갈렸다. ``startFrame``이 0이 아닌 모든 호출에 걸린다 - 0기준으로
+        재기준된 헬퍼만 쓰는 경로에서 드러나지 않았을 뿐이다.
+
+        이제 대상과 임시 포인트 **둘 다** 정리한다. 지우는 위치는
+        ``animationRange.start``가 아니라 **프레임 0**이고, ``0``이 적용 구간
+        안이면 그 키는 정당한 결과이므로 건드리지 않는다. 대상 쪽은 **기록 전에
+        프레임 0에 키가 없었을 때만** 지운다 - 있었다면 그것은 사용자 데이터다.
 
         Args:
             inObj (rt.Node): 변환을 적용할 객체
@@ -595,10 +663,11 @@ class Anim:
         if endFrame is None:
             endFrame = int(rt.animationRange.end)
 
-        rangeStartFrame = int(rt.animationRange.start)
         # 노드는 이름이 아니라 핸들로 넘긴다. 이름은 동명 노드에 무너진다.
         objHandle = int(rt.getHandleByAnim(inObj))
         targetHandle = int(rt.getHandleByAnim(inTarget))
+        # 프레임 0이 적용 구간 안이면 그 자리의 키는 정당한 결과다.
+        zeroFrameIsInRange = startFrame <= 0 <= endFrame
 
         rt.progressStart(f"Match transform {inObj.name} to {inTarget.name} ")
         tempPoint = rt.Point()
@@ -632,15 +701,24 @@ class Anim:
                     )
                 )
 
-                # 3) 임시 포인트의 잉여 키 정리 (구 동작 보존)
-                if startFrame != rangeStartFrame:
+                # 3) 기록 직전 프레임 0에 키가 있었는지 본다. 있었다면 그것은
+                #    사용자 데이터이므로 뒤에서 손대지 않는다. 없었다면 기록
+                #    후에 생긴 프레임 0 키는 우리가 만든 잉여 키다.
+                targetHadKeyAtZero = (
+                    rt.execute(build_has_key_at_frame_script(objHandle, 0))
+                    is True
+                )
+
+                # 4) 임시 포인트의 잉여 키 정리. 임시 포인트는 항상 무키로
+                #    시작하므로 조건 없이 생긴다. 아래 기록이 이 포인트를
+                #    **서브프레임 시점에서도** 읽으므로, 잉여 키를 남겨 두면
+                #    첫 키의 탄젠트가 흔들려 값이 달라진다.
+                if not zeroFrameIsInRange:
                     rt.execute(
-                        build_clear_target_keys_script(
-                            [tempHandle], rangeStartFrame, rangeStartFrame
-                        )
+                        build_clear_target_keys_script([tempHandle], 0, 0)
                     )
 
-                # 4) 소스 키 시점 + 구간 양끝에만 기록한다. 시점당 1회.
+                # 5) 소스 키 시점 + 구간 양끝에만 기록한다. 시점당 1회.
                 rt.execute(
                     build_match_write_script(
                         targetHandle,
@@ -650,6 +728,12 @@ class Anim:
                         endFrame,
                     )
                 )
+
+                # 6) 대상의 프레임 0 잉여 키 정리.
+                if not targetHadKeyAtZero and not zeroFrameIsInRange:
+                    rt.execute(
+                        build_clear_target_keys_script([objHandle], 0, 0)
+                    )
             finally:
                 # 되돌리지 않으면 뷰포트가 영구히 갱신되지 않는다.
                 rt.enableSceneRedraw()
