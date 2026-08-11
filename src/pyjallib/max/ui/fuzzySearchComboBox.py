@@ -18,91 +18,23 @@ QComboBox를 상속하지 않고 QWidget 기반 커스텀 위젯 + Qt.Popup 플�
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
+from pyjallib.fuzzyMatch import fuzzy_score, is_word_start
+
 
 # =============================================================================
 # Phase 1: 퍼지 매칭 알고리즘
 # =============================================================================
+#
+# 알고리즘 본체는 pyjallib.fuzzyMatch로 이관되었다. 그 모듈은 pymxs·PySide2에
+# 의존하지 않으므로 콘솔에서 그대로 import·테스트할 수 있고, 리스트 검색 필터
+# 등 다른 UI에서도 같은 스코어러를 공유한다.
+#
+# 아래 밑줄 별칭은 이 모듈의 기존 참조(_FuzzyFilterProxyModel, 기존 테스트)를
+# 무변경으로 유지하기 위한 것이다. 새 코드는 pyjallib.fuzzyMatch의 공개 이름을
+# 직접 쓴다.
 
-
-def _fuzzy_score(inPattern: str, inText: str) -> int:
-    """퍼지 매칭 스코어를 계산한다.
-
-    패턴의 모든 문자가 텍스트에 순서대로 존재하면 매칭 성공.
-    연속 매칭과 단어 시작점 매칭에 보너스를 부여한다.
-
-    Args:
-        inPattern: 검색 패턴 문자열
-        inText: 매칭 대상 텍스트
-
-    Returns:
-        매칭 스코어. 매칭 실패 시 -1, 빈 패턴은 0.
-    """
-    if not inPattern:
-        return 0
-
-    patternLower = inPattern.lower()
-    textLower = inText.lower()
-
-    score = 0
-    patternIdx = 0
-    prevMatchIdx = -2  # -2로 초기화하여 첫 매칭에서 연속 보너스 방지
-
-    for textIdx in range(len(textLower)):
-        if patternIdx >= len(patternLower):
-            break
-
-        if textLower[textIdx] == patternLower[patternIdx]:
-            # 기본 매칭 점수
-            score += 1
-
-            # 연속 매칭 보너스: 이전 매칭 위치 바로 다음에 매칭되면
-            if textIdx == prevMatchIdx + 1:
-                score += 6
-
-            # 단어 시작점 보너스: 대문자이거나 _/- 바로 뒤 문자
-            if _is_word_start(inText, textIdx):
-                score += 10
-
-            prevMatchIdx = textIdx
-            patternIdx += 1
-
-    # 패턴의 모든 문자가 매칭되지 않으면 실패
-    if patternIdx < len(patternLower):
-        return -1
-
-    return score
-
-
-def _is_word_start(inText: str, inIdx: int) -> bool:
-    """해당 인덱스의 문자가 단어 시작점인지 판별한다.
-
-    단어 시작점 조건:
-    - 첫 번째 문자
-    - 대문자이면서 이전 문자가 소문자인 경우 (camelCase 경계)
-    - '_' 또는 '-' 바로 뒤의 문자
-
-    Args:
-        inText: 전체 텍스트
-        inIdx: 판별 대상 인덱스
-
-    Returns:
-        단어 시작점이면 True
-    """
-    if inIdx == 0:
-        return True
-
-    currentChar = inText[inIdx]
-    prevChar = inText[inIdx - 1]
-
-    # 대문자이면서 이전 문자가 소문자 (camelCase 경계)
-    if currentChar.isupper() and prevChar.islower():
-        return True
-
-    # '_' 또는 '-' 바로 뒤의 문자
-    if prevChar in ("_", "-"):
-        return True
-
-    return False
+_fuzzy_score = fuzzy_score
+_is_word_start = is_word_start
 
 
 # =============================================================================
