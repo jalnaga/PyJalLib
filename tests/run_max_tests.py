@@ -8,7 +8,8 @@ MaxTestRunner로 tests/max/ 하위의 모든 테스트 스크립트를 순차 �
 TestLogAnalyzer로 로그를 분석하여 결과를 출력한다.
 
 사용법:
-    uv run python tests/run_max_tests.py
+    uv run python tests/run_max_tests.py                 # 전체 실행
+    uv run python tests/run_max_tests.py test_skin.py    # 이름 필터(부분 문자열, 복수 가능)
 """
 
 import importlib.util
@@ -57,6 +58,8 @@ TEST_SCRIPTS = [
     "test_mirror.py",
     "test_attribute.py",
     "test_ui_fuzzy_search_combo_box.py",
+    # Skin 가중치 이전 프리미티브(합성 스킨 박스). 기대 TC 10 (TC00~TC09)
+    "test_skin.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -80,9 +83,17 @@ def main() -> None:
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+    # 이름 필터(부분 문자열). 인자가 없으면 전량 실행한다
+    needles = sys.argv[1:]
+    selectedNames = [
+        name for name in TEST_SCRIPTS if not needles or any(needle in name for needle in needles)
+    ]
+    if needles:
+        print(f"필터 {needles} -> {len(selectedNames)}개 스크립트")
+
     # 실행할 스크립트 필터링 (존재하는 것만)
     scripts = []
-    for scriptName in TEST_SCRIPTS:
+    for scriptName in selectedNames:
         scriptPath = TESTS_DIR / scriptName
         if scriptPath.exists():
             scripts.append(scriptPath)
