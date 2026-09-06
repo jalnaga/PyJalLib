@@ -9,6 +9,7 @@
 import os
 from enum import IntEnum
 import textwrap
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from pymxs import runtime as rt
 
 class VertexMode(IntEnum):
@@ -17,6 +18,68 @@ class VertexMode(IntEnum):
     Attach = 2
     All = 3
     Stiff = 4
+
+
+def merge_vertex_weights(
+    inEntries: Iterable[Tuple[int, float]],
+    inBoneIdRemap: Dict[int, int],
+) -> Tuple[List[int], List[float], bool]:
+    """버텍스 한 개의 (본 ID, 가중치) 항목을 remap 규칙으로 합산한다 (순수 함수).
+
+    ``inBoneIdRemap``의 키에 해당하는 본 ID는 값(대상 본 ID)으로 바꾼 뒤 같은 ID끼리
+    더한다. 여러 원본 본이 한 대상을 가리키면(다대일) 그 대상에 전부 합산된다. 결과
+    순서는 remap 적용 후의 ID가 처음 등장한 순서다. pymxs를 호출하지 않으므로 다대일
+    합산 규칙을 콘솔(Type A)에서 고정할 수 있다.
+
+    Args:
+        inEntries: ``[(boneId, weight), ...]`` - 한 버텍스의 가중치 항목
+        inBoneIdRemap: ``{원본 본 ID: 대상 본 ID}``
+
+    Returns:
+        ``(ids, weights, touched)``. ``touched``는 remap된 항목이 하나라도 있었는지
+
+    Raises:
+        ValueError: remap 대상 본 ID가 None인 항목이 있는 경우(이전 대상이 없는 본)
+    """
+    merged: Dict[int, float] = {}
+    touched = False
+    for boneId, weight in inEntries:
+        if boneId in inBoneIdRemap:
+            targetId = inBoneIdRemap[boneId]
+            if targetId is None:
+                raise ValueError(f"본 ID {boneId}의 이전 대상이 없습니다.")
+            boneId = targetId
+            touched = True
+        merged[boneId] = merged.get(boneId, 0.0) + float(weight)
+    ids = list(merged.keys())
+    return ids, [merged[i] for i in ids], touched
+
+
+def _node_handle(inNode: Any) -> int:
+    """노드의 핸들(정수)을 돌려준다."""
+    return int(rt.getHandleByAnim(inNode))
+
+
+def _node_by_handle(inHandle: int) -> Any:
+    """핸들로 노드를 되찾는다. 삭제됐으면 None."""
+    node = rt.getAnimByHandle(inHandle)
+    if node is None or not rt.isValidNode(node):
+        return None
+    return node
+
+
+def _save_selection() -> List[Any]:
+    """현재 선택을 라이브 뷰에서 분리한 파이썬 리스트로 보관한다."""
+    return list(rt.getCurrentSelection())
+
+
+def _restore_selection(inSaved: List[Any]) -> None:
+    """보관한 선택을 복원한다. 삭제된 노드는 건너뛴다."""
+    valid = [node for node in inSaved if rt.isValidNode(node)]
+    if valid:
+        rt.select(rt.Array(*valid))
+    else:
+        rt.clearSelection()
 
 class Skin:
     """스킨 모디파이어의 바인딩·최적화·저장/로드·가중치 편집 기능을 제공하는 클래스. MAXScript의 ODC_Char_Skin 구조체를 Python으로 재구현하였다."""
@@ -609,72 +672,350 @@ class Skin:
     def transfert_skin_data(self, skin_mod, source_bone, target_bone, vtx_list):
         """지정 버텍스들에서 원본 본의 스킨 가중치를 대상 본으로 이전한다.
 
+        ``transfer_bone_weights`` 위의 호환 래퍼다(시그니처·이름 불변). 원본 본은 Skin에서
+        제거하지 않는다. 구 구현과의 관측 가능한 차이 하나: 구 구현은 원본 본 항목을
+        가중치 0으로 남겼지만, 이 구현은 항목을 제거하고 대상에 합산한다. 본별 가중치
+        값은 동일하다(0 == 부재)지만 ``GetVertexWeightCount``가 1 작을 수 있다.
+
         Args:
             skin_mod (rt.Node): 스킨이 적용된 대상 객체 (skin 속성으로 스킨 모디파이어에 접근)
             source_bone (rt.Node): 가중치를 가져올 원본 본
             target_bone (rt.Node): 가중치를 넘겨받을 대상 본
-            vtx_list (list[int]): 대상 버텍스 인덱스 리스트
+            vtx_list (list[int]): 대상 버텍스 인덱스 리스트 (1-based)
+
+        Raises:
+            RuntimeError: 객체에서 Skin 모디파이어를 찾지 못한 경우, 또는
+                ``transfer_bone_weights``의 예외 조건
         """
-        skin_data = []
-        new_skin_data = []
-        
-        # 본 ID 가져오기
-        source_bone_id = self.get_bone_id_from_name(skin_mod, source_bone.name)
-        target_bone_id = self.get_bone_id_from_name(skin_mod, target_bone.name)
-        
-        bone_list = [n for n in rt.refs.dependsOn(skin_mod.skin) if rt.isValidNode(n) and self.is_valid_bone(n)]
-        bone_id_map = {self.get_bone_id_from_name(skin_mod, b.name): i for i, b in enumerate(bone_list)}
-        
-        # 스킨 데이터 수집
-        for vtx in vtx_list:
-            bone_array = []
-            weight_array = []
-            bone_weight = [0] * len(bone_list)
-            
-            for b in range(1, rt.skinOps.GetVertexWeightCount(skin_mod.skin, vtx) + 1):
-                bone_idx = rt.skinOps.GetVertexWeightBoneID(skin_mod.skin, vtx, b)
-                bone_weight[bone_id_map[bone_idx]] += rt.skinOps.GetVertexWeight(skin_mod.skin, vtx, b)
-                
-            for b in range(len(bone_weight)):
-                if bone_weight[b] > 0:
-                    bone_array.append(b+1)
-                    weight_array.append(bone_weight[b])
-                    
-            skin_data.append([bone_array, weight_array])
-            new_skin_data.append([bone_array[:], weight_array[:]])
-            
-        # 스킨 데이터 이전
-        vtx_id = []
-        vtx_weight = []
-        
-        # 원본 본의 가중치 추출
-        for vtx in range(len(skin_data)):
-            for i in range(len(skin_data[vtx][0])):
-                if skin_data[vtx][0][i] == source_bone_id:
-                    vtx_id.append(vtx)
-                    vtx_weight.append(skin_data[vtx][1][i])
-                    
-        # 원본 본 영향력 제거
-        for vtx in range(len(vtx_id)):
-            for i in range(len(new_skin_data[vtx_id[vtx]][0])):
-                if new_skin_data[vtx_id[vtx]][0][i] == source_bone_id:
-                    new_skin_data[vtx_id[vtx]][1][i] = 0.0
-                    
-        # 타겟 본에 영향력 추가
-        for vtx in range(len(vtx_id)):
-            id = new_skin_data[vtx_id[vtx]][0].index(target_bone_id) if target_bone_id in new_skin_data[vtx_id[vtx]][0] else -1
-            
-            if id == -1:
-                new_skin_data[vtx_id[vtx]][0].append(target_bone_id)
-                new_skin_data[vtx_id[vtx]][1].append(vtx_weight[vtx])
+        try:
+            skinModifier = skin_mod.skin
+        except Exception as e:
+            raise RuntimeError(f"'{skin_mod}'에서 Skin 모디파이어를 찾을 수 없습니다.") from e
+        if skinModifier is None or rt.classOf(skinModifier) != rt.Skin:
+            raise RuntimeError(f"'{skin_mod}'의 skin 속성이 Skin 모디파이어가 아닙니다.")
+
+        self.transfer_bone_weights(
+            skin_mod,
+            skinModifier,
+            {_node_handle(source_bone): _node_handle(target_bone)},
+            set(),
+            inVertexIndices=list(vtx_list),
+        )
+
+    def activate_skin(self, inNode: Any, inSkinMod: Any) -> None:
+        """skinOps 호출이 성립하도록 노드를 선택하고 Skin을 Modify 패널의 현재 객체로 둔다.
+
+        **현재 선택을 바꾼다.** 호출 전 선택을 보존해야 하면 호출자가 보관·복원한다
+        (``transfer_bone_weights``는 내부에서 보관·복원한다).
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: 활성화할 Skin 모디파이어
+        """
+        rt.select(inNode)
+        rt.setCommandPanelTaskMode(rt.Name("modify"))
+        rt.modPanel.setCurrentObject(inSkinMod)
+
+    def get_bone_table(self, inSkinMod: Any) -> Dict[int, Dict[str, Any]]:
+        """Skin의 본 ID 대조표 ``{boneId: {"name", "handle", "byName"}}``를 만든다.
+
+        **본 ID API만 사용한다**(``GetNumberBones`` / ``GetBoneName`` / ``GetBoneNode``).
+        본 ID와 리스트 ID는 다르므로 ``GetBoneIDByListID`` 계열과 섞지 않는다. 본 ID는
+        1..GetNumberBones 연속이다. 노드 대조는 ``GetBoneNode``가 준 노드의 핸들로 하고,
+        ``GetBoneNode``가 None을 주면 이름으로 폴백하되 동명 노드 오대조 가능성이 있으므로
+        ``"byName": True``로 표시한다. 어느 쪽으로도 노드를 찾지 못하면 ``handle``은 None.
+
+        ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+
+        Returns:
+            ``{boneId: {"name": str, "handle": int | None, "byName": bool}}``
+        """
+        table: Dict[int, Dict[str, Any]] = {}
+        for boneId in range(1, int(rt.skinOps.GetNumberBones(inSkinMod)) + 1):
+            boneName = str(rt.skinOps.GetBoneName(inSkinMod, boneId, 1))
+            handle = None
+            byName = False
+            boneNode = rt.skinOps.GetBoneNode(inSkinMod, boneId)
+            if boneNode is not None:
+                handle = _node_handle(boneNode)
             else:
-                new_skin_data[vtx_id[vtx]][1][id] += vtx_weight[vtx]
-                
-        # 스킨 데이터 적용
-        for i in range(len(vtx_list)):
-            rt.skinOps.ReplaceVertexWeights(skin_mod.skin, vtx_list[i], 
-                                           skin_data[i][0], new_skin_data[i][1])
-            
+                fallback = rt.getNodeByName(boneName)
+                if fallback is not None:
+                    handle = _node_handle(fallback)
+                    byName = True
+            table[boneId] = {"name": boneName, "handle": handle, "byName": byName}
+        return table
+
+    def get_vertex_weights(
+        self, inSkinMod: Any, inVertexIndices: Optional[Iterable[int]] = None
+    ) -> Dict[int, List[Tuple[int, float]]]:
+        """버텍스별 가중치 ``{vertIndex(1-based): [(boneId, weight), ...]}``를 읽는다.
+
+        ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+            inVertexIndices: 읽을 버텍스 인덱스(1-based). None이면 전 버텍스
+
+        Returns:
+            버텍스 인덱스 → ``(본 ID, 가중치)`` 목록. 본 ID는 ``get_bone_table``의 키와 같다
+        """
+        if inVertexIndices is None:
+            indices: Iterable[int] = range(1, int(rt.skinOps.GetNumberVertices(inSkinMod)) + 1)
+        else:
+            indices = [int(v) for v in inVertexIndices]
+        weights: Dict[int, List[Tuple[int, float]]] = {}
+        for v in indices:
+            entries: List[Tuple[int, float]] = []
+            for k in range(1, int(rt.skinOps.GetVertexWeightCount(inSkinMod, v)) + 1):
+                entries.append(
+                    (
+                        int(rt.skinOps.GetVertexWeightBoneID(inSkinMod, v, k)),
+                        float(rt.skinOps.GetVertexWeight(inSkinMod, v, k)),
+                    )
+                )
+            weights[v] = entries
+        return weights
+
+    def get_used_bone_handles(
+        self,
+        inBoneTable: Dict[int, Dict[str, Any]],
+        inWeights: Dict[int, List[Tuple[int, float]]],
+    ) -> Set[int]:
+        """가중치가 0보다 큰 버텍스가 하나라도 있는 본의 노드 핸들 집합을 돌려준다 (순수).
+
+        pymxs를 호출하지 않는다. 대조표에 없는 본 ID와 핸들이 None인 본은 제외한다.
+
+        Args:
+            inBoneTable: ``get_bone_table`` 결과
+            inWeights: ``get_vertex_weights`` 결과
+
+        Returns:
+            사용 중인 본의 노드 핸들 집합
+        """
+        usedIds: Set[int] = set()
+        for entries in inWeights.values():
+            for boneId, weight in entries:
+                if weight > 0.0:
+                    usedIds.add(boneId)
+        return {
+            inBoneTable[boneId]["handle"]
+            for boneId in usedIds
+            if boneId in inBoneTable and inBoneTable[boneId]["handle"] is not None
+        }
+
+    def transfer_bone_weights(
+        self,
+        inNode: Any,
+        inSkinMod: Any,
+        inTransferByHandle: Dict[int, int],
+        inRemoveHandles: Iterable[int],
+        inVertexWeights: Optional[Dict[int, List[Tuple[int, float]]]] = None,
+        inVertexIndices: Optional[Iterable[int]] = None,
+        inVerifySampleLimit: int = 64,
+    ) -> Dict[str, Any]:
+        """Skin 하나에서 본 가중치를 다대일로 이전하고, 지정 본을 Skin에서 제거한다.
+
+        본 식별은 **노드 핸들**(정수)이다. 절차는 다음 순서로 진행하며 순서가 결과를 가른다.
+
+        1. 현재 선택을 보관한다(모든 부작용보다 앞).
+        2. ``get_bone_table``로 본 ID ↔ 핸들 대조표를 만든다.
+        3. 이전 대상 본이 이 Skin에 없으면 ``addBone(skin, node, 0)``으로 먼저 넣고 대조표를
+           다시 만든다(기존 본 ID는 유지된다). 새 본의 bind 행렬은 "지금" 트랜스폼이므로
+           씬이 bind pose여야 정확하다 - 이 경우 ``warnings``에 경고를 넣는다.
+        4. 원본 본에 가중치가 있는 버텍스만 ``merge_vertex_weights``로 합산해
+           ``ReplaceVertexWeights``로 쓴다. 쓴 직후 앞쪽 표본(``inVerifySampleLimit``개)을
+           재조회해 원본 본 잔여 가중치가 0인지 확인한다(호출 성공 ≠ 효과).
+        5. ``inRemoveHandles``의 본을 ``removeBone``으로 **ID 내림차순** 제거한다(제거 시 ID가
+           밀린다). ``inRemoveHandles``가 비어 있으면 이 단계와 6을 건너뛴다.
+        6. 제거 후 대조표를 재조회해 제거 본이 남아 있지 않음을 단정한다.
+        7. 선택을 복원한다(예외 시에도).
+
+        **``ReplaceVertexWeights``는 버텍스를 재정규화한다.** 이전과 무관한 본의 가중치도
+        float32 ULP 수준(약 4.5e-8)으로 바뀔 수 있으므로 "바이트 동일"을 기대하지 않는다.
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: Skin 모디파이어
+            inTransferByHandle: ``{원본 본 핸들: 대상 본 핸들}``. 여러 원본이 한 대상을 가리켜도 된다
+            inRemoveHandles: Skin에서 제거할 본 핸들 집합. 빈 집합이면 이전만 한다
+            inVertexWeights: 미리 읽어 둔 ``get_vertex_weights`` 결과. None이면 여기서 읽는다
+            inVertexIndices: 대상 버텍스(1-based). None이면 전 버텍스. ``inVertexWeights``가 함께
+                주어지면 그 안에서 이 인덱스만 쓴다
+            inVerifySampleLimit: 쓰기 직후 재조회 검증할 버텍스 수 상한. 기본 64
+
+        Returns:
+            ``{"transferred": {원본 본 핸들: {"target": 대상 핸들, "verts": int, "weightSum": float}},
+            "removedBones": [이름 정렬], "addedBones": [이름], "touchedVerts": int,
+            "warnings": [str]}``
+
+        Raises:
+            RuntimeError: ① ``inRemoveHandles`` 중 가중치가 있는 본에 이전 대상이 없다
+                ② 이전 대상 본이 씬에 없거나 ``addBone`` 효과가 없다
+                ③ 표본 재조회에서 원본 본 잔여 가중치가 남았다
+                ④ 제거 후 제거 본이 Skin에 남아 있다
+                (또는 ``inSkinMod``가 Skin 모디파이어가 아니다)
+        """
+        transferByHandle: Dict[int, int] = dict(inTransferByHandle)
+        removeHandles: Set[int] = set(inRemoveHandles)
+        savedSelection = _save_selection()
+        warnings: List[str] = []
+        try:
+            if rt.classOf(inSkinMod) != rt.Skin:
+                raise RuntimeError(
+                    f"'{inNode.name}'에 준 모디파이어는 Skin이 아닙니다: {rt.classOf(inSkinMod)}"
+                )
+            self.activate_skin(inNode, inSkinMod)
+
+            table = self.get_bone_table(inSkinMod)
+            if inVertexWeights is not None:
+                weights = inVertexWeights
+                if inVertexIndices is not None:
+                    wanted = [int(v) for v in inVertexIndices]
+                    weights = {v: inVertexWeights[v] for v in wanted if v in inVertexWeights}
+            else:
+                weights = self.get_vertex_weights(inSkinMod, inVertexIndices)
+
+            byNameEntries = [e["name"] for e in table.values() if e.get("byName")]
+            if byNameEntries:
+                warnings.append(
+                    f"GetBoneNode가 None을 준 본 {len(byNameEntries)}개를 이름으로 대조했습니다: "
+                    f"{byNameEntries[:5]}"
+                )
+
+            usedBoneIds: Set[int] = {
+                boneId
+                for entries in weights.values()
+                for boneId, weight in entries
+                if weight > 0.0
+            }
+            removeBoneIds = {bid for bid, e in table.items() if e["handle"] in removeHandles}
+
+            # 사용 중인 제거 본에 이전 대상이 없으면 여기서 멈춘다 - 이대로 제거하면 가중치가 사라진다
+            missingTargets = [
+                table[bid]["name"]
+                for bid in sorted(usedBoneIds & removeBoneIds)
+                if table[bid]["handle"] not in transferByHandle
+            ]
+            if missingTargets:
+                raise RuntimeError(
+                    f"'{inNode.name}' Skin에서 이전 대상이 없는 사용 본: {missingTargets}"
+                )
+
+            idsByHandle = self._bone_ids_by_handle(table)
+            sourceBoneIds = {
+                bid for bid in usedBoneIds if table[bid]["handle"] in transferByHandle
+            }
+
+            # 대상 본이 Skin에 없으면 addBone 후 대조표 재구성
+            neededTargets = sorted(
+                {transferByHandle[table[bid]["handle"]] for bid in sourceBoneIds}
+            )
+            addedBones: List[str] = []
+            for targetHandle in neededTargets:
+                if targetHandle in idsByHandle:
+                    continue
+                targetNode = _node_by_handle(targetHandle)
+                if targetNode is None:
+                    raise RuntimeError(f"이전 대상 본(핸들 {targetHandle})이 씬에 없습니다.")
+                countBefore = int(rt.skinOps.GetNumberBones(inSkinMod))
+                rt.skinOps.addBone(inSkinMod, targetNode, 0)
+                if int(rt.skinOps.GetNumberBones(inSkinMod)) != countBefore + 1:
+                    raise RuntimeError(
+                        f"'{inNode.name}' Skin에 '{targetNode.name}' addBone 효과 없음"
+                    )
+                addedBones.append(str(targetNode.name))
+            if addedBones:
+                # 새로 추가된 본의 bind 행렬은 "지금" 트랜스폼이다. 씬이 bind pose가 아니면
+                # 그 본으로 옮긴 가중치가 다른 변형을 만든다 - 리거가 알아야 한다.
+                warnings.append(
+                    f"이전 대상 본 {len(addedBones)}개를 Skin에 새로 추가했습니다 {addedBones} - "
+                    f"씬이 bind pose(리깅 기준 자세)여야 결과가 정확합니다."
+                )
+                table = self.get_bone_table(inSkinMod)
+                idsByHandle = self._bone_ids_by_handle(table)
+                removeBoneIds = {bid for bid, e in table.items() if e["handle"] in removeHandles}
+                sourceBoneIds = {
+                    bid for bid in usedBoneIds if table[bid]["handle"] in transferByHandle
+                }
+
+            remap: Dict[int, int] = {
+                bid: idsByHandle[transferByHandle[table[bid]["handle"]]] for bid in sourceBoneIds
+            }
+
+            # 버텍스별 합산 → ReplaceVertexWeights
+            transferred: Dict[int, Dict[str, Any]] = {}
+            touchedCount = 0
+            verified = 0
+            for vertIndex, entries in weights.items():
+                ids, ws, touched = merge_vertex_weights(entries, remap)
+                if not touched:
+                    continue
+                for boneId, weight in entries:
+                    if boneId not in remap:
+                        continue
+                    srcHandle = table[boneId]["handle"]
+                    detail = transferred.setdefault(
+                        srcHandle,
+                        {"target": transferByHandle[srcHandle], "verts": 0, "weightSum": 0.0},
+                    )
+                    detail["verts"] = int(detail["verts"]) + 1
+                    detail["weightSum"] = float(detail["weightSum"]) + weight
+                rt.skinOps.ReplaceVertexWeights(inSkinMod, vertIndex, ids, ws)
+                touchedCount += 1
+
+                if verified < inVerifySampleLimit:
+                    verified += 1
+                    residual = 0.0
+                    for k in range(1, int(rt.skinOps.GetVertexWeightCount(inSkinMod, vertIndex)) + 1):
+                        if int(rt.skinOps.GetVertexWeightBoneID(inSkinMod, vertIndex, k)) in remap:
+                            residual += float(rt.skinOps.GetVertexWeight(inSkinMod, vertIndex, k))
+                    if residual > 1e-6:
+                        raise RuntimeError(
+                            f"'{inNode.name}' 버텍스 {vertIndex}: ReplaceVertexWeights 후 원본 본 "
+                            f"잔여 가중치 {residual}"
+                        )
+
+            # removeBone - ID 내림차순
+            removedBones: List[str] = []
+            if removeHandles:
+                namesToRemove = {table[bid]["name"] for bid in removeBoneIds}
+                for boneId in sorted(removeBoneIds, reverse=True):
+                    rt.skinOps.removeBone(inSkinMod, boneId)
+
+                afterTable = self.get_bone_table(inSkinMod)
+                residualNames = [
+                    e["name"] for e in afterTable.values() if e["handle"] in removeHandles
+                ]
+                if residualNames:
+                    raise RuntimeError(
+                        f"'{inNode.name}' Skin에 제거 본이 남아 있습니다 ({len(residualNames)}개): "
+                        f"{residualNames[:10]}"
+                    )
+                removedBones = sorted(namesToRemove)
+
+            return {
+                "transferred": transferred,
+                "removedBones": removedBones,
+                "addedBones": addedBones,
+                "touchedVerts": touchedCount,
+                "warnings": warnings,
+            }
+        finally:
+            _restore_selection(savedSelection)
+
+    @staticmethod
+    def _bone_ids_by_handle(inTable: Dict[int, Dict[str, Any]]) -> Dict[int, int]:
+        """대조표를 ``{노드 핸들: 본 ID}``로 뒤집는다. 핸들이 None인 본은 제외한다."""
+        return {
+            entry["handle"]: boneId
+            for boneId, entry in inTable.items()
+            if entry["handle"] is not None
+        }
+
     def smooth_skin(self, inObj, inVertMode=VertexMode.Edges, inRadius=5.0, inIterNum=3, inKeepMax=False):
         """MAXScript 스무딩 스크립트를 실행해 선택된 버텍스의 스킨 가중치를 부드럽게 한다.
 
