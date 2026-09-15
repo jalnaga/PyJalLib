@@ -55,6 +55,63 @@ def merge_vertex_weights(
     return ids, [merged[i] for i in ids], touched
 
 
+def expected_weights_by_handle(
+    inWeightsByHandle: Dict[int, Dict[int, float]],
+    inTransferByHandle: Dict[int, int],
+) -> Dict[int, Dict[int, float]]:
+    """이전 전 스냅샷에 remap을 적용한 **기대 가중치**를 만든다 (순수 함수).
+
+    키가 본 ID가 아니라 **노드 핸들**이다. ``addBone``/``removeBone``은 본 ID를 밀 수
+    있으므로(빈 슬롯 재사용·제거 후 압축) ID로 전후를 비교하면 서로 다른 본을 견주게
+    된다. 핸들은 노드의 수명 동안 불변이라 유일하게 안전한 기준이다.
+
+    Args:
+        inWeightsByHandle: ``{버텍스: {본 핸들: 가중치}}`` - 절차 전 스냅샷
+        inTransferByHandle: ``{원본 본 핸들: 대상 본 핸들}``
+
+    Returns:
+        ``{버텍스: {본 핸들: 기대 가중치}}``
+    """
+    expected: Dict[int, Dict[int, float]] = {}
+    for vertIndex, byHandle in inWeightsByHandle.items():
+        merged: Dict[int, float] = {}
+        for handle, weight in byHandle.items():
+            targetHandle = inTransferByHandle.get(handle, handle)
+            merged[targetHandle] = merged.get(targetHandle, 0.0) + float(weight)
+        expected[vertIndex] = merged
+    return expected
+
+
+def diff_weights_by_handle(
+    inExpected: Dict[int, Dict[int, float]],
+    inActual: Dict[int, Dict[int, float]],
+    inTolerance: float = 1e-6,
+) -> List[Tuple[int, int, float, float]]:
+    """기대 가중치와 실제 가중치의 편차 목록을 돌려준다 (순수 함수).
+
+    양쪽 어디에도 없는 본은 가중치 0으로 본다. 버텍스 집합이 다르면 없는 쪽을 빈
+    dict로 취급해 그 차이도 편차로 잡는다.
+
+    Args:
+        inExpected: ``expected_weights_by_handle`` 결과
+        inActual: 절차 후 재조회한 ``{버텍스: {본 핸들: 가중치}}``
+        inTolerance: 허용 오차. 기본 1e-6 (``ReplaceVertexWeights`` 재정규화 ULP 흡수)
+
+    Returns:
+        ``[(버텍스, 본 핸들, 기대값, 실제값), ...]`` - 허용 오차를 넘은 항목만. 빈 리스트면 일치
+    """
+    deviations: List[Tuple[int, int, float, float]] = []
+    for vertIndex in sorted(set(inExpected) | set(inActual)):
+        expectedEntry = inExpected.get(vertIndex, {})
+        actualEntry = inActual.get(vertIndex, {})
+        for handle in sorted(set(expectedEntry) | set(actualEntry)):
+            expectedWeight = float(expectedEntry.get(handle, 0.0))
+            actualWeight = float(actualEntry.get(handle, 0.0))
+            if abs(expectedWeight - actualWeight) > inTolerance:
+                deviations.append((vertIndex, handle, expectedWeight, actualWeight))
+    return deviations
+
+
 def _node_handle(inNode: Any) -> int:
     """노드의 핸들(정수)을 돌려준다."""
     return int(rt.getHandleByAnim(inNode))
@@ -823,16 +880,31 @@ class Skin:
 
         1. 현재 선택을 보관한다(모든 부작용보다 앞).
         2. ``get_bone_table``로 본 ID ↔ 핸들 대조표를 만든다.
-        3. 이전 대상 본이 이 Skin에 없으면 ``addBone(skin, node, 0)``으로 먼저 넣고 대조표를
-           다시 만든다(기존 본 ID는 유지된다). 새 본의 bind 행렬은 "지금" 트랜스폼이므로
-           씬이 bind pose여야 정확하다 - 이 경우 ``warnings``에 경고를 넣는다.
+        3. 이전 대상 본이 이 Skin에 없으면 ``addBone(skin, node, 0)``으로 먼저 넣고 대조표와
+           **가중치·사용 본 집합을 모두 다시 읽는다**(아래 "본 ID는 밀린다" 참조). 새 본의
+           bind 행렬은 "지금" 트랜스폼이므로 씬이 bind pose여야 정확하다 - 이 경우
+           ``warnings``에 경고를 넣는다.
         4. 원본 본에 가중치가 있는 버텍스만 ``merge_vertex_weights``로 합산해
            ``ReplaceVertexWeights``로 쓴다. 쓴 직후 앞쪽 표본(``inVerifySampleLimit``개)을
            재조회해 원본 본 잔여 가중치가 0인지 확인한다(호출 성공 ≠ 효과).
         5. ``inRemoveHandles``의 본을 ``removeBone``으로 **ID 내림차순** 제거한다(제거 시 ID가
            밀린다). ``inRemoveHandles``가 비어 있으면 이 단계와 6을 건너뛴다.
         6. 제거 후 대조표를 재조회해 제거 본이 남아 있지 않음을 단정한다.
-        7. 선택을 복원한다(예외 시에도).
+        7. 쓴 버텍스를 재조회해 **노드 핸들 기준** 기대값과 대조한다. 편차가 1e-6을 넘으면
+           ``RuntimeError``를 올린다.
+        8. 선택을 복원한다(예외 시에도).
+
+        **본 ID는 밀린다 - ``addBone`` 전에 읽은 본 ID를 그 뒤에 쓰면 안 된다.**
+        Max는 이전에 ``removeBone``으로 비워 둔 슬롯이 있으면 새 본에게 **가장 낮은 빈
+        자리부터** 내주고, 그 뒤 본의 ID를 한 칸씩 민다. 2026-09-15 프로덕션 Skin 실측 -
+        258본짜리 Skin에 본 하나를 추가하자 새 본이 ID 1을 차지하고 전 본이 밀렸다::
+
+            전:  1 spine_03   2 neck_twist_01   3 head            4 neck_twist_02  ...
+            후:  1 neck       2 spine_03        3 neck_twist_01   4 head           ...
+
+        리거가 본을 붙였다 뗐다 한 Skin에는 빈 슬롯이 흔하다. 갓 만든 Skin은 빈 슬롯이
+        없어 항상 끝에 붙으므로(합성 44조합 실측) 이 결함은 프로덕션에서만 드러났다.
+        그래서 3에서 가중치를 다시 읽고, 전후 비교는 ID가 아니라 **핸들**로 한다.
 
         **``ReplaceVertexWeights``는 버텍스를 재정규화한다.** 이전과 무관한 본의 가중치도
         float32 ULP 수준(약 4.5e-8)으로 바뀔 수 있으므로 "바이트 동일"을 기대하지 않는다.
@@ -842,7 +914,10 @@ class Skin:
             inSkinMod: Skin 모디파이어
             inTransferByHandle: ``{원본 본 핸들: 대상 본 핸들}``. 여러 원본이 한 대상을 가리켜도 된다
             inRemoveHandles: Skin에서 제거할 본 핸들 집합. 빈 집합이면 이전만 한다
-            inVertexWeights: 미리 읽어 둔 ``get_vertex_weights`` 결과. None이면 여기서 읽는다
+            inVertexWeights: 미리 읽어 둔 ``get_vertex_weights`` 결과. None이면 여기서 읽는다.
+                ``addBone``이 일어나면 본 ID가 밀 수 있으므로 **이 값을 버리고 내부에서 같은
+                버텍스 범위를 다시 읽는다** - 호출자가 수확 단계에서 떠 온 캐시는 그 시점에
+                무효다
             inVertexIndices: 대상 버텍스(1-based). None이면 전 버텍스. ``inVertexWeights``가 함께
                 주어지면 그 안에서 이 인덱스만 쓴다
             inVerifySampleLimit: 쓰기 직후 재조회 검증할 버텍스 수 상한. 기본 64
@@ -850,13 +925,17 @@ class Skin:
         Returns:
             ``{"transferred": {원본 본 핸들: {"target": 대상 핸들, "verts": int, "weightSum": float}},
             "removedBones": [이름 정렬], "addedBones": [이름], "touchedVerts": int,
-            "warnings": [str]}``
+            "warnings": [str], "verifiedVerts": int, "boneIdsShifted": bool}``
+
+            ``verifiedVerts``는 7에서 기대값과 대조한 버텍스 수, ``boneIdsShifted``는
+            ``addBone``이 기존 본 ID를 밀었는지다(밀렸으면 ``warnings``에도 한 줄 남는다).
 
         Raises:
             RuntimeError: ① ``inRemoveHandles`` 중 가중치가 있는 본에 이전 대상이 없다
                 ② 이전 대상 본이 씬에 없거나 ``addBone`` 효과가 없다
                 ③ 표본 재조회에서 원본 본 잔여 가중치가 남았다
                 ④ 제거 후 제거 본이 Skin에 남아 있다
+                ⑤ 사후 검증에서 쓴 버텍스의 가중치가 핸들 기준 기대값과 1e-6을 넘게 다르다
                 (또는 ``inSkinMod``가 Skin 모디파이어가 아니다)
         """
         transferByHandle: Dict[int, int] = dict(inTransferByHandle)
@@ -910,7 +989,23 @@ class Skin:
                 bid for bid in usedBoneIds if table[bid]["handle"] in transferByHandle
             }
 
+            # 절차 전 스냅샷을 **핸들 기준**으로 떠 둔다 - 사후 검증의 기준값이다.
+            # 본 ID는 addBone/removeBone이 밀 수 있으므로 기준으로 쓸 수 없다.
+            snapshotByHandle: Dict[int, Dict[int, float]] = {}
+            for vertIndex, entries in weights.items():
+                byHandle: Dict[int, float] = {}
+                for boneId, weight in entries:
+                    if weight <= 0.0:
+                        continue
+                    handle = table[boneId]["handle"] if boneId in table else None
+                    if handle is None:
+                        continue
+                    byHandle[handle] = byHandle.get(handle, 0.0) + float(weight)
+                snapshotByHandle[vertIndex] = byHandle
+
             # 대상 본이 Skin에 없으면 addBone 후 대조표 재구성
+            tableBeforeAdd = table
+            boneIdsShifted = False
             neededTargets = sorted(
                 {transferByHandle[table[bid]["handle"]] for bid in sourceBoneIds}
             )
@@ -938,6 +1033,33 @@ class Skin:
                 table = self.get_bone_table(inSkinMod)
                 idsByHandle = self._bone_ids_by_handle(table)
                 removeBoneIds = {bid for bid, e in table.items() if e["handle"] in removeHandles}
+
+                # addBone은 본 ID를 **밀 수 있다**. Max는 이전에 removeBone으로 비워 둔
+                # 슬롯이 있으면 가장 낮은 빈 자리부터 새 본에 내주고, 그 뒤 본의 ID가
+                # 전부 한 칸씩 밀린다(2026-09-15 실측 - 프로덕션 Skin에서 새 본이 ID 1을
+                # 차지하며 258본이 밀렸다). 그러면 addBone **전에** 읽어 둔 가중치 항목과
+                # usedBoneIds는 다른 본을 가리키게 되므로 여기서 다시 읽는다.
+                shiftedBones = [
+                    (bid, str(entry["name"]), str(table[bid]["name"]))
+                    for bid, entry in sorted(tableBeforeAdd.items())
+                    if bid in table and table[bid]["handle"] != entry["handle"]
+                ]
+                boneIdsShifted = bool(shiftedBones)
+                if boneIdsShifted:
+                    warnings.append(
+                        f"addBone이 본 ID를 밀었습니다({len(shiftedBones)}개) - 예: "
+                        f"{[f'ID {bid}: {before} -> {after}' for bid, before, after in shiftedBones[:3]]}. "
+                        f"가중치를 다시 읽어 반영했습니다."
+                    )
+
+                # 읽는 범위는 애초 대상 버텍스 그대로다(부분 이전이면 그 범위만).
+                weights = self.get_vertex_weights(inSkinMod, sorted(weights))
+                usedBoneIds = {
+                    boneId
+                    for entries in weights.values()
+                    for boneId, weight in entries
+                    if weight > 0.0
+                }
                 sourceBoneIds = {
                     bid for bid in usedBoneIds if table[bid]["handle"] in transferByHandle
                 }
@@ -948,12 +1070,14 @@ class Skin:
 
             # 버텍스별 합산 → ReplaceVertexWeights
             transferred: Dict[int, Dict[str, Any]] = {}
+            touchedIndices: List[int] = []
             touchedCount = 0
             verified = 0
             for vertIndex, entries in weights.items():
                 ids, ws, touched = merge_vertex_weights(entries, remap)
                 if not touched:
                     continue
+                touchedIndices.append(vertIndex)
                 for boneId, weight in entries:
                     if boneId not in remap:
                         continue
@@ -996,6 +1120,57 @@ class Skin:
                         f"{residualNames[:10]}"
                     )
                 removedBones = sorted(namesToRemove)
+                finalTable = afterTable
+            else:
+                finalTable = table
+
+            # 사후 검증 - 쓴 버텍스를 **핸들 기준**으로 기대값과 대조한다.
+            # 본 ID는 addBone(빈 슬롯 재사용)과 removeBone(제거 후 압축)이 양쪽에서 밀므로
+            # ID로 비교하면 서로 다른 본을 견주게 된다. 이 결함이 정확히 그렇게 조용히
+            # 지나갔으므로, 라이브러리가 스스로 단정한다.
+            verifiedVerts = 0
+            if touchedIndices:
+                # 쓰기 직후의 재조회는 갱신 없이는 **0을 돌려준다**(2026-09-15 실측 -
+                # `addBone`/`removeBone`이 한 번도 없었던 경로에서 방금 쓴 가중치가 전부 0으로
+                # 읽혔다. 구조 변경이 있으면 그 호출이 갱신을 강제해 증상이 숨는다).
+                # 조회가 예외 대신 거짓 답을 주는 형태이므로 읽기 전에 갱신을 명시한다
+                # (`max/pymxs_pitfalls_advanced.md` §28-a).
+                self.activate_skin(inNode, inSkinMod)
+                rt.completeRedraw()
+                actualRaw = self.get_vertex_weights(inSkinMod, touchedIndices)
+                actualByHandle: Dict[int, Dict[int, float]] = {}
+                for vertIndex, entries in actualRaw.items():
+                    byHandle = {}
+                    for boneId, weight in entries:
+                        if weight <= 0.0:
+                            continue
+                        handle = finalTable[boneId]["handle"] if boneId in finalTable else None
+                        if handle is None:
+                            continue
+                        byHandle[handle] = byHandle.get(handle, 0.0) + float(weight)
+                    actualByHandle[vertIndex] = byHandle
+
+                expected = expected_weights_by_handle(
+                    {v: snapshotByHandle[v] for v in touchedIndices if v in snapshotByHandle},
+                    transferByHandle,
+                )
+                deviations = diff_weights_by_handle(expected, actualByHandle)
+                if deviations:
+                    nameByHandle = {
+                        e["handle"]: str(e["name"])
+                        for e in finalTable.values()
+                        if e["handle"] is not None
+                    }
+                    detail = ", ".join(
+                        f"v{vertIndex} '{nameByHandle.get(handle, f'핸들 {handle}')}' "
+                        f"기대 {expectedWeight:.6g} 실제 {actualWeight:.6g}"
+                        for vertIndex, handle, expectedWeight, actualWeight in deviations[:5]
+                    )
+                    raise RuntimeError(
+                        f"'{inNode.name}' 이전 결과가 기대값과 다릅니다 "
+                        f"({len(deviations)}건 / 검증 버텍스 {len(touchedIndices)}개): {detail}"
+                    )
+                verifiedVerts = len(touchedIndices)
 
             return {
                 "transferred": transferred,
@@ -1003,6 +1178,8 @@ class Skin:
                 "addedBones": addedBones,
                 "touchedVerts": touchedCount,
                 "warnings": warnings,
+                "verifiedVerts": verifiedVerts,
+                "boneIdsShifted": boneIdsShifted,
             }
         finally:
             _restore_selection(savedSelection)

@@ -22,7 +22,7 @@ Skin 가중치 이전 프리미티브 테스트 - 3ds Max 환경에서 실행 (T
 가중치는 버텍스 인덱스 규칙으로 결정적으로 준다(위치 무의존). 픽스처가 만들려던 조건은
 TC01이 먼저 단정한다.
 
-기대 TC 수: 10 (TC00~TC09, TC당 assert 1건)
+기대 TC 수: 15 (TC00~TC14, TC당 assert 1건)
 
 실행 방법:
     uv run python tests/run_max_tests.py test_skin.py
@@ -484,6 +484,201 @@ try:
     )
 except Exception as e:
     reporter.error("TC09 legacy 래퍼", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# 본 ID 밀림 픽스처 (TC10~TC14)
+#
+# `addBone`은 새 본을 항상 끝에 붙이지 않는다. 이전에 `removeBone`으로 비워 둔 슬롯이
+# 있으면 **가장 낮은 빈 자리부터** 내주고 그 뒤 본의 ID를 한 칸씩 민다(2026-09-15 실측 -
+# 프로덕션 Skin에서 새 본이 ID 1을 차지하며 258본이 밀렸다). 리거가 본을 붙였다 뗐다 한
+# Skin에는 빈 슬롯이 흔하지만, 갓 만든 합성 Skin에는 없어서 TC01~TC09가 이 결함을 못 봤다.
+#
+# 여기서는 **빈 슬롯을 일부러 만들어** 그 조건을 세운다:
+#   체인 chain00..chain13 → Skin에 dummySlot + chain01..chain13 → dummySlot을 removeBone
+#   → 전 버텍스 명시 지정(엔벨로프 요인 배제) → chain01..chain06을 Skin 밖 chain00으로 이전
+# 이전 시 chain00이 빈 슬롯을 채우며 ID가 밀린다.
+# ============================================================
+
+SHIFT_CHAIN_LEN = 14
+SHIFT_SOURCE_COUNT = 6
+
+
+def build_shift_scene() -> Dict[str, Any]:
+    """본 ID가 밀리는 조건의 씬을 짓는다. ``{"box", "skinMod", "chain", "target", "sources"}``."""
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    chain: List[Any] = []
+    for i in range(SHIFT_CHAIN_LEN):
+        node = rt.Box(name=f"chain{i:02d}", width=4.0, length=4.0, height=6.0)
+        node.pos = rt.Point3(0.0, 0.0, i * 6.0)
+        if chain:
+            node.parent = chain[-1]
+        chain.append(node)
+    dummy = rt.Box(name="dummySlot", width=4.0, length=4.0, height=6.0)
+    dummy.pos = rt.Point3(30.0, 0.0, 0.0)
+
+    box = rt.Box(
+        name="ShiftBox", width=6.0, length=6.0, height=SHIFT_CHAIN_LEN * 6.0,
+        widthsegs=1, lengthsegs=1, heightsegs=3,
+    )
+    box.pos = rt.Point3(0.0, 0.0, 0.0)
+    skinMod = rt.Skin()
+    rt.addModifier(box, skinMod)
+    rt.modPanel.setCurrentObject(skinMod, node=box)
+    # chain00은 Skin 밖에 둔다 - 이전 대상이므로 addBone 경로를 탄다
+    for bone in [dummy] + chain[1:]:
+        rt.skinOps.addBone(skinMod, bone, 1)
+    skinMod.enableDQ = False
+    rt.completeRedraw()
+
+    # dummySlot을 빼서 앞쪽 슬롯을 비운다 - 이것이 밀림의 방아쇠다
+    skin.activate_skin(box, skinMod)
+    dummyId = next(
+        (bid for bid, e in skin.get_bone_table(skinMod).items() if e["name"] == "dummySlot"), None
+    )
+    rt.skinOps.removeBone(skinMod, dummyId)
+
+    # 슬롯이 빈 상태에서 전 버텍스를 명시 지정한다(M 플래그를 켜 엔벨로프 요인을 배제)
+    table = skin.get_bone_table(skinMod)
+    idByName = {e["name"]: bid for bid, e in table.items()}
+    names = sorted(idByName)
+    for v in range(1, int(rt.skinOps.GetNumberVertices(skinMod)) + 1):
+        primary = names[v % len(names)]
+        secondary = names[(v + 1) % len(names)]
+        if primary == secondary:
+            rt.skinOps.ReplaceVertexWeights(skinMod, v, [idByName[primary]], [1.0])
+        else:
+            rt.skinOps.ReplaceVertexWeights(
+                skinMod, v, [idByName[primary], idByName[secondary]], [0.7, 0.3]
+            )
+    rt.clearSelection()
+
+    return {
+        "box": box,
+        "skinMod": skinMod,
+        "chain": chain,
+        "target": chain[0],
+        "sources": chain[1 : 1 + SHIFT_SOURCE_COUNT],
+    }
+
+
+def shift_transfer_map(inScene: Dict[str, Any]) -> Dict[int, int]:
+    targetHandle = handle_of(inScene["target"])
+    return {handle_of(bone): targetHandle for bone in inScene["sources"]}
+
+
+# ============================================================
+# TC10: 픽스처 자기단정 - 빈 슬롯이 있고, 이전 대상이 Skin 밖이며, 전 버텍스가 명시 지정이다
+# ============================================================
+try:
+    scene = build_shift_scene()
+    bonesBefore = bone_names(scene["box"], scene["skinMod"])
+    before = weights_by_name(scene["box"], scene["skinMod"])
+    targetInSkin = "chain00" in bonesBefore
+    dummyGone = "dummySlot" not in bonesBefore
+    allWeighted = all(w for w in before.values())
+    sumOk, sumMsg = weight_sums_ok(before)
+    reporter.assert_test(
+        dummyGone and not targetInSkin and allWeighted and sumOk and len(before) >= 8
+        and len(bonesBefore) == SHIFT_CHAIN_LEN - 1,
+        f"TC10 밀림 픽스처 자기단정 - dummySlot 제거로 빈 슬롯 확보, 이전 대상 chain00은 Skin 밖, "
+        f"전 버텍스 명시 지정 [본 {len(bonesBefore)}개, v={len(before)}]",
+        f"dummyGone={dummyGone} targetOutside={not targetInSkin} allWeighted={allWeighted} "
+        f"sum={sumMsg} bones={bonesBefore}",
+    )
+except Exception as e:
+    reporter.error("TC10 밀림 픽스처", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC11: 밀림 경로에서 이전 결과가 핸들 기준 순수 합산 기대값과 일치한다 (판별력 TC)
+#       수정 전 코드에서는 여기서 편차가 난다 - stale 본 ID로 가중치가 엉뚱한 본에 얹힌다
+# ============================================================
+try:
+    scene = build_shift_scene()
+    before = weights_by_name(scene["box"], scene["skinMod"])
+    sourceNames = {str(b.name) for b in scene["sources"]}
+    targetName = str(scene["target"].name)
+    result = skin.transfer_bone_weights(
+        scene["box"], scene["skinMod"], shift_transfer_map(scene), set(shift_transfer_map(scene))
+    )
+    after = weights_by_name(scene["box"], scene["skinMod"])
+    expected = expected_weights(before, {name: targetName for name in sourceNames})
+    eqOk, eqMsg = weights_equal(after, expected)
+    sumOk, sumMsg = weight_sums_ok(after)
+    bonesAfter = bone_names(scene["box"], scene["skinMod"])
+    noSource = not (sourceNames & set(bonesAfter))
+    reporter.assert_test(
+        eqOk and sumOk and noSource and targetName in bonesAfter,
+        # 신규 키는 메시지에서 .get으로 읽는다 - 판별력 확인(수정 전 코드) 때 KeyError로
+        # 죽지 않고 **가중치 항등식 축에서** 실패해야 신호가 정확하다
+        f"TC11 밀림 경로 보존 항등식 - chain01~chain06 → {targetName}, 결과 == 핸들 기준 "
+        f"순수 합산 기대값 [touched={result['touchedVerts']}, added={result['addedBones']}, "
+        f"shifted={result.get('boneIdsShifted')}]",
+        f"eq={eqMsg} sum={sumMsg} bones={bonesAfter} result={result}",
+    )
+except Exception as e:
+    reporter.error("TC11 밀림 경로 보존", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC12: boneIdsShifted == True + warnings에 밀림 줄이 있다
+# ============================================================
+try:
+    scene = build_shift_scene()
+    result = skin.transfer_bone_weights(
+        scene["box"], scene["skinMod"], shift_transfer_map(scene), set(shift_transfer_map(scene))
+    )
+    shiftWarnings = [w for w in result["warnings"] if "본 ID를 밀었습니다" in w]
+    reporter.assert_test(
+        result["boneIdsShifted"] is True and len(shiftWarnings) == 1,
+        f"TC12 밀림 탐지 - boneIdsShifted=True + 경고 1줄 [{shiftWarnings[:1]}]",
+        f"boneIdsShifted={result['boneIdsShifted']} warnings={result['warnings']}",
+    )
+except Exception as e:
+    reporter.error("TC12 밀림 탐지", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC13: verifiedVerts == 쓴 버텍스 수(touchedVerts)
+# ============================================================
+try:
+    scene = build_shift_scene()
+    result = skin.transfer_bone_weights(
+        scene["box"], scene["skinMod"], shift_transfer_map(scene), set(shift_transfer_map(scene))
+    )
+    reporter.assert_test(
+        result["verifiedVerts"] == result["touchedVerts"] and result["verifiedVerts"] > 0,
+        f"TC13 사후 검증 범위 - verifiedVerts({result['verifiedVerts']}) == "
+        f"touchedVerts({result['touchedVerts']}) > 0",
+        f"result={result}",
+    )
+except Exception as e:
+    reporter.error("TC13 사후 검증 범위", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC14: legacy transfert_skin_data 경로 - 구조 변경이 없으므로 boneIdsShifted == False
+#       (대상 본이 이미 Skin에 있어 addBone이 일어나지 않는다 → 재조회도 생략된다)
+# ============================================================
+try:
+    nodes = build_scene()
+    count = int(rt.skinOps.GetNumberVertices(nodes["BodySkin"]))
+    twistH, upperH = handle_of(nodes["twist"]), handle_of(nodes["upperarm"])
+    result = skin.transfer_bone_weights(
+        nodes["Body"], nodes["BodySkin"], {twistH: upperH}, set(),
+        inVertexIndices=list(range(1, count + 1)),
+    )
+    bonesAfter = bone_names(nodes["Body"], nodes["BodySkin"])
+    reporter.assert_test(
+        result["boneIdsShifted"] is False and result["addedBones"] == []
+        and result["verifiedVerts"] == result["touchedVerts"] and "twist" in bonesAfter,
+        f"TC14 무구조변경 경로 - addBone 없음 → boneIdsShifted=False, 재조회 생략, "
+        f"검증은 그대로 [verified={result['verifiedVerts']}]",
+        f"result={result} bones={bonesAfter}",
+    )
+except Exception as e:
+    reporter.error("TC14 무구조변경 경로", f"{e}\n{traceback.format_exc()}")
 
 
 # ============================================================

@@ -59,9 +59,9 @@ TEST_SCRIPTS = [
     "test_mirror.py",
     "test_attribute.py",
     "test_ui_fuzzy_search_combo_box.py",
-    # Skin 가중치 이전 프리미티브(합성 스킨 박스). 기대 TC 10 (TC00~TC09)
+    # Skin 가중치 이전 프리미티브(합성 스킨 박스 + 본 ID 밀림 픽스처). 기대 TC 15 (TC00~TC14)
     "test_skin.py",
-    # 엔벨로프 재평가 결함 Phase 0 프로브. 기대 TC 19 (TC00~TC18)
+    # Skin 결함 원인 프로브(Phase 0 = H1 기각·H6 확정 / Phase 0B = 삽입 방아쇠). 기대 TC 23 (TC00~TC22)
     "test_probe_envelope.py",
 ]
 

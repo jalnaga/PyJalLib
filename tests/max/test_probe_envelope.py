@@ -29,7 +29,7 @@
 본 폭(14)이 간격(10)보다 넓어 엔벨로프가 겹치므로 엔벨로프 구동 가중치가 블렌드로
 떨어진다. 이것이 없으면 전 버텍스가 rigid(단일 본 1.0)라 재평가를 관측할 재료가 없다.
 
-기대 TC 수: 19 (TC00~TC18)
+기대 TC 수: 23 (TC00~TC22)
 
 실행 방법:
     uv run python tests/run_max_tests.py test_probe_envelope.py
@@ -1190,12 +1190,16 @@ except Exception as e:
 
 
 # ============================================================
-# TC12 (게이트 판정): 결함 씬이 H1의 전제를 갖고 있는가
+# TC12 (기록): 두 프로덕션 씬에 H1 전제가 없다는 사실을 고정한다
 #
-#   H1은 "비수정(엔벨로프 구동) 버텍스"가 있어야 성립한다. 합성 절(TC02)이 메커니즘
-#   자체는 확정했지만, **마스터가 결함을 본 씬에 그 전제가 없다면** 이 사이클의 수정은
-#   그 씬의 증상을 설명하지 못한다. 그 사실을 여기서 드러낸다 - 실패가 곧
-#   "마스터에게 재현 조건을 되묻는다"의 신호다(PRD §5 리스크 행).
+#   H1(엔벨로프 재평가)은 "비수정 버텍스"가 있어야 성립한다. 합성 절(TC02)이 메커니즘
+#   자체는 확정했지만, 결함 씬과 참조 씬 **둘 다 비수정 버텍스가 0**이라 프로덕션에는
+#   조건이 없다. 이 판정이 처음 실패로 떴을 때 그것이 곧 "H1은 이 씬의 원인이 아니다"의
+#   신호였고, 마스터 결정(2026-09-15 R2)으로 **H1 고정은 이번 사이클 Non-Goal**이 됐다.
+#
+#   그래서 판정축을 "전제가 있는가"(가설 검증)에서 **"측정이 성립했는가"**(사실 고정)로
+#   바꾼다. 비수정 버텍스 수는 이제 통과 조건이 아니라 **기록해야 할 값**이다.
+#   조건이 생기면 이 수치가 별건 PRD의 착수 신호가 된다.
 # ============================================================
 try:
     defectSkins = defectSurvey.get("skins", [])
@@ -1216,23 +1220,25 @@ try:
         "referenceSceneUnmodifiedVerts": refUnmodifiedTotal,
         "defectSceneExpectedDeviation": deviationTotal,
         "H1_preconditionPresentInDefectScene": defectUnmodified > 0,
+        "H1_scopeDecision": "Non-Goal (마스터 결정 2026-09-15 R2) - 조건이 생기면 별건 PRD",
         "verdict": (
-            "H1 메커니즘 확정 + 결함 씬에 전제 존재 → 수정이 그 씬의 증상을 설명한다"
+            "결함 씬에 H1 전제가 존재한다 - 별건 PRD 착수 신호"
             if defectUnmodified > 0
-            else "H1 메커니즘은 확정됐으나 결함 씬에 전제(비수정 버텍스)가 없다 - "
-            "이 씬의 증상은 H1으로 설명되지 않는다. 마스터에게 재현 조건을 되묻는다"
+            else "두 프로덕션 씬 모두 비수정 버텍스 0 - H1 조건이 프로덕션에 없다. "
+            "실제 원인은 H6(addBone 본 ID 삽입 + stale ID 재사용)이다"
         ),
     }
     dump_probe()
 
+    # 판정축은 측정 성립이다. 비수정 버텍스 수 자체는 이 프로브가 알아내는 값이고,
+    # 그 값이 0이라는 사실은 이미 마스터 결정으로 소화됐다(H1 → Non-Goal).
     reporter.assert_test(
-        defectUnmodified > 0,
-        f"TC12 [게이트 판정] 결함 씬이 H1 전제를 갖는다 - 비수정 버텍스 {defectUnmodified}"
-        f"/{defectVerts}개(Skin {len(defectSkins)}개), 참조 씬 비수정 {refUnmodifiedTotal}개, "
-        f"현행 절차의 기대값 편차 {deviationTotal}개",
-        f"결함 씬 비수정 버텍스 0/{defectVerts} - H1 메커니즘(TC02)은 확정됐지만 이 씬에는 "
-        f"전제가 없다. 기대값 편차도 {deviationTotal}개다. 추측으로 코드를 고치지 않고 "
-        f"마스터에게 재현 조건을 되묻는다(PRD §5)",
+        len(defectSkins) > 0 and defectVerts > 0 and deviationTotal >= 0,
+        f"TC12 [기록] 프로덕션 씬의 H1 전제 부재 - 결함 씬 비수정 버텍스 {defectUnmodified}"
+        f"/{defectVerts}개(Skin {len(defectSkins)}개), 참조 씬 비수정 {refUnmodifiedTotal}개 "
+        f"→ H1은 Non-Goal(R2). 실제 원인 H6의 크기 = 기대값 편차 {deviationTotal}개",
+        f"측정이 성립하지 않았다 - skins={len(defectSkins)} verts={defectVerts} "
+        f"deviation={deviationTotal}",
     )
 except Exception as e:
     reporter.error("TC12 게이트 판정", f"{e}\n{traceback.format_exc()}")
@@ -1928,6 +1934,513 @@ try:
     )
 except Exception as e:
     reporter.error("TC18 합성 재현", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# Phase 0B - 삽입 방아쇠 격자 (Q1)
+#
+# TC17이 실기에서 삽입을 확정했고 TC14·TC18의 합성은 전부 append였다. 무엇이 다른지를
+# 축으로 갈라 훑는다. **밀림을 일으키는 조합을 찾아야 합성으로 판별력을 확보할 수 있다.**
+#
+#   ① 새 본의 계층 역할: ancestor(스킨 본들의 조상) / descendant(리프) /
+#      middle(일부의 조상이자 일부의 자손) / sibling / unrelated
+#   ② 노드 생성 순서: 새 본을 체인보다 먼저 만들었는가 나중에 만들었는가
+#   ③ 스킨 본 개수: 4 / 12 / 60
+#   ④ 본 클래스: Box 프리미티브 / `BoneSys.createBone`
+#   ⑤ 레이어 소속: 기본 레이어 / 전용 레이어
+#
+# 조합마다 `addBone` 전후 `{boneId: name}`을 **전량** 기록한다. 이진으로 적으면 나중에
+# 원인을 못 쫓는다(Phase 0에서 그럴 뻔했다).
+# ============================================================
+
+CHAIN_STEP = 6.0
+
+
+def _make_bone_node(inName: str, inIndex: int, inUseBoneSys: bool, inLayer: Any) -> Any:
+    """체인의 본 하나를 만든다. `BoneSys`와 Box 두 클래스를 같은 배치로 만든다."""
+    z = inIndex * CHAIN_STEP
+    if inUseBoneSys:
+        node = rt.BoneSys.createBone(
+            rt.Point3(0.0, 0.0, z), rt.Point3(0.0, 0.0, z + CHAIN_STEP), rt.Point3(0.0, 1.0, 0.0)
+        )
+        node.name = inName
+    else:
+        node = rt.Box(name=inName, width=4.0, length=4.0, height=CHAIN_STEP)
+        node.pos = rt.Point3(0.0, 0.0, z)
+    if inLayer is not None:
+        inLayer.addNode(node)
+    return node
+
+
+def _skin_box_with(inBones: List[Any], inHeight: float) -> Tuple[Any, Any]:
+    """주어진 본들로 스킨된 박스를 만든다(가중치는 지정하지 않는다 - ID 밀림만 본다)."""
+    box = rt.Box(
+        name="GridBox", width=6.0, length=6.0, height=inHeight, widthsegs=1, lengthsegs=1, heightsegs=3
+    )
+    box.pos = rt.Point3(0.0, 0.0, 0.0)
+    skinMod = rt.Skin()
+    rt.addModifier(box, skinMod)
+    rt.modPanel.setCurrentObject(skinMod, node=box)
+    for bone in inBones:
+        rt.skinOps.addBone(skinMod, bone, 1)
+    skinMod.enableDQ = False
+    rt.completeRedraw()
+    return box, skinMod
+
+
+def _reload_scene_roundtrip() -> Tuple[Any, Any]:
+    """씬을 temp .max로 저장했다가 다시 열고, 박스와 그 Skin을 되찾는다.
+
+    실기 씬은 **파일에서 로드된** 상태였다. 로드가 본 목록의 내부 순서를 다시 잡는다면
+    그때의 ``addBone``은 갓 만든 씬과 다르게 움직일 수 있다 - 그 가능성을 축으로 뺀다.
+    """
+    import os
+    import stat
+    import tempfile
+
+    tempPath = Path(tempfile.gettempdir()) / "probe_grid_roundtrip.max"
+    if tempPath.exists():
+        os.chmod(str(tempPath), stat.S_IWRITE)
+    rt.saveMaxFile(str(tempPath), quiet=True)
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    if not rt.loadMaxFile(str(tempPath), quiet=True):
+        raise RuntimeError(f"격자 왕복 로드 실패: {tempPath}")
+    box = rt.getNodeByName("GridBox")
+    if box is None:
+        raise RuntimeError("재로드 후 GridBox를 찾지 못했다")
+    for modIndex in range(int(box.modifiers.count)):
+        mod = box.modifiers[modIndex]
+        if rt.classOf(mod) == rt.Skin:
+            return box, mod
+    raise RuntimeError("재로드 후 Skin을 찾지 못했다")
+
+
+def run_grid_case(
+    inRole: str,
+    inCount: int,
+    inUseBoneSys: bool,
+    inNewFirst: bool,
+    inUseLayer: bool,
+    inAddOrder: str = "creation",
+    inSaveReload: bool = False,
+) -> Dict[str, Any]:
+    """격자 한 칸을 돌린다. `addBone` 전후 대조표를 전량 담아 돌려준다."""
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    layer = rt.LayerManager.newLayerFromName("GridBones") if inUseLayer else None
+
+    # 새 본을 체인보다 먼저 만들 수 있게, 체인 밖 본(sibling/unrelated)은 순서를 바꾼다
+    standalone: Optional[Any] = None
+    if inRole in ("sibling", "unrelated") and inNewFirst:
+        standalone = _make_bone_node("newBone", 0, inUseBoneSys, layer)
+
+    chain: List[Any] = []
+    for i in range(inCount + 1):
+        node = _make_bone_node(f"chain{i:02d}", i, inUseBoneSys, layer)
+        if chain:
+            node.parent = chain[-1]
+        chain.append(node)
+
+    if inRole in ("sibling", "unrelated") and not inNewFirst:
+        standalone = _make_bone_node("newBone", 0, inUseBoneSys, layer)
+
+    if inRole == "ancestor":
+        # 체인 맨 위를 나중에 넣는다 - 나머지 전부의 조상이다 (실기 `neck`과 같은 배치)
+        newBone, skinBones = chain[0], chain[1:]
+    elif inRole == "descendant":
+        newBone, skinBones = chain[-1], chain[:-1]
+    elif inRole == "middle":
+        mid = len(chain) // 2
+        newBone, skinBones = chain[mid], chain[:mid] + chain[mid + 1 :]
+    elif inRole == "sibling":
+        standalone.parent = chain[0]
+        newBone, skinBones = standalone, chain[1:]
+    else:  # unrelated
+        newBone, skinBones = standalone, chain[1:]
+
+    # 스킨에 본을 넣는 순서를 노드 생성 순서와 어긋나게 할 수 있다.
+    # 실기 스킨은 리거가 임의 순서로 붙였을 수 있고, 그러면 본 ID 순서 != 씬 노드 순서다.
+    addOrdered = list(skinBones)
+    if inAddOrder == "reverse":
+        addOrdered.reverse()
+    elif inAddOrder == "interleaved":
+        addOrdered = addOrdered[1::2] + addOrdered[0::2]
+
+    box, skinMod = _skin_box_with(addOrdered, (inCount + 1) * CHAIN_STEP)
+    newBoneName = str(newBone.name)
+    if inSaveReload:
+        box, skinMod = _reload_scene_roundtrip()
+        newBone = rt.getNodeByName(newBoneName)
+        if newBone is None:
+            raise RuntimeError(f"재로드 후 '{newBoneName}'을 찾지 못했다")
+
+    skin.activate_skin(box, skinMod)
+    tableBefore = {bid: str(e["name"]) for bid, e in skin.get_bone_table(skinMod).items()}
+    rt.skinOps.addBone(skinMod, newBone, 0)
+    tableAfter = {bid: str(e["name"]) for bid, e in skin.get_bone_table(skinMod).items()}
+    rt.clearSelection()
+
+    shifted = [
+        (bid, name, tableAfter.get(bid))
+        for bid, name in tableBefore.items()
+        if tableAfter.get(bid) != name
+    ]
+    newBoneId = next((bid for bid, name in tableAfter.items() if name == str(newBone.name)), None)
+    return {
+        "role": inRole,
+        "chainLen": inCount,
+        "boneSys": inUseBoneSys,
+        "newFirst": inNewFirst,
+        "layer": inUseLayer,
+        "addOrder": inAddOrder,
+        "saveReload": inSaveReload,
+        "skinBoneCount": len(skinBones),
+        "newBoneName": str(newBone.name),
+        "newBoneId": newBoneId,
+        "appendedAtEnd": newBoneId == len(tableAfter),
+        "shiftedCount": len(shifted),
+        "shifted": shifted[:8],
+        "tableBefore": tableBefore,
+        "tableAfter": tableAfter,
+    }
+
+
+# ============================================================
+# TC19 (0B.1): 삽입 방아쇠 격자
+# ============================================================
+gridResults: List[Dict[str, Any]] = []
+try:
+    cases: List[Tuple[str, int, bool, bool, bool, str, bool]] = []
+    # 역할 x 클래스 (기본: 체인 12, 새 본 나중 생성, 레이어 없음, 생성 순서대로 add)
+    for role in ("ancestor", "descendant", "middle", "sibling", "unrelated"):
+        for boneSys in (False, True):
+            cases.append((role, 12, boneSys, False, False, "creation", False))
+    # 개수 축 (ancestor / middle 만 - 밀림 후보)
+    for role in ("ancestor", "middle"):
+        for count in (4, 60):
+            for boneSys in (False, True):
+                cases.append((role, count, boneSys, False, False, "creation", False))
+    # 생성 순서 축 (체인 밖 본에만 의미가 있다)
+    for role in ("sibling", "unrelated"):
+        for boneSys in (False, True):
+            cases.append((role, 12, boneSys, True, False, "creation", False))
+    # 레이어 축
+    for role in ("ancestor", "descendant"):
+        for boneSys in (False, True):
+            cases.append((role, 12, boneSys, False, True, "creation", False))
+    # ⑥ 스킨 add 순서 축 - 본 ID 순서를 노드 생성 순서와 어긋나게 한다
+    for role in ("ancestor", "middle", "descendant"):
+        for addOrder in ("reverse", "interleaved"):
+            for boneSys in (False, True):
+                cases.append((role, 12, boneSys, False, False, addOrder, False))
+    # ⑦ 저장·재로드 축 - 실기 씬은 파일에서 로드된 상태였다
+    for role in ("ancestor", "middle", "descendant"):
+        for addOrder in ("creation", "reverse"):
+            cases.append((role, 12, True, False, False, addOrder, True))
+
+    caseErrors: List[str] = []
+    for role, count, boneSys, newFirst, useLayer, addOrder, saveReload in cases:
+        try:
+            gridResults.append(
+                run_grid_case(role, count, boneSys, newFirst, useLayer, addOrder, saveReload)
+            )
+        except Exception as caseExc:
+            caseErrors.append(
+                f"{role}/{count}/{boneSys}/{newFirst}/{useLayer}/{addOrder}/{saveReload}: {caseExc}"
+            )
+
+    shiftingCases = [c for c in gridResults if c["shiftedCount"] > 0]
+    PROBE["sections"]["Q1_insertionGrid"] = {
+        "caseCount": len(gridResults),
+        "caseErrors": caseErrors,
+        "shiftingCaseCount": len(shiftingCases),
+        "shiftingCases": [
+            {k: c[k] for k in ("role", "chainLen", "boneSys", "newFirst", "layer",
+                               "addOrder", "saveReload", "newBoneId", "shiftedCount", "shifted")}
+            for c in shiftingCases
+        ],
+        "summary": [
+            {
+                "role": c["role"],
+                "chainLen": c["chainLen"],
+                "boneSys": c["boneSys"],
+                "newFirst": c["newFirst"],
+                "layer": c["layer"],
+                "addOrder": c["addOrder"],
+                "saveReload": c["saveReload"],
+                "newBoneId": c["newBoneId"],
+                "skinBoneCount": c["skinBoneCount"],
+                "appendedAtEnd": c["appendedAtEnd"],
+                "shiftedCount": c["shiftedCount"],
+            }
+            for c in gridResults
+        ],
+        "cases": gridResults,
+    }
+    dump_probe()
+
+    reporter.assert_test(
+        len(gridResults) == len(cases) and not caseErrors,
+        f"TC19 [0B.1] 삽입 방아쇠 격자 - {len(gridResults)}/{len(cases)} 조합 측정, "
+        f"밀림을 일으킨 조합 {len(shiftingCases)}개"
+        + (
+            f" → {[(c['role'], c['chainLen'], 'BoneSys' if c['boneSys'] else 'Box', c['newBoneId']) for c in shiftingCases[:5]]}"
+            if shiftingCases
+            else " (전부 끝에 append - 합성 방아쇠 미발견)"
+        ),
+        f"측정이 성립하지 않았다 - {len(gridResults)}/{len(cases)}, 오류 {caseErrors[:3]}",
+    )
+except Exception as e:
+    reporter.error("TC19 0B.1 삽입 격자", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC20 (0B.1 확증, 판정): 밀림 조건에서 라이브러리가 실제로 가중치를 오배치하는가
+#
+#   TC22가 방아쇠를 찾았다 - `removeBone`이 비운 슬롯을 `addBone`이 **가장 낮은 빈 자리부터
+#   재사용**하고 그 뒤 본이 전부 밀린다. 프로덕션 스킨은 리거가 본을 붙였다 뗐다 한 이력이
+#   있으므로 빈 슬롯이 흔하다(실기 `Face`에서 `neck`이 ID 1을 차지하며 258본이 밀렸다).
+#
+#   그 조건을 합성으로 세우고 `transfer_bone_weights`를 끝까지 돌려 편차를 잰다.
+#   **여기서 편차가 나야 A2가 "수정 전 실패"를 보일 수 있다.**
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    chain: List[Any] = []
+    for i in range(14):
+        node = _make_bone_node(f"chain{i:02d}", i, True, None)
+        if chain:
+            node.parent = chain[-1]
+        chain.append(node)
+    # chain00은 Skin 밖에 둔다(이전 대상 → addBone 경로). dummy는 슬롯을 비우는 용도다
+    dummy = _make_bone_node("dummySlot", 20, True, None)
+    skinBones = [dummy] + chain[1:]
+    box, skinMod = _skin_box_with(skinBones, 14 * CHAIN_STEP)
+
+    # dummy를 빼서 앞쪽 슬롯을 비운다 - 프로덕션 스킨의 "본을 뗀 이력"을 재현한다
+    skin.activate_skin(box, skinMod)
+    dummyId = next(
+        (bid for bid, e in skin.get_bone_table(skinMod).items() if str(e["name"]) == "dummySlot"),
+        None,
+    )
+    rt.skinOps.removeBone(skinMod, dummyId)
+    rt.clearSelection()
+
+    # 슬롯이 빈 상태에서 전 버텍스를 명시 지정한다(엔벨로프 요인 배제)
+    skin.activate_skin(box, skinMod)
+    table0 = skin.get_bone_table(skinMod)
+    idByName0 = {str(e["name"]): bid for bid, e in table0.items()}
+    names0 = sorted(idByName0)
+    vertCount = int(rt.skinOps.GetNumberVertices(skinMod))
+    for v in range(1, vertCount + 1):
+        primary = names0[v % len(names0)]
+        secondary = names0[(v + 1) % len(names0)]
+        if primary == secondary:
+            rt.skinOps.ReplaceVertexWeights(skinMod, v, [idByName0[primary]], [1.0])
+        else:
+            rt.skinOps.ReplaceVertexWeights(
+                skinMod, v, [idByName0[primary], idByName0[secondary]], [0.7, 0.3]
+            )
+    rt.clearSelection()
+
+    before = weights_by_name(box, skinMod)
+    # 스킨 본 절반을 Skin 밖 chain00으로 옮긴다 → addBone이 빈 슬롯을 채우며 ID가 밀린다
+    sources = [b for b in chain[1:] if str(b.name) in idByName0][: len(chain[1:]) // 2]
+    targetBone = chain[0]
+    transferMap = {
+        int(rt.getHandleByAnim(b)): int(rt.getHandleByAnim(targetBone)) for b in sources
+    }
+    libResult = skin.transfer_bone_weights(box, skinMod, transferMap, set(transferMap))
+    after = weights_by_name(box, skinMod)
+
+    sourceNames = {str(b.name) for b in sources}
+    targetName = str(targetBone.name)
+    expected: Dict[int, Dict[str, float]] = {}
+    for v, byName in before.items():
+        merged: Dict[str, float] = {}
+        for name, w in byName.items():
+            key = targetName if name in sourceNames else name
+            merged[key] = merged.get(key, 0.0) + w
+        expected[v] = merged
+    deviated = [
+        v
+        for v, exp in expected.items()
+        if any(
+            abs(exp.get(n, 0.0) - after.get(v, {}).get(n, 0.0)) > WEIGHT_TOLERANCE
+            for n in set(exp) | set(after.get(v, {}))
+        )
+    ]
+
+    PROBE["sections"]["Q1_libraryDeviation"] = {
+        "trigger": "removeBone으로 비운 슬롯을 addBone이 재사용 → 본 ID 밀림",
+        "skinBoneCount": len(idByName0),
+        "vertCount": len(before),
+        "transferCount": len(transferMap),
+        "sourceNames": sorted(sourceNames),
+        "targetName": targetName,
+        "addedBones": libResult["addedBones"],
+        "deviationCount": len(deviated),
+        "sample": (
+            {
+                "vert": deviated[0],
+                "before": before.get(deviated[0]),
+                "expected": expected.get(deviated[0]),
+                "actual": after.get(deviated[0]),
+            }
+            if deviated
+            else None
+        ),
+    }
+    dump_probe()
+    reporter.assert_test(
+        len(deviated) > 0,
+        f"TC20 [0B.1 확증] 합성 밀림 조건에서 라이브러리 오배치 재현 - 스킨 본 "
+        f"{len(idByName0)}개(앞 슬롯 1개 비움), 이전 {len(transferMap)}본 → {targetName}, "
+        f"추가 본 {libResult['addedBones']}, **편차 {len(deviated)}/{len(before)} 버텍스**",
+        "밀림 조건인데 라이브러리 편차가 0이다 - 이 픽스처는 판별력이 없다. "
+        "제거 위치를 앞으로 옮기거나 이전 대상 수를 늘린다",
+    )
+except Exception as e:
+    reporter.error("TC20 0B.1 확증", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC21 (0B.2 / Q3): 재조회 비용 - A1.2가 추가하는 비용의 상한
+# ============================================================
+try:
+    load_scene_copy(DEFECT_SCENE)
+    costs: List[Dict[str, Any]] = []
+    for node, skinMod in skinned_nodes():
+        saved = list(rt.getCurrentSelection())
+        try:
+            skin.activate_skin(node, skinMod)
+            started = time.perf_counter()
+            raw = skin.get_vertex_weights(skinMod)
+            elapsed = time.perf_counter() - started
+        finally:
+            _restore(saved)
+        costs.append(
+            {
+                "node": str(node.name),
+                "vertCount": len(raw),
+                "readSec": round(elapsed, 3),
+            }
+        )
+    rt.clearSelection()
+    totalSec = sum(c["readSec"] for c in costs)
+    totalVerts = sum(c["vertCount"] for c in costs)
+    faceCost = next((c for c in costs if c["node"] == "Face"), None)
+
+    PROBE["sections"]["Q3_rereadCost"] = {
+        "perSkin": costs,
+        "totalSec": round(totalSec, 3),
+        "totalVerts": totalVerts,
+        "faceSec": faceCost["readSec"] if faceCost else None,
+        "note": "A1.2의 재조회는 addBone이 일어난 Skin에서만 발생한다",
+    }
+    dump_probe()
+    reporter.assert_test(
+        len(costs) > 0 and totalVerts > 0,
+        f"TC21 [0B.2] 재조회 비용 - Skin {len(costs)}개 / 전 버텍스 {totalVerts}개 읽기에 "
+        f"{totalSec:.3f}초 (Face {faceCost['readSec'] if faceCost else '?'}초). "
+        f"addBone이 일어난 Skin에서만 발생한다",
+        f"측정이 성립하지 않았다 - skins={len(costs)} verts={totalVerts}",
+    )
+except Exception as e:
+    reporter.error("TC21 0B.2 재조회 비용", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC22 (0B.1 축 ⑧): removeBone이 만든 빈 자리를 addBone이 채우는가
+#
+#   실기에서 새 본이 **ID 1**에 들어갔다. 격자의 7개 축(44조합)은 전부 append였으므로,
+#   남은 설명은 "그 Skin이 과거에 본을 제거한 적이 있어 내부 슬롯이 비어 있었다"이다.
+#   리거가 만든 프로덕션 스킨은 본을 붙였다 뗐다 한 이력이 있을 수 있다.
+#
+#   제거 위치(앞/중간/뒤)와 제거 개수를 바꿔 가며 `addBone` 후 새 본의 ID를 본다.
+#   append가 아니면 **합성 방아쇠를 찾은 것**이고, A2 픽스처가 그 조건이 된다.
+# ============================================================
+try:
+    removeAddCases: List[Dict[str, Any]] = []
+    for removeAt, label in ((1, "front"), (6, "middle"), (12, "back")):
+        for removeCount in (1, 2):
+            rt.resetMaxFile(rt.Name("noPrompt"))
+            chain: List[Any] = []
+            for i in range(14):
+                node = _make_bone_node(f"chain{i:02d}", i, True, None)
+                if chain:
+                    node.parent = chain[-1]
+                chain.append(node)
+            newBone, skinBones = chain[0], chain[1:]
+            box, skinMod = _skin_box_with(skinBones, 14 * CHAIN_STEP)
+
+            skin.activate_skin(box, skinMod)
+            tableInitial = {bid: str(e["name"]) for bid, e in skin.get_bone_table(skinMod).items()}
+            # 제거는 ID 내림차순으로 (제거 시 ID가 밀린다)
+            targets = sorted(
+                range(removeAt, min(removeAt + removeCount, len(tableInitial) + 1)), reverse=True
+            )
+            for boneId in targets:
+                rt.skinOps.removeBone(skinMod, boneId)
+            tableBefore = {bid: str(e["name"]) for bid, e in skin.get_bone_table(skinMod).items()}
+            rt.skinOps.addBone(skinMod, newBone, 0)
+            tableAfter = {bid: str(e["name"]) for bid, e in skin.get_bone_table(skinMod).items()}
+            rt.clearSelection()
+
+            shifted = [
+                (bid, name, tableAfter.get(bid))
+                for bid, name in tableBefore.items()
+                if tableAfter.get(bid) != name
+            ]
+            newBoneId = next(
+                (bid for bid, name in tableAfter.items() if name == str(newBone.name)), None
+            )
+            removeAddCases.append(
+                {
+                    "removeAt": label,
+                    "removeAtId": removeAt,
+                    "removeCount": removeCount,
+                    "removedNames": [tableInitial.get(b) for b in targets],
+                    "boneCountAfterRemove": len(tableBefore),
+                    "newBoneId": newBoneId,
+                    "appendedAtEnd": newBoneId == len(tableAfter),
+                    "shiftedCount": len(shifted),
+                    "shifted": shifted[:8],
+                    "tableBefore": tableBefore,
+                    "tableAfter": tableAfter,
+                }
+            )
+
+    shiftingRemoveAdd = [c for c in removeAddCases if c["shiftedCount"] > 0]
+    PROBE["sections"]["Q1_removeThenAdd"] = {
+        "caseCount": len(removeAddCases),
+        "shiftingCaseCount": len(shiftingRemoveAdd),
+        "summary": [
+            {
+                k: c[k]
+                for k in (
+                    "removeAt",
+                    "removeCount",
+                    "boneCountAfterRemove",
+                    "newBoneId",
+                    "appendedAtEnd",
+                    "shiftedCount",
+                )
+            }
+            for c in removeAddCases
+        ],
+        "cases": removeAddCases,
+    }
+    dump_probe()
+
+    reporter.assert_test(
+        len(removeAddCases) == 6,
+        f"TC22 [0B.1 축 ⑧] removeBone 후 addBone - {len(removeAddCases)}조합 측정, "
+        f"밀림 {len(shiftingRemoveAdd)}개. 새 본 ID "
+        f"{[(c['removeAt'], c['removeCount'], c['newBoneId'], c['boneCountAfterRemove']) for c in removeAddCases]}",
+        f"측정이 성립하지 않았다 - {len(removeAddCases)}조합",
+    )
+except Exception as e:
+    reporter.error("TC22 0B.1 축 ⑧", f"{e}\n{traceback.format_exc()}")
 
 
 # ---- 종료 ---------------------------------------------------------------------
