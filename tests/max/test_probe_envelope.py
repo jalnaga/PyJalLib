@@ -29,7 +29,7 @@
 본 폭(14)이 간격(10)보다 넓어 엔벨로프가 겹치므로 엔벨로프 구동 가중치가 블렌드로
 떨어진다. 이것이 없으면 전 버텍스가 rigid(단일 본 1.0)라 재평가를 관측할 재료가 없다.
 
-기대 TC 수: 23 (TC00~TC22)
+기대 TC 수: 26 (TC00~TC25)
 
 실행 방법:
     uv run python tests/run_max_tests.py test_probe_envelope.py
@@ -2201,8 +2201,15 @@ except Exception as e:
 #   있으므로 빈 슬롯이 흔하다(실기 `Face`에서 `neck`이 ID 1을 차지하며 258본이 밀렸다).
 #
 #   그 조건을 합성으로 세우고 `transfer_bone_weights`를 끝까지 돌려 편차를 잰다.
-#   **여기서 편차가 나야 A2가 "수정 전 실패"를 보일 수 있다.**
+#
+#   **Phase 0B(수정 전) 실측: 편차 3/16 버텍스.** 샘플 v5 - before `chain06 0.7 +
+#   chain07 0.3`, 기대 `chain00 0.7 + chain07 0.3`, 실제 `chain00 1.0`(이전 대상이
+#   아닌 chain07의 가중치가 stale ID 때문에 함께 합쳐졌다). 이 수치가 A2.1 픽스처의
+#   근거가 됐고, 판별력은 `test_skin.py` TC11이 이어받는다(A2.3에서 수정 전 실패 확인).
+#
+#   수정이 들어간 지금 이 절의 판정은 **편차 0**이다.
 # ============================================================
+PREFIX_DEVIATION_BEFORE_FIX = 3
 try:
     rt.resetMaxFile(rt.Name("noPrompt"))
     chain: List[Any] = []
@@ -2272,6 +2279,7 @@ try:
 
     PROBE["sections"]["Q1_libraryDeviation"] = {
         "trigger": "removeBone으로 비운 슬롯을 addBone이 재사용 → 본 ID 밀림",
+        "deviationBeforeFix": PREFIX_DEVIATION_BEFORE_FIX,
         "skinBoneCount": len(idByName0),
         "vertCount": len(before),
         "transferCount": len(transferMap),
@@ -2292,12 +2300,13 @@ try:
     }
     dump_probe()
     reporter.assert_test(
-        len(deviated) > 0,
-        f"TC20 [0B.1 확증] 합성 밀림 조건에서 라이브러리 오배치 재현 - 스킨 본 "
-        f"{len(idByName0)}개(앞 슬롯 1개 비움), 이전 {len(transferMap)}본 → {targetName}, "
-        f"추가 본 {libResult['addedBones']}, **편차 {len(deviated)}/{len(before)} 버텍스**",
-        "밀림 조건인데 라이브러리 편차가 0이다 - 이 픽스처는 판별력이 없다. "
-        "제거 위치를 앞으로 옮기거나 이전 대상 수를 늘린다",
+        len(deviated) == 0 and libResult.get("boneIdsShifted") is True,
+        f"TC20 [0B.1 확증] 합성 밀림 조건 - 스킨 본 {len(idByName0)}개(앞 슬롯 1개 비움), "
+        f"이전 {len(transferMap)}본 → {targetName}, 추가 본 {libResult['addedBones']}, "
+        f"본 ID 밀림={libResult.get('boneIdsShifted')} → **편차 {len(deviated)}/{len(before)} "
+        f"버텍스** (수정 전 같은 조건에서 {PREFIX_DEVIATION_BEFORE_FIX}/{len(before)}이었다)",
+        f"편차 {len(deviated)}개 - 밀림 조건에서 수정이 닫히지 않았다. "
+        f"shifted={libResult.get('boneIdsShifted')}",
     )
 except Exception as e:
     reporter.error("TC20 0B.1 확증", f"{e}\n{traceback.format_exc()}")
@@ -2441,6 +2450,247 @@ try:
     )
 except Exception as e:
     reporter.error("TC22 0B.1 축 ⑧", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# 교차 저장소 통합 절 (A2.4) - 프로덕션에서 실제로 도는 조합을 submit 앞에서 닫는다
+#
+# 툴 Type C 부트스트랩은 `../PyJalLib/src`(master)를 하드코딩하므로 툴 스위트로는 미머지
+# 워크트리 라이브러리를 검증할 수 없다. 그래서 여기서 sys.path를 직접 세운다:
+#   워크트리 PyJalLib/src (맨 앞) + 툴 master src + orvlib/src → 선점 모듈 퍼지 → import
+# **로드 출처를 단정**하지 않으면 아무것도 검증하지 않은 것이 된다.
+#
+# 판정 축은 Phase 0 baseline 대비 편차다: 결함 씬 `Face` **544 → 0**.
+# ============================================================
+
+TOOL_ROOT = Path(r"D:/Dropbox/Programing/Code/20260905_BaseSkeletonBuilder")
+ORVLIB_ROOT = Path(r"D:/Dropbox/Programing/Code/orvlib")
+PHASE0_FACE_DEVIATION = 544
+
+
+def setup_cross_repo_paths() -> None:
+    """툴 master + orvlib 경로를 넣고, 워크트리 pyjallib이 이기도록 맨 앞에 둔다."""
+    for path in (str(TOOL_ROOT / "src"), str(ORVLIB_ROOT / "src")):
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    # 워크트리 소스를 가장 앞으로 - 툴 master의 ../PyJalLib/src보다 먼저 걸려야 한다
+    if _srcPath in sys.path:
+        sys.path.remove(_srcPath)
+    sys.path.insert(0, _srcPath)
+    for moduleName in [
+        name
+        for name in list(sys.modules)
+        if name.split(".")[0] in ("pyjallib", "orvlib", "baseskeletonbuilder")
+    ]:
+        del sys.modules[moduleName]
+
+
+def measure_run_build(inExcludedLayers: Any, inLabel: str) -> Dict[str, Any]:
+    """결함 씬 사본에 툴 `run_build`를 돌리고 Mesh Skin별 기대값 편차를 잰다."""
+    from baseskeletonbuilder.func import buildService
+    from pyjallib.max.skin import Skin as WorktreeSkin
+
+    probeSkin = WorktreeSkin()
+    load_scene_copy(DEFECT_SCENE)
+
+    # 계획을 먼저 떠서 이전 맵(핸들 → 핸들)을 얻는다. 씬은 바뀌지 않는다
+    planned = buildService.plan_scene(inExcludedLayers)
+    plan = planned["plan"]
+    graph = planned["graph"]
+    transferByHandle = {int(k): int(v) for k, v in plan["weightTransfer"].items()}
+    nameById = graph["nameById"]
+
+    # 변환 전 Mesh Skin 가중치를 핸들 기준으로 스냅샷
+    snapshots: Dict[str, Dict[int, Dict[int, float]]] = {}
+    for node, skinMod in skinned_nodes():
+        saved = list(rt.getCurrentSelection())
+        try:
+            probeSkin.activate_skin(node, skinMod)
+            table = probeSkin.get_bone_table(skinMod)
+            raw = probeSkin.get_vertex_weights(skinMod)
+        finally:
+            _restore(saved)
+        snapshots[str(node.name)] = {
+            v: {
+                table[bid]["handle"]: w
+                for bid, w in entries
+                if w > 0.0 and table[bid]["handle"] is not None
+            }
+            for v, entries in raw.items()
+        }
+    rt.clearSelection()
+
+    started = time.perf_counter()
+    report = buildService.run_build(inExcludedLayers)
+    elapsed = time.perf_counter() - started
+
+    # 변환 후 재조회 → 핸들 기준 기대값과 대조
+    perSkin: List[Dict[str, Any]] = []
+    for node, skinMod in skinned_nodes():
+        nodeName = str(node.name)
+        if nodeName not in snapshots:
+            continue
+        saved = list(rt.getCurrentSelection())
+        try:
+            probeSkin.activate_skin(node, skinMod)
+            table = probeSkin.get_bone_table(skinMod)
+            raw = probeSkin.get_vertex_weights(skinMod)
+        finally:
+            _restore(saved)
+        actual = {
+            v: {
+                table[bid]["handle"]: w
+                for bid, w in entries
+                if w > 0.0 and table[bid]["handle"] is not None
+            }
+            for v, entries in raw.items()
+        }
+        expected: Dict[int, Dict[int, float]] = {}
+        for v, byHandle in snapshots[nodeName].items():
+            merged: Dict[int, float] = {}
+            for handle, w in byHandle.items():
+                key = transferByHandle.get(handle, handle)
+                merged[key] = merged.get(key, 0.0) + w
+            expected[v] = merged
+        deviated: List[int] = []
+        for v, exp in expected.items():
+            act = actual.get(v, {})
+            if any(
+                abs(exp.get(h, 0.0) - act.get(h, 0.0)) > WEIGHT_TOLERANCE
+                for h in set(exp) | set(act)
+            ):
+                deviated.append(v)
+        perSkin.append(
+            {
+                "node": nodeName,
+                "vertCount": len(snapshots[nodeName]),
+                "deviationCount": len(deviated),
+                "deviationVerts": deviated[:10],
+                "sample": (
+                    {
+                        "vert": deviated[0],
+                        "expected": {
+                            nameById.get(h, str(h)): w
+                            for h, w in expected[deviated[0]].items()
+                        },
+                        "actual": {
+                            nameById.get(h, str(h)): w
+                            for h, w in actual.get(deviated[0], {}).items()
+                        },
+                    }
+                    if deviated
+                    else None
+                ),
+            }
+        )
+    rt.clearSelection()
+
+    skinResults = report.get("skinResults") or []
+    return {
+        "label": inLabel,
+        "changed": bool(report.get("changed")),
+        "reasons": report.get("reasons"),
+        "transferBoneCount": len(transferByHandle),
+        "deletedBoneCount": len(report.get("deletedBoneNames") or []),
+        "skinCount": len(skinResults),
+        "boneIdsShiftedSkins": [
+            s.get("nodeName") for s in skinResults if s.get("boneIdsShifted")
+        ],
+        "verifiedVertsTotal": sum(int(s.get("verifiedVerts", 0) or 0) for s in skinResults),
+        "elapsedSec": round(elapsed, 2),
+        "perSkin": perSkin,
+        "deviationTotal": sum(s["deviationCount"] for s in perSkin),
+    }
+
+
+# ============================================================
+# TC23 (A2.4): 로드 출처 단정 - 워크트리 pyjallib + 툴 master + orvlib
+# ============================================================
+crossRepoReady = False
+try:
+    setup_cross_repo_paths()
+    import pyjallib as _pyjallibCross
+    from orvlib import layerConvention as _layerConvention
+    from baseskeletonbuilder import config as _toolConfig
+
+    pyjallibFrom = str(Path(_pyjallibCross.__file__).resolve()).lower()
+    toolFrom = str(Path(_toolConfig.__file__).resolve()).lower()
+    orvlibFrom = str(Path(_layerConvention.__file__).resolve()).lower()
+    worktreeRoot = str(Path(_srcPath).resolve()).lower()
+    toolRoot = str(TOOL_ROOT.resolve()).lower()
+    orvRoot = str(ORVLIB_ROOT.resolve()).lower()
+
+    crossRepoReady = (
+        pyjallibFrom.startswith(worktreeRoot)
+        and toolFrom.startswith(toolRoot)
+        and orvlibFrom.startswith(orvRoot)
+    )
+    PROBE["sections"]["A2_crossRepoSources"] = {
+        "pyjallib": _pyjallibCross.__file__,
+        "baseskeletonbuilder": _toolConfig.__file__,
+        "orvlib": _layerConvention.__file__,
+        "worktreeExpected": worktreeRoot,
+        "ok": crossRepoReady,
+    }
+    dump_probe()
+    reporter.assert_test(
+        crossRepoReady,
+        f"TC23 [A2.4] 로드 출처 - pyjallib=워크트리({_pyjallibCross.__file__}), "
+        f"baseskeletonbuilder=툴 master, orvlib=워크스페이스",
+        f"출처가 어긋났다 - pyjallib={pyjallibFrom} tool={toolFrom} orvlib={orvlibFrom}",
+    )
+except Exception as e:
+    reporter.error("TC23 A2.4 로드 출처", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC24 (A2.4, 판정): Body 모드 run_build - 결함 씬 Face 편차 544 → 0
+# ============================================================
+try:
+    if not crossRepoReady:
+        raise RuntimeError("로드 출처 단정 실패 - 측정하지 않는다")
+    from baseskeletonbuilder import config as _cfg
+
+    bodyResult = measure_run_build(_cfg.BODY_EXCLUDED_LAYERS, "BODY")
+    PROBE["sections"]["A2_runBuild_body"] = bodyResult
+    dump_probe()
+    faceEntry = next((s for s in bodyResult["perSkin"] if s["node"] == "Face"), None)
+    reporter.assert_test(
+        bodyResult["changed"] and bodyResult["deviationTotal"] == 0 and faceEntry is not None,
+        f"TC24 [A2.4 판정] Body run_build - 편차 총 {bodyResult['deviationTotal']}개 "
+        f"(Phase 0 baseline Face {PHASE0_FACE_DEVIATION} → "
+        f"{faceEntry['deviationCount'] if faceEntry else '?'}), 이전 "
+        f"{bodyResult['transferBoneCount']}본 / 삭제 {bodyResult['deletedBoneCount']}본, "
+        f"ID 밀림 Skin {bodyResult['boneIdsShiftedSkins']}, 검증 버텍스 "
+        f"{bodyResult['verifiedVertsTotal']}개, {bodyResult['elapsedSec']}초",
+        f"편차 {bodyResult['deviationTotal']}개 - 수정이 소비처 경로에서 닫히지 않았다. "
+        f"perSkin={bodyResult['perSkin']} reasons={bodyResult['reasons']}",
+    )
+except Exception as e:
+    reporter.error("TC24 A2.4 Body run_build", f"{e}\n{traceback.format_exc()}")
+
+
+# ============================================================
+# TC25 (A2.4): Face 모드 run_build - 같은 축을 한 번 더
+# ============================================================
+try:
+    if not crossRepoReady:
+        raise RuntimeError("로드 출처 단정 실패 - 측정하지 않는다")
+    from baseskeletonbuilder import config as _cfg2
+
+    faceResult = measure_run_build(_cfg2.FACE_EXCLUDED_LAYERS, "FACE")
+    PROBE["sections"]["A2_runBuild_face"] = faceResult
+    dump_probe()
+    reporter.assert_test(
+        faceResult["deviationTotal"] == 0,
+        f"TC25 [A2.4] Face run_build - 편차 총 {faceResult['deviationTotal']}개, "
+        f"changed={faceResult['changed']}, 이전 {faceResult['transferBoneCount']}본, "
+        f"ID 밀림 Skin {faceResult['boneIdsShiftedSkins']}, {faceResult['elapsedSec']}초",
+        f"편차 {faceResult['deviationTotal']}개 - perSkin={faceResult['perSkin']} "
+        f"reasons={faceResult['reasons']}",
+    )
+except Exception as e:
+    reporter.error("TC25 A2.4 Face run_build", f"{e}\n{traceback.format_exc()}")
 
 
 # ---- 종료 ---------------------------------------------------------------------
