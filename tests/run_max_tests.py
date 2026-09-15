@@ -35,7 +35,8 @@ from pyjallib.testKit import TestLogAnalyzer
 MAX_PATH = Path(r"C:\Program Files\Autodesk\3ds Max 2024")
 TESTS_DIR = Path(__file__).parent / "max"
 LOG_DIR = Path(__file__).parent / "logs"
-TIMEOUT = 300  # 초
+TIMEOUT = 900  # 초. 실기 씬(15.9MB)을 여는 프로브가 300초를 넘겨서 올렸다(2026-09-15).
+# 상한일 뿐이라 짧은 스위트의 소요 시간에는 영향이 없다.
 
 # 테스트 스크립트 목록 (실행 순서)
 TEST_SCRIPTS = [
@@ -58,8 +59,10 @@ TEST_SCRIPTS = [
     "test_mirror.py",
     "test_attribute.py",
     "test_ui_fuzzy_search_combo_box.py",
-    # Skin 가중치 이전 프리미티브(합성 스킨 박스). 기대 TC 10 (TC00~TC09)
+    # Skin 가중치 이전 프리미티브(합성 스킨 박스 + 본 ID 밀림 픽스처). 기대 TC 15 (TC00~TC14)
     "test_skin.py",
+    # Skin 결함 원인 프로브(Phase 0 = H1 기각·H6 확정 / Phase 0B = 삽입 방아쇠). 기대 TC 26 (TC00~TC25)
+    "test_probe_envelope.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -73,6 +76,7 @@ LOG_NAME_OVERRIDES = {
     "test_node_collect_policy_max.py": "NodeCollectPolicyMax",
     "test_addon_compat_realscene.py": "AddonCompatRealScene",
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
+    "test_probe_envelope.py": "ProbeEnvelope",
 }
 
 

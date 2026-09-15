@@ -10,7 +10,12 @@ conftest가 pymxs를 mock하므로 ``pyjallib.max.skin`` import는 콘솔에서 
 
 import pytest
 
-from pyjallib.max.skin import Skin, merge_vertex_weights
+from pyjallib.max.skin import (
+    Skin,
+    diff_weights_by_handle,
+    expected_weights_by_handle,
+    merge_vertex_weights,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -138,3 +143,103 @@ def test_used_handles_ignores_unknown_bone_id():
 def test_used_handles_empty_weights():
     """가중치가 없으면 빈 집합."""
     assert Skin().get_used_bone_handles(_table((1, 1001)), {}) == set()
+
+
+# --------------------------------------------------------------------------- #
+#  expected_weights_by_handle / diff_weights_by_handle
+#
+#  `addBone`(빈 슬롯 재사용)과 `removeBone`(제거 후 압축)이 양쪽에서 본 ID를 밀기
+#  때문에, 이전 전후 대조는 반드시 **노드 핸들** 기준이어야 한다. 그 규칙을 여기서
+#  고정한다 - 3ds Max 없이 콘솔에서 돌아간다.
+# --------------------------------------------------------------------------- #
+
+
+def test_expected_many_to_one_merges_on_target_handle():
+    """다대일 - 여러 원본 핸들이 한 대상 핸들로 합산된다."""
+    snapshot = {1: {1001: 0.5, 1002: 0.3, 1003: 0.2}}
+
+    assert expected_weights_by_handle(snapshot, {1002: 1001, 1003: 1001}) == {
+        1: {1001: pytest.approx(1.0)}
+    }
+
+
+def test_expected_target_handle_absent_creates_entry():
+    """대상 핸들이 버텍스에 없던 경우 새 항목이 생긴다."""
+    snapshot = {1: {1005: 0.4, 1002: 0.35, 1003: 0.25}}
+    result = expected_weights_by_handle(snapshot, {1002: 1009, 1003: 1009})
+
+    assert set(result[1]) == {1005, 1009}
+    assert result[1][1009] == pytest.approx(0.6)
+
+
+def test_expected_untouched_vertex_is_unchanged():
+    """remap에 걸리지 않는 핸들만 있으면 스냅샷 그대로다."""
+    snapshot = {7: {1001: 0.6, 1002: 0.4}}
+
+    assert expected_weights_by_handle(snapshot, {1099: 1001}) == {7: {1001: 0.6, 1002: 0.4}}
+
+
+def test_expected_does_not_mutate_snapshot():
+    """입력 스냅샷을 건드리지 않는다."""
+    snapshot = {1: {1001: 0.5, 1002: 0.5}}
+    expected_weights_by_handle(snapshot, {1002: 1001})
+
+    assert snapshot == {1: {1001: 0.5, 1002: 0.5}}
+
+
+def test_diff_returns_empty_when_identical():
+    """일치하면 빈 리스트."""
+    expected = {1: {1001: 1.0}, 2: {1002: 0.5, 1003: 0.5}}
+
+    assert diff_weights_by_handle(expected, dict(expected)) == []
+
+
+def test_diff_absorbs_renormalization_ulp():
+    """`ReplaceVertexWeights` 재정규화 ULP(약 4.5e-8)는 기본 허용오차 1e-6에 흡수된다."""
+    expected = {1: {1001: 1.0}}
+    actual = {1: {1001: 1.0 + 4.5e-8}}
+
+    assert diff_weights_by_handle(expected, actual) == []
+
+
+def test_diff_flags_just_over_tolerance():
+    """허용오차를 넘으면 (버텍스, 핸들, 기대, 실제)로 잡는다."""
+    expected = {1: {1001: 1.0}}
+    actual = {1: {1001: 1.0 + 2e-6}}
+    deviations = diff_weights_by_handle(expected, actual)
+
+    assert len(deviations) == 1
+    vertIndex, handle, expectedWeight, actualWeight = deviations[0]
+    assert (vertIndex, handle) == (1, 1001)
+    assert expectedWeight == pytest.approx(1.0)
+    assert actualWeight == pytest.approx(1.0 + 2e-6)
+
+
+def test_diff_missing_bone_counts_as_zero():
+    """한쪽에만 있는 본은 다른 쪽을 가중치 0으로 본다 - 결함의 전형적 지문이다."""
+    expected = {3: {1001: 1.0}}
+    actual = {3: {1001: 0.7, 1004: 0.3}}
+    deviations = diff_weights_by_handle(expected, actual)
+
+    assert sorted((v, h) for v, h, _, _ in deviations) == [(3, 1001), (3, 1004)]
+
+
+def test_diff_vertex_set_mismatch_is_a_deviation():
+    """버텍스 집합이 다르면 없는 쪽을 빈 dict로 보고 그 차이도 편차로 잡는다."""
+    deviations = diff_weights_by_handle({1: {1001: 1.0}}, {})
+
+    assert deviations == [(1, 1001, 1.0, 0.0)]
+
+
+def test_diff_zero_weight_bone_on_both_sides_is_not_a_deviation():
+    """양쪽 모두 0이면 편차가 아니다(둘 다 0인 경로를 오검출하지 않는다)."""
+    assert diff_weights_by_handle({1: {1001: 0.0}}, {1: {}}) == []
+
+
+def test_diff_custom_tolerance():
+    """허용오차는 인자로 조절된다."""
+    expected = {1: {1001: 1.0}}
+    actual = {1: {1001: 1.001}}
+
+    assert diff_weights_by_handle(expected, actual) != []
+    assert diff_weights_by_handle(expected, actual, inTolerance=1e-2) == []
