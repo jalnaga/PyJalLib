@@ -108,37 +108,98 @@ def ensure_directory_exists(inContentPath: str) -> bool:
     return success
 
 
+def to_package_path(inPath: str) -> Optional[str]:
+    """소스 컨트롤에 넘길 경로를 패키지 경로(`/Game/A/B`)로 정규화합니다.
+
+    **소스 컨트롤 API는 패키지 경로를 받는다.** 오브젝트 경로(`/Game/A/B.B`)를
+    넘기면 `unreal.SourceControl.check_out_or_add_file()`이 이것을 패키지 파일명으로
+    변환하지 못하고 문자열을 그대로 절대경로화해, 클라이언트 루트 밖 경로로 조회한 뒤
+    `False`를 돌려준다(2026-09-17 실측 - `Path 'D:/Game/Omni/.../A.A' is not under
+    client's root 'D:\\root'`, `Could not determine revision control state of file`).
+
+    오브젝트 경로는 임포트 태스크에서 자연스럽게 흘러든다
+    (`unreal.AssetImportTask.imported_object_paths`, `UObject.get_path_name()`은
+    둘 다 `.에셋이름`이 붙은 형식을 돌려준다). 그래서 **호출부마다 고치지 않고
+    소스 컨트롤 진입점에서 정규화한다** - 정적 메쉬 임포터만 고치고 애니메이션
+    임포터를 놓쳤던 직전 사이클이 호출부별 수정의 한계를 보여준다.
+
+    Args:
+        inPath: 정규화할 경로. 오브젝트 경로(`/Game/A/B.B`), 패키지 경로
+            (`/Game/A/B`), `.uasset` 절대경로 중 무엇이 와도 된다.
+
+    Returns:
+        `/Game/...` 형식의 패키지 경로. 입력이 비었거나 Content 경로로 해석할 수
+        없으면 None.
+
+    Example:
+        >>> to_package_path("/Game/Characters/Hero/SK_Hero.SK_Hero")
+        "/Game/Characters/Hero/SK_Hero"
+        >>> to_package_path("/Game/Characters/Hero/SK_Hero")
+        "/Game/Characters/Hero/SK_Hero"
+    """
+    if not inPath:
+        return None
+
+    normalizedPath = inPath.replace("\\", "/")
+
+    if not is_content_path(normalizedPath):
+        # Content 경로가 아니면 절대 경로로 간주하고 변환을 시도한다
+        # (`.uasset` 확장자 제거는 그쪽이 담당한다).
+        convertedPath = absolute_path_to_content_path(normalizedPath)
+        if not convertedPath:
+            return None
+        normalizedPath = convertedPath
+
+    # 오브젝트 경로의 `.에셋이름`을 떼어낸다. 자르기는 **마지막 `/` 뒤 세그먼트에
+    # 한정**한다 - 폴더 이름에 `.`이 들어 있어도 경로 중간이 잘리면 안 된다.
+    separatorIndex = normalizedPath.rfind("/")
+    lastSegment = normalizedPath[separatorIndex + 1:]
+    dotIndex = lastSegment.find(".")
+    if dotIndex > 0:
+        normalizedPath = normalizedPath[:separatorIndex + 1] + lastSegment[:dotIndex]
+
+    return normalizedPath
+
+
 def checkout_or_add_file(inContentPath: str) -> bool:
     """
     소스 컨트롤에서 파일을 체크아웃하거나 추가합니다.
     파일이 존재하지 않으면 아무 작업도 하지 않습니다.
     
+    입력 경로는 `to_package_path()`로 정규화한다 - 오브젝트 경로를 그대로 넘기면
+    체크아웃이 실패한다(사유는 `to_package_path` docstring).
+
     Args:
-        inContentPath: /Game/... 형식의 Content 경로
-        
+        inContentPath: 에셋 경로. 패키지 경로·오브젝트 경로·`.uasset` 절대경로 가능.
+
     Returns:
         체크아웃/추가 성공 시 True, 실패 또는 파일 미존재 시 False
-        
+
     Example:
         >>> checkout_or_add_file("/Game/Characters/Hero/SK_Hero")
         True  # 기존 파일 체크아웃 성공
     """
     if not inContentPath:
         return False
-    
+
+    packagePath = to_package_path(inContentPath)
+    if not packagePath:
+        unreal.log_warning(f"[pathUtils] 패키지 경로로 정규화할 수 없음: {inContentPath}")
+        return False
+
     # 파일 존재 여부 확인
-    if not unreal.EditorAssetLibrary.does_asset_exist(inContentPath):
+    if not unreal.EditorAssetLibrary.does_asset_exist(packagePath):
         # 파일이 없으면 체크아웃할 필요 없음 (새 파일로 생성됨)
         return False
-    
+
     # 소스 컨트롤 체크아웃
-    success = unreal.SourceControl.check_out_or_add_file(inContentPath)
-    
+    success = unreal.SourceControl.check_out_or_add_file(packagePath)
+
     if success:
-        unreal.log(f"[pathUtils] 파일 체크아웃 완료: {inContentPath}")
+        unreal.log(f"[pathUtils] 파일 체크아웃 완료: {packagePath}")
     else:
-        unreal.log_warning(f"[pathUtils] 파일 체크아웃 실패: {inContentPath}")
-    
+        unreal.log_warning(f"[pathUtils] 파일 체크아웃 실패: {packagePath}")
+
     return success
 
 
@@ -184,8 +245,14 @@ def open_for_source_control_checked(inContentPaths: list) -> dict:
     제외만 하고 보고하지 않으면 **디스크에는 바뀐 에셋이 있는데 어느 CL에도
     없는 상태가 무증상**이 되기 때문이다.
 
+    입력 경로는 `to_package_path()`로 정규화한 뒤 소스 컨트롤에 넘긴다. 호출부가
+    오브젝트 경로(`imported_object_paths` 등)를 그대로 넘겨도 되게 하기 위해서다.
+    **실패 항목의 `contentPath`에는 정규화 전 입력 원본을 싣는다** - 호출자가 자기가
+    넘긴 것으로 대조할 수 있어야 한다.
+
     Args:
-        inContentPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+        inContentPaths: 체크아웃/추가할 에셋의 경로 리스트. 패키지 경로
+            (`/Game/A/B`), 오브젝트 경로(`/Game/A/B.B`), `.uasset` 절대경로 혼재 가능.
 
     Returns:
         dict: `{"opened": [로컬 절대경로...], "failed": [{"contentPath": ...,
@@ -195,14 +262,24 @@ def open_for_source_control_checked(inContentPaths: list) -> dict:
     failedEntries = []
 
     for assetPath in inContentPaths:
-        checkedOut = unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+        packagePath = to_package_path(assetPath)
+        if not packagePath:
+            reason = "패키지 경로로 정규화할 수 없음"
+            unreal.log_warning(f"[pathUtils] {reason}으로 목록에서 제외: {assetPath}")
+            failedEntries.append({"contentPath": assetPath, "reason": reason})
+            continue
+
+        if packagePath != assetPath:
+            unreal.log(f"[pathUtils] 소스 컨트롤 경로 정규화: {assetPath} -> {packagePath}")
+
+        checkedOut = unreal.SourceControl.check_out_or_add_file(packagePath, silent=True)
         if not checkedOut:
             reason = _describe_source_control_error()
             unreal.log_warning(f"[pathUtils] 체크아웃 실패로 목록에서 제외: {assetPath} - {reason}")
             failedEntries.append({"contentPath": assetPath, "reason": reason})
             continue
 
-        assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
+        assetObj = unreal.EditorAssetLibrary.load_asset(packagePath)
         if assetObj is None:
             reason = "에셋 로드 실패"
             unreal.log_warning(f"[pathUtils] {reason}로 목록에서 제외: {assetPath}")

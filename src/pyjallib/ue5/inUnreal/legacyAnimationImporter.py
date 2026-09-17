@@ -479,6 +479,11 @@ class LegacyAnimationImporter(LegacyBaseImporter):
         # 성공으로 오판되므로, 디스크 반영을 명시 검증한다 (실패 시 예외 전파)
         self.verify_asset_saved(assetFullPath)
 
+        # `imported_object_paths`는 **오브젝트 경로**(`/Game/A/B.B`)를 돌려준다.
+        # `get_dirty_deps()`가 주는 패키지 이름(`/Game/A/B`)과 형식이 섞이지만,
+        # 정규화는 소스 컨트롤 진입점(`pathUtils.to_package_path`)의 책임이므로
+        # 여기서는 받은 그대로 넘긴다. 2026-09-17 이전에는 진입점이 정규화하지
+        # 않아 이 경로가 체크아웃 전건 실패로 이어졌다(연 파일 0개 -> CL 미생성).
         importedObjectPaths = task.imported_object_paths
         refObjectPaths = self.get_dirty_deps(assetFullPath)
 
