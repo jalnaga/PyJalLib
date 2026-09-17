@@ -142,43 +142,103 @@ def checkout_or_add_file(inContentPath: str) -> bool:
     return success
 
 
-def open_for_source_control(inContentPaths: list) -> list:
-    """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
+def _describe_source_control_error() -> str:
+    """직전 소스 컨트롤 작업의 실패 사유를 문자열로 가져옵니다.
+
+    `unreal.SourceControl.last_error_msg()`는 `FText`를 돌려주므로 문자열로
+    변환한다. 사유 조회 자체가 실패해도(엔진 버전에 따라 노출이 다를 수 있다)
+    호출자가 죽지 않도록 대체 문구를 돌려준다 - 실패를 **보고**하는 것이
+    이 경로의 목적이므로, 사유가 비더라도 실패 사실은 남아야 한다.
+
+    Returns:
+        str: 실패 사유 문자열. 조회 불가 시 대체 문구.
+    """
+    try:
+        errorMsg = str(unreal.SourceControl.last_error_msg())
+    except Exception as e:  # noqa: BLE001 - 사유 조회 실패가 보고를 막으면 안 된다
+        return f"실패 사유 조회 불가 ({e})"
+
+    if not errorMsg:
+        return "실패 사유 없음 (소스 컨트롤이 사유를 남기지 않음)"
+    return errorMsg
+
+
+def open_for_source_control_checked(inContentPaths: list) -> dict:
+    """에셋들을 소스 컨트롤에 열고, 성공분과 실패분을 갈라서 반환합니다.
 
     UE5 에디터 내부 Python API에는 체인지리스트를 만들거나 옮기는 수단이 없다.
     그래서 에디터 안에서는 파일을 **default 체인지리스트에 열어두기만** 하고,
     이름 붙은 CL로의 이동과 서밋은 에디터 밖 툴 프로세스가 맡는다
     (`pyjallib.perforce.Perforce.move_opened_files_to_new_change_list`).
-    여기서 돌려주는 절대경로 목록이 그 핸드오프의 입력이다.
+    여기서 돌려주는 `opened` 목록이 그 핸드오프의 입력이다.
 
-    경로를 사전 계산하지 않고 **실제로 연 파일을 그대로 보고**하므로,
-    의존성 부수 체크아웃(dirty deps)이 목록에서 누락되지 않는다.
+    **성공 판정은 "예외가 나지 않았다"가 아니라 API의 반환값이다.**
+    `unreal.SourceControl.check_out_or_add_file()`은 실패해도 예외를 던지지
+    않고 `False`를 돌려준다(엔진 `SourceControlHelpers.h`: "true if succeeded,
+    false if failed and can call LastErrorMsg()"). 반환값을 버리면 배타 락으로
+    열리지 않은 파일이 "연 파일"로 보고되어, 그 목록이 그대로 `p4 reopen`의
+    입력이 되고 부분 실패를 낸다(2026-09-17 실측 - `p4 add` 8건 전부 실패했으나
+    8건 모두 연 파일로 보고됐다).
+
+    에셋 로드 실패·시스템 경로 해석 실패도 같은 `failed` 목록으로 합류시킨다.
+    제외만 하고 보고하지 않으면 **디스크에는 바뀐 에셋이 있는데 어느 CL에도
+    없는 상태가 무증상**이 되기 때문이다.
 
     Args:
         inContentPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
 
     Returns:
-        list: 연 파일의 로컬 절대경로 리스트. 에셋 로드나 시스템 경로 해석에
-            실패한 항목은 경고를 남기고 제외한다.
+        dict: `{"opened": [로컬 절대경로...], "failed": [{"contentPath": ...,
+            "reason": ...}, ...]}`. 두 목록은 서로소이며 입력 순서를 보존한다.
     """
     openedAbsPaths = []
+    failedEntries = []
+
     for assetPath in inContentPaths:
-        unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+        checkedOut = unreal.SourceControl.check_out_or_add_file(assetPath, silent=True)
+        if not checkedOut:
+            reason = _describe_source_control_error()
+            unreal.log_warning(f"[pathUtils] 체크아웃 실패로 목록에서 제외: {assetPath} - {reason}")
+            failedEntries.append({"contentPath": assetPath, "reason": reason})
+            continue
 
         assetObj = unreal.EditorAssetLibrary.load_asset(assetPath)
         if assetObj is None:
-            unreal.log_warning(f"[pathUtils] 에셋 로드 실패로 목록에서 제외: {assetPath}")
+            reason = "에셋 로드 실패"
+            unreal.log_warning(f"[pathUtils] {reason}로 목록에서 제외: {assetPath}")
+            failedEntries.append({"contentPath": assetPath, "reason": reason})
             continue
 
         absPath = unreal.SystemLibrary.get_system_path(assetObj)
         if not absPath:
-            unreal.log_warning(f"[pathUtils] 시스템 경로 해석 실패로 목록에서 제외: {assetPath}")
+            reason = "시스템 경로 해석 실패"
+            unreal.log_warning(f"[pathUtils] {reason}로 목록에서 제외: {assetPath}")
+            failedEntries.append({"contentPath": assetPath, "reason": reason})
             continue
 
         openedAbsPaths.append(absPath)
 
-    unreal.log(f"[pathUtils] 소스 컨트롤에 연 파일: {len(openedAbsPaths)}개")
-    return openedAbsPaths
+    unreal.log(
+        f"[pathUtils] 소스 컨트롤에 연 파일: {len(openedAbsPaths)}개, "
+        f"실패 {len(failedEntries)}개"
+    )
+    return {"opened": openedAbsPaths, "failed": failedEntries}
+
+
+def open_for_source_control(inContentPaths: list) -> list:
+    """에셋들을 소스 컨트롤에 열고(체크아웃/추가) 로컬 절대경로 목록을 반환합니다.
+
+    구현은 `open_for_source_control_checked`에 위임하는 얇은 래퍼다.
+    **체크아웃에 실패한 경로는 목록에서 빠지며**, 실패 사유가 필요하면
+    `open_for_source_control_checked`를 직접 써서 `failed`를 받는다.
+
+    Args:
+        inContentPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+
+    Returns:
+        list: 실제로 연 파일의 로컬 절대경로 리스트.
+    """
+    return open_for_source_control_checked(inContentPaths)["opened"]
 
 
 def get_asset_name_from_path(inContentPath: str) -> Optional[str]:
