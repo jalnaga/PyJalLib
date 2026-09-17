@@ -448,12 +448,15 @@ class LegacyAnimationImporter(LegacyBaseImporter):
             refObjectPaths = self.get_dirty_deps(assetFullPath)
             allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
 
-            allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
+            sourceControlResult = self.open_for_source_control_checked(allImportRelatedPaths)
+            allImportAbsPaths = sourceControlResult["opened"]
+            failedSourceControlFiles = sourceControlResult["failed"]
 
             unreal.log(f"[LegacyAnimationImporter] 스켈레톤 변경 완료: {assetFullPath}")
 
             return self._create_result_dict(
-                inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+                inFbxFile, destinationPath, assetName, True, allImportAbsPaths,
+                failedSourceControlFiles
             )
 
         # 기존 방식: 일반 임포트 (스켈레톤 동일 또는 새 에셋)
@@ -481,10 +484,13 @@ class LegacyAnimationImporter(LegacyBaseImporter):
 
         # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음)
         allImportRelatedPaths = list(dict.fromkeys(importedObjectPaths + refObjectPaths))
-        allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
+        sourceControlResult = self.open_for_source_control_checked(allImportRelatedPaths)
+        allImportAbsPaths = sourceControlResult["opened"]
+        failedSourceControlFiles = sourceControlResult["failed"]
 
         unreal.log(f"[LegacyAnimationImporter] 애니메이션 임포트 성공: {inFbxFile} -> {len(result)}개 객체 생성")
 
         return self._create_result_dict(
-            inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+            inFbxFile, destinationPath, assetName, True, allImportAbsPaths,
+            failedSourceControlFiles
         )

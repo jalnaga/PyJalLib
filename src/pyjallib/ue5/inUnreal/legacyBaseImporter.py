@@ -15,7 +15,7 @@ import unreal
 
 # UE5 모듈 import
 from legacyImporterSettings import LegacyImporterSettings
-from pathUtils import open_for_source_control
+from pathUtils import open_for_source_control, open_for_source_control_checked
 
 
 class LegacyBaseImporter(ABC):
@@ -292,8 +292,24 @@ class LegacyBaseImporter(ABC):
         """
         return open_for_source_control(inAssetPaths)
 
+    def open_for_source_control_checked(self, inAssetPaths: list[str]) -> dict:
+        """에셋들을 소스 컨트롤에 열고 성공분·실패분을 갈라서 반환합니다.
+
+        구현은 `pathUtils.open_for_source_control_checked`에 위임한다.
+        체크아웃에 실패한 경로를 "연 파일"로 보고하면 그 목록이 그대로
+        `p4 reopen`의 입력이 되어 부분 실패를 내므로, 실패분을 갈라 받아
+        결과 딕셔너리의 `FailedFiles`로 실어 보낸다.
+
+        Args:
+            inAssetPaths: 체크아웃/추가할 에셋의 Content 경로 리스트 (/Game/...)
+
+        Returns:
+            dict: `{"opened": [절대경로...], "failed": [{"contentPath", "reason"}...]}`
+        """
+        return open_for_source_control_checked(inAssetPaths)
+
     def _create_result_dict(self, inSourceFile: str, inPath: str, inName: str, inSuccess: bool = True,
-                            inOpenedFiles: list[str] = None):
+                            inOpenedFiles: list[str] = None, inFailedFiles: list[dict] = None):
         """결과 딕셔너리를 생성하는 공통 메서드
 
         Args:
@@ -303,6 +319,8 @@ class LegacyBaseImporter(ABC):
             inSuccess: 임포트 성공 여부. 기본값 True.
             inOpenedFiles: 소스 컨트롤에 연 파일의 로컬 절대경로 리스트.
                 None이면 빈 리스트로 채운다 (키는 항상 존재).
+            inFailedFiles: 소스 컨트롤에 여는 데 실패한 항목 리스트
+                (`{"contentPath", "reason"}`). None이면 빈 리스트로 채운다.
 
         Returns:
             dict: 임포트 결과 딕셔너리
@@ -313,7 +331,8 @@ class LegacyBaseImporter(ABC):
             "Name": inName,
             "Type": self.asset_type,
             "Success": inSuccess,
-            "OpenedFiles": list(inOpenedFiles) if inOpenedFiles else []
+            "OpenedFiles": list(inOpenedFiles) if inOpenedFiles else [],
+            "FailedFiles": list(inFailedFiles) if inFailedFiles else []
         }
         unreal.log(f"[LegacyBaseImporter] 결과 딕셔너리 생성: {result}")
         return result

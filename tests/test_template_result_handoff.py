@@ -185,3 +185,64 @@ def test_write_import_result_writes_payload(import_result_writer, tmp_path):
     assert payload["error"] is None
     assert payload["openedFiles"] == ["C:/ws/A.uasset"]
     assert payload["results"] == results
+
+
+# ============================================================================
+# 체크아웃 실패 목록 집계 (연 파일 목록에서 빠진 것을 보고하는 경로)
+# ============================================================================
+
+def test_collect_failed_files_merges_and_dedupes_by_content_path(import_result_writer):
+    """여러 결과의 실패 항목을 순서 보존으로 합치고 경로 기준 중복을 제거한다."""
+    results = [
+        {"FailedFiles": [{"contentPath": "/Game/A", "reason": "exclusive"},
+                         {"contentPath": "/Game/SK", "reason": "exclusive"}]},
+        {"FailedFiles": [{"contentPath": "/Game/SK", "reason": "exclusive"},
+                         {"contentPath": "/Game/B", "reason": "에셋 로드 실패"}]},
+    ]
+
+    merged = import_result_writer.collect_failed_files(results)
+
+    assert [entry["contentPath"] for entry in merged] == ["/Game/A", "/Game/SK", "/Game/B"]
+    assert merged[2]["reason"] == "에셋 로드 실패"
+
+
+def test_collect_failed_files_tolerates_legacy_results(import_result_writer):
+    """`FailedFiles` 키가 없는 구 결과 딕셔너리는 빈 리스트로 간주한다 (하위호환)."""
+    results = [{"Success": True, "OpenedFiles": ["C:/ws/A.uasset"]}, None]
+
+    assert import_result_writer.collect_failed_files(results) == []
+
+
+def test_write_import_result_carries_failed_files(import_result_writer, tmp_path):
+    """payload에 `failedFiles`가 실린다 - 실패 경로와 사유가 툴까지 도달한다."""
+    import json
+
+    outPath = Path(tmp_path) / "result.json"
+    results = [{
+        "Name": "SM_Test",
+        "Success": True,
+        "OpenedFiles": ["C:/ws/A.uasset"],
+        "FailedFiles": [{"contentPath": "/Game/B", "reason": "can't add exclusive file"}],
+    }]
+
+    assert import_result_writer.write_import_result(str(outPath), results) is True
+
+    payload = json.loads(outPath.read_text(encoding="utf-8"))
+    assert payload["failedFiles"] == [
+        {"contentPath": "/Game/B", "reason": "can't add exclusive file"}
+    ]
+
+
+def test_write_import_result_keeps_failed_files_key_for_legacy_results(
+    import_result_writer, tmp_path
+):
+    """구 결과만 들어와도 `failedFiles` 키는 빈 리스트로 항상 존재한다."""
+    import json
+
+    outPath = Path(tmp_path) / "legacy.json"
+    results = [{"Name": "A_Test", "Success": True, "OpenedFiles": ["C:/ws/A.uasset"]}]
+
+    assert import_result_writer.write_import_result(str(outPath), results) is True
+
+    payload = json.loads(outPath.read_text(encoding="utf-8"))
+    assert payload["failedFiles"] == []

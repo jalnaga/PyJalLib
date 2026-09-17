@@ -169,16 +169,20 @@ class LegacyStaticMeshImporter(LegacyBaseImporter):
             raise ValueError(error_msg)
 
         # 임포트 결과 + dirty deps를 소스 컨트롤에 연다 (체크아웃까지만 - 서밋 없음).
-        # 경로는 Content 경로로 통일해 넘긴다 (open_for_source_control이 절대경로로 해석).
+        # 경로는 Content 경로로 통일해 넘긴다 (open_for_source_control_checked가 절대경로로 해석).
         allImportAbsPaths = []
+        failedSourceControlFiles = []
         if not inSkipSourceControl:
             refObjectPaths = self.get_dirty_deps(assetFullPath)
             allImportRelatedPaths = list(dict.fromkeys([assetFullPath] + refObjectPaths))
-            allImportAbsPaths = self.open_for_source_control(allImportRelatedPaths)
+            sourceControlResult = self.open_for_source_control_checked(allImportRelatedPaths)
+            allImportAbsPaths = sourceControlResult["opened"]
+            failedSourceControlFiles = sourceControlResult["failed"]
         else:
             unreal.log("[LegacyStaticMeshImporter] 소스 컨트롤 건너뜀 - 연 파일 목록이 비어 있음")
 
         unreal.log(f"[LegacyStaticMeshImporter] 스태틱 메쉬 임포트 성공: {inFbxFile}")
         return self._create_result_dict(
-            inFbxFile, destinationPath, assetName, True, allImportAbsPaths
+            inFbxFile, destinationPath, assetName, True, allImportAbsPaths,
+            failedSourceControlFiles
         )
