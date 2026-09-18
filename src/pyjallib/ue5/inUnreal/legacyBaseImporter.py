@@ -373,6 +373,18 @@ class LegacyBaseImporter(ABC):
         pass
 
     def get_dirty_deps(self, inAssetPath: str):
+        """에셋의 하드 의존 중 같은 루트(/Game 등) 아래의 것을 저장하고 패키지 경로로 돌려준다.
+
+        `AssetRegistry.get_dependencies()`는 `unreal.Name`을 돌려주므로 **str로 바꿔서**
+        돌려준다 - 하류(`open_for_source_control_checked` → `to_package_path`)는 문자열 계약이다
+        (2026-09-18 실기 회귀: 'Name' object has no attribute 'replace').
+
+        Args:
+            inAssetPath: 의존을 조회할 에셋의 Content 경로
+
+        Returns:
+            저장에 성공한 의존 패키지 경로(str) 목록
+        """
         returnList = []
 
         assetRegistry = unreal.AssetRegistryHelpers.get_asset_registry()
@@ -397,6 +409,6 @@ class LegacyBaseImporter(ABC):
                 assetPathStart = str(assetData.package_name).split('/')[1]
                 if depPathStart == assetPathStart:
                     if unreal.EditorAssetLibrary.save_asset(dep, only_if_is_dirty=True):
-                        returnList.append(dep)
+                        returnList.append(str(dep))
 
         return returnList
