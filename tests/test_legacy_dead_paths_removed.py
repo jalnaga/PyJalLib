@@ -86,11 +86,17 @@ def test_surviving_importers_are_still_loadable():
     [
         "legacySkeletonImportTemplate.py",
         "legacySkeletalMeshImportTemplate.py",
-        "legacyStaticMeshImportTemplate.py",
     ],
 )
 def test_dead_template_files_are_gone(templateFileName):
-    """죽은 템플릿 파일이 남아 있지 않다."""
+    """죽은 템플릿 파일이 남아 있지 않다.
+
+    재명세 이력: `legacyStaticMeshImportTemplate.py`는 2026-08-03 사문화로 제거되어
+    이 목록에 있었으나, 2026-09-18 MeshValidator의 자체 문자열 템플릿(175줄)을
+    pyjallib으로 통합하면서 **의도적으로 부활**시켰다(ExportToolsRefactor Phase 1,
+    Q5 마스터 지시). 부활한 템플릿의 사양은 `tests/test_static_mesh_template.py`가
+    덮는다. 목록에서 빼는 것이 곧 "부활은 결정이다"를 드러내는 장치다.
+    """
     templatesDir = Path(_templatesPkg.__file__).parent
     assert not (templatesDir / templateFileName).exists()
 
@@ -100,11 +106,14 @@ def test_dead_template_files_are_gone(templateFileName):
     [
         "LEGACY_SKELETON_IMPORT_TEMPLATE",
         "LEGACY_SKELETAL_MESH_IMPORT_TEMPLATE",
-        "LEGACY_STATIC_MESH_IMPORT_TEMPLATE",
     ],
 )
 def test_dead_template_constants_are_gone(constantName):
-    """죽은 템플릿 이름 상수가 제거되었다."""
+    """죽은 템플릿 이름 상수가 제거되었다.
+
+    재명세 이력: `LEGACY_STATIC_MESH_IMPORT_TEMPLATE`은 2026-09-18 Static Mesh 템플릿
+    부활(ExportToolsRefactor Phase 1)과 함께 목록에서 뺐다.
+    """
     assert not hasattr(_templatesPkg, constantName)
 
 
@@ -113,19 +122,27 @@ def test_dead_template_constants_are_gone(constantName):
     [
         "process_legacy_skeleton_import_template",
         "process_legacy_skeletal_mesh_import_template",
-        "process_legacy_static_mesh_import_template",
     ],
 )
 def test_dead_processor_methods_are_gone(methodName):
-    """죽은 프로세서 메서드가 제거되었다."""
+    """죽은 프로세서 메서드가 제거되었다.
+
+    재명세 이력: `process_legacy_static_mesh_import_template`은 2026-09-18 Static Mesh
+    템플릿 부활(ExportToolsRefactor Phase 1)과 함께 목록에서 뺐다.
+    """
     assert not hasattr(TemplateProcessor, methodName)
 
 
 @pytest.mark.parametrize(
-    "assetType", ["skeleton", "skeletal_mesh", "static_mesh"]
+    "assetType", ["skeleton", "skeletal_mesh"]
 )
 def test_legacy_combination_is_rejected_by_unified_entry_point(assetType):
-    """통합 진입점에서 legacy 조합이 더 이상 해석되지 않는다."""
+    """통합 진입점에서 legacy 조합이 더 이상 해석되지 않는다.
+
+    재명세 이력: `('static_mesh', 'legacy')`는 2026-09-18 Static Mesh 템플릿 부활
+    (ExportToolsRefactor Phase 1)로 다시 해석된다 - `tests/test_static_mesh_template.py`가
+    그 해석을 단정한다.
+    """
     processor = TemplateProcessor()
     with pytest.raises(ValueError):
         processor._get_template_name(assetType, "legacy")

@@ -18,6 +18,10 @@ INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = "interchangeBatchAnimImport"
 # Legacy 템플릿 이름 상수
 LEGACY_ANIM_IMPORT_TEMPLATE = "legacyAnimImport"
 LEGACY_BATCH_ANIM_IMPORT_TEMPLATE = "legacyBatchAnimImport"
+# 2026-08-03 사문화로 제거 → 2026-09-18 MeshValidator 자체 템플릿(175줄)을 pyjallib으로
+# 통합하면서 의도적으로 부활(ExportToolsRefactor Phase 1, Q5). Static Mesh + 텍스처 +
+# Material Instance를 한 스크립트에서 처리하고 연 파일을 결과 JSON으로 보고한다.
+LEGACY_STATIC_MESH_IMPORT_TEMPLATE = "legacyStaticMeshImport"
 
 # 템플릿 파일 매핑
 _TEMPLATE_FILE_MAP = {
@@ -27,6 +31,7 @@ _TEMPLATE_FILE_MAP = {
     INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE: "interchangeBatchAnimImportTemplate.py",
     LEGACY_ANIM_IMPORT_TEMPLATE: "legacyAnimImportTemplate.py",
     LEGACY_BATCH_ANIM_IMPORT_TEMPLATE: "legacyBatchAnimImportTemplate.py",
+    LEGACY_STATIC_MESH_IMPORT_TEMPLATE: "legacyStaticMeshImportTemplate.py",
 }
 
 def get_template_path(template_name: str) -> str:
@@ -115,4 +120,5 @@ __all__ = [
     # Legacy 템플릿 상수
     'LEGACY_ANIM_IMPORT_TEMPLATE',
     'LEGACY_BATCH_ANIM_IMPORT_TEMPLATE',
+    'LEGACY_STATIC_MESH_IMPORT_TEMPLATE',
 ]
