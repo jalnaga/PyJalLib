@@ -94,7 +94,10 @@ class LegacyImporterSettings:
         fbxImportOptions.set_editor_property('import_materials', False)  # 매테리얼 임포트 안함
 
         fbxImportOptions.anim_sequence_import_data.set_editor_property('animation_length', unreal.FBXAnimationLengthImportType.FBXALIT_EXPORTED_TIME)
-        fbxImportOptions.anim_sequence_import_data.set_editor_property('do_not_import_curve_with_zero', True)
+        # 전량 0 커브도 들여온다(LegacyAnimationImporter와 같은 값을 유지한다).
+        # 이 Animation 프리셋은 현재 `load_options()` 호출부가 0건이지만(StaticMesh만 호출),
+        # 두 지점이 반대 값이면 다음 사이클이 어느 쪽을 정본으로 볼지 판단할 수 없다.
+        fbxImportOptions.anim_sequence_import_data.set_editor_property('do_not_import_curve_with_zero', False)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_bone_tracks', True)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_custom_attribute', True)
         fbxImportOptions.anim_sequence_import_data.set_editor_property('import_meshes_in_bone_hierarchy', True)
