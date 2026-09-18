@@ -4,8 +4,31 @@ P4Python을 사용하여 Perforce 작업을 수행하는 단일 클래스
 """
 
 from P4 import P4, P4Exception
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict, Union, Tuple
+
+
+@dataclass
+class OpenedFilesCollectResult:
+    """`Perforce.collect_opened_files_into_change_list`의 결과.
+
+    Attributes:
+        succeeded: 입력 전량이 새 체인지리스트에 들어갔는가. 서밋 여부와 무관하다.
+        changelist: 생성된 체인지리스트 번호. 입력이 비어 만들지 않았으면 None.
+        movedCount: 대상 체인지리스트에서 확인된 파일 수.
+        missingPaths: 대상 체인지리스트에서 확인되지 않은 입력 경로.
+        submitted: 서밋까지 끝났는가. 요청하지 않았거나 이동이 불완전하면 False.
+            요청했는데 내용 변경이 없어 빈 체인지리스트로 삭제된 경우도 False다.
+        message: 사람이 읽는 결과 요약. 사용자 메시지·로그에 그대로 실린다.
+    """
+
+    succeeded: bool
+    changelist: Optional[int]
+    movedCount: int
+    missingPaths: List[str] = field(default_factory=list)
+    submitted: bool = False
+    message: str = ""
 
 
 class Perforce:
@@ -499,6 +522,100 @@ class Perforce:
         finally:
             if p4.connected():
                 p4.disconnect()
+
+    def collect_opened_files_into_change_list(
+        self,
+        inDescription: str,
+        inFilePaths: List[str],
+        inShouldSubmit: bool = False,
+    ) -> OpenedFilesCollectResult:
+        """이미 열려 있는 파일들을 새 체인지리스트로 모으고, 요청 시 서밋까지 이어 준다.
+
+        `move_opened_files_to_new_change_list`(CL 생성 → reopen → 사후 대조)의 결과를
+        해석해 서밋 여부를 결정하는 오케스트레이션이다. 세 익스포트 툴이 각자 들고
+        있던 "이동 결과 해석 → 조건부 서밋" 코드를 한 벌로 합쳤다(2026-09-18
+        ExportToolsRefactor Phase 1). 계약에 UE5 색채는 없다 - "열린 파일을 이름 붙은
+        CL로 모으고 필요하면 서밋한다"는 범용 P4 연산이다.
+
+        규칙:
+            - 이동이 **전량 성공**(`succeeded=True`)일 때만 서밋을 시도한다. 일부가
+              대상 CL에서 확인되지 않으면 CL을 pending으로 **유지**하고 서밋을 중단한다
+              (부분 제출 방지 - 호출자가 `missingPaths`로 원인을 진단한다).
+            - `inShouldSubmit=False`면 이동만 하고 pending으로 남긴다(사람 검수 흐름).
+            - 서밋이 `False`를 돌려주면(내용 변경 없음 → 빈 CL 삭제) `submitted=False`로
+              보고한다. 이것은 오류가 아니라 정상 경로다(`submit_change_list` 독스트링).
+
+        Args:
+            inDescription: 새 체인지리스트 설명(툴 접두사 등은 호출자가 구성). 빈 문자열은
+                거부한다 - 이름 없는 CL은 사람이 검수할 수 없다.
+            inFilePaths: 이미 열려 있는 파일들의 로컬 경로 리스트. 비어 있으면 CL을
+                만들지 않고 `succeeded=False`로 보고한다.
+            inShouldSubmit: 전량 이동 후 서밋까지 할지. 기본값 False(pending 유지).
+
+        Returns:
+            OpenedFilesCollectResult: 이동·서밋 결과와 사람이 읽는 요약
+
+        Raises:
+            ValueError: `inDescription`이 비어 있거나 `inFilePaths`가 리스트가 아닌 경우
+            P4Exception: 이동 또는 서밋 중 P4 작업이 실패한 경우. 그대로 전파한다 -
+                이동 실패는 `move_opened_files_to_new_change_list`가 롤백을 마친 뒤이고,
+                서밋 실패는 CL이 pending으로 남아 있으므로 호출자가 구분해 보고한다.
+        """
+        if not isinstance(inDescription, str) or not inDescription.strip():
+            raise ValueError("inDescription must be a non-empty string")
+
+        moveResult = self.move_opened_files_to_new_change_list(inDescription, inFilePaths)
+        changelist = moveResult.get('changelist')
+        movedCount = int(moveResult.get('movedCount', 0))
+        missingPaths = list(moveResult.get('missingPaths', []))
+
+        if not moveResult.get('succeeded'):
+            if changelist is None:
+                message = "이동할 파일 목록이 비어 있어 체인지리스트를 만들지 않았습니다"
+            else:
+                message = (
+                    f"체인지리스트 {changelist}에 {len(missingPaths)}개 파일이 이동되지 않아 "
+                    f"서밋을 중단했습니다 (이동 {movedCount}개, 체인지리스트는 pending으로 유지)"
+                )
+            print(message)
+            return OpenedFilesCollectResult(
+                succeeded=False,
+                changelist=changelist,
+                movedCount=movedCount,
+                missingPaths=missingPaths,
+                submitted=False,
+                message=message,
+            )
+
+        if not inShouldSubmit:
+            message = f"체인지리스트 {changelist}에 {movedCount}개 파일 이동 (pending 유지)"
+            print(message)
+            return OpenedFilesCollectResult(
+                succeeded=True,
+                changelist=changelist,
+                movedCount=movedCount,
+                missingPaths=[],
+                submitted=False,
+                message=message,
+            )
+
+        submitted = bool(self.submit_change_list(changelist))
+        if submitted:
+            message = f"체인지리스트 {changelist} 제출 완료 ({movedCount}개 파일)"
+        else:
+            message = (
+                f"체인지리스트 {changelist}는 내용 변경이 없어 빈 체인지리스트로 삭제되었습니다 "
+                "(제출할 파일 없음)"
+            )
+        print(message)
+        return OpenedFilesCollectResult(
+            succeeded=True,
+            changelist=changelist,
+            movedCount=movedCount,
+            missingPaths=[],
+            submitted=submitted,
+            message=message,
+        )
 
     def _collect_comparable_paths_in_change_list(self, p4: P4, change_list_number: int,
                                                  file_paths: List[str]) -> set:

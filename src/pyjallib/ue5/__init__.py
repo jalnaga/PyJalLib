@@ -31,7 +31,10 @@ try:
         INTERCHANGE_ANIM_IMPORT_TEMPLATE,
         INTERCHANGE_SKELETON_IMPORT_TEMPLATE,
         INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE,
-        INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE
+        INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE,
+        LEGACY_ANIM_IMPORT_TEMPLATE,
+        LEGACY_BATCH_ANIM_IMPORT_TEMPLATE,
+        LEGACY_STATIC_MESH_IMPORT_TEMPLATE,
     )
     __all__.extend([
         'get_template_path',
@@ -41,7 +44,10 @@ try:
         'INTERCHANGE_ANIM_IMPORT_TEMPLATE',
         'INTERCHANGE_SKELETON_IMPORT_TEMPLATE',
         'INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE',
-        'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE'
+        'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE',
+        'LEGACY_ANIM_IMPORT_TEMPLATE',
+        'LEGACY_BATCH_ANIM_IMPORT_TEMPLATE',
+        'LEGACY_STATIC_MESH_IMPORT_TEMPLATE',
     ])
 except ImportError as e:
     get_template_path = None
@@ -52,7 +58,61 @@ except ImportError as e:
     INTERCHANGE_SKELETON_IMPORT_TEMPLATE = None
     INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = None
     INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = None
+    LEGACY_ANIM_IMPORT_TEMPLATE = None
+    LEGACY_BATCH_ANIM_IMPORT_TEMPLATE = None
+    LEGACY_STATIC_MESH_IMPORT_TEMPLATE = None
     print(f"[PyJalLib] Templates 모듈을 로드할 수 없습니다: {e}")
+
+# UE5 헤드리스 실행기 · 임포트 결과 판정 (Unreal 없이 사용 가능, stdlib + Logger만 의존)
+# 2026-09-18 ExportToolsRefactor Phase 1 - 세 익스포트 툴의 복사본을 한 벌로 통합
+from .headlessRunner import (  # noqa: E402
+    STDOUT_TAIL_SIZE,
+    POLL_INTERVAL_SEC,
+    IMPORT_SCRIPT_ERROR_MARKER,
+    HEADLESS_FLAGS,
+    detect_import_script_error,
+    decode_process_stdout,
+    stdout_tail,
+    backup_import_script,
+    build_headless_command,
+    run_headless_with_pump,
+)
+from .importVerdict import (  # noqa: E402
+    REASON_SCRIPT_ERROR,
+    REASON_NO_RESULT,
+    REASON_UNREADABLE,
+    REASON_STALE,
+    REASON_IMPORT_FAILED,
+    REASON_OK,
+    FRESHNESS_TOLERANCE_SECONDS,
+    ImportResultReadout,
+    ImportVerdict,
+    collect_result_readout,
+    judge_import_outcome,
+)
+__all__ += [
+    'STDOUT_TAIL_SIZE',
+    'POLL_INTERVAL_SEC',
+    'IMPORT_SCRIPT_ERROR_MARKER',
+    'HEADLESS_FLAGS',
+    'detect_import_script_error',
+    'decode_process_stdout',
+    'stdout_tail',
+    'backup_import_script',
+    'build_headless_command',
+    'run_headless_with_pump',
+    'REASON_SCRIPT_ERROR',
+    'REASON_NO_RESULT',
+    'REASON_UNREADABLE',
+    'REASON_STALE',
+    'REASON_IMPORT_FAILED',
+    'REASON_OK',
+    'FRESHNESS_TOLERANCE_SECONDS',
+    'ImportResultReadout',
+    'ImportVerdict',
+    'collect_result_readout',
+    'judge_import_outcome',
+]
 
 # UE5 의존성 상태를 확인할 수 있는 함수
 def is_ue5_available() -> bool:
