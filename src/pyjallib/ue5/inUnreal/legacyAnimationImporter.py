@@ -120,7 +120,9 @@ class LegacyAnimationImporter(LegacyBaseImporter):
 
         # 애니메이션 시퀀스 임포트 데이터 설정
         importOptions.anim_sequence_import_data.set_editor_property('animation_length', unreal.FBXAnimationLengthImportType.FBXALIT_EXPORTED_TIME)
-        importOptions.anim_sequence_import_data.set_editor_property('do_not_import_curve_with_zero', True)
+        # 전량 0 커브도 들여온다. True면 클립 전 구간이 0인 커브(그 클립에서 쓰이지 않은
+        # 모프 채널 등)가 AnimSequence에서 통째로 누락되어 커브 집합이 클립마다 달라진다.
+        importOptions.anim_sequence_import_data.set_editor_property('do_not_import_curve_with_zero', False)
         importOptions.anim_sequence_import_data.set_editor_property('import_bone_tracks', True)
         importOptions.anim_sequence_import_data.set_editor_property('import_custom_attribute', True)
         importOptions.anim_sequence_import_data.set_editor_property('import_meshes_in_bone_hierarchy', True)
