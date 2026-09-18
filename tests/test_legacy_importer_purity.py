@@ -292,6 +292,85 @@ def test_import_static_mesh_skip_source_control_yields_empty_opened_files(
 
 
 # ============================================================================
+# unreal.Name 의존성 (2026-09-18 실기 회귀 - 'Name' object has no attribute 'replace')
+# ============================================================================
+
+class _FakeName:
+    """`unreal.Name` 대역 - str 메서드가 없고 `__str__`만 있다.
+
+    `AssetRegistry.get_dependencies()`는 패키지 이름을 `unreal.Name`으로 돌려준다.
+    이것이 문자열 변환 없이 소스 컨트롤 진입점(`to_package_path`)에 닿으면
+    `.replace`에서 AttributeError가 난다(2026-09-18 MeshValidator 실기 - 기존 에셋
+    재임포트처럼 하드 의존(MI)이 있을 때만 재현. 신규 에셋 임포트는 의존이 비어
+    걸리지 않았다).
+    """
+
+    def __init__(self, inValue):
+        self._value = inValue
+
+    def __str__(self):
+        return self._value
+
+    def __repr__(self):
+        return f"Name({self._value!r})"
+
+
+def test_to_package_path_accepts_name_like_object(inunreal_modules):
+    """`unreal.Name`처럼 `__str__`만 있는 객체도 패키지 경로로 정규화한다."""
+    modules, unrealMock = inunreal_modules
+    _configure_unreal_mock(unrealMock, [], [])
+    pathUtils = sys.modules["pathUtils"]
+
+    assert pathUtils.to_package_path(_FakeName(_DEP_PATH)) == _DEP_PATH
+    assert pathUtils.to_package_path(_FakeName(f"{_DEP_PATH}.SK_Test")) == _DEP_PATH
+
+
+def test_get_dirty_deps_returns_plain_strings(inunreal_modules):
+    """의존성 패키지 이름은 `unreal.Name`이 아니라 str로 돌려준다 (하류 문자열 처리 계약)."""
+    modules, unrealMock = inunreal_modules
+    _configure_unreal_mock(unrealMock, [_FakeStaticMesh()], [_FakeName(_DEP_PATH)])
+
+    importer = modules["staticMesh"].LegacyStaticMeshImporter(
+        inContentRootPrefix=_CONTENT_ROOT_PREFIX, inFbxRootPrefix=_FBX_ROOT_PREFIX
+    )
+    deps = importer.get_dirty_deps(_ASSET_FULL_PATH)
+
+    assert deps == [_DEP_PATH]
+    assert all(type(dep) is str for dep in deps)
+
+
+def test_import_static_mesh_with_name_dependencies_reports_opened_files(
+    inunreal_modules,
+):
+    """하드 의존이 `unreal.Name`으로 와도 임포트가 성공하고 의존 파일이 연 파일에 실린다."""
+    modules, unrealMock = inunreal_modules
+    _configure_unreal_mock(unrealMock, [_FakeStaticMesh()], [_FakeName(_DEP_PATH)])
+
+    importer = modules["staticMesh"].LegacyStaticMeshImporter(
+        inContentRootPrefix=_CONTENT_ROOT_PREFIX, inFbxRootPrefix=_FBX_ROOT_PREFIX
+    )
+    result = importer.import_static_mesh(_FBX_FILE)
+
+    assert result["OpenedFiles"] == _EXPECTED_OPENED_FILES
+    assert result["FailedFiles"] == []
+
+
+def test_import_animation_with_name_dependencies_reports_opened_files(
+    inunreal_modules,
+):
+    """애니메이션 임포터도 같은 진입점을 쓰므로 `unreal.Name` 의존을 받아들인다."""
+    modules, unrealMock = inunreal_modules
+    _configure_unreal_mock(unrealMock, [_FakeAnimSequence()], [_FakeName(_DEP_PATH)])
+
+    importer = modules["animation"].LegacyAnimationImporter(
+        inContentRootPrefix=_CONTENT_ROOT_PREFIX, inFbxRootPrefix=_FBX_ROOT_PREFIX
+    )
+    result = importer.import_animation(_FBX_FILE, inSkeletonContentPath=_SKELETON_CONTENT_PATH)
+
+    assert result["OpenedFiles"] == _EXPECTED_OPENED_FILES
+
+
+# ============================================================================
 # 연 파일 목록 수집 헬퍼
 # ============================================================================
 

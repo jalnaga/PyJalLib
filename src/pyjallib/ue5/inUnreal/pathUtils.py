@@ -123,9 +123,16 @@ def to_package_path(inPath: str) -> Optional[str]:
     소스 컨트롤 진입점에서 정규화한다** - 정적 메쉬 임포터만 고치고 애니메이션
     임포터를 놓쳤던 직전 사이클이 호출부별 수정의 한계를 보여준다.
 
+    `unreal.Name`도 받는다. `AssetRegistry.get_dependencies()`가 패키지 이름을
+    `unreal.Name`으로 돌려주는데, 이것이 문자열 변환 없이 여기 닿아 `.replace`에서
+    AttributeError가 났다(2026-09-18 MeshValidator 실기 - 기존 에셋 재임포트처럼
+    하드 의존이 있을 때만 재현). 호출부(`get_dirty_deps`)도 str로 돌려주지만, 이
+    함수가 소스 컨트롤 진입점이므로 여기서도 `str()`로 받아 다른 유입 경로를 막는다.
+
     Args:
         inPath: 정규화할 경로. 오브젝트 경로(`/Game/A/B.B`), 패키지 경로
-            (`/Game/A/B`), `.uasset` 절대경로 중 무엇이 와도 된다.
+            (`/Game/A/B`), `.uasset` 절대경로 중 무엇이 와도 된다. `unreal.Name`처럼
+            `__str__`만 있는 객체도 된다.
 
     Returns:
         `/Game/...` 형식의 패키지 경로. 입력이 비었거나 Content 경로로 해석할 수
@@ -140,7 +147,8 @@ def to_package_path(inPath: str) -> Optional[str]:
     if not inPath:
         return None
 
-    normalizedPath = inPath.replace("\\", "/")
+    # `unreal.Name`(str 메서드 없음)을 포함해 어떤 경로 표현이 와도 문자열로 다룬다
+    normalizedPath = str(inPath).replace("\\", "/")
 
     if not is_content_path(normalizedPath):
         # Content 경로가 아니면 절대 경로로 간주하고 변환을 시도한다
