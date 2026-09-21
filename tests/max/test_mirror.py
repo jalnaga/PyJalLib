@@ -13,10 +13,13 @@ Mirror 서비스 헤드레스 테스트 스크립트.
 import sys
 from pathlib import Path
 
-# pyjallib 소스 경로 추가
-_srcPath = str(Path(__file__).parent.parent.parent / "src")
-if _srcPath not in sys.path:
-    sys.path.insert(0, _srcPath)
+# pyjallib 소스 경로 선주입 + 배포본 선점 퍼지.
+# 3ds Max는 기동 시 배포본 pyjallib을 sys.modules에 선점하므로, 경로만 앞에 넣으면
+# 캐시 히트로 배포본이 검증된다. _bootstrap이 퍼지까지 하고 TC00이 출처를 단정한다.
+sys.path.insert(0, str(Path(__file__).parent))
+from _bootstrap import bootstrap_pyjallib, assert_loaded_from_checkout  # noqa: E402
+
+bootstrap_pyjallib()
 
 from pymxs import runtime as rt
 from pyjallib.testKit import TestReporter
@@ -26,6 +29,16 @@ from pyjallib.max.bone import Bone
 
 LOG_DIR = Path(__file__).parent.parent / "logs"
 reporter = TestReporter("Mirror", LOG_DIR)
+
+# TC00: 이 체크아웃의 소스를 검증하고 있는가.
+# 배포본이 로드되면 워크트리 수정이 한 줄도 실행되지 않는데 초록이 뜬다.
+import pyjallib  # noqa: E402
+
+reporter.assert_test(
+    assert_loaded_from_checkout(pyjallib),
+    "TC00 로드 출처가 이 체크아웃인가",
+    f"pyjallib.__file__={getattr(pyjallib, '__file__', None)}",
+)
 
 
 def _reset_scene():

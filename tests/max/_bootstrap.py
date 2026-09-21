@@ -1,0 +1,92 @@
+# -*- coding: utf-8 -*-
+"""Type C 공용 부트스트랩 - 이 체크아웃의 소스를 로드하고 그것을 단정한다.
+
+**왜 필요한가.** 3ds Max는 기동 시 배포본 `pyjallib`을 `sys.modules`에 **선점**한다.
+그래서 `sys.path.insert`만 해서는 캐시 히트로 **배포본이 검증된다** - 워크트리에서
+고친 코드는 한 줄도 실행되지 않는데 테스트는 초록으로 통과한다
+(`processes/worktree_workflow.md` §2-repo).
+
+16차 복기 세션 3 시점 실측: `tests/max/` Type C 21개 중 **10개가 퍼지 없이** 돌고 있었다.
+그 10개는 "무엇을 검증했는지 말할 수 없는" 상태였다.
+
+**쓰는 법.** 테스트 스크립트 최상단(다른 `pyjallib` import보다 **앞**)에서 부른다.
+
+```python
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _bootstrap import bootstrap_pyjallib
+
+_SRC = bootstrap_pyjallib()      # 퍼지 + 경로 선주입, 로드될 소스 경로를 돌려준다
+
+import pyjallib                   # 이제부터 이 체크아웃의 소스다
+from pyjallib.testKit import TestReporter
+```
+
+그리고 **TC00으로 출처를 단정한다** - 단정이 없으면 아무것도 검증하지 않은 것이 된다.
+
+```python
+reporter.assert_test(
+    "TC00: 로드 출처가 이 체크아웃인가",
+    assert_loaded_from_checkout(pyjallib),
+    f"pyjallib.__file__={pyjallib.__file__}",
+)
+```
+"""
+
+import sys
+from pathlib import Path
+
+
+def checkout_src_path() -> Path:
+    """이 체크아웃의 `src` 디렉토리 경로를 돌려준다.
+
+    Returns:
+        `<repo>/src`의 절대 경로
+    """
+    return (Path(__file__).resolve().parent.parent.parent / "src").resolve()
+
+
+def bootstrap_pyjallib() -> Path:
+    """배포본 선점을 퍼지하고 이 체크아웃의 `src`를 `sys.path` 맨 앞에 둔다.
+
+    `sys.path` 조작만으로는 부족하다 - 이미 `sys.modules`에 올라온 `pyjallib.*`을
+    **전부 지워야** 다음 import가 디스크를 다시 본다.
+
+    Returns:
+        선주입한 `src` 경로
+    """
+    srcPath = checkout_src_path()
+    srcText = str(srcPath)
+    while srcText in sys.path:
+        sys.path.remove(srcText)
+    sys.path.insert(0, srcText)
+
+    for moduleName in [
+        name for name in list(sys.modules) if name.split(".")[0] == "pyjallib"
+    ]:
+        del sys.modules[moduleName]
+    return srcPath
+
+
+def assert_loaded_from_checkout(inModule) -> bool:
+    """모듈이 이 체크아웃의 `src`에서 로드됐는지 판정한다.
+
+    `__version__`을 축으로 쓰면 오판한다 - `pyproject.toml`보다 stale할 수 있다
+    (2026-09-18 실측: `__version__` 0.3.3 vs 선언 0.3.5). **`__file__`을 본다.**
+
+    Args:
+        inModule: 검사할 모듈(보통 `pyjallib`)
+
+    Returns:
+        모듈 파일이 이 체크아웃의 `src` 아래면 True
+    """
+    moduleFile = getattr(inModule, "__file__", None)
+    if not moduleFile:
+        return False
+    try:
+        Path(moduleFile).resolve().relative_to(checkout_src_path())
+    except ValueError:
+        return False
+    return True
