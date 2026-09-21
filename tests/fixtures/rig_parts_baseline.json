@@ -1,0 +1,3054 @@
+{
+  "ankle": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": true,
+      "parametersAfterCreate": [
+        0.5,
+        4.0,
+        "Z",
+        "Z",
+        "PosY",
+        "NegY",
+        1.5,
+        1.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle Root",
+          "parent": "Bip001 L Foot",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle",
+          "parent": "Bip001 L Ankle Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle",
+          "parent": "Bip001 L Ankle Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Ankle Root",
+          "parent": "Bip001 L Calf",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Foot",
+        "Bip001 L Calf"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle Root",
+          "parent": "Bip001 L Foot",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle",
+          "parent": "Bip001 L Ankle Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Ankle",
+          "parent": "Bip001 L Ankle Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Ankle Root",
+          "parent": "Bip001 L Calf",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Foot",
+        "Bip001 L Calf"
+      ]
+    },
+    "sources": [
+      "lFoot",
+      "lCalf"
+    ]
+  },
+  "armpit": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.67
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Armpit 01",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Armpit 01",
+          "parent": "Bip001 L Shoulder 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Armpit 01",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Armpit 01",
+          "parent": "Bip001 Lat L Armpit 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Shoulder 01",
+        "Bip001 Spine",
+        "Bip001 Neck"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Armpit 01",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Armpit 01",
+          "parent": "Bip001 L Shoulder 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Armpit 01",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Armpit 01",
+          "parent": "Bip001 Lat L Armpit 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Shoulder 01",
+        "Bip001 Spine",
+        "Bip001 Neck"
+      ]
+    },
+    "sources": [
+      "lShoulder",
+      "spine",
+      "neck"
+    ]
+  },
+  "autoClavicle": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.8
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Auto Clavicle 01",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle 00",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle arm",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Auto Clavicle",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle 01",
+          "parent": "Bip001 Rot L Auto Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Auto Clavicle 01",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle 00",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle arm",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Auto Clavicle",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Auto Clavicle 01",
+          "parent": "Bip001 Rot L Auto Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "sources": [
+      "lClavicle",
+      "lUpperArm"
+    ]
+  },
+  "chest": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.33,
+        0.5,
+        60.0,
+        40.0,
+        1.0,
+        0.15,
+        0.25
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Chest 01",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Chest 02",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Chest",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Chest",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L ChestShoulder",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Chest",
+          "parent": "Bip001 Lat L Chest",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Spine",
+        "Bip001 Neck",
+        "Bip001 L Auto Clavicle 01",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Chest 01",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Chest 02",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Chest",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L Chest",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L ChestShoulder",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Chest",
+          "parent": "Bip001 Lat L Chest",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Spine",
+        "Bip001 Neck",
+        "Bip001 L Auto Clavicle 01",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "sources": [
+      "spine",
+      "neck",
+      "lAutoClavicle",
+      "lUpperArm"
+    ]
+  },
+  "elbow": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": true,
+      "parametersAfterCreate": [
+        0.5,
+        4.0,
+        "Z",
+        "Z",
+        "PosY",
+        "NegY",
+        0.25,
+        1.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow Root",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow",
+          "parent": "Bip001 L Elbow Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow",
+          "parent": "Bip001 L Elbow Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Elbow Root",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow Root",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow",
+          "parent": "Bip001 L Elbow Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Elbow",
+          "parent": "Bip001 L Elbow Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Elbow Root",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "sources": [
+      "lForeArm",
+      "lUpperArm"
+    ]
+  },
+  "groin": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        40.0,
+        60.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 Groin 00",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum Groin 00",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Groin 00",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R Groin 00",
+          "parent": "Bip001 R Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Pelvis",
+        "Bip001 L Thigh Twist 01",
+        "Bip001 R Thigh Twist 01"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 Groin 00",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum Groin 00",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Groin 00",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R Groin 00",
+          "parent": "Bip001 R Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Pelvis",
+        "Bip001 L Thigh Twist 01",
+        "Bip001 R Thigh Twist 01"
+      ]
+    },
+    "sources": [
+      "pelvis",
+      "lThighTwist",
+      "rThighTwist"
+    ]
+  },
+  "hip": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        5.0,
+        60.0,
+        40.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Hip 01",
+          "parent": "Bip001 Pelvis",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Pelvis Hip",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Twist Hip",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Thigh Hip",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Hip",
+          "parent": "Bip001 Rot L Thigh Hip",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Hip",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Pelvis",
+        "Bip001 L Thigh",
+        "Bip001 L Thigh Twist 01",
+        "Bip001 L Calf"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Hip 01",
+          "parent": "Bip001 Pelvis",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Pelvis Hip",
+          "parent": "Bip001 Pelvis",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Twist Hip",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Thigh Hip",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Hip",
+          "parent": "Bip001 Rot L Thigh Hip",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Hip",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 Pelvis",
+        "Bip001 L Thigh",
+        "Bip001 L Thigh Twist 01",
+        "Bip001 L Calf"
+      ]
+    },
+    "sources": [
+      "pelvis",
+      "lThigh",
+      "lThighTwist",
+      "lCalf"
+    ]
+  },
+  "inguinal": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.5,
+        6.0,
+        "Z",
+        "Y",
+        "PosY",
+        "PosZ",
+        2.0,
+        2.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal Root",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal",
+          "parent": "Bip001 L Inguinal Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal",
+          "parent": "Bip001 L Inguinal Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Inguinal Root",
+          "parent": "Bip001 Pelvis",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Thigh Twist 01",
+        "Bip001 Pelvis",
+        "Bip001 L Calf"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal Root",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal",
+          "parent": "Bip001 L Inguinal Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Inguinal",
+          "parent": "Bip001 L Inguinal Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Inguinal Root",
+          "parent": "Bip001 Pelvis",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Thigh Twist 01",
+        "Bip001 Pelvis",
+        "Bip001 L Calf"
+      ]
+    },
+    "sources": [
+      "lThighTwist",
+      "pelvis",
+      "lCalf"
+    ]
+  },
+  "jacketPanel": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        1.65,
+        0.5,
+        0.5,
+        0.67,
+        1.1,
+        1.1
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L JacketPanel",
+          "parent": "Bip001 L Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L JacketPanel",
+          "parent": "Bip001 Lat L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L JacketPanel",
+          "parent": "Bip001 L Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L JacketPanel",
+          "parent": "Bip001 Lat L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat R JacketPanel",
+          "parent": "Bip001 R Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos R JacketPanel",
+          "parent": "Bip001 Lat R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat R JacketPanel",
+          "parent": "Bip001 R Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos R JacketPanel",
+          "parent": "Bip001 Lat R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L JacketPanel",
+          "parent": "Bip001 Pos L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R JacketPanel",
+          "parent": "Bip001 Pos R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L JacketPanel",
+          "parent": "Bip001 Pos L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R JacketPanel",
+          "parent": "Bip001 Pos R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm",
+        "Bip001 R Clavicle",
+        "Bip001 R UpperArm",
+        "Bip001 Spine",
+        "Bip001 Neck"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L JacketPanel",
+          "parent": "Bip001 L Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L JacketPanel",
+          "parent": "Bip001 Lat L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L JacketPanel",
+          "parent": "Bip001 L Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T L JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L JacketPanel",
+          "parent": "Bip001 Lat L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat R JacketPanel",
+          "parent": "Bip001 R Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos R JacketPanel",
+          "parent": "Bip001 Lat R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat R JacketPanel",
+          "parent": "Bip001 R Clavicle",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T R JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos R JacketPanel",
+          "parent": "Bip001 Lat R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L JacketPanel",
+          "parent": "Bip001 Pos L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R JacketPanel",
+          "parent": "Bip001 Pos R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L JacketPanel",
+          "parent": "Bip001 Pos L JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum R JacketPanel",
+          "parent": "Bip001 Pos R JacketPanel",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 T JacketPanel",
+          "parent": "Bip001 Spine",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm",
+        "Bip001 R Clavicle",
+        "Bip001 R UpperArm",
+        "Bip001 Spine",
+        "Bip001 Neck"
+      ]
+    },
+    "sources": [
+      "lClavicle",
+      "lUpperArm",
+      "rClavicle",
+      "rUpperArm",
+      "spine",
+      "neck"
+    ]
+  },
+  "knee": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.05,
+        5.0,
+        0.1,
+        1.5
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 01",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 04",
+          "parent": "Bip001 L Thigh Twist 04",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 02",
+          "parent": "Bip001 L Thigh Twist 02",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 03",
+          "parent": "Bip001 L Thigh Twist 03",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee Root",
+          "parent": "Bip001 L Calf",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee",
+          "parent": "Bip001 L Knee Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee",
+          "parent": "Bip001 L Knee Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Calf Lift",
+          "parent": "Bip001 L Calf",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Knee Root",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 01",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 04",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 02",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 03",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Thigh",
+        "Bip001 L Calf",
+        "Bip001 L Foot"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 01",
+          "parent": "Bip001 L Thigh Twist 01",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 04",
+          "parent": "Bip001 L Thigh Twist 04",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 02",
+          "parent": "Bip001 L Thigh Twist 02",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist Lift 03",
+          "parent": "Bip001 L Thigh Twist 03",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee Root",
+          "parent": "Bip001 L Calf",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee",
+          "parent": "Bip001 L Knee Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Knee",
+          "parent": "Bip001 L Knee Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Calf Lift",
+          "parent": "Bip001 L Calf",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Thigh Lift",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Knee Root",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 01",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 04",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 02",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Pos L Thigh Twist Lift 03",
+          "parent": "Bip001 Rot L Thigh Lift",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Thigh",
+        "Bip001 L Calf",
+        "Bip001 L Foot"
+      ]
+    },
+    "sources": [
+      "lThigh",
+      "lCalf",
+      "lFoot"
+    ]
+  },
+  "shoulder": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.7
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Shoulder 01",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 T L Shoulder",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Shoulder",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Shoulder",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Shoulder",
+          "parent": "Bip001 Rot L Shoulder",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm",
+        "Bip001 L Auto Clavicle 01",
+        "Bip001 L UpperArm Twist 01"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Shoulder 01",
+          "parent": "Bip001 L Auto Clavicle 01",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 T L Shoulder",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Lat L Shoulder",
+          "parent": "Bip001 L Clavicle",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Rot L Shoulder",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Shoulder",
+          "parent": "Bip001 Rot L Shoulder",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Clavicle",
+        "Bip001 L UpperArm",
+        "Bip001 L Auto Clavicle 01",
+        "Bip001 L UpperArm Twist 01"
+      ]
+    },
+    "sources": [
+      "lClavicle",
+      "lUpperArm",
+      "lAutoClavicle",
+      "lUpperArmTwist"
+    ]
+  },
+  "twistLowerArm": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        4,
+        "Lower"
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 01",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 02",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 03",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 04",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L Hand"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 01",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 02",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 03",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Twist 04",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L Hand"
+      ]
+    },
+    "sources": [
+      "lForeArm",
+      "lHand"
+    ]
+  },
+  "twistUpperArm": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        4,
+        "Upper"
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 01",
+          "parent": "Bip001 L UpperArm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 02",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 03",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 04",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L UpperArm",
+        "Bip001 L Forearm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 01",
+          "parent": "Bip001 L UpperArm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 02",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 03",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L UpperArm Twist 04",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L UpperArm",
+        "Bip001 L Forearm"
+      ]
+    },
+    "sources": [
+      "lUpperArm",
+      "lForeArm"
+    ]
+  },
+  "twistUpperLegL": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        4,
+        "Upper"
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 01",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 02",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 03",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 04",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L Thigh",
+        "Bip001 L Calf"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 01",
+          "parent": "Bip001 L Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 02",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 03",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Thigh Twist 04",
+          "parent": "Bip001 L Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 L Thigh",
+        "Bip001 L Calf"
+      ]
+    },
+    "sources": [
+      "lThigh",
+      "lCalf"
+    ]
+  },
+  "twistUpperLegR": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        4,
+        "Upper"
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 01",
+          "parent": "Bip001 R Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 02",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 03",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 04",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 R Thigh",
+        "Bip001 R Calf"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 01",
+          "parent": "Bip001 R Thigh",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 02",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 03",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 R Thigh Twist 04",
+          "parent": "Bip001 R Thigh",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [],
+      "sourceBones": [
+        "Bip001 R Thigh",
+        "Bip001 R Calf"
+      ]
+    },
+    "sources": [
+      "rThigh",
+      "rCalf"
+    ]
+  },
+  "volumePreserve": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": false,
+      "parametersAfterCreate": [
+        0.5,
+        5.0,
+        "Z",
+        "PosY",
+        1.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Vol Root 01",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Vol Z PosY",
+          "parent": "Bip001 L Forearm Vol Root 01",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Forearm Vol Root",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Vol Root 01",
+          "parent": "Bip001 L Forearm",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Forearm Vol Z PosY",
+          "parent": "Bip001 L Forearm Vol Root 01",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Forearm Vol Root",
+          "parent": "Bip001 L UpperArm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Forearm",
+        "Bip001 L UpperArm"
+      ]
+    },
+    "sources": [
+      "lForeArm",
+      "lUpperArm"
+    ]
+  },
+  "wrist": {
+    "_reference": {
+      "deleteRemainingValidBones": 0,
+      "directRegenFailed": true,
+      "parametersAfterCreate": [
+        0.5,
+        4.0,
+        "Y",
+        "Y",
+        "Z",
+        "Z",
+        "PosZ",
+        "NegZ",
+        "PosY",
+        "NegY",
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "create": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist Root",
+          "parent": "Bip001 L Hand",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Wrist Root",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Hand",
+        "Bip001 L Forearm"
+      ]
+    },
+    "modify": {
+      "bones": [
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist Root",
+          "parent": "Bip001 L Hand",
+          "posController": "Position_XYZ",
+          "rotController": "rotation_list",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        },
+        {
+          "class": "BoneGeometry",
+          "name": "Bip001 L Wrist",
+          "parent": "Bip001 L Wrist Root",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "GeometryClass",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "helpers": [
+        {
+          "class": "Point",
+          "name": "Bip001 Dum L Wrist Root",
+          "parent": "Bip001 L Forearm",
+          "posController": "position_list",
+          "rotController": "Euler_XYZ",
+          "scaleController": "bezier_scale",
+          "superClass": "helper",
+          "transformController": "prs",
+          "userProps": ""
+        }
+      ],
+      "sourceBones": [
+        "Bip001 L Hand",
+        "Bip001 L Forearm"
+      ]
+    },
+    "sources": [
+      "lHand",
+      "lForeArm"
+    ]
+  }
+}

@@ -28,22 +28,22 @@ from pyjallib.max.skeleton import Skeleton
 from pyjallib.max.morph import Morph
 from pyjallib.max.attribute import Attribute
 
-from pyjallib.max.boneChain import BoneChain
+from pyjallib.max.rig.boneChain import BoneChain
 
-from pyjallib.max.twistBone import TwistBone
-from pyjallib.max.groinBone import GroinBone
-from pyjallib.max.autoClavicle import AutoClavicle
-from pyjallib.max.shoulder import Shoulder
-from pyjallib.max.armpit import Armpit
-from pyjallib.max.chest import Chest
-from pyjallib.max.volumeBone import VolumeBone
-from pyjallib.max.elbow import Elbow
-from pyjallib.max.wrist import Wrist
-from pyjallib.max.ankle import Ankle
-from pyjallib.max.inguinal import Inguinal
-from pyjallib.max.kneeBone import KneeBone
-from pyjallib.max.hip import Hip
-from pyjallib.max.jacketPanel import JacketPanel
+from pyjallib.max.rig.twistBone import TwistBone
+from pyjallib.max.rig.groinBone import GroinBone
+from pyjallib.max.rig.autoClavicle import AutoClavicle
+from pyjallib.max.rig.shoulder import Shoulder
+from pyjallib.max.rig.armpit import Armpit
+from pyjallib.max.rig.chest import Chest
+from pyjallib.max.rig.volumeBone import VolumeBone
+from pyjallib.max.rig.elbow import Elbow
+from pyjallib.max.rig.wrist import Wrist
+from pyjallib.max.rig.ankle import Ankle
+from pyjallib.max.rig.inguinal import Inguinal
+from pyjallib.max.rig.kneeBone import KneeBone
+from pyjallib.max.rig.hip import Hip
+from pyjallib.max.rig.jacketPanel import JacketPanel
 from pyjallib.max.ue5Skeleton import UE5Skeleton
 
 from pyjallib.max.rootMotion import RootMotion

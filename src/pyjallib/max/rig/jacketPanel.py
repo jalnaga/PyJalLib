@@ -7,61 +7,67 @@
 좌우 패널(clavicle 기반)과 가운데 패널(좌우 블렌드)을 생성
 """
 
+from typing import Optional
+
 from pymxs import runtime as rt
 
-# Import necessary service classes for default initialization
-from .name import Name
-from .anim import Anim
-from .helper import Helper
-from .bone import Bone
-from .constraint import Constraint
-from .align import Align
-
 from .boneChain import BoneChain
+from .rigPart import _RigPartBase
 
-class JacketPanel:
+class JacketPanel(_RigPartBase):
     """어깨를 들어올릴 때 자켓이 따라 올라가는 효과를 내는 자켓 패널 본을 생성하는 클래스.
 
     쇄골 기반의 좌우 패널 4개와 좌우를 블렌드한 중앙 패널 2개를 만든다.
     """
 
-    def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None, alignService=None):
-        """JacketPanel 클래스를 초기화한다.
+    PARAM_SPEC = (
+        ("inWidthScale", 1.65),
+        ("inForwardScale", 0.5),
+        ("inBackwardScale", 0.5),
+        ("inHeightScale", 0.67),
+        ("inFrontCenterPushScale", 1.1),
+        ("inBackCenterPushScale", 1.1),
+    )
+
+    SOURCE_SPEC = (
+        "inLClavicle",
+        "inLUpperArm",
+        "inRClavicle",
+        "inRUpperArm",
+        "inSpine",
+        "inNeck",
+    )
+
+    WORK_DEFAULTS = {
+        "boneSize": 2.0,
+        "genBones": [],
+        "genHelpers": [],
+    }
+
+    def __init__(
+        self,
+        inNameService,
+        inAnimService,
+        inHelperService,
+        inBoneService,
+        inConstService,
+        inAlignService,
+    ):
+        """자켓 패널 본 서비스를 초기화한다.
 
         Args:
-            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
-            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
-            helperService (Helper | None): 헬퍼 서비스. None이면 새로 생성한다.
-            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
-            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
-            alignService (Align | None): 정렬 서비스. None이면 새로 생성한다.
+            inNameService: 이름 처리 서비스
+            inAnimService: 애니메이션 서비스
+            inHelperService: 헬퍼 객체 서비스
+            inBoneService: 뼈대 서비스
+            inConstService: 제약 서비스
+            inAlignService: 정렬 서비스
         """
-        # 서비스 인스턴스 설정 또는 생성
-        self.name = nameService if nameService else Name()
-        self.anim = animService if animService else Anim()
-        
-        # 종속성이 있는 서비스들은 이미 생성된 서비스들을 전달
-        self.const = constraintService if constraintService else Constraint(nameService=self.name)
-        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim)
-        self.helper = helperService if helperService else Helper(nameService=self.name)
-        self.align = alignService if alignService else Align()
-        
-        self.boneSize = 2.0
-        
-        self.genBones = []
-        self.genHelpers = []
-        
-    def reset(self):
-        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+        super().__init__(
+            inNameService, inAnimService, inHelperService, inBoneService, inConstService
+        )
+        self.align = inAlignService
 
-        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
-        """
-        self.boneSize = 2.0
-        
-        self.genBones = []
-        self.genHelpers = []
-        
-    
     def create_side_panel(self, inClavicle, inUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67):
         """한쪽(좌 또는 우) 자켓 패널 본을 앞·뒤 2개 생성한다.
 
@@ -412,7 +418,21 @@ class JacketPanel:
         
         return result
         
-    def create_bones(self, inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck, inWidthScale=1.65, inForwardScale=0.5, inBackwardScale=0.5, inHeightScale=0.67, inFrontCenterPushScale=1.1, inBackCenterPushScale=1.1):
+    def create_bones(
+        self,
+        inLClavicle,
+        inLUpperArm,
+        inRClavicle,
+        inRUpperArm,
+        inSpine,
+        inNeck,
+        inWidthScale: float = 1.65,
+        inForwardScale: float = 0.5,
+        inBackwardScale: float = 0.5,
+        inHeightScale: float = 0.67,
+        inFrontCenterPushScale: float = 1.1,
+        inBackCenterPushScale: float = 1.1,
+    ) -> Optional[BoneChain]:
         """자켓 패널 본 6개(좌앞·좌뒤·우앞·우뒤·중앙앞·중앙뒤)를 생성한다.
 
         Args:
@@ -472,66 +492,22 @@ class JacketPanel:
         self.genBones = allBones
         self.genHelpers = allHelpers
         
-        result = {
-            "Bones": allBones,
-            "Helpers": allHelpers,
-            "SourceBones": [inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck],
-            "Parameters": [inWidthScale, inForwardScale, inBackwardScale, inHeightScale, inFrontCenterPushScale, inBackCenterPushScale]
-        }
+        result = self.build_result(
+            allBones,
+            allHelpers,
+            [inLClavicle, inLUpperArm, inRClavicle, inRUpperArm, inSpine, inNeck],
+            {
+                "inWidthScale": inWidthScale,
+                "inForwardScale": inForwardScale,
+                "inBackwardScale": inBackwardScale,
+                "inHeightScale": inHeightScale,
+                "inFrontCenterPushScale": inFrontCenterPushScale,
+                "inBackCenterPushScale": inBackCenterPushScale,
+            },
+        )
         
         self.reset()
         
         rt.redrawViews()
         
         return BoneChain.from_result(result)
-        
-    def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain 객체에서 자켓 패널 본들을 재생성한다.
-
-        Args:
-            inBoneChain (BoneChain): 자켓 패널 정보를 포함한 BoneChain 객체
-
-        Returns:
-            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
-        """
-        if not inBoneChain or inBoneChain.is_empty():
-            return None
-        
-        inBoneChain.delete()
-        
-        sourceBones = inBoneChain.sourceBones
-        parameters = inBoneChain.parameters
-        
-        if len(sourceBones) < 6 or not rt.isValidNode(sourceBones[0]) or not rt.isValidNode(sourceBones[1]) or \
-           not rt.isValidNode(sourceBones[2]) or not rt.isValidNode(sourceBones[3]) or \
-           not rt.isValidNode(sourceBones[4]) or not rt.isValidNode(sourceBones[5]):
-            return None
-        
-        lClavicle = sourceBones[0]
-        lUpperArm = sourceBones[1]
-        rClavicle = sourceBones[2]
-        rUpperArm = sourceBones[3]
-        spine = sourceBones[4]
-        neck = sourceBones[5]
-        
-        # 파라미터 추출
-        if len(parameters) >= 6:
-            widthScale = parameters[0]
-            forwardScale = parameters[1]
-            backwardScale = parameters[2]
-            heightScale = parameters[3]
-            frontCenterPushScale = parameters[4]
-            backCenterPushScale = parameters[5]
-        else:
-            # 기본값
-            widthScale = 1.65
-            forwardScale = 0.5
-            backwardScale = 0.5
-            heightScale = 0.67
-            frontCenterPushScale = 1.1
-            backCenterPushScale = 1.1
-        
-        return self.create_bones(lClavicle, lUpperArm, rClavicle, rUpperArm, spine, neck,
-                                 widthScale, forwardScale, backwardScale, heightScale,
-                                 frontCenterPushScale, backCenterPushScale)
-

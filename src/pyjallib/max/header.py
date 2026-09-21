@@ -25,20 +25,20 @@ from .bip import Bip
 from .skin import Skin
 from .skeleton import Skeleton
 
-from .twistBone import TwistBone
-from .autoClavicle import AutoClavicle
-from .shoulder import Shoulder
-from .armpit import Armpit
-from .chest import Chest
-from .jacketPanel import JacketPanel
-from .groinBone import GroinBone
-from .volumeBone import VolumeBone
-from .elbow import Elbow
-from .wrist import Wrist
-from .ankle import Ankle
-from .inguinal import Inguinal
-from .kneeBone import KneeBone
-from .hip import Hip
+from .rig.twistBone import TwistBone
+from .rig.autoClavicle import AutoClavicle
+from .rig.shoulder import Shoulder
+from .rig.armpit import Armpit
+from .rig.chest import Chest
+from .rig.jacketPanel import JacketPanel
+from .rig.groinBone import GroinBone
+from .rig.volumeBone import VolumeBone
+from .rig.elbow import Elbow
+from .rig.wrist import Wrist
+from .rig.ankle import Ankle
+from .rig.inguinal import Inguinal
+from .rig.kneeBone import KneeBone
+from .rig.hip import Hip
 from .ue5Skeleton import UE5Skeleton
 
 from .morph import Morph
@@ -110,110 +110,43 @@ class Header:
             layerService=self.layer,
         )
 
+        # 릭 파트는 서비스를 **필수 주입**으로 받는다(`rig/rigPart.py`). 공통 다섯은
+        # (name, anim, helper, bone, constraint) 순서로 고정이고, 그 뒤에 파트별
+        # 추가 서비스가 붙는다.
         self.twistBone = TwistBone(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            bipService=self.bip,
-            boneService=self.bone,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.bip
         )
         self.groinBone = GroinBone(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
+            self.name, self.anim, self.helper, self.bone, self.constraint
         )
         self.autoClavicle = AutoClavicle(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-            bipService=self.bip,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.bip
         )
         self.shoulder = Shoulder(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-            bipService=self.bip,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.bip
         )
         self.armpit = Armpit(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-            alignService=self.align,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.align
         )
         self.chest = Chest(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-            alignService=self.align,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.align
         )
         self.jacketPanel = JacketPanel(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-            alignService=self.align,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.align
         )
         self.volumeBone = VolumeBone(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
+            self.name, self.anim, self.helper, self.bone, self.constraint
         )
-        self.elbow = Elbow(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
-        )
-        self.wrist = Wrist(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
-        )
-        self.ankle = Ankle(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
-        )
+        self.elbow = Elbow(self.name, self.anim, self.helper, self.bone, self.constraint)
+        self.wrist = Wrist(self.name, self.anim, self.helper, self.bone, self.constraint)
+        self.ankle = Ankle(self.name, self.anim, self.helper, self.bone, self.constraint)
         self.inguinal = Inguinal(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
+            self.name, self.anim, self.helper, self.bone, self.constraint
         )
         self.kneeBone = KneeBone(
-            nameService=self.name,
-            animService=self.anim,
-            constraintService=self.constraint,
-            boneService=self.bone,
-            helperService=self.helper,
-            volumeBoneService=self.volumeBone,
+            self.name, self.anim, self.helper, self.bone, self.constraint, self.volumeBone
         )
-        self.hip = Hip(
-            nameService=self.name,
-            animService=self.anim,
-            helperService=self.helper,
-            boneService=self.bone,
-            constraintService=self.constraint,
-        )
+        self.hip = Hip(self.name, self.anim, self.helper, self.bone, self.constraint)
         self.ue5Skeleton = UE5Skeleton(
             nameService=self.name,
             animService=self.anim,
@@ -244,13 +177,29 @@ class Header:
 
         self.toolManager = ToolManager()
 
-    def update_nameConifg(self, configPath):
+    def update_name_config(self, inConfigPath):
         """이름 설정 파일을 다시 로드하여 네이밍 설정을 업데이트한다.
+
+        Args:
+            inConfigPath (str): 네이밍 설정 JSON 파일 경로
+        """
+        self.name.load_from_config_file(inConfigPath)
+
+    def update_nameConifg(self, configPath):
+        """`update_name_config`의 **오타 유지용 별칭**이다.
+
+        원래 이름에 오타(`Conifg`)가 있었고, 이미 두 프로젝트가 그 이름으로 부르고 있다.
+        바른 이름을 **가산으로** 추가하고 구 이름은 동작하는 별칭으로 남긴다 - 소비처를
+        수정하지 않아도 되므로 이 사이클의 변경 범위가 넓어지지 않는다.
+
+        **후속 이관 대상:** `orvlib/src/PyJalMaxLibLoader.py`,
+        `PyJalMaxNamer/src/maxnamer/ui/namePartInput.py`.
+        두 소비처가 새 이름으로 옮기면 이 별칭을 삭제한다.
 
         Args:
             configPath (str): 네이밍 설정 JSON 파일 경로
         """
-        self.name.load_from_config_file(configPath)
+        self.update_name_config(configPath)
 
     def configure_node_collect_policy(self, inPolicy) -> None:
         """노드 수집 확장 정서를 dependent와 sel 양쪽에 함께 배선한다.

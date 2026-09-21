@@ -35,17 +35,32 @@ reporter.assert_test(
 ```
 """
 
+import os
 import sys
 from pathlib import Path
 
+#: 배포본 검증용 경로 오버라이드. 완료 게이트에서 **배포처**를 검증할 때만 쓴다.
+#:
+#: `MaxTestRunner._build_env`가 `PYTHONPATH`를 **지우기** 때문에 그 통로로는 DCC 세션에
+#: 닿지 않는다. 전용 환경변수는 그대로 전달된다. 변수가 없으면 이 체크아웃으로 떨어지므로
+#: **배포본 검증과 워크트리 검증을 같은 코드가 자동 추종**한다.
+_SRC_ENV = "PYJALLIB_SRC_OVERRIDE"
+
 
 def checkout_src_path() -> Path:
-    """이 체크아웃의 `src` 디렉토리 경로를 돌려준다.
+    """검증 대상 `src` 디렉토리 경로를 돌려준다.
 
     Returns:
-        `<repo>/src`의 절대 경로
+        `PYJALLIB_SRC_OVERRIDE`가 있으면 그 경로, 없으면 `<repo>/src`
     """
+    override = os.environ.get(_SRC_ENV)
+    if override:
+        return Path(override).resolve()
     return (Path(__file__).resolve().parent.parent.parent / "src").resolve()
+
+
+#: 지금 무엇을 검증하고 있는지. 배포본 검증에서는 "deployment"가 된다.
+TARGET_LABEL = "deployment" if os.environ.get(_SRC_ENV) else "worktree"
 
 
 def bootstrap_pyjallib() -> Path:
@@ -71,7 +86,12 @@ def bootstrap_pyjallib() -> Path:
 
 
 def assert_loaded_from_checkout(inModule) -> bool:
-    """모듈이 이 체크아웃의 `src`에서 로드됐는지 판정한다.
+    """모듈이 **검증 대상 소스**에서 로드됐는지 판정한다.
+
+    보통은 이 체크아웃의 `src`다. 완료 게이트에서 `PYJALLIB_SRC_OVERRIDE`를 주면
+    **배포처**가 되고, 그때는 같은 함수가 배포본을 단정한다. 호출부의 TC00 문구는
+    "이 체크아웃"이라고 적혀 있지만 실제 축은 `TARGET_LABEL`이 말하는 대상이고,
+    상세 문구에 찍히는 `__file__`이 어느 쪽인지 드러낸다.
 
     `__version__`을 축으로 쓰면 오판한다 - `pyproject.toml`보다 stale할 수 있다
     (2026-09-18 실측: `__version__` 0.3.3 vs 선언 0.3.5). **`__file__`을 본다.**

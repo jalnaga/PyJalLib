@@ -6,114 +6,69 @@ Hip 모듈 - 3ds Max용 Hip 관련 기능 제공
 원본 MAXScript의 hip.ms를 Python으로 변환하였으며, pymxs 모듈 기반으로 구현됨
 """
 
+from typing import Optional
+
 from pymxs import runtime as rt
 
-# Import necessary service classes for default initialization
-from .name import Name
-from .anim import Anim
-from .helper import Helper
-from .bone import Bone
-from .constraint import Constraint
-
 from .boneChain import BoneChain
+from .rigPart import _RigPartBase
 
 
-class Hip:
+class Hip(_RigPartBase):
     """골반과 허벅지 사이에 배치되는 Hip 보조 본을 생성하는 클래스.
 
     헬퍼와 스크립트 제약을 이용해 허벅지 회전에 따라 밀려나는 Hip 본 셋업을 구성한다.
     """
 
-    def __init__(self, nameService=None, animService=None, helperService=None, boneService=None, constraintService=None):
-        """Hip 클래스를 초기화한다.
+    PARAM_SPEC = (
+        ("inPushAmount", 5.0),
+        ("inPelvisWeight", 60.0),
+        ("inThighWeight", 40.0),
+    )
 
-        Args:
-            nameService (Name | None): 이름 처리 서비스. None이면 새로 생성한다.
-            animService (Anim | None): 애니메이션 서비스. None이면 새로 생성한다.
-            helperService (Helper | None): 헬퍼 객체 서비스. None이면 새로 생성한다.
-            boneService (Bone | None): 뼈대 서비스. None이면 새로 생성한다.
-            constraintService (Constraint | None): 제약 서비스. None이면 새로 생성한다.
-        """
-        # 서비스 인스턴스 설정 또는 생성
-        self.name = nameService if nameService else Name()
-        self.anim = animService if animService else Anim()
-        
-        # 종속성이 있는 서비스들은 이미 생성된 서비스들을 전달
-        self.helper = helperService if helperService else Helper(nameService=self.name)
-        self.const = constraintService if constraintService else Constraint(nameService=self.name, helperService=self.helper)
-        self.bone = boneService if boneService else Bone(nameService=self.name, animService=self.anim, helperService=self.helper, constraintService=self.const)
-        
-        # 기본 속성 초기화
-        self.pelvisWeight = 0.4
-        self.thighWeight = 0.6
-        self.pushAmount = 20
-        
-        self.pelvis = None
-        self.thigh = None
-        self.thighTwist = None
-        self.calf = None
-        
-        self.pelvisHelper = None
-        self.thighHelper = None
-        self.thighTwistHelper = None
-        self.thighRotHelper = None
-        self.thighPosHelper = None
-        self.thighRotRootHelper = None
-        
-        self.helpers = []
-        self.bones = []
-        
-        self.posScriptExpression = (
-            "localLimbTm = limb.transform * inverse limbParent.transform\n"
-            "localDeltaTm = localLimbTm * inverse localRotRefTm\n"
-            "\n"
-            "q = localDeltaTm.rotation\n"
-            "\n"
-            "eulerRot = (quatToEuler q order:5)\n"
-            "swizzledRot = (eulerAngles eulerRot.y eulerRot.z eulerRot.x)\n"
-            "\n"
-            "axis = [0,0,1]\n"
-            "\n"
-            "saturatedTwistZ = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"
-            "pushScaleY = (amax 0.0 saturatedTwistZ)\n"
-            "\n"
-            "axis = [0,1,0]\n"
-            "saturatedTwistY = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0\n"
-            "pushScaleZ = amax 0.0 saturatedTwistY\n"
-            "\n"
-            "\n"
-            "[0, pushAmount * pushScaleY, -pushAmount * 0.1 * pushScaleZ]\n"
-        )
-        
-    def reset(self):
-        """클래스의 작업 데이터를 초기 상태로 되돌린다.
+    SOURCE_SPEC = ("inPelvis", "inThigh", "inThighTwist", "inCalf")
 
-        서비스가 아닌 클래스 자체의 작업 데이터만 초기화한다.
+    WORK_DEFAULTS = {
+        "pelvisWeight": 0.4,
+        "thighWeight": 0.6,
+        "pushAmount": 20,
+        "pelvis": None,
+        "thigh": None,
+        "thighTwist": None,
+        "calf": None,
+        "pelvisHelper": None,
+        "thighHelper": None,
+        "thighTwistHelper": None,
+        "thighRotHelper": None,
+        "thighPosHelper": None,
+        "thighRotRootHelper": None,
+        "helpers": [],
+        "bones": [],
+    }
 
-        Returns:
-            Hip: 메서드 체이닝을 위한 자기 자신
-        """
-        self.pelvisWeight = 0.4
-        self.thighWeight = 0.6
-        self.pushAmount = 20
-        
-        self.pelvis = None
-        self.thigh = None
-        self.thighTwist = None
-        self.calf = None
-        
-        self.pelvisHelper = None
-        self.thighHelper = None
-        self.thighTwistHelper = None
-        self.thighRotHelper = None
-        self.thighPosHelper = None
-        self.thighRotRootHelper = None
-        
-        self.helpers = []
-        self.bones = []
-        
-        return self
-    
+    #: Hip 본의 위치 스크립트. 허벅지의 Z·Y 회전을 각각 Y·Z 밀림으로 옮긴다.
+    posScriptExpression = """localLimbTm = limb.transform * inverse limbParent.transform
+localDeltaTm = localLimbTm * inverse localRotRefTm
+
+q = localDeltaTm.rotation
+
+eulerRot = (quatToEuler q order:5)
+swizzledRot = (eulerAngles eulerRot.y eulerRot.z eulerRot.x)
+
+axis = [0,0,1]
+
+saturatedTwistZ = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0
+pushScaleY = (amax 0.0 saturatedTwistZ)
+
+axis = [0,1,0]
+saturatedTwistY = (swizzledRot.x*axis.x + swizzledRot.y*axis.y + swizzledRot.z*axis.z)/180.0
+pushScaleZ = amax 0.0 saturatedTwistY
+
+
+[0, pushAmount * pushScaleY, -pushAmount * 0.1 * pushScaleZ]
+"""
+
+
     def create_helper(self, inPelvis, inThigh, inThighTwist):
         """Hip 셋업에 필요한 헬퍼 포인트들을 생성한다.
 
@@ -221,26 +176,35 @@ class Hip:
         posConst.setExpression(self.posScriptExpression)
         posConst.update()
         
-    def create_bone(self, inPelvis, inThigh, inThighTwist, inCalf, pushAmount=5.0, inPelvisWeight=60.0, inThighWeight=40.0):
+    def create_bones(
+        self,
+        inPelvis,
+        inThigh,
+        inThighTwist,
+        inCalf,
+        inPushAmount: float = 5.0,
+        inPelvisWeight: float = 60.0,
+        inThighWeight: float = 40.0,
+    ) -> Optional[BoneChain]:
         """헬퍼와 제약을 구성하고 Hip 본을 생성한다.
 
         Args:
-            inPelvis (rt.Node): 골반 본
-            inThigh (rt.Node): 허벅지 본
-            inThighTwist (rt.Node): 허벅지 트위스트 본
-            inCalf (rt.Node): 종아리 본
-            pushAmount (float): 밀림 크기
-            inPelvisWeight (float): 골반 회전 가중치
-            inThighWeight (float): 허벅지 회전 가중치
+            inPelvis: 골반 본
+            inThigh: 허벅지 본
+            inThighTwist: 허벅지 트위스트 본
+            inCalf: 종아리 본
+            inPushAmount: 밀림 크기
+            inPelvisWeight: 골반 회전 가중치
+            inThighWeight: 허벅지 회전 가중치
 
         Returns:
-            BoneChain | False: 생성된 Hip 본 체인. 유효하지 않은 노드가 있으면 False
+            BoneChain | None: 생성된 Hip 본 체인. 유효하지 않은 노드가 있으면 None
         """
-        if not rt.isValidNode(inPelvis) or not rt.isValidNode(inThigh) or not rt.isValidNode(inThighTwist):
-            return False
-        
+        if not self.validate_source_nodes(inPelvis, inThigh, inThighTwist):
+            return None
+
         self.create_helper(inPelvis, inThigh, inThighTwist)
-        self.assing_constraint(inCalf, inPelvisWeight, inThighWeight, inPushAmount=pushAmount)
+        self.assing_constraint(inCalf, inPelvisWeight, inThighWeight, inPushAmount=inPushAmount)
         
         isLower = self.name.get_name("RealName", inThigh.name)[0].islower()
         hipBoneName = self.name.replace_name_part("RealName", inThigh.name, "Hip")
@@ -265,57 +229,20 @@ class Hip:
                 self.bone.set_skin_bone_property(item, True)
                 self.bone.set_skin_bone_parent(item)
         
-        # 결과를 딕셔너리 형태로 준비
-        result = {
-            "Bones": self.bones,
-            "Helpers": self.helpers,
-            "SourceBones": [inPelvis, inThigh, inThighTwist, inCalf],
-            "Parameters": [pushAmount, inPelvisWeight, inThighWeight]
-        }
-        
+        result = self.build_result(
+            self.bones,
+            self.helpers,
+            [inPelvis, inThigh, inThighTwist, inCalf],
+            {
+                "inPushAmount": inPushAmount,
+                "inPelvisWeight": inPelvisWeight,
+                "inThighWeight": inThighWeight,
+            },
+        )
+
         # 메소드 호출 후 데이터 초기화
         self.reset()
         
         rt.redrawViews()
         
         return BoneChain.from_result(result)
-    
-    def create_bones_from_chain(self, inBoneChain: BoneChain):
-        """기존 BoneChain 객체에서 Hip 본을 재생성한다.
-
-        기존 설정을 복원하거나 저장된 데이터에서 Hip 셋업을 재생성할 때 사용한다.
-
-        Args:
-            inBoneChain (BoneChain): Hip 정보를 포함한 BoneChain 객체
-
-        Returns:
-            BoneChain | None: 재생성된 BoneChain. 체인이 비었거나 소스 본이 유효하지 않으면 None
-        """
-        if not inBoneChain or inBoneChain.is_empty():
-            return None
-            
-        # 기존 객체 삭제
-        inBoneChain.delete()
-            
-        # BoneChain에서 필요한 정보 추출
-        sourceBones = inBoneChain.sourceBones
-        parameters = inBoneChain.parameters
-        
-        # 필수 소스 본 확인
-        if len(sourceBones) < 4 or not all(rt.isValidNode(bone) for bone in sourceBones[:4]):
-            return None
-            
-        # 파라미터 가져오기 (또는 기본값 사용)
-        pushAmount = parameters[0] if len(parameters) > 0 else 5.0
-        pelvisWeight = parameters[1] if len(parameters) > 1 else 0.6
-        thighWeight = parameters[2] if len(parameters) > 2 else 0.4
-        
-        # Hip 생성
-        inPelvis = sourceBones[0]
-        inThigh = sourceBones[1]
-        inThighTwist = sourceBones[2]
-        inCalf = sourceBones[3]
-        
-        # 새로운 Hip 생성
-        return self.create_bone(inPelvis, inThigh, inThighTwist, inCalf, pushAmount, pelvisWeight, thighWeight)
-
