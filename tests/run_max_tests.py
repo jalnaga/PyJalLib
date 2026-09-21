@@ -63,6 +63,8 @@ TEST_SCRIPTS = [
     "test_skin.py",
     # Skin 결함 원인 프로브(Phase 0 = H1 기각·H6 확정 / Phase 0B = 삽입 방아쇠). 기대 TC 26 (TC00~TC25)
     "test_probe_envelope.py",
+    # 릭 파트 특성화 회귀. 기대 TC 54 (전제 3 + 17 파트 x create/modify/delete)
+    "test_rig_parts.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -77,6 +79,7 @@ LOG_NAME_OVERRIDES = {
     "test_addon_compat_realscene.py": "AddonCompatRealScene",
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
     "test_probe_envelope.py": "ProbeEnvelope",
+    "test_rig_parts.py": "RigParts",
 }
 
 
@@ -126,6 +129,15 @@ def main() -> None:
         else:
             reporterSuiteName = suiteName.removeprefix("test_").capitalize()
         expectedLogPath = LOG_DIR / f"test_{reporterSuiteName}.log"
+
+        # **실행 전에 직전 로그를 치운다.** 스크립트가 import 단계에서 죽으면
+        # TestReporter가 로그를 새로 쓰지 못하는데, 분석기는 남아 있는 **직전 실행의
+        # 로그**를 읽어 그대로 "ALL PASSED"를 낸다(2026-09-21 실측: 문법 오류로 죽은
+        # 두 번의 실행이 연속으로 초록으로 보고됐다). 로그가 없으면 분석기가
+        # `[SKIP] 로그 파일 없음`을 내므로 죽은 실행이 드러난다.
+        if expectedLogPath.exists():
+            expectedLogPath.unlink()
+
         print(f"\n[RUN] {suiteName} ...", end=" ", flush=True)
 
         runResult = runner.run(
@@ -188,7 +200,10 @@ def main() -> None:
 
     # 최종 요약
     totalTests = totalPassed + totalFailed + totalErrors
-    allPassed = totalFailed == 0 and totalErrors == 0
+    # 로그가 없는 스위트(= 스크립트가 실행 전 단계에서 죽었다)는 실패로 센다.
+    # 이것을 보지 않으면 "총 TC 0 · ALL PASSED"가 나온다.
+    missingLogSuites = [name for name, result, _, _ in suiteResults if result is None]
+    allPassed = totalFailed == 0 and totalErrors == 0 and not missingLogSuites
     finalStatus = "ALL PASSED" if allPassed else "SOME FAILED"
 
     print("\n" + "=" * 60)
@@ -196,6 +211,8 @@ def main() -> None:
     print(f"  총 TC: {totalTests} | 통과: {totalPassed} | 실패: {totalFailed} | 에러: {totalErrors}")
     print(f"  스위트: {len(suiteResults)}개 중 "
           f"{sum(1 for _, _, p, _ in suiteResults if p)}개 통과")
+    if missingLogSuites:
+        print(f"  로그 없음(실행 전 단계에서 죽음): {', '.join(missingLogSuites)}")
     print("=" * 60)
 
     # 로그 파일 경로 출력

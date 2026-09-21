@@ -19,52 +19,31 @@
 """
 
 import sys
-import importlib.util
 from pathlib import Path
 
 # -- 경로 설정 -----------------------------------------------------------------
-_srcPath = str(Path(__file__).parent.parent.parent / "src")
-if _srcPath not in sys.path:
-    sys.path.insert(0, _srcPath)
+# 전에는 `importlib.spec_from_file_location`으로 모듈 5개를 **파일 경로로 강제 로드**해
+# 배포본 선캐시를 피했다. 그 방식은 **신규 서브패키지를 못 본다** - 강제 로드된 모듈의
+# 상대 import(`from .rig.twistBone import ...`)는 `sys.modules`에 남아 있는 **배포본**
+# `pyjallib.max`의 `__path__`로 해석되기 때문이다. `rig/`를 만들자마자
+# `ModuleNotFoundError: No module named 'pyjallib.max.rig'`로 죽었다
+# (2026-09-21 실측, RiggingToolRefactor Phase 1).
+#
+# 공용 `_bootstrap`은 `pyjallib.*`을 **통째로 퍼지**한 뒤 경로를 선주입하므로 중간
+# 패키지의 `__path__`도 새로 만들어진다. 판정 내용(TC00 이하)은 그대로 둔다.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _bootstrap import bootstrap_pyjallib  # noqa: E402
+
+_srcPath = str(bootstrap_pyjallib())
 
 from pymxs import runtime as rt  # noqa: E402
 from pyjallib.testKit import TestReporter  # noqa: E402
 
-
-def _force_load(inModuleName, inRelativePath):
-    """워크스페이스 소스 파일을 importlib로 강제 로드해 sys.modules에 등록한다.
-
-    3ds Max 기동 시 배포본 pyjallib이 선캐시되므로, 그냥 import하면 워크트리 소스가
-    아니라 배포본을 검증하게 된다(pymxs_pitfalls.md 섹션 8 패턴). 의존 모듈을 먼저
-    등록해야 뒤에 로드되는 모듈의 ``from ... import``가 강제 로드본을 집는다.
-
-    Args:
-        inModuleName (str): sys.modules에 등록할 모듈 이름
-        inRelativePath (str): src 아래 상대 경로
-
-    Returns:
-        로드된 모듈 객체
-    """
-    modulePath = Path(_srcPath) / inRelativePath
-    moduleSpec = importlib.util.spec_from_file_location(inModuleName, modulePath)
-    module = importlib.util.module_from_spec(moduleSpec)
-    sys.modules[inModuleName] = module
-    moduleSpec.loader.exec_module(module)
-    return module
-
-
-# 로드 순서가 곧 의존 순서다. 엔진 -> 어댑터 -> 두 서비스.
-_policyMod = _force_load(
-    "pyjallib.max.nodeCollectPolicy", "pyjallib/max/nodeCollectPolicy.py"
-)
-_resolverMod = _force_load(
-    "pyjallib.max.nodeCollectResolver", "pyjallib/max/nodeCollectResolver.py"
-)
-_dependentMod = _force_load("pyjallib.max.dependent", "pyjallib/max/dependent.py")
-_selectMod = _force_load("pyjallib.max.select", "pyjallib/max/select.py")
-# header도 강제 로드해야 신규 배선 메서드가 잡힌다. 위 두 서비스를 먼저 등록했으므로
-# header의 상대 import가 강제 로드본을 집는다.
-_headerMod = _force_load("pyjallib.max.header", "pyjallib/max/header.py")
+from pyjallib.max import nodeCollectPolicy as _policyMod  # noqa: E402
+from pyjallib.max import nodeCollectResolver as _resolverMod  # noqa: E402
+from pyjallib.max import dependent as _dependentMod  # noqa: E402
+from pyjallib.max import select as _selectMod  # noqa: E402
+from pyjallib.max import header as _headerMod  # noqa: E402
 
 Dependent = _dependentMod.Dependent
 Select = _selectMod.Select
