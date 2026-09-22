@@ -55,6 +55,10 @@ from pyjallib.max.dependent import Dependent
 from pyjallib.max.nodeCollectPolicy import NodeCollectPolicy
 from pyjallib.max.nodeCollectResolver import NodeCollectResolver, build_policy
 
+# 누락 애셋 검사·정리. 계획 엔진(missingAssetPolicy)은 순수 모듈이라 pymxs 없이도
+# import할 수 있고, 어댑터(MissingAsset)가 씬 접근과 삭제 실행을 담당한다.
+from pyjallib.max.missingAssetResolver import MissingAsset
+
 from pyjallib.max.checkViewport import CheckViewport
 from pyjallib.max.checkLayer import CheckLayer
 from pyjallib.max.checkMaterial import CheckMaterial
@@ -110,6 +114,7 @@ __all__ = [
     "NodeCollectPolicy",
     "NodeCollectResolver",
     "build_policy",
+    "MissingAsset",
     "CheckViewport",
     "CheckLayer",
     "CheckMaterial",
