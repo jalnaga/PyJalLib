@@ -61,13 +61,17 @@ from pyjallib.max.missingAssetPolicy import (
     build_purge_plan,
 )
 
-#: 경로를 들고 있을 수 있는 클래스와 그 파일 프로퍼티 이름. 역추적 기점을 모으는 데
-#: 쓴다. 열거 자체는 ``AssetManager``가 하므로 이 표가 불완전해도 **누락을 놓치지는
-#: 않고**, 그 애셋에 노드가 붙지 않을 뿐이다(안전측).
+#: 경로를 들고 있을 수 있는 클래스 - ``(클래스명, 파일 프로퍼티, 슬롯 파라미터까지
+#: 훑을지)``. 역추적 기점을 모으는 데 쓴다. 열거 자체는 ``AssetManager``가 하므로 이
+#: 표가 불완전해도 **누락을 놓치지는 않고**, 그 애셋에 노드가 붙지 않을 뿐이다(안전측).
+#:
+#: 세 번째 값은 셰이더처럼 텍스쳐를 **파라미터로 갖는** 클래스에만 켠다. 비트맵마다
+#: ``getPropNames``를 부르면 텍스쳐 수백 개짜리 씬에서 그만큼 왕복이 생기고 얻는 것은
+#: 없다(비트맵의 경로는 ``filename`` 하나로 끝난다).
 _ASSET_HOLDER_SPECS = (
-    ("BitmapTexture", "filename"),
-    ("DirectX_9_Shader", "effectfile"),
-    ("VRayHDRI", "HDRIMapName"),
+    ("BitmapTexture", "filename", False),
+    ("DirectX_9_Shader", "effectfile", True),
+    ("VRayHDRI", "HDRIMapName", False),
 )
 
 #: Missing 플러그인 객체의 클래스 이름 접두. 실측된 6종(GeomObject/Helper/Light/
@@ -198,7 +202,7 @@ def _holder_map() -> Dict[str, List[Any]]:
     """
     byPath: Dict[str, List[Any]] = {}
 
-    for className, propName in _ASSET_HOLDER_SPECS:
+    for className, propName, walkSlots in _ASSET_HOLDER_SPECS:
         klass = getattr(rt, className, None)
         if klass is None:
             continue
@@ -211,13 +215,15 @@ def _holder_map() -> Dict[str, List[Any]]:
             nodes = _dependent_nodes(instance)
             if not nodes:
                 continue
-            for path in _holder_paths(instance, propName):
+            for path in _holder_paths(instance, propName, walkSlots):
                 byPath.setdefault(path, []).extend(nodes)
 
     return byPath
 
 
-def _holder_paths(inHolder: Any, inPropName: str) -> List[str]:
+def _holder_paths(
+    inHolder: Any, inPropName: str, inWalkSlots: bool = False
+) -> List[str]:
     """보유 객체가 들고 있는 애셋 경로를 모은다.
 
     **두 예외 채널을 분리한다.** 프로퍼티 접근이 예외를 던진 것("애셋이 물려 있는데
@@ -227,6 +233,9 @@ def _holder_paths(inHolder: Any, inPropName: str) -> List[str]:
     Args:
         inHolder: 경로를 들고 있을 수 있는 객체
         inPropName: 대표 파일 프로퍼티 이름
+        inWalkSlots: 텍스쳐 슬롯 파라미터까지 훑을지 여부. 셰이더처럼 텍스쳐를
+            **파라미터로 갖는** 클래스에만 켠다 - 비트맵 하나하나에 ``getPropNames``를
+            부르면 텍스쳐가 수백 개인 씬에서 그만큼 왕복이 생기고 얻는 것은 없다
 
     Returns:
         정규화된 경로 목록
@@ -236,6 +245,9 @@ def _holder_paths(inHolder: Any, inPropName: str) -> List[str]:
     primary = _read_path_property(inHolder, inPropName)
     if primary:
         paths.append(primary)
+
+    if not inWalkSlots:
+        return paths
 
     # DirectX_9_Shader는 텍스쳐를 **파라미터**로 갖는다. 이름은 후보를 좁히고
     # 값만이 판정한다 - 이름에 texture가 든 bool 파라미터가 실재한다.
