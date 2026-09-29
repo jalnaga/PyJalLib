@@ -13,7 +13,7 @@
 **워크스페이스 경로를 일절 넣지 않는다.** 프로덕션과 같은 조건으로 배포본을 그대로
 import한다 - `sys.path`를 조작하면 무엇을 검증했는지 말할 수 없게 된다.
 
-기대 TC 수: 10 (TC01~TC10)
+기대 TC 수: 12 (TC01~TC12)
 
 실행:
     uv run python tests/_run_probe.py _probe_deploy_missing_asset.py 900
@@ -79,6 +79,7 @@ def _build_fixture():
     geoMissing = rt.Box(name="deploy_geo_missing", mapcoords=True)
     material = rt.StandardMaterial(name="deploy_mat")
     material.diffuseMap = rt.BitmapTexture(filename=MISSING_ROOT + "/d.png")
+    material.bumpMap = rt.BitmapTexture(filename=MISSING_ROOT + "/b.png")
     geoMissing.material = material
 
     light = rt.OmniLight(name="deploy_light_missing")
@@ -121,12 +122,25 @@ try:
         build_plan_summary,
         build_purge_plan,
     )
-    from pyjallib.max.missingAssetResolver import MissingAsset, is_geometry_node
+    from pyjallib.max.missingAssetPolicy import (
+        build_purge_confirm_summary,
+        build_purge_detail_text,
+    )
+    from pyjallib.max.missingAssetResolver import (
+        MissingAsset,
+        collect_broken_slots,
+        is_geometry_node,
+    )
+    from pyjallib.max.ui.scrollableConfirmDialog import show_scrollable_confirm
 
     symbols = {
         "패키지 재노출": FacadeFromPackage is MissingAsset,
         "build_purge_plan": callable(build_purge_plan),
         "build_plan_summary": callable(build_plan_summary),
+        "build_purge_detail_text": callable(build_purge_detail_text),
+        "build_purge_confirm_summary": callable(build_purge_confirm_summary),
+        "collect_broken_slots": callable(collect_broken_slots),
+        "show_scrollable_confirm": callable(show_scrollable_confirm),
         "is_geometry_node": callable(is_geometry_node),
         "상수 4종": {ASSET_KIND_FILE, ASSET_KIND_PLUGIN, REASON_GEOMETRY, REASON_UNKNOWN}
         == {"file", "plugin", "geometry", "unknown"},
@@ -150,11 +164,16 @@ try:
     deleteNames = [node["name"] for node in plan["deleteNodes"]]
     reportNames = [node["name"] for node in plan["reportNodes"]]
 
+    slotLabels = [
+        slot["ownerName"] + "." + str(slot["displayName"])
+        for slot in plan["detachSlots"]
+    ]
     reporter.assert_test(
         deleteNames == ["deploy_light_missing"]
-        and reportNames == ["deploy_geo_missing"],
-        "TC03 배포본이 누락 애셋을 찾고 분류한다",
-        f"delete={deleteNames}, report={reportNames}",
+        and len(slotLabels) == 2
+        and all("deploy_mat" in label for label in slotLabels),
+        "TC03 배포본이 깨진 슬롯과 잔재 노드를 함께 찾는다",
+        f"slots={slotLabels}, delete={deleteNames}, report={reportNames}",
     )
 except Exception:
     reporter.error("TC03 배포본이 누락 애셋을 찾고 분류한다", traceback.format_exc(limit=4))
@@ -166,11 +185,12 @@ try:
     remaining = [str(node.name) for node in rt.objects]
 
     reporter.assert_test(
-        result["deleted"] == ["deploy_light_missing"]
+        len(result["detached"]) == 2
+        and result["deleted"] == ["deploy_light_missing"]
         and result["failed"] == []
         and "deploy_geo_missing" in remaining
         and "deploy_geo_clean" in remaining,
-        "TC04 배포본이 비지오메트리만 지우고 지오메트리를 지킨다",
+        "TC04 배포본이 슬롯을 떼고 잔재만 지우며 메쉬를 지킨다",
         f"result={result}, remaining={remaining}",
     )
 except Exception:
@@ -188,7 +208,8 @@ try:
 
     reporter.assert_test(
         _under(validatorStep, DEPLOY_VALIDATOR)
-        and callable(validatorStep.build_missing_asset_warnings)
+        and callable(validatorStep.build_missing_asset_errors)
+        and callable(validatorStep.has_actionable)
         and {"geometry", "unknown"}.issubset(set(validatorStep.REASON_LABELS)),
         "TC05 MeshValidator 순수 스텝이 배포본에서 로드되고 사유 키가 맞다",
         f"file={getattr(validatorStep, '__file__', None)}, "
@@ -222,10 +243,9 @@ try:
     signature = inspect.signature(MeshSaveLoadService.save_file)
     reporter.assert_test(
         _under(sys.modules["meshnameselector.func.saveLoad"], DEPLOY_EXPORTER)
-        and hasattr(MeshSaveLoadService, "run_missing_asset_step")
-        and "inConfirmPurge" in signature.parameters
-        and signature.parameters["inConfirmPurge"].default is None,
-        "TC07 MeshNameSelector가 전처리 스텝과 확인 콜백을 물고 있다",
+        and hasattr(MeshSaveLoadService, "log_missing_assets")
+        and "inConfirmPurge" not in signature.parameters,
+        "TC07 MeshNameSelector가 로그 스텝만 갖고 확인을 묻지 않는다",
         f"file={sys.modules['meshnameselector.func.saveLoad'].__file__}, "
         f"params={list(signature.parameters)}",
     )
@@ -243,7 +263,8 @@ try:
         _under(builderGates, DEPLOY_BUILDER)
         and _under(builderStep, DEPLOY_BUILDER)
         and builderGates.KIND_MISSING_ASSET == "missingAsset"
-        and callable(builderStep.purge_missing_assets),
+        and callable(builderStep.purge_missing_assets)
+        and callable(builderStep.build_confirm_detail),
         "TC08 BaseSkeletonBuilder 게이트 사유와 정리 스텝이 배포됐다",
         f"gates={getattr(builderGates, '__file__', None)}, "
         f"step={getattr(builderStep, '__file__', None)}",
@@ -281,15 +302,62 @@ try:
     reasons = builderGates.evaluate_preconditions([], {"noop": False}, None, summary)
 
     reporter.assert_test(
-        summary["deleteCount"] == 1
+        summary["blockCount"] == 1
+        and summary["slotCount"] == 2
         and [reason["kind"] for reason in reasons]
         == [builderGates.KIND_MISSING_ASSET],
-        "TC10 배포본 게이트가 잔재를 실제로 차단한다",
-        f"summary={summary}, reasons={[r['kind'] for r in reasons]}",
+        "TC10 배포본 게이트가 잔재 노드를 차단한다",
+        f"summary={summary}",
     )
 except Exception:
     reporter.error(
-        "TC10 배포본 게이트가 잔재를 실제로 차단한다", traceback.format_exc(limit=4)
+        "TC10 배포본 게이트가 잔재 노드를 차단한다", traceback.format_exc(limit=4)
+    )
+
+
+# ============================================================
+# TC11: 깨진 슬롯만으로는 **차단하지 않는다** (과차단 회귀 가드)
+# ============================================================
+try:
+    rt.resetMaxFile(rt.Name("noPrompt"))
+    slotBox = rt.Box(name="deploy_slot_only", mapcoords=True)
+    slotMat = rt.StandardMaterial(name="deploy_slot_mat")
+    slotMat.diffuseMap = rt.BitmapTexture(filename=MISSING_ROOT + "/s.png")
+    slotBox.material = slotMat
+
+    summary = builderStep.purge_missing_assets()
+    reasons = builderGates.evaluate_preconditions([], {"noop": False}, None, summary)
+
+    reporter.assert_test(
+        summary["slotCount"] == 1 and summary["blockCount"] == 0 and reasons == [],
+        "TC11 깨진 슬롯만으로는 변환을 차단하지 않는다",
+        f"summary={summary}, reasons={reasons}",
+    )
+except Exception:
+    reporter.error(
+        "TC11 깨진 슬롯만으로는 변환을 차단하지 않는다", traceback.format_exc(limit=4)
+    )
+
+
+# ============================================================
+# TC12: 배포본 다이얼로그 문구가 만들어진다
+# ============================================================
+try:
+    _build_fixture()
+    plan = MissingAsset().build_purge_plan()
+    summaryText = build_purge_confirm_summary(plan)
+    detailText = build_purge_detail_text(plan)
+
+    reporter.assert_test(
+        "진행하시겠습니까?" in summaryText
+        and "[정리]" in detailText
+        and "메쉬와 매테리얼은 그대로 둡니다" in summaryText,
+        "TC12 배포본이 확인 다이얼로그 문구를 만든다",
+        f"detailLines={len(detailText.splitlines())}",
+    )
+except Exception:
+    reporter.error(
+        "TC12 배포본이 확인 다이얼로그 문구를 만든다", traceback.format_exc(limit=4)
     )
 
 
