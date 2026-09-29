@@ -11,7 +11,7 @@
 TC05가 "지오메트리가 남아 있다"를 단정하는 데 그치지 않고, TC06이 **지오메트리를
 삭제하는 구현이었다면 TC05가 실패함**을 같은 실행에서 보인다(`testing/discriminating_power.md`).
 
-기대 TC 수: 19 (TC00~TC18)
+기대 TC 수: 25 (TC00~TC24)
 
 실행:
     uv run python tests/run_max_tests.py test_missing_asset.py
@@ -32,7 +32,11 @@ from pymxs import runtime as rt  # noqa: E402
 import pyjallib  # noqa: E402
 from pyjallib.testKit import TestReporter  # noqa: E402
 from pyjallib.max.missingAssetPolicy import REASON_GEOMETRY  # noqa: E402
-from pyjallib.max.missingAssetResolver import MissingAsset, is_geometry_node  # noqa: E402
+from pyjallib.max.missingAssetResolver import (  # noqa: E402
+    MissingAsset,
+    collect_broken_slots,
+    is_geometry_node,
+)
 
 LOG_DIR = Path(__file__).parent.parent / "logs"
 reporter = TestReporter("MissingAsset", LOG_DIR)
@@ -563,6 +567,169 @@ try:
     )
 except Exception as e:
     reporter.error("TC18 슬롯 분리와 노드 삭제가 한 번에 적용된다", str(e))
+
+
+# ============================================================
+# 노드 범위 조회 + 서브 매테리얼 (2026-09-29 마스터 지시 2차)
+# ============================================================
+
+
+def _build_multi_material_fixture():
+    """**Multimaterial** 아래에 깨진 슬롯을 물린 씬을 만든다.
+
+    캐릭터 메쉬는 멀티 서브 매테리얼을 흔히 쓴다. 서브 매테리얼 아래 슬롯은
+    ``getNumSubTexmaps``로 보이지 않으므로(0을 돌려준다) 별도 축이 필요하고,
+    그 축이 없으면 Pick 시점 검사가 조용히 0건을 낸다.
+
+    Returns:
+        dict: 사전 어서션 값
+    """
+    _reset_scene()
+
+    multiTarget = rt.Box(name="multi_geo", mapcoords=True)
+    multi = rt.MultiMaterial(name="multi_mat", numsubs=2)
+    subA = rt.StandardMaterial(name="multi_sub_a")
+    subA.diffuseMap = rt.BitmapTexture(filename=MISSING_ROOT + "/multi_a.png")
+    subB = rt.StandardMaterial(name="multi_sub_b")
+    subB.diffuseMap = rt.BitmapTexture(filename=INSTALLED_MAP)
+    rt.setSubMtl(multi, 1, subA)
+    rt.setSubMtl(multi, 2, subB)
+    multiTarget.material = multi
+
+    # 다른 메쉬의 깨진 슬롯 - 노드 범위 조회가 이것을 **가져오면 안 된다**.
+    otherGeo = rt.Box(name="other_geo", mapcoords=True)
+    otherMat = rt.StandardMaterial(name="other_mat")
+    otherMat.diffuseMap = rt.BitmapTexture(filename=MISSING_ROOT + "/other.png")
+    otherGeo.material = otherMat
+
+    return {
+        "missingRootAbsent": not os.path.exists(MISSING_ROOT),
+        "installedMapExists": os.path.exists(INSTALLED_MAP),
+        "subMtlCount": int(rt.getNumSubMtls(multi)),
+        "subTexmapCount": int(rt.getNumSubTexmaps(multi)),
+        "nodeCount": len(list(rt.objects)),
+    }
+
+
+# ============================================================
+# TC19: 서브 매테리얼 인터페이스가 pymxs에 노출되고 픽스처가 성립한다
+# ============================================================
+try:
+    assertions = _build_multi_material_fixture()
+    reporter.assert_test(
+        assertions["missingRootAbsent"] is True
+        and assertions["installedMapExists"] is True
+        and assertions["subMtlCount"] == 2
+        and assertions["subTexmapCount"] == 0
+        and assertions["nodeCount"] == 2,
+        "TC19 Multimaterial 픽스처 사전 어서션 - 서브맵 0 / 서브매테리얼 2",
+        f"{assertions}",
+    )
+except Exception as e:
+    reporter.error("TC19 Multimaterial 픽스처 사전 어서션", str(e))
+
+
+# ============================================================
+# TC20: 서브 매테리얼 아래 깨진 슬롯을 **씬 전체 검사가** 찾는다
+# ============================================================
+try:
+    plan = MissingAsset().build_purge_plan()
+    labels = _slot_labels(plan)
+
+    reporter.assert_test(
+        len(plan["detachSlots"]) == 2
+        and any("multi_sub_a" in label for label in labels)
+        and any("other_mat" in label for label in labels)
+        and not any("multi_sub_b" in label for label in labels),
+        "TC20 서브 매테리얼 아래 깨진 슬롯을 씬 검사가 찾는다",
+        f"labels={labels}",
+    )
+except Exception as e:
+    reporter.error("TC20 서브 매테리얼 아래 깨진 슬롯을 씬 검사가 찾는다", str(e))
+
+
+# ============================================================
+# TC21: 노드 범위 조회는 **그 노드의 것만** 돌려준다 (격리)
+# ============================================================
+try:
+    service = MissingAsset()
+    multiNode = rt.getNodeByName("multi_geo")
+    otherNode = rt.getNodeByName("other_geo")
+
+    multiSlots = service.collect_node_slots(multiNode)
+    otherSlots = service.collect_node_slots(otherNode)
+
+    multiOwners = [str(slot["ownerName"]) for slot in multiSlots]
+    otherOwners = [str(slot["ownerName"]) for slot in otherSlots]
+
+    reporter.assert_test(
+        multiOwners == ["multi_sub_a"]
+        and otherOwners == ["other_mat"],
+        "TC21 노드 범위 조회가 그 노드의 슬롯만 돌려준다",
+        f"multi={multiOwners}, other={otherOwners}",
+    )
+except Exception as e:
+    reporter.error("TC21 노드 범위 조회가 그 노드의 슬롯만 돌려준다", str(e))
+
+
+# ============================================================
+# TC22: 판별력 - 씬 전체를 돌려주는 구현이었다면 TC21이 실패한다
+# ============================================================
+try:
+    # 같은 씬에서 씬 전체 조회와 노드 범위 조회의 **결과 수가 다르다**는 것을 보인다.
+    # 둘이 같다면 TC21의 격리 단정은 우연히 통과한 것이다.
+    sceneSlots = collect_broken_slots()
+    nodeSlots = MissingAsset().collect_node_slots(rt.getNodeByName("multi_geo"))
+
+    reporter.assert_test(
+        len(sceneSlots) == 2 and len(nodeSlots) == 1,
+        "TC22 노드 범위가 씬 전체보다 실제로 좁다(판별력)",
+        f"scene={len(sceneSlots)}, node={len(nodeSlots)}",
+    )
+except Exception as e:
+    reporter.error("TC22 노드 범위가 씬 전체보다 실제로 좁다(판별력)", str(e))
+
+
+# ============================================================
+# TC23: 서브 매테리얼 아래 슬롯도 **실제로 떼어진다**
+# ============================================================
+try:
+    service = MissingAsset()
+    plan = service.build_purge_plan()
+    result = service.apply_purge_plan(plan)
+
+    rescan = service.build_purge_plan()
+    remaining = [str(node.name) for node in rt.objects]
+
+    reporter.assert_test(
+        len(result["detached"]) == 2
+        and result["failed"] == []
+        and len(rescan["detachSlots"]) == 0
+        and "multi_geo" in remaining
+        and "other_geo" in remaining,
+        "TC23 서브 매테리얼 아래 슬롯도 떼어지고 메쉬는 남는다",
+        f"result={result}, rescanSlots={len(rescan['detachSlots'])}, "
+        f"remaining={remaining}",
+    )
+except Exception as e:
+    reporter.error("TC23 서브 매테리얼 아래 슬롯도 떼어지고 메쉬는 남는다", str(e))
+
+
+# ============================================================
+# TC24: 노드가 None이거나 매테리얼이 없어도 죽지 않는다
+# ============================================================
+try:
+    service = MissingAsset()
+    bare = rt.Box(name="bare_geo", mapcoords=True)
+
+    reporter.assert_test(
+        service.collect_node_slots(None) == []
+        and service.collect_node_slots(bare) == [],
+        "TC24 None·매테리얼 없는 노드는 빈 목록을 돌려준다",
+        f"bareMaterial={bare.material}",
+    )
+except Exception as e:
+    reporter.error("TC24 None·매테리얼 없는 노드는 빈 목록을 돌려준다", str(e))
 
 reporter.summary()
 reporter.close()

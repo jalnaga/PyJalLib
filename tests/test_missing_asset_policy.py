@@ -26,6 +26,7 @@ from pyjallib.max.missingAssetPolicy import (
     build_purge_confirm_summary,
     build_purge_detail_text,
     build_purge_plan,
+    normalize_slots,
     split_nodes_by_action,
     summarize_assets_by_kind,
 )
@@ -793,3 +794,56 @@ def test_confirm_summary_when_nothing_is_actionable():
     )
 
     assert "정리할 수 있는 것이 없습니다" in build_purge_confirm_summary(plan)
+
+
+# ============================================================
+# 계획을 거치지 않는 슬롯 정규화 (노드 범위 조회용)
+# ============================================================
+
+
+@pytest.mark.parametrize("slots", [None, [], ()])
+def test_normalize_slots_on_nothing(slots):
+    """빈 입력은 빈 목록이 된다."""
+    assert normalize_slots(slots) == []
+
+
+def test_normalize_slots_fills_display_name():
+    """DX9의 빈 슬롯명에 인덱스 폴백이 붙는다."""
+    normalized = normalize_slots([_slot(11, "Body", 2, "")])
+
+    assert normalized[0]["displayName"] == "슬롯 2"
+
+
+def test_normalize_slots_keeps_real_slot_name():
+    """이름이 있으면 그대로 쓴다."""
+    normalized = normalize_slots([_slot(11, "Body", 2, "Diffuse Color")])
+
+    assert normalized[0]["displayName"] == "Diffuse Color"
+
+
+def test_normalize_slots_dedupes_on_owner_and_index():
+    """같은 매테리얼의 같은 슬롯은 한 번만 남는다."""
+    normalized = normalize_slots(
+        [_slot(11, "Body", 2, "Diffuse Color"), _slot(11, "Body", 2, "Diffuse Color")]
+    )
+
+    assert len(normalized) == 1
+
+
+def test_normalize_slots_keeps_distinct_indices():
+    """같은 매테리얼이어도 인덱스가 다르면 둘 다 남는다."""
+    normalized = normalize_slots([_slot(11, "Body", 2, ""), _slot(11, "Body", 3, "")])
+
+    assert [slot["displayName"] for slot in normalized] == ["슬롯 2", "슬롯 3"]
+
+
+def test_normalize_slots_matches_plan_normalization():
+    """계획이 만든 슬롯과 **같은 모양**이 나온다.
+
+    두 경로의 정규화가 갈리면 같은 슬롯이 검사 버튼과 Pick에서 다른 이름으로 불린다.
+    """
+    slot = _slot(11, "Body", 2, "")
+    fromPlan = build_purge_plan([], [slot])["detachSlots"][0]
+    fromDirect = normalize_slots([slot])[0]
+
+    assert fromPlan == fromDirect

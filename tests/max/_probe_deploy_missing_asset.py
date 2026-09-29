@@ -209,6 +209,7 @@ try:
     reporter.assert_test(
         _under(validatorStep, DEPLOY_VALIDATOR)
         and callable(validatorStep.build_missing_asset_errors)
+        and callable(validatorStep.build_node_slot_errors)
         and callable(validatorStep.has_actionable)
         and {"geometry", "unknown"}.issubset(set(validatorStep.REASON_LABELS)),
         "TC05 MeshValidator 순수 스텝이 배포본에서 로드되고 사유 키가 맞다",
@@ -226,13 +227,15 @@ try:
 
     reporter.assert_test(
         _under(validatorSlot, DEPLOY_VALIDATOR)
-        and hasattr(validatorSlot.RolloutSlot, "run_missing_asset_step"),
-        "TC06 MeshValidator UI가 검사 스텝을 물고 있다",
+        and hasattr(validatorSlot.RolloutSlot, "run_missing_asset_step")
+        and hasattr(validatorSlot.RolloutSlot, "collect_node_missing_asset_errors"),
+        "TC06 MeshValidator UI가 검사 스텝과 Pick 스텝을 둘 다 물고 있다",
         f"file={getattr(validatorSlot, '__file__', None)}",
     )
 except Exception:
     reporter.error(
-        "TC06 MeshValidator UI가 검사 스텝을 물고 있다", traceback.format_exc(limit=4)
+        "TC06 MeshValidator UI가 검사 스텝과 Pick 스텝을 둘 다 물고 있다",
+        traceback.format_exc(limit=4),
     )
 
 try:
@@ -243,15 +246,16 @@ try:
     signature = inspect.signature(MeshSaveLoadService.save_file)
     reporter.assert_test(
         _under(sys.modules["meshnameselector.func.saveLoad"], DEPLOY_EXPORTER)
-        and hasattr(MeshSaveLoadService, "log_missing_assets")
-        and "inConfirmPurge" not in signature.parameters,
-        "TC07 MeshNameSelector가 로그 스텝만 갖고 확인을 묻지 않는다",
+        and hasattr(MeshSaveLoadService, "run_missing_asset_step")
+        and "inConfirmPurge" in signature.parameters
+        and signature.parameters["inConfirmPurge"].default is None,
+        "TC07 MeshNameSelector가 저장 전 스텝과 확인 콜백을 물고 있다",
         f"file={sys.modules['meshnameselector.func.saveLoad'].__file__}, "
         f"params={list(signature.parameters)}",
     )
 except Exception:
     reporter.error(
-        "TC07 MeshNameSelector가 전처리 스텝과 확인 콜백을 물고 있다",
+        "TC07 MeshNameSelector가 저장 전 스텝과 확인 콜백을 물고 있다",
         traceback.format_exc(limit=4),
     )
 

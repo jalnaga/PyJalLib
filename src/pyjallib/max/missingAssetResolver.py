@@ -339,25 +339,43 @@ def _sub_texmap_count(inOwner: Any) -> int:
         return 0
 
 
-def collect_broken_slots() -> List[Dict[str, Any]]:
-    """깨진 텍스쳐를 물고 있는 슬롯을 모은다. **씬을 바꾸지 않는다.**
+def _sub_material_count(inOwner: Any) -> int:
+    """소유자의 서브 매테리얼 수를 읽는다.
 
-    노드와 매테리얼에서 시작해 서브 텍스쳐맵을 재귀로 훑는다. 텍스쳐맵 자신도 같은
-    인터페이스를 가지므로 중첩(Composite·Mix 등)도 같은 코드가 덮는다.
+    ``Multimaterial``·``Shell Material``처럼 매테리얼이 매테리얼을 품는 경우가 있고,
+    그 아래 슬롯은 **서브 텍스쳐맵 인터페이스로는 보이지 않는다** -
+    ``getNumSubTexmaps``가 0을 돌려준다. 캐릭터 메쉬가 멀티 서브 매테리얼을 쓰면
+    그 아래 깨진 슬롯이 통째로 빠지므로 별도 축이 필요하다.
 
-    각 레코드의 ``ownerIsNode``가 두 축을 가른다. **매테리얼 슬롯은 떼고**(메쉬를
-    지키면서 고칠 수 있다), **노드가 직접 문 텍스쳐는 노드 축이 다룬다**(그 노드가
-    비지오메트리 잔재면 삭제 대상이다). 같은 것을 두 번 손대지 않기 위한 구분이다.
+    Args:
+        inOwner: 매테리얼
 
     Returns:
-        슬롯 레코드 목록. 각 원소는 ``{"ownerHandle", "ownerName", "ownerClass",
-        "ownerIsNode", "slotIndex", "slotName", "path", "nodeNames"}``
+        서브 매테리얼 수. 조회에 실패하면 0
+    """
+    try:
+        return int(rt.getNumSubMtls(inOwner))
+    except Exception:
+        return 0
+
+
+def _collect_broken_slots(inRoots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """주어진 기점에서 시작해 깨진 슬롯을 모은다. **씬을 바꾸지 않는다.**
+
+    씬 전체와 노드 범위가 **같은 순회 코드를 쓴다** - 기점만 다르다. 두 경로가 갈리면
+    "검사 버튼은 잡는데 Pick은 못 잡는다"가 생기고, 그 어긋남은 조용하다.
+
+    Args:
+        inRoots: ``{"owner", "isNode"}`` 목록
+
+    Returns:
+        슬롯 레코드 목록
     """
     records: List[Dict[str, Any]] = []
     visited = set()
 
     def _walk(inOwner: Any, inIsNode: bool, inDepth: int) -> None:
-        """소유자의 서브 텍스쳐맵을 훑고 중첩으로 내려간다."""
+        """소유자의 서브 텍스쳐맵·서브 매테리얼을 훑고 중첩으로 내려간다."""
         if inDepth > _MAX_SLOT_DEPTH:
             return
         ownerHandle = _anim_handle(inOwner)
@@ -398,10 +416,70 @@ def collect_broken_slots() -> List[Dict[str, Any]]:
             # 중첩 텍스쳐맵의 소유자는 더 이상 노드가 아니다 - 텍스쳐맵이다.
             _walk(texmap, False, inDepth + 1)
 
-    for root in _slot_owner_roots():
+        # 서브 매테리얼로 내려간다. 여기서 나오는 슬롯의 소유자는 **서브 매테리얼**이라
+        # `setSubTexmap` 대상도 그 서브 매테리얼이 된다 - 떼어내기가 그대로 성립한다.
+        for index in range(1, _sub_material_count(inOwner) + 1):
+            try:
+                subMaterial = rt.getSubMtl(inOwner, index)
+            except Exception:
+                continue
+            if subMaterial is None:
+                continue
+            _walk(subMaterial, False, inDepth + 1)
+
+    for root in inRoots:
         _walk(root["owner"], root["isNode"], 0)
 
     return records
+
+
+def collect_broken_slots() -> List[Dict[str, Any]]:
+    """씬 전체에서 깨진 텍스쳐를 물고 있는 슬롯을 모은다. **씬을 바꾸지 않는다.**
+
+    노드와 매테리얼에서 시작해 서브 텍스쳐맵·서브 매테리얼을 재귀로 훑는다.
+    텍스쳐맵 자신도 같은 인터페이스를 가지므로 중첩(Composite·Mix 등)도 같은 코드가
+    덮는다.
+
+    각 레코드의 ``ownerIsNode``가 두 축을 가른다. **매테리얼 슬롯은 떼고**(메쉬를
+    지키면서 고칠 수 있다), **노드가 직접 문 텍스쳐는 노드 축이 다룬다**(그 노드가
+    비지오메트리 잔재면 삭제 대상이다). 같은 것을 두 번 손대지 않기 위한 구분이다.
+
+    Returns:
+        슬롯 레코드 목록. 각 원소는 ``{"ownerHandle", "ownerName", "ownerClass",
+        "ownerIsNode", "slotIndex", "slotName", "path", "nodeNames"}``
+    """
+    return _collect_broken_slots(_slot_owner_roots())
+
+
+def collect_broken_slots_for_node(inNode: Any) -> List[Dict[str, Any]]:
+    """**노드 하나**가 물고 있는 깨진 슬롯만 모은다. 씬을 바꾸지 않는다.
+
+    슬롯에 노드를 Pick하는 시점처럼 "방금 고른 이것이 성한가"를 묻는 자리를 위한
+    것이다. 씬 전체를 훑으면 다른 메쉬의 문제가 이 슬롯에 나타나 사용자가 무엇을
+    고쳐야 하는지 오독한다.
+
+    노드 자신도 기점에 넣는다 - 라이트의 ``projectorMap``처럼 매테리얼을 거치지 않고
+    노드가 직접 무는 텍스쳐가 있기 때문이다.
+
+    Args:
+        inNode: 검사할 노드
+
+    Returns:
+        슬롯 레코드 목록. 노드가 None이면 빈 목록
+    """
+    if inNode is None:
+        return []
+
+    roots: List[Dict[str, Any]] = [{"owner": inNode, "isNode": True}]
+    try:
+        material = inNode.material
+    except Exception as exc:
+        _get_logger().debug(f"노드 매테리얼 조회 실패: {exc}")
+        material = None
+    if material is not None:
+        roots.append({"owner": material, "isNode": False})
+
+    return _collect_broken_slots(roots)
 
 
 def collect_missing_assets(
@@ -574,6 +652,25 @@ class MissingAsset:
             f"삭제 {len(plan['deleteNodes'])}개, 보고 {len(plan['reportNodes'])}개"
         )
         return plan
+
+    def collect_node_slots(self, inNode: Any) -> List[Dict[str, Any]]:
+        """**노드 하나**의 깨진 슬롯만 돌려준다. 씬을 바꾸지 않는다.
+
+        계획을 만들지 않는다 - 정리할지는 이 자리에서 묻지 않고, 무엇이 깨졌는지만
+        알린다. 정리는 씬 전체를 보는 자리(:meth:`build_purge_plan`)에서 한다.
+
+        Args:
+            inNode: 검사할 노드
+
+        Returns:
+            :func:`collect_broken_slots_for_node`의 슬롯 레코드 목록
+        """
+        slots = collect_broken_slots_for_node(inNode)
+        if slots:
+            _get_logger().debug(
+                f"노드 범위 검사: {_anim_name(inNode)} 깨진 슬롯 {len(slots)}개"
+            )
+        return slots
 
     def build_plan_summary(self, inPlan: Dict[str, Any]) -> str:
         """계획의 사람이 읽을 요약 문구를 돌려준다.

@@ -175,6 +175,35 @@ def _slot_key(inSlot: Dict[str, Any]) -> Any:
     return (inSlot.get("ownerHandle"), inSlot.get("slotIndex"))
 
 
+def normalize_slots(
+    inSlots: Optional[Iterable[Dict[str, Any]]],
+) -> List[Dict[str, Any]]:
+    """슬롯 레코드를 정규화하고 중복을 제거한다.
+
+    계획을 거치지 않고 슬롯만 보여 주는 자리를 위한 것이다 - 슬롯에 노드를 Pick한
+    직후처럼 "이 노드가 성한가"만 묻는 곳에서는 삭제 계획이 필요 없다.
+
+    **정규화 규칙을 계획과 공유한다.** ``displayName`` 폴백이나 중복 키가 갈리면
+    같은 슬롯이 검사 버튼과 Pick에서 다른 이름으로 불린다.
+
+    Args:
+        inSlots: 슬롯 레코드의 순회 가능 객체. None이면 빈 목록을 돌려준다
+
+    Returns:
+        정규화된 슬롯 목록(입력 순서 보존, 소유자 핸들 + 슬롯 인덱스로 중복 제거)
+    """
+    normalized: List[Dict[str, Any]] = []
+    seen = set()
+    for slot in inSlots or []:
+        record = _normalize_slot(slot)
+        key = _slot_key(record)
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(record)
+    return normalized
+
+
 def build_purge_plan(
     inAssetRecords: Iterable[Dict[str, Any]],
     inSlotRecords: Optional[Iterable[Dict[str, Any]]] = None,
