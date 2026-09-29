@@ -23,6 +23,8 @@ from pyjallib.max.missingAssetPolicy import (
     REASON_GEOMETRY,
     REASON_UNKNOWN,
     build_plan_summary,
+    build_purge_confirm_summary,
+    build_purge_detail_text,
     build_purge_plan,
     split_nodes_by_action,
     summarize_assets_by_kind,
@@ -704,3 +706,90 @@ def test_plan_without_slot_records_stays_backward_compatible():
     assert plan["detachSlots"] == []
     assert _names(plan["deleteNodes"]) == ["light"]
     assert plan["empty"] is False
+
+
+# ============================================================
+# 확인 다이얼로그 문구 빌더
+# ============================================================
+
+
+def test_detail_text_separates_action_from_preservation():
+    """상세 텍스트가 **조치와 보존을 구획으로 가른다**.
+
+    섞어 놓으면 사용자가 "무엇이 지워지는가"를 목록에서 골라내야 한다.
+    """
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "mesh", True)])],
+        [_slot(10, "Face", 1, "Diffuse Color")],
+    )
+    detail = build_purge_detail_text(plan)
+
+    assert "[정리] 매테리얼에서 떼어낼 텍스쳐 슬롯 - 1개" in detail
+    assert "[보존] 건드리지 않는 메쉬 - 1개" in detail
+    assert detail.index("[정리]") < detail.index("[보존]")
+
+
+def test_detail_text_has_no_listing_cap():
+    """상세 텍스트는 **상한 없이 전부** 나열한다 - 스크롤 영역이기 때문이다."""
+    slots = [_slot(index, f"mat{index:03d}", 1, "Diffuse Color") for index in range(50)]
+    detail = build_purge_detail_text(build_purge_plan([], slots))
+
+    assert "mat049" in detail
+    assert "개 더" not in detail
+
+
+def test_detail_text_shows_the_missing_path_per_slot():
+    """슬롯마다 **어떤 파일이 없는지**를 보여 준다."""
+    plan = build_purge_plan(
+        [], [_slot(10, "Face", 1, "Diffuse Color", "X:/gone/face.tga")]
+    )
+    detail = build_purge_detail_text(plan)
+
+    assert "X:/gone/face.tga" in detail
+
+
+def test_detail_text_marks_unactionable_assets():
+    """조치할 수 없는 누락이 **몇 건인지 명시**한다.
+
+    프로덕션 실측에서 92%가 그런 것이었다. 총계만 보여 주면 사용자는 정리가
+    실패했다고 읽는다.
+    """
+    plan = build_purge_plan(
+        [
+            _asset(ASSET_KIND_FILE, "X:/a.png", []),
+            _asset(ASSET_KIND_FILE, "X:/b.png", []),
+            _asset(ASSET_KIND_FILE, "X:/c.png", [_node(1, "light", False)]),
+        ]
+    )
+    detail = build_purge_detail_text(plan)
+
+    assert "[참고] 씬 전체 누락 애셋 - 3건" in detail
+    assert "2건은 씬의 어떤 객체도 참조하지 않아" in detail
+
+
+def test_detail_text_when_nothing_is_missing():
+    """누락이 없으면 그 사실만 말한다."""
+    assert build_purge_detail_text(build_purge_plan([])) == "누락된 애셋이 없습니다."
+
+
+def test_confirm_summary_states_what_will_happen():
+    """상단 요약이 **무엇을 물어보는지**를 말한다."""
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "light", False)])],
+        [_slot(10, "Face", 1, "Diffuse Color")],
+    )
+    summary = build_purge_confirm_summary(plan)
+
+    assert "깨진 텍스쳐 슬롯 1개" in summary
+    assert "잔재 노드 1개" in summary
+    assert "메쉬와 매테리얼은 그대로 둡니다" in summary
+    assert summary.endswith("진행하시겠습니까?")
+
+
+def test_confirm_summary_when_nothing_is_actionable():
+    """조치할 것이 없으면 묻지 않고 확인만 요청한다."""
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "mesh", True)])]
+    )
+
+    assert "정리할 수 있는 것이 없습니다" in build_purge_confirm_summary(plan)

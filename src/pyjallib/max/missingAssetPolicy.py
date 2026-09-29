@@ -454,3 +454,119 @@ def split_nodes_by_action(
         list(inPlan.get("deleteNodes") or []),
         list(inPlan.get("reportNodes") or []),
     )
+
+
+def build_purge_detail_text(inPlan: Dict[str, Any]) -> str:
+    """확인 다이얼로그의 **스크롤 영역**에 실을 상세 텍스트를 만든다.
+
+    스크롤 영역이므로 **나열 상한을 두지 않는다.** 상한은 한 줄 요약
+    (:func:`build_plan_summary`)의 사정이고, 여기서는 사용자가 무엇이 건드려지는지
+    전부 확인할 수 있어야 한다.
+
+    구획을 나누는 이유는 **조치와 비조치를 섞지 않기 위함**이다. 프로덕션 실측에서
+    누락 애셋의 92%가 사용자가 손댈 수 없는 것이었고, 그것을 조치 목록과 같은 자리에
+    두면 목록 전체가 읽히지 않는다.
+
+    Args:
+        inPlan: :func:`build_purge_plan` 결과
+
+    Returns:
+        여러 줄 텍스트. 아무것도 없으면 그 사실을 말하는 한 줄
+    """
+    detachSlots = inPlan.get("detachSlots") or []
+    deleteNodes = inPlan.get("deleteNodes") or []
+    reportNodes = inPlan.get("reportNodes") or []
+
+    if not detachSlots and not deleteNodes and not reportNodes:
+        return "누락된 애셋이 없습니다."
+
+    lines: List[str] = []
+
+    if detachSlots:
+        lines.append(f"[정리] 매테리얼에서 떼어낼 텍스쳐 슬롯 - {len(detachSlots)}개")
+        lines.append("  매테리얼과 메쉬는 그대로 둡니다. 슬롯만 비웁니다.")
+        for slot in detachSlots:
+            owner = slot.get("ownerName") or "이름 없는 매테리얼"
+            lines.append(
+                f"  - {owner} [{slot.get('ownerClass')}] . {slot.get('displayName')}"
+            )
+            lines.append(f"      없는 파일: {slot.get('path')}")
+            nodeNames = slot.get("nodeNames") or []
+            if nodeNames:
+                lines.append(f"      쓰는 노드: {', '.join(nodeNames)}")
+        lines.append("")
+
+    if deleteNodes:
+        lines.append(f"[정리] 삭제할 잔재 노드 - {len(deleteNodes)}개")
+        lines.append("  누락 애셋을 물고 있는 비지오메트리 노드입니다(메쉬가 아닙니다).")
+        for node in deleteNodes:
+            lines.append(f"  - {node.get('name')}")
+        lines.append("")
+
+    geometryNodes = [
+        node for node in reportNodes if node.get("reason") == REASON_GEOMETRY
+    ]
+    unknownNodes = [
+        node for node in reportNodes if node.get("reason") == REASON_UNKNOWN
+    ]
+
+    if geometryNodes:
+        lines.append(f"[보존] 건드리지 않는 메쉬 - {len(geometryNodes)}개")
+        lines.append("  작업 손실을 막기 위해 삭제하지 않습니다.")
+        for node in geometryNodes:
+            lines.append(f"  - {node.get('name')}")
+        lines.append("")
+
+    if unknownNodes:
+        lines.append(f"[보존] 지오메트리 여부를 판별하지 못한 노드 - {len(unknownNodes)}개")
+        lines.append("  판별에 실패했으므로 삭제하지 않습니다.")
+        for node in unknownNodes:
+            lines.append(f"  - {node.get('name')}")
+        lines.append("")
+
+    kindCounts = summarize_assets_by_kind(inPlan)
+    total = sum(kindCounts.values())
+    actionable = int(inPlan.get("actionable") or 0)
+    if total:
+        lines.append(f"[참고] 씬 전체 누락 애셋 - {total}건")
+        if total > actionable:
+            lines.append(
+                f"  이 중 {total - actionable}건은 씬의 어떤 객체도 참조하지 않아 "
+                f"여기서 조치할 수 없습니다."
+            )
+        for kind, count in sorted(kindCounts.items()):
+            label = {
+                ASSET_KIND_FILE: "외부 파일 부재",
+                ASSET_KIND_PLUGIN: "플러그인 미로드",
+            }.get(kind, kind)
+            lines.append(f"  - {label}: {count}건")
+
+    return "\n".join(lines).rstrip()
+
+
+def build_purge_confirm_summary(inPlan: Dict[str, Any]) -> str:
+    """확인 다이얼로그 **상단**에 실을 짧은 요약을 만든다.
+
+    상세는 스크롤 영역이 갖는다. 여기서는 **무엇을 물어보는지**만 한두 줄로 말한다.
+
+    Args:
+        inPlan: :func:`build_purge_plan` 결과
+
+    Returns:
+        요약 문구
+    """
+    detachSlots = inPlan.get("detachSlots") or []
+    deleteNodes = inPlan.get("deleteNodes") or []
+
+    if not detachSlots and not deleteNodes:
+        return "정리할 수 있는 것이 없습니다. 아래 내용을 확인하십시오."
+
+    parts = []
+    if detachSlots:
+        parts.append(f"깨진 텍스쳐 슬롯 {len(detachSlots)}개를 매테리얼에서 떼어냅니다")
+    if deleteNodes:
+        parts.append(f"잔재 노드 {len(deleteNodes)}개를 삭제합니다")
+    return (
+        " 그리고 ".join(parts)
+        + ". 메쉬와 매테리얼은 그대로 둡니다. 진행하시겠습니까?"
+    )
