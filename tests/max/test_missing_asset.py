@@ -11,7 +11,7 @@
 TC05가 "지오메트리가 남아 있다"를 단정하는 데 그치지 않고, TC06이 **지오메트리를
 삭제하는 구현이었다면 TC05가 실패함**을 같은 실행에서 보인다(`testing/discriminating_power.md`).
 
-기대 TC 수: 12 (TC00~TC11)
+기대 TC 수: 19 (TC00~TC18)
 
 실행:
     uv run python tests/run_max_tests.py test_missing_asset.py
@@ -263,12 +263,18 @@ try:
     service.apply_purge_plan(service.build_purge_plan())
     secondPlan = service.build_purge_plan()
 
+    # **사양이 바뀌었다(2026-09-29).** 슬롯 분리가 들어오면서, 메쉬가 물고 있던 깨진
+    # 텍스쳐는 슬롯에서 떼어져 **보고 대상 자체가 사라진다.** 실기 판정에서 "잡았는데
+    # 지우지 않았다고만 하고 끝"이던 것이 정확히 이 지점이었고, 그것이 해소된 것이
+    # 이번 변경의 목적이다. 옛 기대(지오메트리 보고가 남는다)는 그 개선의 반대다.
     reporter.assert_test(
         secondPlan["empty"] is True
+        and secondPlan["actionable"] == 0
         and secondPlan["deleteNodes"] == []
-        and _node_names(secondPlan["reportNodes"]) == ["fixture_geo_missing"],
-        "TC07 두 번째 계획은 삭제 대상이 없다(멱등)",
-        f"empty={secondPlan['empty']}, "
+        and secondPlan["detachSlots"] == []
+        and secondPlan["reportNodes"] == [],
+        "TC07 정리 후 두 번째 계획은 할 일이 없다(멱등 - 보고까지 해소된다)",
+        f"empty={secondPlan['empty']}, actionable={secondPlan['actionable']}, "
         f"delete={_node_names(secondPlan['deleteNodes'])}, "
         f"report={_node_names(secondPlan['reportNodes'])}",
     )
@@ -343,15 +349,220 @@ try:
     summary = service.build_plan_summary(service.build_purge_plan())
 
     reporter.assert_test(
-        "fixture_light_missing" in summary
-        and "fixture_geo_missing" in summary
-        and "삭제하지 않고 보고만 합니다" in summary,
-        "TC11 요약 문구가 자기완결형이다",
+        summary.startswith("정리할 수 있는 것:")
+        and "fixture_light_missing" in summary
+        and "fixture_mat_missing" in summary
+        and "매테리얼과 메쉬는 그대로 둡니다" in summary,
+        "TC11 요약 문구가 자기완결형이고 조치 가능한 것으로 시작한다",
         f"summary={summary}",
     )
 except Exception as e:
     reporter.error("TC11 요약 문구가 자기완결형이다", str(e))
 
+
+# ============================================================
+# 슬롯 분리 축 (2026-09-29 실기 판정으로 추가)
+# ============================================================
+
+
+def _build_slot_fixture():
+    """깨진 텍스쳐를 **매테리얼 슬롯**에 물린 씬을 만든다.
+
+    노드 축 픽스처와 다르다 - 여기서는 메쉬에 붙은 매테리얼의 슬롯이 깨진 상태를
+    만든다. 프로덕션에서 실제로 발견된 형태가 이것이다(1씬 12슬롯).
+
+    Returns:
+        dict: 사전 어서션 값
+    """
+    _reset_scene()
+
+    geoA = rt.Box(name="slot_geo_a", mapcoords=True)
+    matA = rt.StandardMaterial(name="slot_mat_a")
+    matA.diffuseMap = rt.BitmapTexture(filename=MISSING_ROOT + "/slot_diffuse.png")
+    matA.bumpMap = rt.BitmapTexture(filename=MISSING_ROOT + "/slot_bump.png")
+    geoA.material = matA
+
+    geoB = rt.Box(name="slot_geo_b", mapcoords=True)
+    matB = rt.StandardMaterial(name="slot_mat_b")
+    matB.diffuseMap = rt.BitmapTexture(filename=INSTALLED_MAP)
+    geoB.material = matB
+
+    return {
+        "missingRootAbsent": not os.path.exists(MISSING_ROOT),
+        "installedMapExists": os.path.exists(INSTALLED_MAP),
+        "nodeCount": len(list(rt.objects)),
+        "bitmapCount": len(list(rt.getClassInstances(rt.BitmapTexture))),
+    }
+
+
+def _slot_labels(inPlan):
+    """계획의 슬롯을 ``매테리얼.슬롯`` 라벨로 뽑는다.
+
+    Args:
+        inPlan: 계획 dict
+
+    Returns:
+        list[str]: 라벨 목록
+    """
+    return [
+        f"{slot['ownerName']}.{slot['displayName']}" for slot in inPlan["detachSlots"]
+    ]
+
+
+# ============================================================
+# TC12: 깨진 슬롯을 찾는다 - 클래스를 가리지 않는다
+# ============================================================
+try:
+    assertions = _build_slot_fixture()
+    plan = MissingAsset().build_purge_plan()
+
+    reporter.assert_test(
+        assertions["missingRootAbsent"] is True
+        and assertions["bitmapCount"] == 3
+        and sorted(_slot_labels(plan))
+        == ["slot_mat_a.Bump", "slot_mat_a.Diffuse Color"],
+        "TC12 깨진 텍스쳐 슬롯 2개를 찾는다",
+        f"assertions={assertions}, slots={_slot_labels(plan)}",
+    )
+except Exception as e:
+    reporter.error("TC12 깨진 텍스쳐 슬롯 2개를 찾는다", str(e))
+
+
+# ============================================================
+# TC13: 해석되는 텍스쳐의 슬롯은 잡지 않는다 (오탐 없음)
+# ============================================================
+try:
+    _build_slot_fixture()
+    plan = MissingAsset().build_purge_plan()
+
+    reporter.assert_test(
+        not any("slot_mat_b" in label for label in _slot_labels(plan)),
+        "TC13 해석되는 텍스쳐의 슬롯은 잡지 않는다",
+        f"slots={_slot_labels(plan)}",
+    )
+except Exception as e:
+    reporter.error("TC13 해석되는 텍스쳐의 슬롯은 잡지 않는다", str(e))
+
+
+# ============================================================
+# TC14: 적용 - 슬롯이 떼어지고 **메쉬와 매테리얼은 남는다**
+# ============================================================
+try:
+    _build_slot_fixture()
+    service = MissingAsset()
+    result = service.apply_purge_plan(service.build_purge_plan())
+
+    remaining = _scene_node_names()
+    materialNames = [str(mat.name) for mat in rt.sceneMaterials]
+    reporter.assert_test(
+        len(result["detached"]) == 2
+        and result["failed"] == []
+        and "slot_geo_a" in remaining
+        and "slot_geo_b" in remaining
+        and "slot_mat_a" in materialNames,
+        "TC14 슬롯만 떼어지고 메쉬·매테리얼은 남는다",
+        f"result={result}, remaining={remaining}, materials={materialNames}",
+    )
+except Exception as e:
+    reporter.error("TC14 슬롯만 떼어지고 메쉬·매테리얼은 남는다", str(e))
+
+
+# ============================================================
+# TC15: 뗀 슬롯이 실제로 비었는가 - 텍스쳐맵이 사라진다
+# ============================================================
+try:
+    _build_slot_fixture()
+    service = MissingAsset()
+    service.apply_purge_plan(service.build_purge_plan())
+
+    material = rt.getNodeByName("slot_geo_a").material
+    reporter.assert_test(
+        rt.getProperty(material, "diffuseMap") is None
+        and rt.getProperty(material, "bumpMap") is None
+        and len(list(rt.getClassInstances(rt.BitmapTexture))) == 1,
+        "TC15 뗀 슬롯이 실제로 비고 텍스쳐맵이 사라진다",
+        f"bitmaps={len(list(rt.getClassInstances(rt.BitmapTexture)))}",
+    )
+except Exception as e:
+    reporter.error("TC15 뗀 슬롯이 실제로 비고 텍스쳐맵이 사라진다", str(e))
+
+
+# ============================================================
+# TC16: 멱등 - 두 번째 계획은 뗄 것이 없다
+# ============================================================
+try:
+    _build_slot_fixture()
+    service = MissingAsset()
+    service.apply_purge_plan(service.build_purge_plan())
+    secondPlan = service.build_purge_plan()
+
+    reporter.assert_test(
+        secondPlan["detachSlots"] == []
+        and secondPlan["empty"] is True
+        and secondPlan["actionable"] == 0,
+        "TC16 정리 후 두 번째 계획은 뗄 것이 없다(멱등)",
+        f"slots={_slot_labels(secondPlan)}, empty={secondPlan['empty']}",
+    )
+except Exception as e:
+    reporter.error("TC16 정리 후 두 번째 계획은 뗄 것이 없다(멱등)", str(e))
+
+
+# ============================================================
+# TC17: 판별력 - AssetManager 축이었다면 TC16이 실패한다
+# ============================================================
+try:
+    _build_slot_fixture()
+    service = MissingAsset()
+    service.apply_purge_plan(service.build_purge_plan())
+
+    # 슬롯을 다 뗀 **뒤에도** AssetManager는 누락을 계속 보고한다. 이 축으로
+    # 멱등을 판정했다면 TC16이 영원히 실패한다 - 부재 판정을 직접 판정으로
+    # 되돌린 이유가 이것이고, 그 사실을 여기서 못 박는다.
+    assetMan = rt.AssetManager
+    stillReported = 0
+    for index in range(1, int(assetMan.GetNumAssets()) + 1):
+        assetUser = assetMan.GetAssetByIndex(index)
+        if assetUser is None:
+            continue
+        if not str(assetUser.GetFullFilePath()):
+            stillReported += 1
+
+    reporter.assert_test(
+        stillReported > 0 and service.build_purge_plan()["actionable"] == 0,
+        "TC17 AssetManager는 정리 후에도 누락을 보고한다(직접 판정이 필요한 이유)",
+        f"assetManager가 여전히 보고={stillReported}건, 계획 actionable=0",
+    )
+except Exception as e:
+    reporter.error(
+        "TC17 AssetManager는 정리 후에도 누락을 보고한다(직접 판정이 필요한 이유)", str(e)
+    )
+
+
+# ============================================================
+# TC18: 두 축이 한 번에 적용된다 - 슬롯 분리 + 노드 삭제
+# ============================================================
+try:
+    _build_slot_fixture()
+    light = rt.OmniLight(name="slot_light_missing")
+    light.projector = True
+    light.projectorMap = rt.BitmapTexture(filename=MISSING_ROOT + "/slot_proj.png")
+
+    service = MissingAsset()
+    plan = service.build_purge_plan()
+    result = service.apply_purge_plan(plan)
+    remaining = _scene_node_names()
+
+    reporter.assert_test(
+        len(result["detached"]) >= 2
+        and result["deleted"] == ["slot_light_missing"]
+        and result["failed"] == []
+        and "slot_light_missing" not in remaining
+        and "slot_geo_a" in remaining,
+        "TC18 슬롯 분리와 노드 삭제가 한 번에 적용된다",
+        f"result={result}, remaining={remaining}",
+    )
+except Exception as e:
+    reporter.error("TC18 슬롯 분리와 노드 삭제가 한 번에 적용된다", str(e))
 
 reporter.summary()
 reporter.close()

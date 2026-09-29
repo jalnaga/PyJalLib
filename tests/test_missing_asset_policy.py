@@ -496,3 +496,211 @@ def test_plan_does_not_mutate_input_records():
 
     assert nodes[0] == {"handle": 1, "name": "light", "isGeometry": False}
     assert "nodeKeys" not in records[0]
+
+
+# ============================================================
+# 슬롯 분리 축 - 실기 판정으로 추가된 축 (2026-09-29)
+# ============================================================
+
+
+def _slot(inOwnerHandle, inOwnerName, inSlotIndex, inSlotName, inPath="X:/gone.tga"):
+    """테스트용 슬롯 레코드를 만든다.
+
+    Args:
+        inOwnerHandle: 매테리얼 핸들
+        inOwnerName: 매테리얼 이름
+        inSlotIndex: 슬롯 인덱스
+        inSlotName: 슬롯 이름. DX9는 빈 문자열이 온다
+        inPath: 깨진 텍스쳐 경로
+
+    Returns:
+        dict: 슬롯 레코드
+    """
+    return {
+        "ownerHandle": inOwnerHandle,
+        "ownerName": inOwnerName,
+        "ownerClass": "Standardmaterial",
+        "slotIndex": inSlotIndex,
+        "slotName": inSlotName,
+        "path": inPath,
+        "nodeNames": [],
+    }
+
+
+def test_slot_records_land_in_detach_axis():
+    """슬롯 레코드가 ``detachSlots``로 들어간다."""
+    plan = build_purge_plan([], [_slot(10, "Face", 1, "Diffuse Color")])
+
+    assert len(plan["detachSlots"]) == 1
+    assert plan["detachSlots"][0]["ownerName"] == "Face"
+    assert plan["detachSlots"][0]["slotIndex"] == 1
+    assert plan["deleteNodes"] == []
+
+
+def test_slot_axis_is_independent_of_node_axis():
+    """슬롯과 노드는 **독립 축**이다.
+
+    프로덕션 실측에서 행동 가능한 것은 거의 전부 슬롯 쪽이었다(13씬 삭제 대상 0건
+    vs 1씬 깨진 슬롯 12건). 두 축을 합치면 "할 일 있음"이 어느 쪽인지 말할 수 없다.
+    """
+    slotOnly = build_purge_plan([], [_slot(10, "Face", 1, "Diffuse Color")])
+    nodeOnly = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "light", False)])]
+    )
+
+    assert slotOnly["detachSlots"] and not slotOnly["deleteNodes"]
+    assert nodeOnly["deleteNodes"] and not nodeOnly["detachSlots"]
+    assert slotOnly["empty"] is False
+    assert nodeOnly["empty"] is False
+
+
+def test_empty_requires_both_axes_to_be_empty():
+    """``empty``는 **두 축이 모두** 비었을 때만 ``True``다."""
+    assert build_purge_plan([], []).get("empty") is True
+    assert (
+        build_purge_plan([], [_slot(10, "Face", 1, "Diffuse Color")])["empty"] is False
+    )
+
+
+def test_actionable_counts_only_what_can_be_fixed():
+    """``actionable``은 **조치 가능한 것만** 센다 - 보고는 조치가 아니다.
+
+    프로덕션 실측에서 누락 78건 중 72건(92%)이 어떤 객체도 참조하지 않는 레지스트리
+    잔재였다. 그것까지 세면 사용자가 무엇을 할 수 있는지 알 수 없다.
+    """
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "mesh", True)])],
+        [_slot(10, "Face", 1, "Diffuse Color")],
+    )
+
+    assert plan["actionable"] == 1
+    assert len(plan["reportNodes"]) == 1
+    assert plan["hasFindings"] is True
+
+
+def test_same_slot_is_deduped_by_owner_and_index():
+    """같은 매테리얼의 같은 슬롯은 한 번만 뗀다."""
+    plan = build_purge_plan(
+        [],
+        [
+            _slot(10, "Face", 1, "Diffuse Color"),
+            _slot(10, "Face", 1, "Diffuse Color"),
+            _slot(10, "Face", 2, "Bump"),
+            _slot(11, "Body", 1, "Diffuse Color"),
+        ],
+    )
+
+    assert len(plan["detachSlots"]) == 3
+
+
+def test_slot_dedupe_key_is_not_the_name():
+    """중복 제거 키는 **이름이 아니라 인덱스**다.
+
+    `DirectX_9_Shader`는 슬롯 이름이 빈 문자열이라(2026-09-29 실측) 이름으로 묶으면
+    서로 다른 슬롯이 하나로 뭉개진다.
+    """
+    plan = build_purge_plan(
+        [],
+        [_slot(10, "Body", 1, ""), _slot(10, "Body", 2, ""), _slot(10, "Body", 3, "")],
+    )
+
+    assert len(plan["detachSlots"]) == 3
+
+
+def test_empty_slot_name_falls_back_to_index():
+    """슬롯 이름이 비면 인덱스로 부를 수 있는 표시 이름이 생긴다."""
+    plan = build_purge_plan([], [_slot(10, "Body", 7, "")])
+
+    assert plan["detachSlots"][0]["slotName"] == ""
+    assert plan["detachSlots"][0]["displayName"] == "슬롯 7"
+
+
+def test_named_slot_keeps_its_name():
+    """이름이 있으면 그대로 쓴다."""
+    plan = build_purge_plan([], [_slot(10, "Face", 1, "Diffuse Color")])
+
+    assert plan["detachSlots"][0]["displayName"] == "Diffuse Color"
+
+
+# ============================================================
+# 슬롯 요약 문구
+# ============================================================
+
+
+def test_summary_leads_with_actionable_items():
+    """요약은 **조치 가능한 것으로 시작**한다 - 총계를 앞세우면 노이즈가 가린다."""
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "mesh", True)])],
+        [_slot(10, "Face", 1, "Diffuse Color")],
+    )
+    summary = build_plan_summary(plan)
+
+    assert summary.startswith("정리할 수 있는 것:")
+    assert "깨진 텍스쳐 슬롯 1개" in summary
+
+
+def test_summary_states_material_and_mesh_are_kept():
+    """슬롯만 뗀다는 사실이 문구에 드러난다 - 사용자가 되묻지 않게."""
+    plan = build_purge_plan([], [_slot(10, "Face", 1, "Diffuse Color")])
+    summary = build_plan_summary(plan)
+
+    assert "매테리얼과 메쉬는 그대로 둡니다" in summary
+    assert "Face.Diffuse Color" in summary
+
+
+def test_summary_says_so_when_nothing_is_actionable():
+    """조치할 것이 없으면 그 사실을 먼저 말한다."""
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "mesh", True)])]
+    )
+    summary = build_plan_summary(plan)
+
+    assert summary.startswith("정리할 수 있는 것이 없습니다")
+
+
+def test_summary_puts_scene_total_at_the_end():
+    """씬 전체 누락 총계는 **맨 뒤 맥락**으로 간다."""
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "light", False)])],
+        [_slot(10, "Face", 1, "Diffuse Color")],
+    )
+    summary = build_plan_summary(plan)
+
+    assert summary.index("정리할 수 있는 것:") < summary.index(
+        "참고 - 씬 전체 누락 애셋:"
+    )
+
+
+@pytest.mark.parametrize(
+    "count, expectFold",
+    [
+        (MAX_LISTED_NODES - 1, False),
+        (MAX_LISTED_NODES, False),
+        (MAX_LISTED_NODES + 1, True),
+    ],
+)
+def test_slot_listing_cap_boundary(count, expectFold):
+    """슬롯 나열도 상한 경계에서 정확히 한 번 접힌다."""
+    slots = [
+        _slot(index, f"mat{index:03d}", 1, "Diffuse Color") for index in range(count)
+    ]
+    summary = build_plan_summary(build_purge_plan([], slots))
+
+    assert f"텍스쳐 슬롯 {count}개를" in summary
+    if expectFold:
+        assert f"및 {count - MAX_LISTED_NODES}개 더" in summary
+
+
+def test_plan_without_slot_records_stays_backward_compatible():
+    """슬롯 인자를 주지 않으면 **기존 동작 그대로**다.
+
+    Phase 2의 호출부가 무변경으로 통과해야 "축을 더한 것이지 바꾼 것이 아니다"가
+    테스트로 증명된다.
+    """
+    plan = build_purge_plan(
+        [_asset(ASSET_KIND_FILE, "X:/a.png", [_node(1, "light", False)])]
+    )
+
+    assert plan["detachSlots"] == []
+    assert _names(plan["deleteNodes"]) == ["light"]
+    assert plan["empty"] is False

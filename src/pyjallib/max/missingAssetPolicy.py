@@ -128,30 +128,89 @@ def _normalize_kind(inKind: Any) -> str:
     return text or ASSET_KIND_FILE
 
 
-def build_purge_plan(inAssetRecords: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+def _normalize_slot(inSlot: Dict[str, Any]) -> Dict[str, Any]:
+    """슬롯 레코드를 정규화한다.
+
+    **슬롯 이름이 비어 있을 수 있다.** `DirectX_9_Shader`는
+    ``getSubTexmapSlotName``이 빈 문자열을 돌려준다(2026-09-29 실측). 그때는
+    인덱스로 대신 부를 수 있게 ``displayName``을 만들어 둔다 - 문구 쪽에서 매번
+    같은 폴백을 다시 쓰지 않도록 여기서 한 번에 정한다.
+
+    Args:
+        inSlot: ``{"ownerHandle", "ownerName", "ownerClass", "slotIndex",
+            "slotName", "path"}`` 형태의 원본 레코드
+
+    Returns:
+        정규화된 슬롯 레코드. ``displayName``이 덧붙는다
+    """
+    slotName = str(inSlot.get("slotName") or "").strip()
+    slotIndex = inSlot.get("slotIndex")
+    displayName = slotName or (
+        f"슬롯 {slotIndex}" if slotIndex is not None else "이름 없는 슬롯"
+    )
+    return {
+        "ownerHandle": inSlot.get("ownerHandle"),
+        "ownerName": str(inSlot.get("ownerName") or ""),
+        "ownerClass": str(inSlot.get("ownerClass") or ""),
+        "slotIndex": slotIndex,
+        "slotName": slotName,
+        "displayName": displayName,
+        "path": str(inSlot.get("path") or ""),
+        "nodeNames": [str(name) for name in (inSlot.get("nodeNames") or [])],
+    }
+
+
+def _slot_key(inSlot: Dict[str, Any]) -> Any:
+    """슬롯 레코드의 중복 제거 키를 돌려준다.
+
+    같은 매테리얼의 같은 슬롯은 한 번만 뗀다. 소유자 핸들과 슬롯 인덱스가 그 축이다 -
+    이름은 DX9에서 비어 있어 키가 되지 못한다.
+
+    Args:
+        inSlot: 슬롯 레코드
+
+    Returns:
+        해시 가능한 키
+    """
+    return (inSlot.get("ownerHandle"), inSlot.get("slotIndex"))
+
+
+def build_purge_plan(
+    inAssetRecords: Iterable[Dict[str, Any]],
+    inSlotRecords: Optional[Iterable[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
     """누락 애셋 레코드에서 정리 계획을 만든다.
 
     이 함수는 씬을 모르고 아무것도 바꾸지 않는다. 계획을 세우는 것과 적용하는 것이
     분리돼 있다는 점이 "검사 → 목록 제시 → 확인 후 삭제"의 기술적 근거다.
+
+    **두 축이 독립이다.** 슬롯 분리는 매테리얼을 고치고, 노드 삭제는 잔재를 치운다.
+    프로덕션 실측에서 **행동 가능한 것은 거의 전부 슬롯 쪽**이었다(13씬 삭제 대상 0건
+    vs 1씬 깨진 슬롯 12건). 두 축을 합치면 "할 일 있음"이 어느 쪽인지 말할 수 없다.
 
     Args:
         inAssetRecords: 누락 애셋 레코드의 순회 가능 객체. 각 레코드는
             ``{"kind", "path", "detail", "nodes"}`` 형태이고, ``nodes``의 각 원소는
             ``{"handle", "name", "isGeometry"}`` 형태다. ``isGeometry``가 ``None``
             이면 판별 실패를 뜻하고 그 노드는 보고 쪽으로 간다.
+        inSlotRecords: 깨진 텍스쳐 슬롯 레코드. 각 원소는 ``{"ownerHandle",
+            "ownerName", "ownerClass", "slotIndex", "slotName", "path", "nodeNames"}``
+            형태다. None이면 슬롯 축이 비어 있는 계획이 나온다(하위 호환)
 
     Returns:
         계획 dict.
 
         - ``assets``: 정규화된 애셋 레코드 목록(입력 순서 보존)
+        - ``detachSlots``: 분리 대상 슬롯 목록(소유자 핸들 + 슬롯 인덱스 기준 중복 제거)
         - ``deleteNodes``: 삭제 대상 노드 목록. **모든 관측에서 비지오메트리로
           실측된 노드만** 들어간다
         - ``reportNodes``: 보고 대상 노드 목록. 각 원소에 ``reason``
           (``geometry`` | ``unknown``)이 붙는다
-        - ``empty``: 삭제할 것이 없으면 ``True``. **보고가 남아 있어도 삭제 대상이
-          없으면 ``True``다** - 이 플래그의 축은 "적용할 일이 있는가"이고,
-          누락 애셋 자체의 유무는 ``hasFindings``가 말한다
-        - ``hasFindings``: 삭제든 보고든 하나라도 있으면 ``True``
+        - ``empty``: **적용할 일이 하나도 없으면** ``True``. 슬롯 분리와 노드 삭제
+          **둘 다** 비어 있어야 한다
+        - ``hasFindings``: 분리든 삭제든 보고든 하나라도 있으면 ``True``
+        - ``actionable``: 사용자가 **실제로 조치할 수 있는** 건수(분리 + 삭제).
+          보고는 조치가 아니므로 세지 않는다
     """
     assets: List[Dict[str, Any]] = []
     orderedKeys: List[Any] = []
@@ -207,12 +266,24 @@ def build_purge_plan(inAssetRecords: Iterable[Dict[str, Any]]) -> Dict[str, Any]
         node["action"] = ACTION_DELETE
         deleteNodes.append(node)
 
+    detachSlots: List[Dict[str, Any]] = []
+    seenSlotKeys = set()
+    for slot in inSlotRecords or []:
+        normalized = _normalize_slot(slot)
+        key = _slot_key(normalized)
+        if key in seenSlotKeys:
+            continue
+        seenSlotKeys.add(key)
+        detachSlots.append(normalized)
+
     return {
         "assets": assets,
+        "detachSlots": detachSlots,
         "deleteNodes": deleteNodes,
         "reportNodes": reportNodes,
-        "empty": not deleteNodes,
-        "hasFindings": bool(deleteNodes or reportNodes),
+        "empty": not detachSlots and not deleteNodes,
+        "hasFindings": bool(detachSlots or deleteNodes or reportNodes),
+        "actionable": len(detachSlots) + len(deleteNodes),
     }
 
 
@@ -233,6 +304,31 @@ def _format_node_names(
         return ""
     listed = ", ".join(names[:inLimit])
     remaining = len(names) - min(len(names), inLimit)
+    if remaining > 0:
+        listed += f" 및 {remaining}개 더"
+    return listed
+
+
+def _format_slot_labels(
+    inSlots: Iterable[Dict[str, Any]], inLimit: int = MAX_LISTED_NODES
+) -> str:
+    """슬롯을 ``매테리얼.슬롯`` 형태로 나열하고 나머지는 개수로 접는다.
+
+    Args:
+        inSlots: 슬롯 레코드 목록
+        inLimit: 나열 상한
+
+    Returns:
+        나열 문자열. 슬롯이 없으면 빈 문자열
+    """
+    labels = [
+        f"{slot.get('ownerName') or '이름 없는 매테리얼'}.{slot.get('displayName')}"
+        for slot in inSlots
+    ]
+    if not labels:
+        return ""
+    listed = ", ".join(labels[:inLimit])
+    remaining = len(labels) - min(len(labels), inLimit)
     if remaining > 0:
         listed += f" 및 {remaining}개 더"
     return listed
@@ -268,28 +364,34 @@ def build_plan_summary(inPlan: Dict[str, Any], inLimit: int = MAX_LISTED_NODES) 
     Returns:
         요약 문구. 누락 애셋이 하나도 없으면 그 사실을 말하는 문구
     """
+    detachSlots = inPlan.get("detachSlots") or []
     deleteNodes = inPlan.get("deleteNodes") or []
     reportNodes = inPlan.get("reportNodes") or []
-    assets = inPlan.get("assets") or []
 
-    if not deleteNodes and not reportNodes:
+    if not detachSlots and not deleteNodes and not reportNodes:
         return "누락된 애셋이 없습니다."
 
-    kindCounts = summarize_assets_by_kind(inPlan)
-    kindParts = []
-    if kindCounts.get(ASSET_KIND_FILE):
-        kindParts.append(f"외부 파일 부재 {kindCounts[ASSET_KIND_FILE]}건")
-    if kindCounts.get(ASSET_KIND_PLUGIN):
-        kindParts.append(f"플러그인 미로드 {kindCounts[ASSET_KIND_PLUGIN]}건")
-    for kind, count in sorted(kindCounts.items()):
-        if kind not in ALL_ASSET_KINDS:
-            kindParts.append(f"{kind} {count}건")
+    # **행동 가능한 것을 먼저 센다.** 누락 애셋 총계를 앞세우면 사용자가 손댈 수 없는
+    # 것까지 같은 줄에 들어간다 - 프로덕션 실측에서 누락 78건 중 72건(92%)이 어떤
+    # 객체도 참조하지 않는 레지스트리 잔재였다. 그 수를 머리에 세우면 경고가 다시
+    # 무의미해진다.
+    lines = []
+    if detachSlots or deleteNodes:
+        actionParts = []
+        if detachSlots:
+            actionParts.append(f"깨진 텍스쳐 슬롯 {len(detachSlots)}개")
+        if deleteNodes:
+            actionParts.append(f"잔재 노드 {len(deleteNodes)}개")
+        lines.append(f"정리할 수 있는 것: {', '.join(actionParts)}.")
+    else:
+        lines.append("정리할 수 있는 것이 없습니다(보고만 남습니다).")
 
-    lines = [
-        f"누락 애셋 {len(assets)}건을 찾았습니다"
-        + (f" ({', '.join(kindParts)})" if kindParts else "")
-        + "."
-    ]
+    if detachSlots:
+        lines.append(
+            f"텍스쳐 슬롯 {len(detachSlots)}개를 매테리얼에서 떼어냅니다"
+            f"(매테리얼과 메쉬는 그대로 둡니다): "
+            f"{_format_slot_labels(detachSlots, inLimit)}."
+        )
 
     if deleteNodes:
         lines.append(
@@ -316,6 +418,21 @@ def build_plan_summary(inPlan: Dict[str, Any], inLimit: int = MAX_LISTED_NODES) 
             f"지오메트리 여부를 판별하지 못한 노드 {len(unknownNodes)}개도 "
             f"삭제하지 않습니다: {_format_node_names(unknownNodes, inLimit)}."
         )
+
+    # 전체 실태는 **맨 뒤에 맥락으로** 둔다. 이 수에는 사용자가 손댈 수 없는 것이
+    # 섞여 있으므로(프로덕션 실측 92%) 앞세우면 행동 지시를 가린다.
+    kindCounts = summarize_assets_by_kind(inPlan)
+    if kindCounts:
+        kindParts = []
+        if kindCounts.get(ASSET_KIND_FILE):
+            kindParts.append(f"외부 파일 부재 {kindCounts[ASSET_KIND_FILE]}건")
+        if kindCounts.get(ASSET_KIND_PLUGIN):
+            kindParts.append(f"플러그인 미로드 {kindCounts[ASSET_KIND_PLUGIN]}건")
+        for kind, count in sorted(kindCounts.items()):
+            if kind not in ALL_ASSET_KINDS:
+                kindParts.append(f"{kind} {count}건")
+        if kindParts:
+            lines.append(f"참고 - 씬 전체 누락 애셋: {', '.join(kindParts)}.")
 
     return " ".join(lines)
 
