@@ -10,6 +10,10 @@
 비가역 동작을 묻는 자리에 쓰인다. 그래서 **기본 버튼이 '아니오'**다 - 엔터를 잘못
 눌러 지워지는 경로를 만들지 않는다.
 
+**거부는 "건너뛰기"가 아니라 "중단"이다**(2026-09-29 마스터 지시 3차). 호출부는 False를
+받으면 그 작업 전체를 멈춰야 한다. 그래서 기본 거부 라벨이 `취소 (중단)`이다 - 그냥
+"취소"이면 사용자가 정리만 건너뛰는 것으로 읽는다.
+
 .. code-block:: python
 
     from pyjallib.max.ui.scrollableConfirmDialog import show_scrollable_confirm
@@ -30,7 +34,7 @@ class ScrollableConfirmDialog(QtWidgets.QDialog):
         inSummary: str,
         inDetailText: str,
         inYesLabel: str = "정리",
-        inNoLabel: str = "취소",
+        inNoLabel: str = "취소 (중단)",
         parent=None,
     ):
         """ScrollableConfirmDialog 초기화.
@@ -40,7 +44,7 @@ class ScrollableConfirmDialog(QtWidgets.QDialog):
             inSummary: 상단 요약 문구(짧게 유지 - 상세는 스크롤 영역이 갖는다)
             inDetailText: 스크롤 영역에 표시할 전체 목록
             inYesLabel: 승인 버튼 문구. 기본값 "정리"
-            inNoLabel: 거부 버튼 문구. 기본값 "취소"
+            inNoLabel: 거부 버튼 문구. 기본값 "취소 (중단)"
             parent: 부모 위젯
         """
         super(ScrollableConfirmDialog, self).__init__(parent)
@@ -107,7 +111,7 @@ def show_scrollable_confirm(
     inSummary: str,
     inDetailText: str,
     inYesLabel: str = "정리",
-    inNoLabel: str = "취소",
+    inNoLabel: str = "취소 (중단)",
 ) -> bool:
     """확인 다이얼로그를 모달로 띄우고 승인 여부를 돌려준다.
 

@@ -578,6 +578,11 @@ def build_purge_confirm_summary(inPlan: Dict[str, Any]) -> str:
 
     상세는 스크롤 영역이 갖는다. 여기서는 **무엇을 물어보는지**만 한두 줄로 말한다.
 
+    **취소가 무엇을 뜻하는지 반드시 적는다.** 취소는 "정리만 건너뛴다"가 아니라
+    **작업 전체를 멈춘다**(2026-09-29 마스터 지시 3차). 그 사실이 문구에 없으면
+    사용자는 건너뛰기를 기대하고 취소를 누르고, 아무 일도 일어나지 않은 것을
+    실패로 읽는다.
+
     Args:
         inPlan: :func:`build_purge_plan` 결과
 
@@ -598,4 +603,5 @@ def build_purge_confirm_summary(inPlan: Dict[str, Any]) -> str:
     return (
         " 그리고 ".join(parts)
         + ". 메쉬와 매테리얼은 그대로 둡니다. 진행하시겠습니까?"
+        + "\n\n취소하면 정리하지 않고 작업을 중단합니다(씬은 그대로 둡니다)."
     )

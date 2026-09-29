@@ -784,7 +784,10 @@ def test_confirm_summary_states_what_will_happen():
     assert "깨진 텍스쳐 슬롯 1개" in summary
     assert "잔재 노드 1개" in summary
     assert "메쉬와 매테리얼은 그대로 둡니다" in summary
-    assert summary.endswith("진행하시겠습니까?")
+    assert "진행하시겠습니까?" in summary
+    # **취소가 무엇을 뜻하는지 적혀 있어야 한다.** 없으면 사용자가 "정리만 건너뛴다"로
+    # 읽고 취소를 누른 뒤, 아무 일도 없는 것을 실패로 오해한다(2026-09-29 3차 지시).
+    assert "작업을 중단합니다" in summary
 
 
 def test_confirm_summary_when_nothing_is_actionable():
