@@ -65,6 +65,8 @@ TEST_SCRIPTS = [
     "test_probe_envelope.py",
     # 릭 파트 특성화 회귀. 기대 TC 54 (전제 3 + 17 파트 x create/modify/delete)
     "test_rig_parts.py",
+    # 누락 애셋 검사·정리 어댑터. 기대 TC 19 (TC00~TC18)
+    "test_missing_asset.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -80,6 +82,7 @@ LOG_NAME_OVERRIDES = {
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
     "test_probe_envelope.py": "ProbeEnvelope",
     "test_rig_parts.py": "RigParts",
+    "test_missing_asset.py": "MissingAsset",
 }
 
 
