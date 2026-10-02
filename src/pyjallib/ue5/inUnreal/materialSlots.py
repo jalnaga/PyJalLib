@@ -676,11 +676,12 @@ class MaterialSlotRenamer:
         # 반환값 True는 근거가 아니다 - 디스크에 실제로 쓰였는지와 저장 후 상태를 되읽는다
         if os.path.getmtime(filePath) <= mtimeBefore:
             return _fail(record, FAIL_SAVE_NOT_ON_DISK, f"save_asset True인데 mtime 불변: {filePath}")
+        # 여기부터는 디스크에 쓰였다 - 뒤 검증이 실패해도 saved는 사실대로 True다
+        record["saved"] = True
         self._record_readback(record, mesh)
         if [slot["after"] for slot in record["slots"]] != expected:
             return _fail(record, FAIL_READBACK_MISMATCH, "저장 후 되읽기 불일치")
 
-        record["saved"] = True
         record["status"] = STATUS_CHANGED
         _log(f"저장: {inAssetPlan.packagePath} ({sum(1 for e, b in zip(expected, inAssetPlan.slotNamesBefore) if e != b)}슬롯)")
         return record

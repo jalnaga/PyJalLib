@@ -26,6 +26,7 @@ stdlib만 의존해야 한다. 그래야 "드라이런에서 본 것"과 "실집
   라이브러리이므로 호출자가 끌 수 있다.
 """
 
+from collections.abc import Mapping as AbcMapping
 from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Sequence
 
@@ -120,7 +121,7 @@ def build_rename_index(inRenameTable: Mapping[str, str], inIgnoreCase: bool = Tr
     Raises:
         RenameTableError: 표가 결정을 모호하게 만드는 경우
     """
-    if not isinstance(inRenameTable, Mapping):
+    if not isinstance(inRenameTable, AbcMapping):
         raise RenameTableError(f"치환 표는 Mapping이어야 한다: {type(inRenameTable).__name__}")
 
     def _key(inName: str) -> str:
