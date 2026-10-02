@@ -119,6 +119,17 @@ if is_ue5_available():
         LegacyStaticMeshImporter = None
         print(f"[PyJalLib] LegacyStaticMeshImporter 임포트 실패: {e}")
 
+    # Material Slots - 매테리얼 슬롯 이름 변경 어댑터 + 파사드 (2026-10-02 MatSlot)
+    try:
+        from . import materialSlots
+        from .materialSlots import MaterialSlotRenamer
+        __all__.append('materialSlots')
+        __all__.append('MaterialSlotRenamer')
+    except ImportError as e:
+        materialSlots = None
+        MaterialSlotRenamer = None
+        print(f"[PyJalLib] materialSlots 임포트 실패: {e}")
+
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     pathUtils = None
@@ -133,6 +144,8 @@ else:
     LegacyImporterSettings = None
     LegacyAnimationImporter = None
     LegacyStaticMeshImporter = None
+    materialSlots = None
+    MaterialSlotRenamer = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
 
 def get_available_modules() -> list:
@@ -167,6 +180,10 @@ def get_available_modules() -> list:
         available.append('LegacyAnimationImporter')
     if 'LegacyStaticMeshImporter' in __all__ and LegacyStaticMeshImporter is not None:
         available.append('LegacyStaticMeshImporter')
+    if 'materialSlots' in __all__ and materialSlots is not None:
+        available.append('materialSlots')
+    if 'MaterialSlotRenamer' in __all__ and MaterialSlotRenamer is not None:
+        available.append('MaterialSlotRenamer')
     return available
 
 # 헬퍼 함수도 __all__에 추가
