@@ -9,7 +9,7 @@
 import os
 from enum import IntEnum
 import textwrap
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 from pymxs import runtime as rt
 
 class VertexMode(IntEnum):
@@ -1192,6 +1192,389 @@ class Skin:
             for boneId, entry in inTable.items()
             if entry["handle"] is not None
         }
+
+    # ------------------------------------------------------------------
+    # 선택 / 일괄 쓰기 / 본 목록·추가·제거 / 복제 / 대칭
+    # (2026-10 SkinKit 포팅에서 추가. 연산 자체는 skinWeightMath 순수 함수에 둔다)
+    # ------------------------------------------------------------------
+
+    def get_selected_vertices(self, inSkinMod: Any) -> List[int]:
+        """Skin에서 선택된 버텍스 인덱스(1-based, 오름차순)를 돌려준다.
+
+        ``skinOps.getSelectedVertices`` 단일 호출이다(2026-10-06 실측 - 정수 배열을 준다).
+        버텍스마다 ``IsVertexSelected``를 부르는 것보다 싸서 선택 변경 폴링에 쓸 수 있다.
+        ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+
+        Returns:
+            선택 버텍스 인덱스 목록
+        """
+        return sorted(int(v) for v in rt.skinOps.getSelectedVertices(inSkinMod))
+
+    def select_vertices(self, inSkinMod: Any, inVertices: Iterable[int]) -> None:
+        """Skin 버텍스 선택을 지정한 목록으로 **바꾼다**(빈 목록이면 전부 해제).
+
+        스크립트로 바꾼 선택은 ``NodeEventCallback``의 ``subobjectSelectionChanged``를
+        발화시키지 않는다(2026-10-06 실측 - batch/GUI 양쪽). 선택 변경을 감지하는 쪽은
+        폴링을 함께 둬야 한다. ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+            inVertices: 선택할 버텍스(1-based)
+        """
+        rt.skinOps.SelectVertices(inSkinMod, sorted({int(v) for v in inVertices}))
+
+    def set_vertex_weights(
+        self,
+        inSkinMod: Any,
+        inWeights: Dict[int, Tuple[Sequence[int], Sequence[float]]],
+        inNormalize: bool = True,
+        inWriteEmpty: bool = False,
+    ) -> List[int]:
+        """여러 버텍스의 가중치를 한 번에 쓴다.
+
+        - 0 이하 가중치 항목은 버리고, 같은 본이 두 번 나오면 더한다.
+        - ``inNormalize``면 합 1로 정규화한다. **단일 본 항목에 1.0 미만 값을 쓰면 Max가
+          0.0으로 기록한다**(2026-10-06 실측: 0.2 -> 0.0. 다중 본은 재정규화된다) - 그래서
+          기본값이 True다.
+        - 항목이 비면 기본은 건너뛴다. ``inWriteEmpty``면 빈 배열을 써서 **무웨이트**로
+          만든다(새 Skin에 원본 가중치를 옮길 때 엔벨로프 자동 가중치를 지우는 용도).
+        - "Max 2014 sp5 hack"(``SetVertexWeights`` 선행)은 쓰지 않는다 - Max 2024에서 유무
+          결과가 같았다(2026-10-06 실측).
+        - ``disableRefMsgs`` 구간에서 쓰고, 끝난 뒤 마지막 버텍스를 한 번 더 써서 갱신을
+          강제한다(원본 ApplyWeights 패턴).
+
+        쓰기 직후 재조회는 0을 줄 수 있다. 검증 읽기 전에는 ``activate_skin`` +
+        ``completeRedraw``를 부른다(``max/skin_bone_id.md`` §4). ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+            inWeights: ``{버텍스(1-based): (본 ID 목록, 가중치 목록)}``
+            inNormalize: 합 1 정규화 여부. 기본 True
+            inWriteEmpty: 빈 항목을 무웨이트로 쓸지. 기본 False(건너뜀)
+
+        Returns:
+            실제로 쓴 버텍스 목록(오름차순)
+        """
+        from pyjallib.max.skinWeightMath import normalize_weights
+
+        items: List[Tuple[int, List[int], List[float]]] = []
+        for vertIndex in sorted(inWeights):
+            boneIds, weights = inWeights[vertIndex]
+            merged: Dict[int, float] = {}
+            for boneId, weight in zip(boneIds, weights):
+                if float(weight) > 0.0:
+                    merged[int(boneId)] = merged.get(int(boneId), 0.0) + float(weight)
+            if not merged:
+                if inWriteEmpty:
+                    items.append((int(vertIndex), [], []))
+                continue
+            ids = list(merged.keys())
+            ws = [merged[b] for b in ids]
+            if inNormalize:
+                ws = normalize_weights(ws)
+            items.append((int(vertIndex), ids, ws))
+        if not items:
+            return []
+
+        rt.disableRefMsgs()
+        try:
+            for vertIndex, ids, ws in items:
+                rt.skinOps.ReplaceVertexWeights(inSkinMod, vertIndex, ids, ws)
+        finally:
+            rt.enableRefMsgs()
+        lastIndex, lastIds, lastWs = items[-1]
+        rt.skinOps.ReplaceVertexWeights(inSkinMod, lastIndex, lastIds, lastWs)
+        return [vertIndex for vertIndex, _, _ in items]
+
+    def get_bone_nodes(self, inSkinMod: Any) -> List[Any]:
+        """본 노드 목록을 **본 ID 순**으로 돌려준다(``result[i]``가 본 ID ``i + 1``).
+
+        ``skinOps.GetBoneNode``(본 ID API)를 쓴다 - 리스트 ID와 섞지 않는다. 노드를 찾지
+        못한 본은 None이다. ``activate_skin``이 선행되어야 한다.
+
+        Args:
+            inSkinMod: Skin 모디파이어
+
+        Returns:
+            본 노드(또는 None) 목록
+        """
+        return [
+            rt.skinOps.GetBoneNode(inSkinMod, boneId)
+            for boneId in range(1, int(rt.skinOps.GetNumberBones(inSkinMod)) + 1)
+        ]
+
+    def add_bones(self, inNode: Any, inSkinMod: Any, inBones: Iterable[Any]) -> Dict[int, int]:
+        """본들을 Skin에 넣고(이미 있으면 건너뜀) **다시 읽은** ``{핸들: 본 ID}``를 돌려준다.
+
+        ``addBone``은 끝에 붙는다는 보장이 없다 - 빈 슬롯이 있으면 가장 낮은 빈 자리를
+        차지하고 뒤 본 ID를 민다(``max/skin_bone_id.md`` §2, 2026-10-06 실기 자산에서도
+        빈 슬롯 실재 확인). 그래서 추가 뒤 대조표를 다시 읽어 핸들로 ID를 돌려준다.
+        **이 호출 전에 읽어 둔 본 ID와 가중치는 전부 무효다.**
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: Skin 모디파이어
+            inBones: 넣을 본 노드들
+
+        Returns:
+            ``{요청한 본의 핸들: 현재 본 ID}``
+
+        Raises:
+            RuntimeError: 추가 뒤에도 요청한 본이 대조표에 없을 때
+        """
+        bones = [b for b in inBones if b is not None and rt.isValidNode(b)]
+        self.activate_skin(inNode, inSkinMod)
+        existing = self._bone_ids_by_handle(self.get_bone_table(inSkinMod))
+        added = False
+        for bone in bones:
+            if _node_handle(bone) not in existing:
+                rt.skinOps.addBone(inSkinMod, bone, 0)
+                existing[_node_handle(bone)] = -1
+                added = True
+        if added:
+            rt.completeRedraw()
+        idsByHandle = self._bone_ids_by_handle(self.get_bone_table(inSkinMod))
+        result: Dict[int, int] = {}
+        for bone in bones:
+            handle = _node_handle(bone)
+            if handle not in idsByHandle:
+                raise RuntimeError(f"'{inNode.name}' Skin에 '{bone.name}' addBone 효과 없음")
+            result[handle] = idsByHandle[handle]
+        return result
+
+    def remove_bone(
+        self, inNode: Any, inSkinMod: Any, inBoneHandle: int, inTransferToParent: bool = True
+    ) -> Dict[str, Any]:
+        """본 하나를 Skin에서 제거한다. 부모가 같은 Skin에 있으면 가중치를 부모로 옮긴다.
+
+        - 부모가 Skin에 있고 ``inTransferToParent``면 ``transfer_bone_weights``로 이전 +
+          제거(사후 검증 포함)한다.
+        - 아니면 그 본을 뺀 가중치를 정규화해 먼저 쓰고 제거한다. 그 본에만 묶여 있던
+          버텍스는 **무웨이트**가 되므로 ``weightlessVerts``로 돌려준다(호출자가 주변
+          가중치로 채운다 - 원본 SkinKit은 Attach를 반복했다).
+
+          원본과의 차이(**결함 수정**): 원본은 그냥 ``removeBone``했다. Max는 남은 가중치를
+          재정규화하지 않아 다른 본을 함께 가진 버텍스까지 무웨이트(``b2 0.0``)가 됐고,
+          그 버텍스의 남은 가중치는 이웃 Attach로 덮였다.
+
+        본 ID는 제거 후 압축되며 밀린다. 반환값은 이름·핸들 기준이고, 호출자는 이 호출 전
+        본 ID를 버린다.
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: Skin 모디파이어
+            inBoneHandle: 제거할 본의 노드 핸들
+            inTransferToParent: 부모로 가중치를 옮길지. 기본 True
+
+        Returns:
+            ``{"removed": 이름, "transferredTo": 부모 이름 | None,
+            "weightlessVerts": [1-based], "transfer": transfer_bone_weights 결과 | None}``
+
+        Raises:
+            RuntimeError: 본이 Skin에 없거나, 제거 후에도 남아 있을 때
+        """
+        self.activate_skin(inNode, inSkinMod)
+        table = self.get_bone_table(inSkinMod)
+        idsByHandle = self._bone_ids_by_handle(table)
+        if inBoneHandle not in idsByHandle:
+            raise RuntimeError(f"'{inNode.name}' Skin에 핸들 {inBoneHandle} 본이 없습니다.")
+        boneName = str(table[idsByHandle[inBoneHandle]]["name"])
+        boneNode = _node_by_handle(inBoneHandle)
+        parent = boneNode.parent if boneNode is not None else None
+        parentHandle = _node_handle(parent) if parent is not None and rt.isValidNode(parent) else None
+
+        transferReport: Optional[Dict[str, Any]] = None
+        transferredTo: Optional[str] = None
+        if inTransferToParent and parentHandle is not None and parentHandle in idsByHandle:
+            transferReport = self.transfer_bone_weights(
+                inNode, inSkinMod, {inBoneHandle: parentHandle}, {inBoneHandle}
+            )
+            transferredTo = str(parent.name)
+        else:
+            savedSelection = _save_selection()
+            try:
+                self.activate_skin(inNode, inSkinMod)
+                # removeBone은 남은 가중치를 재정규화하지 않는다 - 'b1 0.5 + b2 0.5' 버텍스가
+                # 제거 후 'b2 0.0'으로 남아 사실상 무웨이트가 된다(2026-10-06 실측). 그래서
+                # 제거 본을 뺀 가중치를 먼저 정규화해 쓰고 제거한다(그 본만 가진 버텍스는
+                # 무웨이트로 쓰고 아래에서 보고한다).
+                boneId = idsByHandle[inBoneHandle]
+                rewrite: Dict[int, Tuple[List[int], List[float]]] = {}
+                for vertIndex, entries in self.get_vertex_weights(inSkinMod).items():
+                    if not any(b == boneId for b, _ in entries):
+                        continue
+                    rest = [(b, w) for b, w in entries if b != boneId and w > 0.0]
+                    rewrite[vertIndex] = ([b for b, _ in rest], [w for _, w in rest])
+                self.set_vertex_weights(inSkinMod, rewrite, inNormalize=True, inWriteEmpty=True)
+                rt.skinOps.removeBone(inSkinMod, boneId)
+                after = self._bone_ids_by_handle(self.get_bone_table(inSkinMod))
+                if inBoneHandle in after:
+                    raise RuntimeError(f"'{inNode.name}' Skin에 '{boneName}'이 제거 후에도 남아 있습니다.")
+            finally:
+                _restore_selection(savedSelection)
+
+        self.activate_skin(inNode, inSkinMod)
+        rt.completeRedraw()
+        weightless = [
+            vertIndex
+            for vertIndex, entries in self.get_vertex_weights(inSkinMod).items()
+            if sum(weight for _, weight in entries) <= 0.0
+        ]
+        return {
+            "removed": boneName,
+            "transferredTo": transferredTo,
+            "weightlessVerts": weightless,
+            "transfer": transferReport,
+        }
+
+    def duplicate_skin(
+        self,
+        inNode: Any,
+        inSkinMod: Any,
+        inName: Optional[str] = None,
+        inEnabled: bool = False,
+    ) -> Any:
+        """Skin을 같은 본·가중치의 새 Skin으로 복제한다(백업용, 기본 비활성).
+
+        새 Skin은 원본 SkinKit Backup처럼 ``addModifier ... before:1``로 넣는다. 본은 원본
+        본 ID 순서로 넣고, 가중치는 **핸들 기준**으로 옮긴다(복제본 본 ID를 원본과 같다고
+        가정하지 않는다). 쓴 뒤 다시 읽어 원본과 핸들 기준으로 대조하고, 편차가 1e-6을 넘으면
+        예외를 올린다. 끝나면 원본 Skin을 Modify 패널 현재 객체로 되돌린다.
+
+        새 본의 bind 행렬은 "지금" 트랜스폼이다 - 씬이 bind pose일 때 복제가 정확하다.
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: 복제할 Skin 모디파이어
+            inName: 새 Skin 이름. None이면 ``Skin_<localTime>``
+            inEnabled: 새 Skin 활성 여부. 기본 False
+
+        Returns:
+            새 Skin 모디파이어
+
+        Raises:
+            RuntimeError: 노드를 찾지 못한 본이 있거나, 버텍스 수가 다르거나, 대조 편차가 날 때
+        """
+        self.activate_skin(inNode, inSkinMod)
+        table = self.get_bone_table(inSkinMod)
+        missing = [e["name"] for e in table.values() if e["handle"] is None]
+        if missing:
+            raise RuntimeError(f"'{inNode.name}' Skin에 노드를 찾지 못한 본이 있어 복제할 수 없습니다: {missing[:5]}")
+        sourceWeights = self.get_vertex_weights(inSkinMod)
+        sourceByHandle = self._weights_by_handle(table, sourceWeights)
+        boneNodes = [_node_by_handle(table[bid]["handle"]) for bid in sorted(table)]
+
+        copySkin = rt.Skin()
+        copySkin.name = inName if inName else f"Skin_{rt.localTime}"
+        rt.addModifier(inNode, copySkin, before=1)
+        try:
+            copySkin.bone_Limit = inSkinMod.bone_Limit
+            copySkin.enableDQ = inSkinMod.enableDQ
+        except RuntimeError:
+            pass
+        idsByHandle = self.add_bones(inNode, copySkin, boneNodes)
+        if int(rt.skinOps.GetNumberVertices(copySkin)) != len(sourceWeights):
+            raise RuntimeError(
+                f"'{inNode.name}' 복제 Skin 버텍스 수가 다릅니다: "
+                f"{int(rt.skinOps.GetNumberVertices(copySkin))} != {len(sourceWeights)}"
+            )
+        toWrite = {
+            vertIndex: (
+                [idsByHandle[table[bid]["handle"]] for bid, _ in entries],
+                [weight for _, weight in entries],
+            )
+            for vertIndex, entries in sourceWeights.items()
+        }
+        self.set_vertex_weights(copySkin, toWrite, inNormalize=False, inWriteEmpty=True)
+
+        self.activate_skin(inNode, copySkin)
+        rt.completeRedraw()
+        copyTable = self.get_bone_table(copySkin)
+        copyByHandle = self._weights_by_handle(copyTable, self.get_vertex_weights(copySkin))
+        deviations = diff_weights_by_handle(sourceByHandle, copyByHandle)
+        if deviations:
+            raise RuntimeError(f"'{inNode.name}' Skin 복제 결과가 원본과 다릅니다({len(deviations)}건): {deviations[:3]}")
+
+        copySkin.enabled = bool(inEnabled)
+        self.activate_skin(inNode, inSkinMod)
+        return copySkin
+
+    def mirror_weights(
+        self,
+        inNode: Any,
+        inSkinMod: Any,
+        inVertexMap: Dict[int, int],
+        inSourceVertices: Iterable[int],
+        inBoneMap: Optional[Dict[int, int]] = None,
+    ) -> List[int]:
+        """원본 쪽 버텍스의 가중치를 대칭 버텍스로 복사한다(본은 대칭 본으로 바꾼다).
+
+        ``inVertexMap[v] = m``이고 ``m``이 원본 집합에 있으면 ``v``는 ``m``의 가중치를 대칭
+        본으로 바꿔 받는다(원본 SkinKit Mirror). 버텍스 오름차순으로 처리하고, 앞에서 쓴
+        결과를 뒤에서 읽는다 - 원본이 버텍스마다 Skin을 다시 읽던 것과 같다. 그래서 양쪽을
+        모두 선택하고 실행해도 L/R이 맞바뀌지 않고 **인덱스가 큰 쪽 가중치가 작은 쪽으로**
+        복사된다(원본 동작).
+
+        Args:
+            inNode: Skin이 붙은 노드
+            inSkinMod: Skin 모디파이어
+            inVertexMap: ``{버텍스: 대칭 버텍스}`` (1-based). 위치/토폴로지 매핑 결과
+            inSourceVertices: 원본 쪽 버텍스(보통 선택)
+            inBoneMap: ``{본 ID: 대칭 본 ID}``. None이면 본 이름 패턴으로 만든다
+                (``skinWeightMath.build_mirror_bone_map``, 씬 노드 이름으로 존재 확인)
+
+        Returns:
+            쓴 버텍스 목록(오름차순)
+        """
+        from pyjallib.max.skinWeightMath import build_mirror_bone_map
+
+        self.activate_skin(inNode, inSkinMod)
+        boneMap = inBoneMap
+        if boneMap is None:
+            table = self.get_bone_table(inSkinMod)
+            ids = sorted(table)
+            names = [str(table[bid]["name"]) for bid in ids]
+            sceneNames = [str(obj.name) for obj in rt.objects]
+            indexMap = build_mirror_bone_map(names, sceneNames)
+            boneMap = {ids[i]: ids[indexMap[i]] for i in range(len(ids))}
+
+        sources = {int(v) for v in inSourceVertices}
+        targets = sorted(v for v, m in inVertexMap.items() if m in sources and m != v)
+        if not targets:
+            return []
+        needed = set(targets) | {inVertexMap[v] for v in targets}
+        work = self.get_vertex_weights(inSkinMod, sorted(needed))
+        written: Dict[int, Tuple[List[int], List[float]]] = {}
+        for vertIndex in targets:
+            merged: Dict[int, float] = {}
+            for boneId, weight in work[inVertexMap[vertIndex]]:
+                mirrored = boneMap.get(boneId, boneId)
+                merged[mirrored] = merged.get(mirrored, 0.0) + weight
+            work[vertIndex] = list(merged.items())
+            written[vertIndex] = (list(merged.keys()), list(merged.values()))
+        self.set_vertex_weights(inSkinMod, written, inNormalize=True, inWriteEmpty=True)
+        return sorted(written)
+
+    @staticmethod
+    def _weights_by_handle(
+        inTable: Dict[int, Dict[str, Any]], inWeights: Dict[int, List[Tuple[int, float]]]
+    ) -> Dict[int, Dict[int, float]]:
+        """``{버텍스: [(본 ID, w)]}``를 ``{버텍스: {핸들: w}}``로 바꾼다(0 이하 제외)."""
+        result: Dict[int, Dict[int, float]] = {}
+        for vertIndex, entries in inWeights.items():
+            byHandle: Dict[int, float] = {}
+            for boneId, weight in entries:
+                if weight <= 0.0 or boneId not in inTable:
+                    continue
+                handle = inTable[boneId]["handle"]
+                if handle is None:
+                    continue
+                byHandle[handle] = byHandle.get(handle, 0.0) + float(weight)
+            result[vertIndex] = byHandle
+        return result
 
     def smooth_skin(self, inObj, inVertMode=VertexMode.Edges, inRadius=5.0, inIterNum=3, inKeepMax=False):
         """MAXScript 스무딩 스크립트를 실행해 선택된 버텍스의 스킨 가중치를 부드럽게 한다.
