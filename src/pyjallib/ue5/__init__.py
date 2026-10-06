@@ -114,6 +114,15 @@ __all__ += [
     'judge_import_outcome',
 ]
 
+# 매테리얼 슬롯 이름 치환 결정 (Unreal 없이 사용 가능, stdlib만 의존)
+# 2026-10-02 MatSlot - 인-UE5 어댑터(inUnreal/materialSlots)와 콘솔이 같은 결정 함수를 쓴다
+try:
+    from . import materialSlotRules
+    __all__.append('materialSlotRules')
+except ImportError as e:
+    materialSlotRules = None
+    print(f"[PyJalLib] materialSlotRules를 로드할 수 없습니다: {e}")
+
 # UE5 의존성 상태를 확인할 수 있는 함수
 def is_ue5_available() -> bool:
     """
