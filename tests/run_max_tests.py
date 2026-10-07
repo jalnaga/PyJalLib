@@ -67,6 +67,8 @@ TEST_SCRIPTS = [
     "test_rig_parts.py",
     # 누락 애셋 검사·정리 어댑터. 기대 TC 19 (TC00~TC18)
     "test_missing_asset.py",
+    # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭) - 빈 슬롯 픽스처. 기대 TC 14 (TC00~TC13)
+    "test_skin_ext.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -83,6 +85,7 @@ LOG_NAME_OVERRIDES = {
     "test_probe_envelope.py": "ProbeEnvelope",
     "test_rig_parts.py": "RigParts",
     "test_missing_asset.py": "MissingAsset",
+    "test_skin_ext.py": "SkinExt",
 }
 
 
