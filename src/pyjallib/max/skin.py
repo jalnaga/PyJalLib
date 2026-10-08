@@ -312,7 +312,7 @@ class Skin:
         
         rt.select(objs)
     
-    def load_skin(self, obj, file_path, load_bind_pose=False, keep_skin=False):
+    def load_skin(self, obj, file_path, load_bind_pose=False, keep_skin=False, insert_before=None):
         """스킨 데이터 파일을 읽어 객체에 새 스킨 모디파이어를 생성하고 가중치를 적용한다.
 
         파일에 기록된 본이 씬에 없으면 같은 이름의 Dummy를 생성해 대체한다.
@@ -322,6 +322,11 @@ class Skin:
             file_path (str): 스킨 데이터 파일 경로
             load_bind_pose (bool): 바인드 포즈 파일을 함께 로드해 적용할지 여부
             keep_skin (bool): 기존 스킨 모디파이어 유지 여부. False면 기존 스킨을 모두 삭제한다.
+            insert_before (int | None): 새 스킨을 넣을 위치 - ``addModifier``의 ``before:``와 같다
+                (N번째(1 = 맨 위) 모디파이어 아래, 0 = 맨 위). None이면 ``1 if keep_skin else 0``.
+                기존 스킨을 보존하면서 그 위에 새 스킨을 올리려면 기존 스킨 인덱스 - 1을 넘긴다.
+                (보존 여부와 배치 위치가 ``keep_skin`` 하나에 묶여 있어, 보존 + 맨 위 배치를 표현할
+                수 없었다 - 2026-10-08 SkinKitPy Load 결함)
 
         Returns:
             list[rt.Node]: 씬에 없어 Dummy로 대체된 본 배열. 파일 읽기 실패나 버텍스 수 불일치 시 빈 리스트
@@ -359,7 +364,9 @@ class Skin:
         
         # 새 스킨 모디파이어 생성
         new_skin = rt.Skin()
-        rt.addModifier(obj, new_skin, before=1 if keep_skin else 0)
+        if insert_before is None:
+            insert_before = 1 if keep_skin else 0
+        rt.addModifier(obj, new_skin, before=int(insert_before))
         
         # 스킨 이름 설정
         if keep_skin:
