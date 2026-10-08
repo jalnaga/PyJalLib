@@ -4,7 +4,7 @@
 """Skin 확장 메서드 테스트 - 3ds Max 환경에서 실행 (Type C).
 
 ``get_selected_vertices`` / ``select_vertices`` / ``set_vertex_weights`` / ``get_bone_nodes`` /
-``add_bones`` / ``remove_bone`` / ``duplicate_skin`` / ``mirror_weights``를 검증한다.
+``add_bones`` / ``remove_bone`` / ``duplicate_skin`` / ``mirror_weights`` / ``load_skin`` 배치(``insert_before``)를 검증한다.
 
 **빈 슬롯 픽스처.** 리거가 본을 붙였다 뗀 프로덕션 Skin에는 빈 슬롯이 있고(2026-10-06
 SK_TREX 실기 자산에서도 확인), 그때 ``addBone``이 본 ID를 민다(``max/skin_bone_id.md`` §2).
@@ -21,7 +21,7 @@ SK_TREX 실기 자산에서도 확인), 그때 ``addBone``이 본 ID를 민다(`
     tmp_a, tmp_b, extra  독립
     Body: Box width 40(x -20..20, 8 세그먼트) - x=0 기준 좌우 대칭 버텍스 36개
 
-기대 TC 수: 14 (TC00~TC13)
+기대 TC 수: 17 (TC00~TC16)
 
 실행:
     uv run python tests/run_max_tests.py test_skin_ext.py
@@ -376,6 +376,85 @@ def tc13():
 
 
 run("TC13 기존 transfert_skin_data 회귀(빈 슬롯 Skin)", tc13)
+
+
+# ---------------------------------------------------------------------------
+# load_skin 배치(insert_before) - 2026-10-08 SkinKitPy Load 결함: keep_skin=True가 배치까지
+# before:1로 묶어 "보존 + 기존 Skin 위" 배치를 표현할 수 없었다.
+
+SKIN_TMP_DIR = LOG_DIR / "_skin_ext_tmp"
+
+
+def _saved_scene(inStem: str, inBendOnTop: bool = False):
+    """픽스처를 ``.skin``으로 저장하고 ``(씬, 원본 가중치, 파일 경로)``를 돌려준다."""
+    n = build_scene()
+    sk, body = n["skin"], n["Body"]
+    source = read_by_name(body, sk)
+    SKIN_TMP_DIR.mkdir(parents=True, exist_ok=True)
+    path = SKIN_TMP_DIR / f"{inStem}.skin"
+    if path.exists():
+        path.unlink()
+    skin.activate_skin(body, sk)
+    if skin.save_skin(body, str(path)) is None:
+        raise RuntimeError(f"save_skin 실패: {path}")
+    if inBendOnTop:
+        rt.addModifier(body, rt.Bend())
+    return n, source, path
+
+
+def stack_names(inNode) -> List[str]:
+    """모디파이어 이름(스택 위에서 아래 순)."""
+    return [str(m.name) for m in inNode.modifiers]
+
+
+def tc14():
+    """미지정이면 현행 배치: keep_skin=True는 맨 위 아래(before:1), False는 기존 삭제 후 맨 위."""
+    n, source, path = _saved_scene("Body_keep")
+    body = n["Body"]
+    skin.load_skin(body, str(path), keep_skin=True)
+    keepStack = stack_names(body)
+    n2, source2, path2 = _saved_scene("Body_replace")
+    body2 = n2["Body"]
+    skin.load_skin(body2, str(path2), keep_skin=False)
+    replaceStack = stack_names(body2)
+    loaded = read_by_name(body2, body2.modifiers[0])
+    match = all(same(source2[v], loaded[v]) for v in source2)
+    ok = keepStack == ["Skin", "Skin_Body_keep"] and replaceStack == ["Skin"] and match
+    return ok, f"keep={keepStack} replace={replaceStack} match={match}"
+
+
+run("TC14 load_skin insert_before 미지정: keep_skin True/False 현행 배치 유지", tc14)
+
+
+def tc15():
+    """keep_skin=True + insert_before=0: 기존 Skin을 보존한 채 새 Skin이 맨 위."""
+    n, source, path = _saved_scene("Body_top")
+    body, old = n["Body"], n["skin"]
+    skin.load_skin(body, str(path), keep_skin=True, insert_before=0)
+    stack = stack_names(body)
+    new = body.modifiers[0]
+    loaded = read_by_name(body, new)
+    match = all(same(source[v], loaded[v]) for v in source)
+    ok = stack == ["Skin_Body_top", "Skin"] and body.modifiers[1] == old and match
+    return ok, f"stack={stack} match={match}"
+
+
+run("TC15 load_skin keep_skin + insert_before=0: 새 Skin 맨 위, 기존 Skin 보존", tc15)
+
+
+def tc16():
+    """Skin 위에 Bend가 있을 때 insert_before=1: Bend / 새 Skin / 기존 Skin."""
+    n, source, path = _saved_scene("Body_bend", inBendOnTop=True)
+    body, old = n["Body"], n["skin"]
+    skin.load_skin(body, str(path), keep_skin=True, insert_before=1)
+    stack = stack_names(body)
+    loaded = read_by_name(body, body.modifiers[1])
+    match = all(same(source[v], loaded[v]) for v in source)
+    ok = stack == ["Bend", "Skin_Body_bend", "Skin"] and body.modifiers[2] == old and match
+    return ok, f"stack={stack} match={match}"
+
+
+run("TC16 load_skin insert_before=1(Skin 위 Bend): Bend / 새 Skin / 기존 Skin", tc16)
 
 try:
     rt.setSaveRequired(False)

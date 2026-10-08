@@ -69,7 +69,7 @@ TEST_SCRIPTS = [
     "test_volume_axis_guard.py",
     # 누락 애셋 검사·정리 어댑터. 기대 TC 19 (TC00~TC18)
     "test_missing_asset.py",
-    # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭) - 빈 슬롯 픽스처. 기대 TC 14 (TC00~TC13)
+    # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭·load_skin 배치) - 빈 슬롯 픽스처. 기대 TC 17 (TC00~TC16)
     "test_skin_ext.py",
 ]
 
