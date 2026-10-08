@@ -65,6 +65,8 @@ TEST_SCRIPTS = [
     "test_probe_envelope.py",
     # 릭 파트 특성화 회귀. 기대 TC 54 (전제 3 + 17 파트 x create/modify/delete)
     "test_rig_parts.py",
+    # VolumeBone 미등록 축 거절(Inguinal 이동 축 회귀의 라이브러리 쪽 문). 기대 TC 11 (TC00~TC10)
+    "test_volume_axis_guard.py",
     # 누락 애셋 검사·정리 어댑터. 기대 TC 19 (TC00~TC18)
     "test_missing_asset.py",
     # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭) - 빈 슬롯 픽스처. 기대 TC 14 (TC00~TC13)
@@ -84,6 +86,7 @@ LOG_NAME_OVERRIDES = {
     "test_ui_fuzzy_search_combo_box.py": "FuzzySearchComboBoxUI",
     "test_probe_envelope.py": "ProbeEnvelope",
     "test_rig_parts.py": "RigParts",
+    "test_volume_axis_guard.py": "VolumeAxisGuard",
     "test_missing_asset.py": "MissingAsset",
     "test_skin_ext.py": "SkinExt",
 }

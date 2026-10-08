@@ -34,6 +34,39 @@ _ROT_AXIS_VECTORS = {
     "Z": (0.0, 0.0, 1.0),
 }
 
+def invalid_axes(inRotAxises: list, inTransAxises: list) -> list:
+    """두 축 표에 없는 축 값을 찾아 돌려준다.
+
+    전에는 미등록 축이 `.get(..., (0, 0, 0))`으로 **영벡터**가 되어, 생성은 성공하는데
+    볼륨 본이 루트에 붙어 움직이지 않았다. 툴이 `"PosY"` 대신 `"Y"`를 넘기던 결함이
+    이 폴백 뒤에서 조용히 출하됐다(2026-10-08 Inguinal). 허용 값은 두 표의 키 그 자체다 -
+    별도 목록을 두면 표와 갈라진다.
+
+    Args:
+        inRotAxises: 회전 감지 축 리스트
+        inTransAxises: 이동 축 리스트
+
+    Returns:
+        list: `"rot=<값>"`/`"trans=<값>"` 형식의 잘못된 값 목록. 모두 유효하면 빈 리스트
+    """
+    invalid = [f"rot={axis!r}" for axis in inRotAxises if axis not in _ROT_AXIS_VECTORS]
+    invalid += [f"trans={axis!r}" for axis in inTransAxises if axis not in _TRANS_AXIS_VECTORS]
+    return invalid
+
+
+def _warn_invalid_axes(inOwner: str, inInvalid: list) -> None:
+    """미등록 축 거절 사유를 경고로 남긴다.
+
+    Args:
+        inOwner: 호출한 클래스 이름
+        inInvalid: `invalid_axes()`의 결과
+    """
+    _get_logger().warning(
+        f"{inOwner}: 미등록 축이라 볼륨 본을 만들지 않는다 {inInvalid} "
+        f"(회전 축 {sorted(_ROT_AXIS_VECTORS)}, 이동 축 {sorted(_TRANS_AXIS_VECTORS)})"
+    )
+
+
 #: 볼륨 본의 위치 스크립트 컨트롤러 표현식.
 #: 관절의 로컬 회전을 기준 자세와 비교해 twist 성분만 뽑고, 그 비율만큼 축 방향으로 민다.
 POS_SCRIPT_EXPRESSION = (
@@ -177,9 +210,15 @@ class VolumeBone(_RigPartBase):
             inRootBone: 사용할 루트 본. None이면 새로 생성한다.
 
         Returns:
-            bool: 성공하면 True. 노드가 유효하지 않거나 쓸 루트 본이 없으면 False
+            bool: 성공하면 True. 노드가 유효하지 않거나, 쓸 루트 본이 없거나,
+                축이 미등록 값이면 False
         """
         if not self.validate_source_nodes(inObj, inParent):
+            return False
+
+        invalid = invalid_axes([inRotAxis], [inTransAxis])
+        if invalid:
+            _warn_invalid_axes(type(self).__name__, invalid)
             return False
 
         if inUseRootBone:
@@ -259,8 +298,9 @@ class VolumeBone(_RigPartBase):
 
         Returns:
             dict | None: `{"rootBone", "volumeBones", "rotHelper"}`.
-                노드가 유효하지 않거나 축 리스트 길이가 다르거나 루트 본 생성에
-                실패하면 None
+                노드가 유효하지 않거나, 축 리스트 길이가 다르거나, 미등록 축이 있거나,
+                루트 본 생성에 실패하면 None. 축 검사는 **본을 하나도 만들기 전에** 하므로
+                거절된 호출은 씬에 아무것도 남기지 않는다.
         """
         if not self.validate_source_nodes(inObj, inParent):
             return None
@@ -270,6 +310,11 @@ class VolumeBone(_RigPartBase):
                 f"{type(self).__name__}: 축 리스트 길이가 다르다 "
                 f"(rot {len(inRotAxises)}, trans {len(inTransAxises)}, scale {len(inTransScales)})"
             )
+            return None
+
+        invalid = invalid_axes(inRotAxises, inTransAxises)
+        if invalid:
+            _warn_invalid_axes(type(self).__name__, invalid)
             return None
 
         rootBone = self.create_root_bone(inObj, inParent, inRotScale=inRotScale)
