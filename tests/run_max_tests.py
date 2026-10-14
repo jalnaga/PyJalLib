@@ -67,6 +67,8 @@ TEST_SCRIPTS = [
     "test_rig_parts.py",
     # VolumeBone 미등록 축 거절(Inguinal 이동 축 회귀의 라이브러리 쪽 문). 기대 TC 11 (TC00~TC10)
     "test_volume_axis_guard.py",
+    # KneeBone 뒤쪽 볼륨 크기 분리(inKneeBackVolumeSize). 기대 TC 23 (TC00~TC22)
+    "test_knee_back_volume.py",
     # 누락 애셋 검사·정리 어댑터. 기대 TC 19 (TC00~TC18)
     "test_missing_asset.py",
     # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭·load_skin 배치) - 빈 슬롯 픽스처. 기대 TC 17 (TC00~TC16)
@@ -87,6 +89,7 @@ LOG_NAME_OVERRIDES = {
     "test_probe_envelope.py": "ProbeEnvelope",
     "test_rig_parts.py": "RigParts",
     "test_volume_axis_guard.py": "VolumeAxisGuard",
+    "test_knee_back_volume.py": "KneeBackVolume",
     "test_missing_asset.py": "MissingAsset",
     "test_skin_ext.py": "SkinExt",
 }
