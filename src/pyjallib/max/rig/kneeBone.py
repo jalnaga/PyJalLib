@@ -25,6 +25,7 @@ class KneeBone(_RigPartBase):
         ("inKneeVolumeSize", 5.0),
         ("inKneePopScale", 0.1),
         ("inKneeBackScale", 1.5),
+        ("inKneeBackVolumeSize", 4.0),
     )
 
     SOURCE_SPEC = ("inThigh", "inCalf", "inFoot")
@@ -262,17 +263,27 @@ twist
         
         self.const.set_rot_controllers_weight_in_list(self.calfRotHelper, 1, self.liftScale * 100.0)
         
-    def create_middle_bone(self, inThigh, inCalf, inKneeVolumeSize=5.0, inKneePopScale=0.1, inKneeBackScale=1.5):
+    def create_middle_bone(
+        self,
+        inThigh,
+        inCalf,
+        inKneeVolumeSize=5.0,
+        inKneePopScale=0.1,
+        inKneeBackScale=1.5,
+        inKneeBackVolumeSize=4.0,
+    ):
         """무릎이 구부러질 때 앞(Pop)·뒤(Back)로 움직이는 볼륨 중간 본을 생성한다.
 
-        VolumeBone 서비스로 볼륨 본을 만든 뒤 무릎 이름 규칙으로 이름을 바꾼다.
+        VolumeBone 서비스로 볼륨 본을 만든 뒤 무릎 이름 규칙으로 이름을 바꾸고,
+        뒤쪽 본의 위치 스크립트 상수 `volumeSize`만 `inKneeBackVolumeSize`로 바꾼다.
 
         Args:
             inThigh (rt.Node): 대퇴골 본
             inCalf (rt.Node): 종아리뼈 본
-            inKneeVolumeSize (float): 무릎 볼륨 크기
+            inKneeVolumeSize (float): 무릎 볼륨 크기. 두 본의 휴지 오프셋과 앞쪽 본 스크립트에 쓴다.
             inKneePopScale (float): 무릎 앞쪽 돌출 스케일
             inKneeBackScale (float): 무릎 뒤쪽 돌출 스케일
+            inKneeBackVolumeSize (float): 뒤쪽 본 위치 스크립트의 볼륨 크기
 
         Returns:
             BoneChain | None: 생성된 무릎 볼륨 본 체인. 유효하지 않은 노드가 있으면 None
@@ -321,7 +332,8 @@ twist
                 item.name = kneeFwdName
             elif rt.matchPattern(item.name.lower(), pattern="*"+transAxisNames[1].lower()+"*"):
                 item.name = kneeBckName
-        
+                self.set_back_volume_size(item, inKneeBackVolumeSize)
+
         for item in result.helpers:
             if rt.matchPattern(item.name.lower(), pattern="*root*"):
                 item.name = kneeRootDumName
@@ -332,7 +344,35 @@ twist
             self.middleHelper = result.helpers[0]
         
         return result
-    
+
+    def set_back_volume_size(self, inBackBone, inVolumeSize: float) -> bool:
+        """뒤쪽 볼륨 본의 위치 스크립트 상수 `volumeSize`를 바꾼다.
+
+        리거는 생성 뒤 이 상수를 손으로 고쳐 왔다(2026-10-13, 뒤쪽 4 / 앞쪽 5).
+        휴지 오프셋(Position_XYZ)은 건드리지 않는다 - 수작업이 바꾼 것은 스크립트 상수뿐이고,
+        `VolumeBone` 공용 인터페이스(볼륨 크기 1개)도 그대로 둔다.
+        뒤쪽 본은 `create_middle_bone` 개명 루프의 `transAxisNames[1]` 분기(생성 직후의 축 이름)가
+        고른다. 개명 뒤의 노드 이름은 판별에 쓸 수
+        없다 - FrontBack 파트가 없는 이름(Biped 기본 이름)이면 앞/뒤가 같은 이름이 된다.
+
+        Args:
+            inBackBone (rt.Node): 뒤쪽 볼륨 본
+            inVolumeSize (float): 새 볼륨 크기
+
+        Returns:
+            bool: 위치 스크립트를 찾아 바꿨으면 True
+        """
+        posList = self.const.get_pos_list_controller(inBackBone)
+        if posList is None:
+            return False
+        for index in range(int(posList.count)):
+            scriptCtrl = posList[index].controller
+            if rt.classOf(scriptCtrl) == rt.Position_Script:
+                scriptCtrl.setConstant("volumeSize", rt.Float(inVolumeSize))
+                scriptCtrl.update()
+                return True
+        return False
+
     def create_twist_bones(self, inThigh, inCalf):
         """대퇴골·종아리뼈의 기존 비틀림 본에 대응하는 리프트 본과 헬퍼를 생성한다.
 
@@ -433,6 +473,7 @@ twist
         inKneeVolumeSize: float = 5.0,
         inKneePopScale: float = 0.1,
         inKneeBackScale: float = 1.5,
+        inKneeBackVolumeSize: float = 4.0,
     ) -> Optional[BoneChain]:
         """자동 무릎 본 시스템의 모든 요소를 생성한다.
 
@@ -447,6 +488,8 @@ twist
             inKneeVolumeSize (float): 무릎 볼륨 크기
             inKneePopScale (float): 무릎 앞쪽 돌출 스케일
             inKneeBackScale (float): 무릎 뒤쪽 돌출 스케일
+            inKneeBackVolumeSize (float): 뒤쪽 볼륨 본 위치 스크립트의 볼륨 크기.
+                기본 4.0 - 리거가 생성 뒤 손으로 맞추던 값(0.5.3에서 기본 동작으로 승격).
 
         Returns:
             BoneChain | None: 생성된 자동 무릎 본 체인. 유효하지 않은 노드가 있으면 None
@@ -459,7 +502,14 @@ twist
         self.create_rot_helper(inThigh, inCalf, inFoot)
         self.assign_thigh_rot_constraint(inLiftScale=inLiftScale)
         self.assign_calf_rot_constraint(inLiftScale=inLiftScale)
-        self.create_middle_bone(inThigh, inCalf, inKneeVolumeSize=inKneeVolumeSize, inKneePopScale=inKneePopScale, inKneeBackScale=inKneeBackScale)
+        self.create_middle_bone(
+            inThigh,
+            inCalf,
+            inKneeVolumeSize=inKneeVolumeSize,
+            inKneePopScale=inKneePopScale,
+            inKneeBackScale=inKneeBackScale,
+            inKneeBackVolumeSize=inKneeBackVolumeSize,
+        )
         self.create_twist_bones(inThigh, inCalf)
         
         # 모든 생성된 본들을 개별적으로 수집
@@ -505,6 +555,8 @@ twist
                 "inKneeVolumeSize": inKneeVolumeSize,
                 "inKneePopScale": inKneePopScale,
                 "inKneeBackScale": inKneeBackScale,
+                # 툴 modify(`create_bones_from_chain`)가 이 값을 보존하는 근거다.
+                "inKneeBackVolumeSize": inKneeBackVolumeSize,
             },
         )
         
