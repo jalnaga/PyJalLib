@@ -12,15 +12,18 @@ from PySide2 import QtWidgets, QtGui, QtCore
 class Header(QtWidgets.QWidget):
     """Header class for collapsible group"""
 
-    def __init__(self, name, content_widget):
+    def __init__(self, name, content_widget, inFrameWidget=None):
         """Header Class Constructor to initialize the object.
 
         Args:
             name (str): Name for the header
             content_widget (QtWidgets.QWidget): Widget containing child elements
+            inFrameWidget: 컨텐츠를 감싸는 위젯(스크롤 영역). 있으면 컨텐츠와 함께 접고 편다.
+                기본값 None(컨텐츠만 접고 편다).
         """
         super(Header, self).__init__()
         self.content = content_widget
+        self._frameWidget = inFrameWidget
 
         # Try to load icons from resources, use fallback if not available
         self.expand_ico = QtGui.QPixmap(":teDownArrow.png")
@@ -97,11 +100,17 @@ class Header(QtWidgets.QWidget):
         self.expand() if not self.content.isVisible() else self.collapse()
 
     def expand(self):
+        # 컨텐츠 자신의 숨김 플래그가 접힘 상태의 정본이다(ToolState 등이 isHidden()을 읽는다).
+        # 감싸는 스크롤 영역은 그 상태를 따라간다.
         self.content.setVisible(True)
+        if self._frameWidget is not None:
+            self._frameWidget.setVisible(True)
         self.icon.setPixmap(self.expand_ico)
 
     def collapse(self):
         self.content.setVisible(False)
+        if self._frameWidget is not None:
+            self._frameWidget.setVisible(False)
         self.icon.setPixmap(self.collapse_ico)
 
     def _create_arrow_icon(self, direction):
@@ -139,6 +148,108 @@ class Header(QtWidgets.QWidget):
         return pixmap
 
 
+class _ContentScrollArea(QtWidgets.QScrollArea):
+    """Container 컨텐츠를 감싸는 세로 스크롤 영역(비공개).
+
+    공간이 충분하면 스크롤이 없던 때와 같은 크기를 요구하고, 창을 줄일 때만 세로로 줄어들며
+    스크롤바를 띄운다.
+
+    왜 크기 규칙을 직접 정하는가: Qt 기본 `QScrollArea.sizeHint()`는 글꼴 높이 약 24줄에서
+    잘리므로, 그대로 두면 긴 롤아웃은 공간이 남아도 스크롤바가 생겨 외형이 바뀐다.
+    기본 `minimumSizeHint()`는 반대로 컨텐츠 최소 폭을 무시해, 가로 스크롤이 꺼진 상태에서
+    컨텐츠 오른쪽이 잘린다.
+    """
+
+    #: 세로 최소 높이 상한(줄 수). 컨텐츠가 이보다 작으면 컨텐츠 최소 높이를 그대로 쓴다.
+    _MIN_VISIBLE_LINES = 3
+
+    def __init__(self, inContentWidget: QtWidgets.QWidget):
+        """스크롤 영역을 만들고 컨텐츠 위젯을 넣는다.
+
+        Args:
+            inContentWidget: 스크롤될 컨텐츠 위젯(Container.contentWidget)
+        """
+        super().__init__()
+        self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.setWidgetResizable(True)
+        # QScrollArea 기본 정책(Expanding)은 부모 레이아웃의 남는 공간을 가져가 외형을 바꾼다.
+        # 스크롤이 없던 때의 컨텐츠(맨 QWidget)와 같은 Preferred로 맞춘다.
+        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        self.setWidget(inContentWidget)
+        # setWidget이 컨텐츠의 autoFillBackground를 켜므로 끈다 - 켜 두면 color_background가
+        # 꺼진 Container가 부모 배경 대신 Window 색을 칠한다. 뷰포트도 칠하지 않는다.
+        inContentWidget.setAutoFillBackground(False)
+        self.viewport().setAutoFillBackground(False)
+        self.setAutoFillBackground(False)
+        # 스크롤바가 나타나고 사라질 때 최소 폭(스크롤바 폭 포함 여부)이 바뀐다.
+        self.verticalScrollBar().rangeChanged.connect(self._on_scroll_range_changed)
+
+    def _on_scroll_range_changed(self, inMin: int, inMax: int) -> None:
+        """세로 스크롤 범위 변경 시 크기 힌트를 다시 계산하게 한다.
+
+        Args:
+            inMin: 스크롤바 최솟값
+            inMax: 스크롤바 최댓값
+        """
+        self.updateGeometry()
+
+    def _scroll_bar_width(self) -> int:
+        """세로 스크롤바가 필요한 상태면 그 폭을, 아니면 0을 돌려준다.
+
+        Returns:
+            크기 힌트에 더할 스크롤바 폭(px)
+        """
+        bar = self.verticalScrollBar()
+        if bar.maximum() > bar.minimum():
+            return bar.sizeHint().width()
+        return 0
+
+    def sizeHint(self) -> QtCore.QSize:
+        """컨텐츠 전체 sizeHint를 그대로 요구한다(잘림 없음).
+
+        Returns:
+            컨텐츠 sizeHint(+스크롤바가 보이면 그 폭)
+        """
+        content = self.widget()
+        if content is None:
+            return super().sizeHint()
+        hint = content.sizeHint().expandedTo(content.minimumSizeHint())
+        return QtCore.QSize(hint.width() + self._scroll_bar_width(), hint.height())
+
+    def minimumSizeHint(self) -> QtCore.QSize:
+        """가로는 컨텐츠 최소 폭을 전파하고, 세로만 작게 둔다.
+
+        Returns:
+            (컨텐츠 최소 폭 + 보이는 스크롤바 폭, min(컨텐츠 최소 높이, 3줄))
+        """
+        content = self.widget()
+        if content is None:
+            return super().minimumSizeHint()
+        contentMin = content.minimumSizeHint()
+        lineLimit = self.fontMetrics().lineSpacing() * self._MIN_VISIBLE_LINES
+        height = min(max(contentMin.height(), 0), lineLimit)
+        return QtCore.QSize(max(contentMin.width(), 0) + self._scroll_bar_width(), height)
+
+    def event(self, inEvent: QtCore.QEvent) -> bool:
+        """컨텐츠 레이아웃 변경을 바깥 레이아웃으로 전파한다.
+
+        컨텐츠의 updateGeometry는 부모(뷰포트)에 LayoutRequest를 보내고 뷰포트는 그것을 이
+        위젯으로 넘긴다. QScrollArea는 스크롤바만 갱신하므로, 컨텐츠 크기에 의존하는 이 위젯의
+        크기 힌트를 무효화해 바깥 레이아웃(창 최소 크기 포함)이 따라오게 한다.
+
+        Args:
+            inEvent: 위젯 이벤트
+
+        Returns:
+            이벤트 처리 여부
+        """
+        if inEvent.type() == QtCore.QEvent.LayoutRequest:
+            self.updateGeometry()
+        return super().event(inEvent)
+
+
 class Container(QtWidgets.QWidget):
     """Class for creating a collapsible group similar to how it is implement in Maya
 
@@ -151,12 +262,21 @@ class Container(QtWidgets.QWidget):
             >>> content_layout = QtWidgets.QGridLayout(container.contentWidget)
             >>> content_layout.addWidget(QtWidgets.QPushButton("Button"))
     """
-    def __init__(self, name, color_background=True):
+    def __init__(self, name, color_background=True, inScrollable: bool = True):
         """Container Class Constructor to initialize the object
 
         Args:
             name (str): Name for the header
             color_background (bool): whether or not to color the background lighter like in maya
+            inScrollable: 컨텐츠를 세로 스크롤 영역에 넣는다. 기본값 True.
+                켜져 있으면 공간이 충분할 때는 외형이 같고, 창을 줄일 때만 스크롤바가 생긴다.
+                False면 스크롤 영역 없이 Header + 컨텐츠만 쌓는다(구 동작). 스크롤되는 롤아웃
+                안에 다시 넣는 하위 롤아웃처럼 이중 스크롤을 피해야 할 때 끈다.
+
+        Note:
+            스크롤이 기본인 이유(2026-10-14 MeshValidator): 스크롤이 없으면 컨텐츠 최소 높이가 그대로
+            창 최소 높이로 전파된다. 슬롯 29개짜리 롤아웃이 창 최소 높이를 1080p 작업 영역 밖으로
+            밀어, 창을 줄일 수도 아래 항목에 닿을 수도 없었다.
         """
         super(Container, self).__init__()
         layout = QtWidgets.QVBoxLayout(self)
@@ -166,9 +286,10 @@ class Container(QtWidgets.QWidget):
         self._color_background: bool = color_background
         if self._color_background:
             self._update_content_style()
-        self._header = Header(name, self._content_widget)
+        self._scrollArea = _ContentScrollArea(self._content_widget) if inScrollable else None
+        self._header = Header(name, self._content_widget, self._scrollArea)
         layout.addWidget(self._header)
-        layout.addWidget(self._content_widget)
+        layout.addWidget(self._scrollArea if self._scrollArea is not None else self._content_widget)
 
         # assign header methods to instance attributes so they can be called outside of this class
         self.collapse = self._header.collapse
@@ -213,3 +334,14 @@ class Container(QtWidgets.QWidget):
             헤더 제목 문자열
         """
         return self._header._titleLabel.text()
+
+    def set_title(self, inTitle: str) -> None:
+        """헤더에 표시할 제목 문자열을 바꾼다.
+
+        사용처가 헤더 내부 라벨을 직접 건드리지 않도록 공개 경로를 둔다
+        (예: 접힌 롤아웃 제목에 할당 수를 표시).
+
+        Args:
+            inTitle: 새 제목 문자열
+        """
+        self._header._titleLabel.setText(inTitle)

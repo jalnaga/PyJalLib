@@ -99,7 +99,7 @@ wheels = [
 
 [[package]]
 name = "pyjallib"
-version = "0.5.3"
+version = "0.5.4"
 source = { editable = "." }
 dependencies = [
     { name = "p4python" },
