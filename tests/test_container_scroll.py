@@ -136,11 +136,19 @@ class TestStructure:
         assert container.contentWidget.autoFillBackground() is False
 
     def test_scroll_area_size_policy_is_preferred(self, qapp):
-        """스크롤 영역은 Preferred 정책 - 부모 레이아웃의 남는 공간을 가져가지 않는다."""
+        """확장하지 않는 컨텐츠면 스크롤 영역은 Preferred - 부모 레이아웃의 남는 공간을 가져가지 않는다.
+
+        0.5.4에서는 컨텐츠와 무관하게 "항상 Preferred"를 지켰다. 0.5.5부터는 확장하지 않는
+        컨텐츠(버튼만)에서만 성립하고, 확장 컨텐츠(리스트)는 Expanding으로 남는 공간을 가져가는
+        것이 사양이다(스크롤이 없던 때와 같은 분배) - 그쪽은 TestExpandPropagation이 지킨다.
+        """
         container = Container("Group")
+        _fill_content(container, 3)
+        window = _make_window(container, 300, 400)
         policy = _scroll_area(container).sizePolicy()
         assert policy.horizontalPolicy() == QtWidgets.QSizePolicy.Preferred
         assert policy.verticalPolicy() == QtWidgets.QSizePolicy.Preferred
+        window.close()
 
 
 # ==============================================================================
@@ -340,4 +348,208 @@ class TestNestedResize:
         inner.collapse()
         _settle()
         assert outer.height() == collapsedHeight
+        window.close()
+
+
+# ==============================================================================
+# 세로 확장 전파 (0.5.5 - 접힌 롤아웃 자리를 펼친 리스트 롤아웃이 채운다)
+# ==============================================================================
+
+#: 리스트 롤아웃 스택 창 크기. 롤아웃 3개를 모두 펼쳐도 sizeHint 합보다 커서 공간 부족이 없다 -
+#: 남는 공간의 분배만 비교한다.
+_STACK_WIDTH = 400
+_STACK_HEIGHT = 1200
+
+
+def _fill_list_content(inContainer: Container) -> QtWidgets.QListWidget:
+    """Container 컨텐츠에 버튼 1개 + 리스트(세로 확장 위젯)를 넣는다.
+
+    Args:
+        inContainer: 대상 Container
+
+    Returns:
+        만든 리스트 위젯
+    """
+    layout = QtWidgets.QVBoxLayout(inContainer.contentWidget)
+    layout.addWidget(QtWidgets.QPushButton("Pick"))
+    listWidget = QtWidgets.QListWidget()
+    layout.addWidget(listWidget)
+    return listWidget
+
+
+def _make_stack_window(inContainers: list) -> QtWidgets.QWidget:
+    """Container들을 stretch 없이 세로로 쌓은 창을 화면 밖 표시 상태로 만든다.
+
+    PyJalFacialBuilder Bone 탭과 같은 배치다(롤아웃만 쌓고 stretch 없음).
+
+    Args:
+        inContainers: 쌓을 Container 리스트
+
+    Returns:
+        표시된 창
+    """
+    window = QtWidgets.QWidget()
+    window.setAttribute(QtCore.Qt.WA_DontShowOnScreen)
+    layout = QtWidgets.QVBoxLayout(window)
+    for container in inContainers:
+        layout.addWidget(container)
+    window.resize(_STACK_WIDTH, _STACK_HEIGHT)
+    window.show()
+    _settle()
+    return window
+
+
+def _build_list_stack(inScrollable: bool) -> tuple:
+    """리스트 롤아웃 3개 스택 창을 만든다.
+
+    Args:
+        inScrollable: Container 스크롤 켜짐 여부
+
+    Returns:
+        (창, Container 리스트)
+    """
+    containers = [Container(f"Group {index}", inScrollable=inScrollable) for index in range(3)]
+    for container in containers:
+        _fill_list_content(container)
+    window = _make_stack_window(containers)
+    return window, containers
+
+
+def _geometries(inContainers: list) -> list:
+    """Container들의 (y, 높이) 목록.
+
+    Args:
+        inContainers: Container 리스트
+
+    Returns:
+        [(y, height), ...]
+    """
+    return [(container.y(), container.height()) for container in inContainers]
+
+
+class TestExpandPropagation:
+    """리스트처럼 세로 확장하는 컨텐츠의 확장 여부가 스크롤 영역 바깥으로 전파된다."""
+
+    def test_list_content_makes_scroll_area_expanding(self, qapp):
+        """① 리스트를 담은 컨텐츠 -> 스크롤 영역 세로 Expanding, Container 레이아웃도 세로 확장."""
+        container = Container("Group")
+        _fill_list_content(container)
+        window = _make_stack_window([container])
+        area = _scroll_area(container)
+        assert area.sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Expanding
+        assert area.sizePolicy().horizontalPolicy() == QtWidgets.QSizePolicy.Preferred
+        assert bool(container.layout().expandingDirections() & QtCore.Qt.Vertical) is True
+        window.close()
+
+    def test_collapsed_space_goes_to_expanded_list(self, qapp):
+        """② 회귀 시나리오: 아래 2개를 접으면 첫 롤아웃이 남는 공간을 갖고 헤더가 바로 아래 붙는다.
+
+        정본은 스크롤 영역이 없던 0.5.4 이전 트리(inScrollable=False)의 배치다.
+        """
+        onWindow, onContainers = _build_list_stack(True)
+        offWindow, offContainers = _build_list_stack(False)
+        for containers in (onContainers, offContainers):
+            containers[1].collapse()
+            containers[2].collapse()
+        _settle()
+
+        assert _geometries(onContainers) == _geometries(offContainers)
+        first, second, third = onContainers
+        assert first.height() > first.sizeHint().height()
+        spacing = onWindow.layout().spacing()
+        assert second.y() == first.y() + first.height() + spacing
+        assert third.y() == second.y() + second.height() + spacing
+        assert second.height() == second.sizeHint().height()
+        onWindow.close()
+        offWindow.close()
+
+    def test_expand_collapse_round_trip(self, qapp):
+        """③ 다시 펼치면 스크롤 꺼짐과 같은 분배, 다시 접으면 ②의 배치로 돌아온다."""
+        onWindow, onContainers = _build_list_stack(True)
+        offWindow, offContainers = _build_list_stack(False)
+        for containers in (onContainers, offContainers):
+            containers[1].collapse()
+            containers[2].collapse()
+        _settle()
+        collapsedGeometries = _geometries(onContainers)
+
+        for containers in (onContainers, offContainers):
+            containers[1].expand()
+            containers[2].expand()
+        _settle()
+        assert _geometries(onContainers) == _geometries(offContainers)
+        for container in onContainers:
+            assert container.height() > container.sizeHint().height()
+
+        onContainers[1].collapse()
+        onContainers[2].collapse()
+        _settle()
+        assert _geometries(onContainers) == collapsedGeometries
+        onWindow.close()
+        offWindow.close()
+
+    def test_non_expanding_content_keeps_size_hint(self, qapp):
+        """④ 버튼만 있는 롤아웃은 리스트 롤아웃 옆에서 남는 공간을 가져가지 않는다(높이 = sizeHint)."""
+        buttonContainer = Container("Buttons")
+        _fill_content(buttonContainer, 3)
+        listContainer = Container("List")
+        _fill_list_content(listContainer)
+        window = _make_stack_window([buttonContainer, listContainer])
+
+        assert _scroll_area(buttonContainer).sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Preferred
+        assert buttonContainer.height() == buttonContainer.sizeHint().height()
+        assert listContainer.height() > listContainer.sizeHint().height()
+        window.close()
+
+    def test_nested_list_propagates_to_outer(self, qapp):
+        """⑤ 스크롤 Container 안의 스크롤 꺼짐 하위 Container에 리스트가 있으면 바깥까지 전파된다."""
+        outer = Container("Outer")
+        outerLayout = QtWidgets.QVBoxLayout(outer.contentWidget)
+        inner = Container("Inner", inScrollable=False)
+        _fill_list_content(inner)
+        outerLayout.addWidget(inner)
+        window = _make_stack_window([outer])
+
+        assert _scroll_area(outer).sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Expanding
+        assert outer.height() > outer.sizeHint().height()
+        window.close()
+
+    def test_policy_follows_content_change(self, qapp):
+        """⑥ 표시 후 리스트를 추가하면 Expanding으로, 그 리스트를 숨기면 Preferred로 따라온다."""
+        container = Container("Group")
+        _fill_content(container, 2)
+        window = _make_stack_window([container])
+        area = _scroll_area(container)
+        assert area.sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Preferred
+
+        listWidget = QtWidgets.QListWidget()
+        container.contentWidget.layout().addWidget(listWidget)
+        _settle()
+        assert area.sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Expanding
+
+        listWidget.hide()
+        _settle()
+        assert area.sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Preferred
+        window.close()
+
+    def test_policy_is_fixed_point(self, qapp):
+        """⑦ 정착 후 레이아웃 요청이 다시 와도 정책을 다시 설정하지 않는다(요청 순환 없음)."""
+        container = Container("Group")
+        _fill_list_content(container)
+        window = _make_stack_window([container])
+        area = _scroll_area(container)
+
+        calls = []
+        originalSetter = area.setSizePolicy
+
+        def _counting_setter(*inArgs):
+            calls.append(inArgs)
+            originalSetter(*inArgs)
+
+        area.setSizePolicy = _counting_setter
+        for _ in range(3):
+            QtWidgets.QApplication.sendEvent(area, QtCore.QEvent(QtCore.QEvent.LayoutRequest))
+        _settle()
+        assert calls == []
+        assert area.sizePolicy().verticalPolicy() == QtWidgets.QSizePolicy.Expanding
         window.close()
