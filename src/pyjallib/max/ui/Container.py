@@ -174,8 +174,9 @@ class _ContentScrollArea(QtWidgets.QScrollArea):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setWidgetResizable(True)
-        # QScrollArea 기본 정책(Expanding)은 부모 레이아웃의 남는 공간을 가져가 외형을 바꾼다.
-        # 스크롤이 없던 때의 컨텐츠(맨 QWidget)와 같은 Preferred로 맞춘다.
+        # QScrollArea 기본 정책(Expanding)은 컨텐츠와 무관하게 부모 레이아웃의 남는 공간을 가져간다.
+        # 스크롤이 없던 때의 컨텐츠(맨 QWidget)와 같은 Preferred에서 시작하고, 세로는
+        # _sync_vertical_policy가 컨텐츠의 확장 여부를 따라가게 한다.
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(inContentWidget)
         # setWidget이 컨텐츠의 autoFillBackground를 켜므로 끈다 - 켜 두면 color_background가
@@ -185,6 +186,50 @@ class _ContentScrollArea(QtWidgets.QScrollArea):
         self.setAutoFillBackground(False)
         # 스크롤바가 나타나고 사라질 때 최소 폭(스크롤바 폭 포함 여부)이 바뀐다.
         self.verticalScrollBar().rangeChanged.connect(self._on_scroll_range_changed)
+        self._sync_vertical_policy()
+
+    def _sync_vertical_policy(self) -> None:
+        """컨텐츠의 세로 확장 여부를 이 스크롤 영역의 세로 정책으로 옮긴다.
+
+        판정은 Qt `QWidgetItem::expandingDirections()`와 같다 - 컨텐츠 세로 정책에 ExpandFlag가
+        있거나, GrowFlag가 있고 컨텐츠 레이아웃이 세로로 확장하면 Expanding, 아니면 Preferred.
+        정책이 실제로 바뀔 때만 설정해 레이아웃 요청이 한 번에 수렴하게 한다.
+
+        왜 필요한가(2026-10-15 PyJalFacialBuilder Bone 탭): Qt는 위젯의 레이아웃이 확장하면 그
+        위젯도 확장하는 것으로 보아 리스트 같은 확장 위젯의 "늘어나고 싶음"을 바깥 레이아웃까지
+        올린다. QScrollArea는 컨텐츠를 레이아웃이 아니라 setWidget으로 소유하므로 이 전파가
+        끊긴다. 그러면 펼친 리스트 롤아웃이 접힌 롤아웃의 자리를 가져가지 못하고, 남는 공간이
+        모든 롤아웃에 균등 분배되어 접힌 헤더가 빈 공간 한가운데 뜬다. 스크롤이 없던 때와 같은
+        분배를 되살리기 위해 전파를 직접 잇는다. 접힌 Container는 이 위젯이 숨겨져 레이아웃이
+        빈 항목으로 보므로 따로 처리하지 않는다.
+        """
+        content = self.widget()
+        if content is None:
+            return
+        contentPolicy = int(content.sizePolicy().verticalPolicy())
+        isExpanding = bool(contentPolicy & int(QtWidgets.QSizePolicy.ExpandFlag))
+        contentLayout = content.layout()
+        if (
+            not isExpanding
+            and contentLayout is not None
+            and contentPolicy & int(QtWidgets.QSizePolicy.GrowFlag)
+        ):
+            isExpanding = bool(contentLayout.expandingDirections() & QtCore.Qt.Vertical)
+        targetPolicy = QtWidgets.QSizePolicy.Expanding if isExpanding else QtWidgets.QSizePolicy.Preferred
+        policy = self.sizePolicy()
+        if policy.verticalPolicy() == targetPolicy:
+            return
+        policy.setVerticalPolicy(targetPolicy)
+        self.setSizePolicy(policy)
+
+    def showEvent(self, inEvent: QtGui.QShowEvent) -> None:
+        """표시 시점에 세로 정책을 컨텐츠에 맞춘다.
+
+        Args:
+            inEvent: 표시 이벤트
+        """
+        self._sync_vertical_policy()
+        super().showEvent(inEvent)
 
     def _on_scroll_range_changed(self, inMin: int, inMax: int) -> None:
         """세로 스크롤 범위 변경 시 크기 힌트를 다시 계산하게 한다.
@@ -237,7 +282,8 @@ class _ContentScrollArea(QtWidgets.QScrollArea):
 
         컨텐츠의 updateGeometry는 부모(뷰포트)에 LayoutRequest를 보내고 뷰포트는 그것을 이
         위젯으로 넘긴다. QScrollArea는 스크롤바만 갱신하므로, 컨텐츠 크기에 의존하는 이 위젯의
-        크기 힌트를 무효화해 바깥 레이아웃(창 최소 크기 포함)이 따라오게 한다.
+        크기 힌트를 무효화해 바깥 레이아웃(창 최소 크기 포함)이 따라오게 한다. 컨텐츠의 세로
+        확장 여부도 이때 다시 맞춘다(확장 위젯 추가·하위 롤아웃 접힘 등).
 
         Args:
             inEvent: 위젯 이벤트
@@ -246,6 +292,7 @@ class _ContentScrollArea(QtWidgets.QScrollArea):
             이벤트 처리 여부
         """
         if inEvent.type() == QtCore.QEvent.LayoutRequest:
+            self._sync_vertical_policy()
             self.updateGeometry()
         return super().event(inEvent)
 
