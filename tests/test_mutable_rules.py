@@ -565,7 +565,7 @@ def test_power_overwrite_mutant_is_caught():
 # ---------------------------------------------------------------------------
 
 _SRC = Path(__file__).parent.parent / "src" / "pyjallib" / "ue5"
-_GUARDED_SOURCES = (_SRC / "mutableRules.py",)
+_GUARDED_SOURCES = (_SRC / "mutableRules.py", _SRC / "inUnreal" / "mutableObjects.py")
 _FORBIDDEN = ("Omni", "Template_Sh", "HumanM", "GongPildu", "JeongHuiwon", "MeshB")
 
 

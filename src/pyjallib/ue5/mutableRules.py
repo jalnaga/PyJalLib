@@ -64,6 +64,8 @@ FAILED_BASE_UNAVAILABLE = "failed:baseUnavailable"
 FAILED_TEMPLATE_INVALID = "failed:templateInvalid"
 FAILED_WRITE_NOT_VERIFIED = "failed:writeNotVerified"
 FAILED_SAVE = "failed:saveFailed"
+FAILED_EXCEPTION = "failed:exception"
+"""적용 중 예외 - 한 CO의 실패가 나머지를 멈추지 않게 결과로 흡수한 것."""
 
 FAILURE_CODES = (
     FAILED_NAME_MISMATCH,
@@ -79,6 +81,7 @@ FAILURE_CODES = (
     FAILED_TEMPLATE_INVALID,
     FAILED_WRITE_NOT_VERIFIED,
     FAILED_SAVE,
+    FAILED_EXCEPTION,
 )
 """실패 사유 코드 전체. 결과 JSON을 읽는 쪽이 집계 키로 쓴다."""
 
