@@ -123,6 +123,15 @@ except ImportError as e:
     materialSlotRules = None
     print(f"[PyJalLib] materialSlotRules를 로드할 수 없습니다: {e}")
 
+# Mutable Customizable Object 생성 계획 결정 (Unreal 없이 사용 가능, stdlib만 의존)
+# 2026-10-16 Mutable - 인-UE5 어댑터(inUnreal/mutableObjects)와 콘솔이 같은 결정 함수를 쓴다
+try:
+    from . import mutableRules
+    __all__.append('mutableRules')
+except ImportError as e:
+    mutableRules = None
+    print(f"[PyJalLib] mutableRules를 로드할 수 없습니다: {e}")
+
 # UE5 의존성 상태를 확인할 수 있는 함수
 def is_ue5_available() -> bool:
     """

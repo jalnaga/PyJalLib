@@ -56,6 +56,22 @@ SUITES = {
         "staticSource": "/Game/Developers/Sonic/BossPrototype/Meshes/SM_MiniTurret_Joined",
         "scratchRoot": "/Game/__PyJalLibTest__/MatSlotTypeC",
     },
+    "ue5_test_mutable_objects.py": {
+        # 템플릿·원본 SK·수작업 표본은 읽기·복제만 한다(2026-10-16 Phase 0와 같은 에셋)
+        "baseTemplatePath": "/Game/Omni/Characters/Shared/Mutable/CO_Template_Sh_Base",
+        "slotTemplatePattern": "/Game/Omni/Characters/Shared/Mutable/CO_Template_Sh_{slot}Slot",
+        "sampleSlot": "/Game/Omni/Characters/Main/JeongHuiwon/MeshB/BunHair/Hair/CO_JeongHuiwon_Mn_BunHair_Hair",
+        "sourceMeshes": {
+            **{
+                f"Default/{part}": (
+                    f"/Game/Omni/Characters/Main/JeongHuiwon/MeshB/Default/{part}/SK_JeongHuiwon_Mn_Default_{part}"
+                )
+                for part in ("Body", "Face", "Hair", "Eyebrow", "Eyeline", "Iris", "MouthInterior")
+            },
+            "BunHair/Hair": "/Game/Omni/Characters/Main/JeongHuiwon/MeshB/BunHair/Hair/SK_JeongHuiwon_Mn_BunHair_Hair",
+        },
+        "scratchRoot": "/Game/__PyJalLibTest__/MutableTypeC",
+    },
 }
 
 

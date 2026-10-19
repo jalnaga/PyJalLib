@@ -130,6 +130,17 @@ if is_ue5_available():
         MaterialSlotRenamer = None
         print(f"[PyJalLib] materialSlots 임포트 실패: {e}")
 
+    # Mutable Objects - Customizable Object 생성 어댑터 + 파사드 (2026-10-16 Mutable)
+    try:
+        from . import mutableObjects
+        from .mutableObjects import MutableObjectBuilder
+        __all__.append('mutableObjects')
+        __all__.append('MutableObjectBuilder')
+    except ImportError as e:
+        mutableObjects = None
+        MutableObjectBuilder = None
+        print(f"[PyJalLib] mutableObjects 임포트 실패: {e}")
+
 else:
     # UE5가 사용 불가능한 경우 모든 모듈을 None으로 설정
     pathUtils = None
@@ -146,6 +157,8 @@ else:
     LegacyStaticMeshImporter = None
     materialSlots = None
     MaterialSlotRenamer = None
+    mutableObjects = None
+    MutableObjectBuilder = None
     print("[PyJalLib] Unreal Engine이 실행되지 않았습니다. inUnreal 모듈들을 사용할 수 없습니다.")
 
 def get_available_modules() -> list:
@@ -184,6 +197,10 @@ def get_available_modules() -> list:
         available.append('materialSlots')
     if 'MaterialSlotRenamer' in __all__ and MaterialSlotRenamer is not None:
         available.append('MaterialSlotRenamer')
+    if 'mutableObjects' in __all__ and mutableObjects is not None:
+        available.append('mutableObjects')
+    if 'MutableObjectBuilder' in __all__ and MutableObjectBuilder is not None:
+        available.append('MutableObjectBuilder')
     return available
 
 # 헬퍼 함수도 __all__에 추가
