@@ -27,6 +27,7 @@ from pyjallib.max.skin import Skin
 from pyjallib.max.skeleton import Skeleton
 from pyjallib.max.morph import Morph
 from pyjallib.max.attribute import Attribute
+from pyjallib.max.polygon import Polygon
 
 from pyjallib.max.rig.boneChain import BoneChain
 
@@ -93,6 +94,7 @@ __all__ = [
     "Skeleton",
     "Morph",
     "Attribute",
+    "Polygon",
     "BoneChain",
     "TwistBone",
     "GroinBone",

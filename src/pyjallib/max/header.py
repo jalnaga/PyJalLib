@@ -43,6 +43,7 @@ from .ue5Skeleton import UE5Skeleton
 
 from .morph import Morph
 from .attribute import Attribute
+from .polygon import Polygon
 
 from .rootMotion import RootMotion
 
@@ -157,6 +158,7 @@ class Header:
 
         self.morph = Morph()
         self.attribute = Attribute()
+        self.polygon = Polygon()
 
         self.rootMotion = RootMotion(
             nameService=self.name,
