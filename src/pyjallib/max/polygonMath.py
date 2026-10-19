@@ -19,8 +19,9 @@
 차폐물에서 빼면, 열린 옷(바지 허리·밑단) 안에서 비스듬한 레이가 몸과 옷 사이 틈을 따라 구멍으로
 빠져나가 덮인 면이 "보임"이 된다 - 실제로는 몸이 그 시선을 막는다. 두 시험이 이 둘을 함께 막는다.
 
-샘플점은 면의 버텍스 + 면 중심이다. 버텍스 결과는 그 버텍스를 쓰는 면들이 공유한다. 면 집계는 보존
-쪽으로 기운다.
+샘플점은 면의 버텍스 + 면 대표점이다. 면 대표점은 **실제 삼각분할 표면 위의 점**(가장 넓은 삼각형의
+무게중심)이다 - 꼭짓점 평균은 비평면 면에서 표면 안쪽에 놓여 자기 면에 막힌다(``face_surface_samples``).
+버텍스 결과는 그 버텍스를 쓰는 면들이 공유한다. 면 집계는 보존 쪽으로 기운다.
 
 - 샘플 하나라도 시험 1에서 보이면 면은 **보임** - 가리는 오브젝트의 경계를 가로지르는 면은 남는다.
 - (보임이 아니고) 샘플 하나라도 시험 2에서 전부 막히면 **자기 가림**(보존).
@@ -247,19 +248,80 @@ class FaceSamples:
     vertexSampleIndex: Dict[int, int]
 
 
+def face_surface_samples(
+    inVerts: Sequence[Vec3],
+    inFaces: Sequence[Sequence[int]],
+    inTriangles: Sequence[Sequence[int]],
+) -> List[Optional[Tuple[Vec3, Vec3]]]:
+    """폴리곤마다 **실제 삼각분할 표면 위** 대표점과 법선 = 그 폴리곤의 가장 넓은 삼각형의 무게중심·법선.
+
+    비평면 폴리곤(접힌 사각형)은 꼭짓점 평균이 실제 표면보다 안쪽에 놓인다. 거기서 쏜 레이는 자기 면의
+    삼각형에 0.01~0.05 거리에서 전부 막혀 "몸이 몸을 가린다"로 오판된다(2026-10-20 실기 진단: 3.max 355 /
+    2.max 733 샘플이 전부 면 중심이었고 히트 삼각형이 자기 폴리곤 안이었다 - 덮인 영역에 면이 띄엄띄엄
+    남았다). 삼각형 위의 점에서 그 삼각형 법선으로 띄우면 자기 면을 다시 맞지 않는다.
+
+    삼각형은 세 버텍스를 모두 가진 폴리곤에 배정한다(후보가 정확히 하나일 때만). 법선은 폴리곤 뉴웰 법선과
+    같은 쪽으로 맞춘다. 배정된 삼각형이 없거나 넓이가 0인 폴리곤은 None(호출자가 꼭짓점 평균으로 폴백).
+
+    Args:
+        inVerts: 버텍스 위치
+        inFaces: 폴리곤 버텍스 인덱스(0-based)
+        inTriangles: 같은 버텍스 체계의 삼각분할(0-based 버텍스 3개씩)
+
+    Returns:
+        폴리곤마다 (대표점, 법선) 또는 None
+    """
+    vertFaces: Dict[int, Set[int]] = {}
+    for f, face in enumerate(inFaces):
+        for v in face:
+            vertFaces.setdefault(v, set()).add(f)
+    best: List[Optional[Tuple[float, Vec3, Vec3]]] = [None] * len(inFaces)
+    for tri in inTriangles:
+        if len(tri) != 3:
+            continue
+        a, b, c = tri
+        owners = vertFaces.get(a, set()) & vertFaces.get(b, set()) & vertFaces.get(c, set())
+        if len(owners) != 1:
+            continue
+        f = next(iter(owners))
+        pa, pb, pc = inVerts[a], inVerts[b], inVerts[c]
+        cr = _cross(_sub(pb, pa), _sub(pc, pa))
+        area2 = math.sqrt(cr[0] * cr[0] + cr[1] * cr[1] + cr[2] * cr[2])
+        if area2 < 1e-12:
+            continue
+        if best[f] is None or area2 > best[f][0]:
+            center = ((pa[0] + pb[0] + pc[0]) / 3.0, (pa[1] + pb[1] + pc[1]) / 3.0, (pa[2] + pb[2] + pc[2]) / 3.0)
+            best[f] = (area2, center, (cr[0] / area2, cr[1] / area2, cr[2] / area2))
+    out: List[Optional[Tuple[Vec3, Vec3]]] = []
+    for f, entry in enumerate(best):
+        if entry is None:
+            out.append(None)
+            continue
+        _area, center, nrm = entry
+        polyNormal = newell_normal([inVerts[v] for v in inFaces[f]])
+        if polyNormal[0] * nrm[0] + polyNormal[1] * nrm[1] + polyNormal[2] * nrm[2] < 0.0:
+            nrm = (-nrm[0], -nrm[1], -nrm[2])
+        out.append((center, nrm))
+    return out
+
+
 def build_face_samples(
     inVerts: Sequence[Vec3],
     inFaces: Sequence[Sequence[int]],
     inVertNormals: Sequence[Vec3],
+    inTriangles: Optional[Sequence[Sequence[int]]] = None,
 ) -> FaceSamples:
-    """면이 쓰는 버텍스 + 면 중심으로 샘플을 만든다. 면에 안 쓰이는 버텍스는 샘플하지 않는다.
+    """면이 쓰는 버텍스 + 면 대표점으로 샘플을 만든다. 면에 안 쓰이는 버텍스는 샘플하지 않는다.
 
-    면 중심 법선은 뉴웰 법선이고, 퇴화면이면 버텍스 법선 평균, 그것도 0이면 (0, 0, 1)이다.
+    면 대표점은 inTriangles가 있으면 ``face_surface_samples``(실제 표면 위 점·삼각형 법선)이고, 없거나
+    배정에 실패한 면은 꼭짓점 평균 + 뉴웰 법선이다(퇴화면이면 버텍스 법선 평균, 그것도 0이면 (0, 0, 1)).
+    **씬 메쉬를 다룰 때는 삼각분할을 넘긴다** - 꼭짓점 평균은 비평면 면에서 표면 안쪽에 놓인다.
 
     Args:
         inVerts: 버텍스 위치(월드)
         inFaces: 면마다 버텍스 인덱스 목록(0-based, 3개 이상)
         inVertNormals: 버텍스 법선(inVerts와 같은 길이)
+        inTriangles: 같은 버텍스 체계의 삼각분할. None이면 꼭짓점 평균을 쓴다
 
     Returns:
         ``FaceSamples``
@@ -267,6 +329,7 @@ def build_face_samples(
     Raises:
         ValueError: 길이 불일치, 꼭짓점 3개 미만, 인덱스 범위 밖
     """
+    surface = face_surface_samples(inVerts, inFaces, inTriangles) if inTriangles is not None else None
     vertCount = len(inVerts)
     if len(inVertNormals) != vertCount:
         raise ValueError(f"버텍스 법선 수({len(inVertNormals)})가 버텍스 수({vertCount})와 다르다")
@@ -284,7 +347,14 @@ def build_face_samples(
                 points.append(tuple(inVerts[v]))
                 normals.append(normalize(inVertNormals[v]))
     faceSampleIds: List[List[int]] = []
-    for face in inFaces:
+    for f, face in enumerate(inFaces):
+        ids = [vertexSampleIndex[v] for v in face]
+        if surface is not None and surface[f] is not None:
+            ids.append(len(points))
+            points.append(surface[f][0])
+            normals.append(surface[f][1])
+            faceSampleIds.append(ids)
+            continue
         ps = [inVerts[v] for v in face]
         center = (
             sum(p[0] for p in ps) / len(ps),
@@ -300,7 +370,6 @@ def build_face_samples(
                 summed[1] += vn[1]
                 summed[2] += vn[2]
             nrm = normalize((summed[0], summed[1], summed[2]))
-        ids = [vertexSampleIndex[v] for v in face]
         ids.append(len(points))
         points.append(center)
         normals.append(nrm)
@@ -467,6 +536,7 @@ def find_occluded_faces(
     inMargin: float,
     inProgressCallback: Optional[ProgressCallback] = None,
     inChunkSize: int = DEFAULT_CHUNK_SIZE,
+    inTriangles: Optional[Sequence[Sequence[int]]] = None,
 ) -> OccludedFaceResult:
     """가려진 면을 판정한다(모듈 docstring의 두 시험 정의).
 
@@ -482,6 +552,8 @@ def find_occluded_faces(
         inMargin: 여유 거리(0 이상)
         inProgressCallback: (작업명, 현재, 전체) 콜백. None이면 부르지 않는다
         inChunkSize: 질의 묶음 크기(1 이상)
+        inTriangles: 레이 엔진이 보는 삼각분할(0-based). 주면 면 대표점을 실제 표면 위에 둔다
+            (``face_surface_samples`` - 씬 메쉬에서는 반드시 준다)
 
     Returns:
         ``OccludedFaceResult``
@@ -493,7 +565,7 @@ def find_occluded_faces(
         raise ValueError(f"묶음 크기는 1 이상이어야 한다: {inChunkSize}")
     if inMargin < 0.0:
         raise ValueError(f"여유 거리는 0 이상이어야 한다: {inMargin}")
-    samples = build_face_samples(inVerts, inFaces, inVertNormals)
+    samples = build_face_samples(inVerts, inFaces, inVertNormals, inTriangles)
     test1 = _run_chunked(
         inTest1Query, samples.points, samples.normals, inChunkSize, "시험 1 (가리는 오브젝트 포함)", inProgressCallback
     )

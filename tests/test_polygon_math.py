@@ -194,6 +194,64 @@ def test_build_face_samples_shares_vertices_and_skips_unused():
     assert s.normals[s.faceSampleIds[0][4]] == pytest.approx((0.0, 0.0, 1.0))
 
 
+# 안장형(비평면) 사각형: 대각 모서리 두 개가 들려 있다. 삼각분할은 대각선 0-2.
+_SADDLE_VERTS = [(0.0, 0.0, 0.0), (1.0, 0.0, 1.0), (1.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
+_SADDLE_FACES = [[0, 1, 2, 3]]
+_SADDLE_TRIS = [[0, 1, 2], [0, 2, 3]]
+
+
+def _plane_distance(inPoint, inTri):
+    a, b, c = (_SADDLE_VERTS[i] for i in inTri)
+    n = pm.normalize(pm._cross(pm._sub(b, a), pm._sub(c, a)))
+    d = pm._sub(inPoint, a)
+    return abs(d[0] * n[0] + d[1] * n[1] + d[2] * n[2])
+
+
+def test_face_surface_sample_lies_on_a_triangle_of_nonplanar_face():
+    """비평면 면의 꼭짓점 평균은 어느 삼각형 위에도 없다 - 대표점은 삼각형 위에 있다(자기 면 히트 방지)."""
+    centroid = (0.5, 0.5, 0.5)
+    assert min(_plane_distance(centroid, t) for t in _SADDLE_TRIS) > 0.1
+    (point, normal), = pm.face_surface_samples(_SADDLE_VERTS, _SADDLE_FACES, _SADDLE_TRIS)
+    assert min(_plane_distance(point, t) for t in _SADDLE_TRIS) < 1e-12
+    newell = pm.newell_normal(_SADDLE_VERTS)
+    assert normal[0] * newell[0] + normal[1] * newell[1] + normal[2] * newell[2] > 0.0
+    assert abs(math.sqrt(sum(c * c for c in normal)) - 1.0) < 1e-12
+
+
+def test_face_surface_sample_normal_follows_face_winding_even_if_triangle_reversed():
+    (_, normal), = pm.face_surface_samples(_SADDLE_VERTS, _SADDLE_FACES, [[2, 1, 0], [3, 2, 0]])
+    newell = pm.newell_normal(_SADDLE_VERTS)
+    assert normal[0] * newell[0] + normal[1] * newell[1] + normal[2] * newell[2] > 0.0
+
+
+def test_face_surface_samples_none_without_owned_triangle():
+    """삼각형이 없거나 두 면에 걸치는(배정 모호) 삼각형만 있으면 None - 꼭짓점 평균으로 폴백한다."""
+    assert pm.face_surface_samples(_STRIP_VERTS, _STRIP_FACES, []) == [None, None]
+    # 버텍스 1·2는 두 면이 공유 - 1, 2와 한 면 전용 버텍스로 만든 삼각형만 배정된다
+    out = pm.face_surface_samples(_STRIP_VERTS, _STRIP_FACES, [[1, 2, 4]])
+    assert out[0] is None and out[1] is not None
+
+
+def test_build_face_samples_uses_surface_point_when_triangles_given():
+    s = pm.build_face_samples(_SADDLE_VERTS, _SADDLE_FACES, [(0, 0, 1)] * 4, _SADDLE_TRIS)
+    center = s.points[s.faceSampleIds[0][-1]]
+    assert min(_plane_distance(center, t) for t in _SADDLE_TRIS) < 1e-12
+    legacy = pm.build_face_samples(_SADDLE_VERTS, _SADDLE_FACES, [(0, 0, 1)] * 4)
+    assert legacy.points[legacy.faceSampleIds[0][-1]] == pytest.approx((0.5, 0.5, 0.5))
+
+
+def test_find_occluded_faces_passes_triangles_to_samples():
+    seen = []
+
+    def q(points, normals):
+        seen.extend(points)
+        return [True] * len(points)
+
+    pm.find_occluded_faces(_SADDLE_VERTS, _SADDLE_FACES, [(0, 0, 1)] * 4, q, q, 0.0, inTriangles=_SADDLE_TRIS)
+    assert (0.5, 0.5, 0.5) not in seen
+    assert min(_plane_distance(seen[-1], t) for t in _SADDLE_TRIS) < 1e-12
+
+
 def test_build_face_samples_degenerate_face_uses_vertex_normals():
     verts = [(0, 0, 0), (1, 0, 0), (2, 0, 0)]
     normals = [(0, 1, 0)] * 3

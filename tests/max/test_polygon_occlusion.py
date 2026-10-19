@@ -29,7 +29,7 @@
   - 관 축 거리 r_t > 12.8 인 버텍스를 가진 면(z 3..33) -> 보임(뚫고 나온 부분)
   - 버텍스가 전부 r_t < 11.7 이고 z 14..26 인 면 -> 가려짐
 
-기대 TC 수: 14 (TC00~TC13)
+기대 TC 수: 16 (TC00~TC15)
 
 실행:
     uv run python tests/run_max_tests.py test_polygon_occlusion.py
@@ -113,7 +113,7 @@ def _is_leg_side(inPts, inOffsetX):
 def _draft_definition(inPoly, inTarget, inOccluders):
     """초안 정의(시험 1 차폐물 = 가리개만, 몸 제외)로 판정한다 - 판별력 대조군."""
     inPoly._ensure_functions()
-    verts, normals, faces = inPoly._read_target(inTarget)
+    verts, normals, faces, triangles = inPoly._read_target(inTarget)
     merged = rt.pyjal_polygon_merge(rt.Array(*inOccluders), "PyJalPolygon_tmpOccluder")
     gridOcc = rt.pyjal_polygon_grid(merged, inPoly.GRID_RESOLUTION)
     gridSelf = rt.pyjal_polygon_grid(inTarget, inPoly.GRID_RESOLUTION)
@@ -124,6 +124,7 @@ def _draft_definition(inPoly, inTarget, inOccluders):
             inPoly._make_query(gridOcc, dirs, inPoly.DEFAULT_EPSILON),
             inPoly._make_query(gridSelf, dirs, inPoly.DEFAULT_EPSILON),
             0.0,
+            inTriangles=triangles,
         )
     finally:
         gridOcc.free()
@@ -306,6 +307,69 @@ try:
     )
 except Exception:
     reporter.error("TC11 관통 가려짐", traceback.format_exc())
+
+# ============================================================
+# 픽스처 3 - 접힌(비평면) 면: 면 대표점이 실제 표면 위에 있어야 한다
+# ============================================================
+fx3 = None
+try:
+    _reset()
+    body = _make_body()
+    # 다리 원기둥 측면 버텍스를 (단 + 변) 홀짝으로 반지름 ±0.4 밀어 모든 측면 사각형을 안장형으로 접는다
+    for v in range(1, int(rt.polyop.getNumVerts(body)) + 1):
+        p = rt.polyop.getVert(body, v)
+        r = math.hypot(p.x, p.y)
+        if abs(r - 5.0) > 1e-3 or not (0.0 < p.z < 40.0):
+            continue
+        ring = int(round(p.z / 2.5))
+        seg = int(round(math.atan2(p.y, p.x) / (2.0 * math.pi / 16.0))) % 16
+        scale = (5.0 + (0.4 if (ring + seg) % 2 == 0 else -0.4)) / r
+        rt.polyop.setVert(body, v, rt.Point3(p.x * scale, p.y * scale, p.z))
+    pants = _make_pants()
+    faces = _faces_world(body)
+    foldedCore = {
+        f for f, ps in faces.items()
+        if len(ps) == 4 and all(abs(math.hypot(p[0], p[1]) - 5.0) < 0.41 for p in ps) and all(14.0 <= p[2] <= 26.0 for p in ps)
+    }
+    # 대조: 꼭짓점 평균 대표점(삼각분할 미사용)으로 판정 - 자기 면에 막혀 자기 가림이 나와야 픽스처가 결함을 재현한다
+    polygon._ensure_functions()
+    verts, normals, polyFaces, triangles = polygon._read_target(body)
+    merged = rt.pyjal_polygon_merge(rt.Array(body, pants), "PyJalPolygon_tmpOccluder")
+    gAll = rt.pyjal_polygon_grid(merged, polygon.GRID_RESOLUTION)
+    gSelf = rt.pyjal_polygon_grid(body, polygon.GRID_RESOLUTION)
+    try:
+        dirs = rt.Array(*[rt.Point3(*d) for d in pm.cone_directions(32, 90.0)])
+        legacy = pm.find_occluded_faces(
+            verts, polyFaces, normals,
+            polygon._make_query(gAll, dirs, polygon.DEFAULT_EPSILON),
+            polygon._make_query(gSelf, dirs, polygon.DEFAULT_EPSILON),
+            0.0,
+        )
+    finally:
+        gAll.free()
+        gSelf.free()
+        rt.delete(merged)
+    legacySelfCore = {f + 1 for f in legacy.selfOccludedFaces} & foldedCore
+    result = polygon.find_occluded_faces(body, [pants], 32, 90.0, 0.0)
+    fx3 = {"core": foldedCore, "result": result, "legacySelfCore": legacySelfCore}
+    reporter.assert_test(
+        len(foldedCore) == 64 and len(legacySelfCore) > 0,
+        "TC14 픽스처 3 전제(접힌 가운데 띠 64면, 꼭짓점 평균 대표점이면 그중 일부가 자기 가림으로 오판)",
+        f"core={len(foldedCore)} legacySelfOccludedInCore={len(legacySelfCore)}",
+    )
+except Exception:
+    reporter.error("TC14 픽스처 3 생성·대조", traceback.format_exc())
+
+try:
+    occluded = set(fx3["result"].occludedFaces)
+    selfOcc = set(fx3["result"].selfOccludedFaces)
+    reporter.assert_test(
+        fx3["core"] <= occluded and not (fx3["core"] & selfOcc),
+        "TC15 접힌 면도 덮인 띠는 전부 가려짐, 자기 가림 오판 0(대표점이 실제 표면 위)",
+        f"missing={sorted(fx3['core'] - occluded)} selfInCore={sorted(fx3['core'] & selfOcc)} counts={fx3['result'].counts()}",
+    )
+except Exception:
+    reporter.error("TC15 접힌 면", traceback.format_exc())
 
 # ============================================================
 # 입력 거부

@@ -47,7 +47,8 @@ fn pyjal_polygon_mesh_data node = (
     local nrms = for i = 1 to nv collect (getNormal m i)
     local faces = for f = 1 to (polyop.getNumFaces node) collect (polyop.getFaceVerts node f)
     local pv = polyop.getNumVerts node
-    #(pts, nrms, faces, nv, pv)
+    local tris = for t = 1 to m.numfaces collect (getFace m t)
+    #(pts, nrms, faces, nv, pv, tris)
 )
 fn pyjal_polygon_merge nodes tmpName = (
     local tmp = mesh mesh:(snapshotAsMesh nodes[1])
@@ -145,7 +146,11 @@ class Polygon:
             return False
 
     def _read_target(self, inTarget: Any):
-        """평가 형상의 버텍스(월드)·법선·면(0-based)을 읽는다."""
+        """평가 형상의 버텍스(월드)·법선·면·삼각분할(0-based)을 읽는다.
+
+        삼각분할은 레이 그리드가 실제로 보는 표면이다 - 면 대표점을 그 위에 두는 데 쓴다
+        (``polygonMath.face_surface_samples``).
+        """
         try:
             data = rt.pyjal_polygon_mesh_data(inTarget)
         except RuntimeError as exc:
@@ -161,7 +166,8 @@ class Polygon:
         verts: List[Vec3] = [(float(p.x), float(p.y), float(p.z)) for p in data[0]]
         normals: List[Vec3] = [(float(p.x), float(p.y), float(p.z)) for p in data[1]]
         faces: List[List[int]] = [[int(v) - 1 for v in fv] for fv in data[2]]
-        return verts, normals, faces
+        triangles: List[List[int]] = [[int(t.x) - 1, int(t.y) - 1, int(t.z) - 1] for t in data[5]]
+        return verts, normals, faces, triangles
 
     def _make_query(self, inGrid: Any, inLocalDirs: Any, inEpsilon: float) -> pm.SampleQuery:
         def _query(inPoints: Sequence[Vec3], inNormals: Sequence[Vec3]) -> List[bool]:
@@ -243,7 +249,7 @@ class Polygon:
             raise ValueError(f"여유 거리는 0 이상이어야 한다: {inMargin}")
 
         self._ensure_functions()
-        verts, normals, faces = self._read_target(inTarget)
+        verts, normals, faces, triangles = self._read_target(inTarget)
         if not faces:
             return OccludedFaceResult()
 
@@ -265,6 +271,7 @@ class Polygon:
                 self._make_query(gridSelf, mxDirs, inEpsilon),
                 inMargin,
                 inProgressCallback=inProgressCallback,
+                inTriangles=triangles,
             )
         finally:
             for grid in (gridAll, gridSelf):
