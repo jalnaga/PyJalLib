@@ -73,6 +73,8 @@ TEST_SCRIPTS = [
     "test_missing_asset.py",
     # Skin 확장(선택·일괄 쓰기·본 추가/제거·복제·대칭·load_skin 배치) - 빈 슬롯 픽스처. 기대 TC 17 (TC00~TC16)
     "test_skin_ext.py",
+    # 가려진 면 추출(열린 관·자기 가림·관통·접힌 면 합성 픽스처, 초안 정의 대조). 기대 TC 16 (TC00~TC15)
+    "test_polygon_occlusion.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -92,6 +94,7 @@ LOG_NAME_OVERRIDES = {
     "test_knee_back_volume.py": "KneeBackVolume",
     "test_missing_asset.py": "MissingAsset",
     "test_skin_ext.py": "SkinExt",
+    "test_polygon_occlusion.py": "PolygonOcclusion",
 }
 
 
