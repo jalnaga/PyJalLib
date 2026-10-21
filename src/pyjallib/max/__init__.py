@@ -28,6 +28,8 @@ from pyjallib.max.skeleton import Skeleton
 from pyjallib.max.morph import Morph
 from pyjallib.max.attribute import Attribute
 from pyjallib.max.polygon import Polygon
+# UV 마스크 순수 모듈(래스터화·TGA). pymxs 없이도 import할 수 있고, 어댑터는 Polygon.bake_face_mask.
+from pyjallib.max import uvMask
 
 from pyjallib.max.rig.boneChain import BoneChain
 
@@ -95,6 +97,7 @@ __all__ = [
     "Morph",
     "Attribute",
     "Polygon",
+    "uvMask",
     "BoneChain",
     "TwistBone",
     "GroinBone",

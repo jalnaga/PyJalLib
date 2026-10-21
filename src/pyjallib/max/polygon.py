@@ -31,12 +31,13 @@ Modify 패널이 스택 **아래** 레벨(예: Skin 밑 baseObject의 서브오�
 않는다 - **호출자가 패널을 벗어난 상태(예: ``max create mode``)에서 부른다.**
 """
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pymxs
 from pymxs import runtime as rt
 
 from pyjallib.max import polygonMath as pm
+from pyjallib.max import uvMask
 from pyjallib.max.polygonMath import OccludedFaceResult, ProgressCallback, Vec3
 
 _MXS_DEFINITIONS = """
@@ -49,6 +50,16 @@ fn pyjal_polygon_mesh_data node = (
     local pv = polyop.getNumVerts node
     local tris = for t = 1 to m.numfaces collect (getFace m t)
     #(pts, nrms, faces, nv, pv, tris)
+)
+fn pyjal_polygon_map_data node ch = (
+    if not (polyop.getMapSupport node ch) then #(false, #(), #())
+    else (
+        local nmv = polyop.getNumMapVerts node ch
+        local mv = for i = 1 to nmv collect (polyop.getMapVert node ch i)
+        local nf = polyop.getNumFaces node
+        local mf = for f = 1 to nf collect (polyop.getMapFace node ch f)
+        #(true, mv, mf)
+    )
 )
 fn pyjal_polygon_merge nodes tmpName = (
     local tmp = mesh mesh:(snapshotAsMesh nodes[1])
@@ -292,3 +303,79 @@ class Polygon:
             f"N={inRayCount}, θ={inConeAngle}, 여유={inMargin}): {oneBased.counts()}",
         )
         return oneBased
+
+    # -----------------------------------------------------------------
+    # UV 마스크 (2026-10-21 가산 - 순수 규칙은 pyjallib.max.uvMask)
+    # -----------------------------------------------------------------
+
+    def read_map_faces(self, inNode: Any, inChannel: int = 1) -> Tuple[List[Tuple[float, float]], List[List[int]]]:
+        """맵 채널의 맵 버텍스 (u, v)와 면별 맵 버텍스 인덱스(**0-based**)를 벌크로 읽는다(씬 무변경).
+
+        MAXScript 함수 하나가 ``polyop.getMapVert``/``getMapFace``를 돌려 Python 루프의 IPC를 피한다.
+        면 순서는 ``polyop`` 폴리곤 인덱스와 같다(``find_occluded_faces`` 결과의 1-based 인덱스 - 1).
+
+        Args:
+            inNode: 스택 결과가 폴리곤 메쉬인 지오메트리 노드
+            inChannel: 맵 채널(기본 1)
+
+        Returns:
+            (맵 버텍스 목록, 면별 맵 버텍스 인덱스 목록)
+
+        Raises:
+            ValueError: 지오메트리가 아님, 스택 결과가 폴리곤이 아님, 맵 채널 미지원
+        """
+        if not self._is_geometry(inNode):
+            raise ValueError("대상이 유효한 지오메트리 노드가 아니다")
+        self._ensure_functions()
+        try:
+            data = rt.pyjal_polygon_map_data(inNode, int(inChannel))
+        except RuntimeError as exc:
+            raise ValueError(f"'{inNode.name}'의 스택 결과가 폴리곤 메쉬가 아니라 맵 면을 읽을 수 없다: {exc}") from exc
+        if not bool(data[0]):
+            raise ValueError(f"'{inNode.name}'에 맵 채널 {inChannel}이(가) 없다")
+        mapVerts = [(float(p.x), float(p.y)) for p in data[1]]
+        mapFaces = [[int(i) - 1 for i in face] for face in data[2]]
+        return mapVerts, mapFaces
+
+    def bake_face_mask(
+        self,
+        inNode: Any,
+        inFaces: Sequence[int],
+        inSize: int,
+        inPath: str,
+        inChannel: int = 1,
+        inPadding: int = 0,
+        inFill: int = uvMask.DEFAULT_FILL,
+        inValue: int = uvMask.DEFAULT_VALUE,
+    ) -> Dict[str, Any]:
+        """면 집합을 대상 UV 공간에 래스터화해 TGA로 저장한다(씬 무변경).
+
+        Args:
+            inNode: 대상 노드
+            inFaces: 칠할 면 인덱스(**1-based**, ``find_occluded_faces``의 ``occludedFaces`` 그대로)
+            inSize: 정사각 해상도
+            inPath: 출력 TGA 경로(부모 폴더는 만든다)
+            inChannel: 맵 채널
+            inPadding: 칠한 값의 팽창 픽셀 수
+            inFill: 바탕값(기본 255)
+            inValue: 칠할 값(기본 0)
+
+        Returns:
+            ``{"path", "width", "height", "faceCount", "paintedPixels", "zeroPixelFaces"}``
+
+        Raises:
+            ValueError: ``read_map_faces``의 사유, 면 인덱스 범위 밖, 크기·값 범위 밖
+            OSError: 파일을 쓸 수 없음
+        """
+        mapVerts, mapFaces = self.read_map_faces(inNode, inChannel)
+        faces0 = [int(f) - 1 for f in inFaces]
+        image, stats = uvMask.bake_face_mask(mapVerts, mapFaces, faces0, inSize, inPadding, inFill, inValue)
+        uvMask.write_tga(inPath, image)
+        result: Dict[str, Any] = {"path": inPath, "width": image.width, "height": image.height}
+        result.update(stats.as_dict())
+        self._log(
+            "info",
+            f"[Polygon] '{inNode.name}' UV 마스크 {image.width}x{image.height}: 면 {stats.faceCount}, "
+            f"칠한 픽셀 {stats.paintedPixels}, 0픽셀 면 {stats.zeroPixelFaces} -> {inPath}",
+        )
+        return result

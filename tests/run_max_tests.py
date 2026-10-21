@@ -75,6 +75,8 @@ TEST_SCRIPTS = [
     "test_skin_ext.py",
     # 가려진 면 추출(열린 관·자기 가림·관통·접힌 면 합성 픽스처, 초안 정의 대조). 기대 TC 16 (TC00~TC15)
     "test_polygon_occlusion.py",
+    # UV 마스크 베이크(맵 면 벌크 읽기·TGA·씬 무변경·입력 거부·등록). 기대 TC 10 (TC00~TC09)
+    "test_polygon_uv_mask.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -95,6 +97,7 @@ LOG_NAME_OVERRIDES = {
     "test_missing_asset.py": "MissingAsset",
     "test_skin_ext.py": "SkinExt",
     "test_polygon_occlusion.py": "PolygonOcclusion",
+    "test_polygon_uv_mask.py": "PolygonUvMask",
 }
 
 
