@@ -511,7 +511,7 @@ def half_cover_fine():
     body = grid_box(10.0, 8)
     garment = grid_box(11.0, 8, inZMin=-2.4)
     vol = cm.build_clip_volume(
-        [garment], {"Body": body}, inPush=1.0, inVoxelSize=0.5, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
+        [garment], {"Body": body}, inPush=1.0, inVoxelSize=1.0, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
     )
     return body, vol
 
