@@ -174,11 +174,12 @@ def _faces_on(inTets, inPoints):
 
 
 def test_adjacent_prisms_split_shared_side_identically():
-    # 두 삼각형 (0,1,2)와 (1,3,2)가 엣지 1-2를 공유. 위 점은 비틀어 옆면이 평면이 아니게 한다
+    # 두 삼각형 (0,1,2)와 (2,1,3)이 엣지 1-2를 공유. 위 점은 비틀어 옆면이 평면이 아니게 한다.
+    # 두 번째 삼각형은 (1,3,2)를 회전한 (2,1,3)으로 준다 - 지역 순서가 정렬 순서와 달라야 규칙이 시험된다(2.11 변이)
     tops = [(0.0, 0.0, 5.0), (4.0, 0.0, 6.0), (0.0, 4.0, 4.5), (4.0, 4.0, 5.5)]
     bottoms = [(0.3, 0.1, 0.0), (4.0, -0.2, -0.5), (-0.1, 4.2, 0.4), (4.1, 4.0, 0.0)]
     tetsA = cm.prism_tetrahedra((0, 1, 2), tops, bottoms)
-    tetsB = cm.prism_tetrahedra((1, 3, 2), tops, bottoms)
+    tetsB = cm.prism_tetrahedra((2, 1, 3), tops, bottoms)
     shared = {tops[1], tops[2], bottoms[1], bottoms[2]}
     facesA = _faces_on(tetsA, shared)
     facesB = _faces_on(tetsB, shared)
@@ -370,20 +371,37 @@ def test_half_cover_voxel_surface_reproduces_expected(half_cover):
     assert target.facesAll > 0 and target.facesOne >= target.facesAll
 
 
-def test_close_grid_leaves_no_cavity():
-    """보정이 막아 만든 공동까지 메운다 - close_grid 뒤 바깥에서 닿지 않는 빈 칸이 0이다.
+def _channel_grid():
+    """보정이 통로를 막아 공동을 만드는 격자 - 꽉 찬 상자 안에 주머니(3,3,2)와 위로 뚫린 통로(3,3,3~7),
+    통로 칸 (3,3,5)와 대각으로만 맞닿는 두 번째 통로(4,4,5 -> +x)."""
+    g = cm.VoxelGrid((0.0, 0.0, 0.0), 1.0, (9, 9, 9))
+    for k in range(1, 8):
+        for j in range(1, 8):
+            for i in range(1, 8):
+                g.occ[g.index(i, j, k)] = 1
+    for cell in [(3, 3, 2)] + [(3, 3, k) for k in range(3, 8)] + [(4, 4, 5), (5, 4, 5), (6, 4, 5), (7, 4, 5)]:
+        g.occ[g.index(*cell)] = 0
+    return g
 
-    이 정답 도형은 보정(fix_nonmanifold)이 가는 통로를 막아 공동을 새로 만든다(실측 63칸). 재메움이 없으면 그 공동이
-    겉면의 안쪽 껍질이 된다. 공동 위치가 대상 버텍스의 레이 경로 밖이라 C == E 단정만으로는 잡히지 않아 따로 둔다.
+
+def test_close_grid_refills_cavity_created_by_fix():
+    """보정이 막아 만든 공동까지 메운다.
+
+    처음엔 공동이 없다(통로가 바깥에 닿는다). 보정이 대각 접촉을 풀려고 통로 칸을 채우면 주머니가 바깥에서 끊긴다 -
+    재메움이 없으면 그 공동이 겉면의 안쪽 껍질이 되어 엔진 홀짝을 뒤집는다. (정답 도형에서 처음 관측됐지만 격자
+    어긋남 뒤에는 그 도형에서 재현되지 않아, 판별력을 위해 격자를 손으로 구성한다 - 2.11 변이)
     """
-    body = grid_box(10.0, 4)
-    garment = grid_box(11.0, 4, inZMin=-2.5)
-    surf = cm.TriangleSurface(*body, inCellSize=2.0)
-    cov = cm.compute_coverage(garment[0], garment[1], surf, 1.0, 10.0, 0.0, 3.0)
-    grid = cm.voxelize_union(cm.build_prism_union(cov, garment[1], 1.0), 0.5)
+    assert cm.fill_cavities(_channel_grid()) == 0
+    noRefill = _channel_grid()
+    cm.fill_cavities(noRefill)
+    assert cm.fix_nonmanifold(noRefill) > 0
+    assert cm.fill_cavities(noRefill) > 0  # 보정이 공동을 만들었다
+    grid = _channel_grid()
     cavities, fixed = cm.close_grid(grid)
-    assert fixed > 0
+    assert fixed > 0 and cavities > 0
     assert cm.fill_cavities(grid) == 0
+    assert grid.get(3, 3, 2) == 1
+    assert cm.is_mesh_closed(*cm.extract_surface(grid))
 
 
 def test_verify_reports_over_and_under():
