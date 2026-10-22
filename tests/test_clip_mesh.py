@@ -506,6 +506,63 @@ def test_decimate_tetrahedron_is_not_flattened():
     assert cm.is_mesh_closed(v2, t2)
 
 
+@pytest.fixture(scope="module")
+def half_cover_fine():
+    body = grid_box(10.0, 8)
+    garment = grid_box(11.0, 8, inZMin=-2.4)
+    vol = cm.build_clip_volume(
+        [garment], {"Body": body}, inPush=1.0, inVoxelSize=0.5, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
+    )
+    return body, vol
+
+
+def test_decimate_clip_volume_guarded_growth(half_cover_fine):
+    """보호된 성장 조립(갈림길 2) - 작은 F까지 줄여도 닫힘·과다 0, 과소는 감축 전 이하.
+
+    "수축 전용보다 낫다"는 이 도형으로는 드러나지 않는다(둘 다 F 60·과소 0) - 실기 3슬롯 실측(probe r09·r10, PRD §9 갈림길 2)이 근거다.
+    가드 각각의 판별력은 아래 두 도형이 따로 고정한다.
+    """
+    body, vol = half_cover_fine
+    targets = {"Body": body}
+    before = cm.verify_clip(vol.verts, vol.tris, targets, vol.expected).targets["Body"]
+    verts, tris, stats = cm.decimate_clip_volume(vol, targets, 60)
+    check = cm.verify_clip(verts, tris, targets, vol.expected)
+    after = check.targets["Body"]
+    assert check.closed
+    assert after.over == []
+    assert len(after.under) <= len(before.under)
+    assert len(tris) <= 60 and stats.reachedTarget
+
+
+def test_guard_capture_keeps_protected_point_in_groove_outside():
+    """성장이 홈을 메우면 홈 안의 보호 점이 삼켜진다 - capture 검사가 그 붕괴를 거부한다."""
+    cells = [(i, j, k) for i in range(1, 7) for j in range(1, 7) for k in range(1, 4) if not (k == 3 and 3 <= i <= 4)]
+    verts, tris = _voxels((8, 8, 5), cells)
+    protect = [(4.0, float(j) + 0.5, 3.6) for j in range(1, 7)]
+    v2, t2, stats = cm.decimate(verts, tris, 12, inProtect=protect, inKeep=[])
+    assert cm.is_mesh_closed(v2, t2)
+    assert cm.classify_vertices(protect, v2, t2) == [False] * len(protect)
+    assert stats.rejected.get(cm.REJECT_CAPTURE, 0) > 0
+
+
+def test_guard_release_keeps_inner_points_inside():
+    """수축이 볼록 계단을 깎으면 표면 바로 안쪽 점이 밖으로 나간다 - release 검사가 그 붕괴를 거부한다(수축 전용 대조군은 놓친다)."""
+    sphere = [
+        (i, j, k) for i in range(12) for j in range(12) for k in range(12)
+        if (i - 5.5) ** 2 + (j - 5.5) ** 2 + (k - 5.5) ** 2 <= 25
+    ]
+    verts, tris = _voxels((12, 12, 12), sphere)
+    inside = cm.classify_vertices([(i + 0.5, j + 0.5, k + 0.5) for i, j, k in sphere], verts, tris)
+    keep = [(i + 0.5, j + 0.5, k + 0.5) for (i, j, k), flag in zip(sphere, inside) if flag]
+    assert len(keep) == len(sphere)
+    sv, st, _ = cm.decimate(verts, tris, 50)
+    assert not all(cm.classify_vertices(keep, sv, st))  # 대조군: 수축 전용은 칸 중심을 놓는다
+    gv, gt, stats = cm.decimate(verts, tris, 50, inProtect=[], inKeep=keep)
+    assert cm.is_mesh_closed(gv, gt)
+    assert all(cm.classify_vertices(keep, gv, gt))
+    assert stats.rejected.get(cm.REJECT_RELEASE, 0) > 0
+
+
 def test_verify_reports_over_and_under():
     body = grid_box(10.0, 2)
     clip = cube(11.0, (0.0, 0.0, 11.0))  # z 0~22 상자 - z >= 0 버텍스를 자른다

@@ -33,7 +33,15 @@
 
 복셀 중심이 부피 안이면 점유 -> 바깥 flood fill로 닿지 않은 빈 칸(내부 공동)을 점유로 -> 2x2x2 블록마다 점유 칸과
 빈 칸이 각각 면 이웃으로 하나로 이어지게 빈 칸을 채운다(엣지·꼭짓점만 맞닿는 배치 제거) -> 보정이 막아 새로 생긴
-공동을 다시 메운다(``close_grid``) -> 점유/비점유 경계의 정육면체 면을 버텍스 공유 메쉬로 뽑는다.
+공동을 다시 메운다(``close_grid``) -> 점유/비점유 경계의 정육면체 면을 버텍스 공유 메쉬로 뽑는다. 점유는 **보수적**이다 -
+칸의 8꼭짓점이 모두 부피 안일 때만 점유해 부피가 기둥 합집합 안에 머문다(과다 클립 방지, 대가는 경계 띠의 과소).
+
+## 감축 - 닫힘 보존 반-엣지 붕괴 + 보호된 성장
+
+``decimate``는 link 조건으로 2-다양체(= 엔진 닫힘)를 지키는 반-엣지 붕괴 QEM이다(새 좌표를 만들지 않는다). 클립 부피는
+``decimate_clip_volume``이 **보호된 성장**으로 부른다 - 붕괴가 쓸고 지나가는 사면체가 지우면 안 되는 대상 버텍스(기대 집합 밖)를
+삼키거나 지워야 할 버텍스(기대 집합 안)를 놓으면 거부하고, 그 밖의 성장은 허용한다. Max 감축기(ProOptimizer·MultiRes)는 실기
+슬롯에서 닫힘을 들쭉날쭉하게 깼고, 수축 전용은 오목한 안쪽 벽을 줄이지 못해 과소가 46~92%였다(2026-10-22 실측).
 
 ## 데이터 표현
 
@@ -1043,9 +1051,10 @@ def decimate(
     1. 엣지 uv를 면 정확히 2개가 공유하고 link 조건 N(u) ∩ N(v) == {두 면의 반대 버텍스}를 만족한다 - 2-다양체(= 엔진 닫힘)를 지킨다
     2. 새 면이 u의 기존 면과 같은 버텍스 집합이 아니다(사면체 같은 최소 도형이 납작해지지 않게)
     3. 새 면이 퇴화하지 않고(면적 ~0) 노멀이 뒤집히지 않는다(옛/새 노멀 내적 > 0)
-    4. **수축 전용** - v가 모든 새 면 평면의 바깥쪽(노멀 쪽, 부호 거리 >= -tol)이다. 붕괴가 v 둘레의 부피를 깎기만 하고 밖으로 부풀지
-       않으므로 과다 클립을 새로 만들지 않는다
-    5. 수축 거리(v에서 새 면 평면까지의 최댓값)가 ``inMaxShrink`` 이하다 - 과소 클립을 억제한다
+    4. 보호 인자가 없으면 **수축 전용** - v가 모든 새 면 평면의 바깥쪽(노멀 쪽, 부호 거리 >= -tol)이다. 붕괴가 v 둘레의 부피를
+       깎기만 하고 밖으로 부풀지 않는다. 보호 인자(``inProtect``/``inKeep``)를 주면 **보호된 성장** - 새 면마다 사면체(v, 새 면)가
+       성장 쪽이면 보호 점을, 수축 쪽이면 유지 점을 품지 않아야 한다(클립 부피는 ``decimate_clip_volume``이 이 방식으로 부른다)
+    5. 이동 거리(v에서 새 면 평면까지 최댓값)가 ``inMaxShrink`` 이하다
 
     삼각형이 ``inTargetTris`` 이하가 되거나 붕괴 후보가 떨어지면 멈춘다(목표 미달이어도 그때의 메쉬를 돌려준다).
 
@@ -1053,8 +1062,10 @@ def decimate(
         inVerts: 버텍스(닫힌 2-다양체, 바깥 향 감김)
         inTris: 삼각형
         inTargetTris: 목표 삼각형 수
-        inMaxShrink: 붕괴 하나의 최대 수축 거리(씬 단위). 기본 제한 없음
+        inMaxShrink: 붕괴 하나의 최대 이동 거리(씬 단위). 기본 제한 없음
         inTolerance: 수축 판정 허용오차(평면 위 = 0으로 본다)
+        inProtect: 부피 밖에 남아야 하는 점(성장이 삼키면 거부). 주면 보호된 성장
+        inKeep: 부피 안에 남아야 하는 점(수축이 놓으면 거부). 주면 보호된 성장
 
     Returns:
         (버텍스, 삼각형, ``DecimateStats``) - 버텍스는 압축·재번호된다
@@ -1222,6 +1233,45 @@ def decimate(
         seconds=time.perf_counter() - t0,
     )
     return outVerts, outTris, stats
+
+
+def decimate_clip_volume(
+    inVolume: "ClipVolume",
+    inTargets: Dict[str, MeshData],
+    inTargetTris: int,
+    inMaxShrink: float = math.inf,
+) -> Tuple[List[Vec3], List[Tri], DecimateStats]:
+    """클립 부피를 **보호된 성장**으로 줄인다(PRD A10, 갈림길 2).
+
+    감축 전 부피를 엔진 규칙으로 한 번 판정해 유지 점 = 기대 집합 E 중 지금 잘리는 버텍스(E ∩ C0), 보호 점 = 대상 버텍스 중
+    E 밖을 만들고 ``decimate(..., inProtect, inKeep)``를 부른다. 붕괴가 쓸고 지나가는 사면체가 보호 점을 삼키거나 유지 점을
+    놓으면 거부하고 그 밖의 성장은 허용한다 - 몸속 안쪽 벽(오목면)이 자유롭게 줄어든다.
+
+    수축 전용(``decimate`` 기본)은 이 부피(몸을 감싼 4~5 cm 껍질)에서 오목한 안쪽 벽을 줄이지 못해 실기 Lower·Upper 과소가
+    46~92%였다. 보호된 성장은 같은 슬롯에서 F 250 도달·닫힘·과다 0·과소 1~4%였다(2026-10-22 실측). 벽끼리 지나쳐 홀짝이
+    깨지는 경우는 버텍스 검사가 직접 막지 못하므로 결과는 반드시 ``verify_clip``으로 다시 판정한다.
+
+    Args:
+        inVolume: ``build_clip_volume`` 결과
+        inTargets: 대상 이름 -> ``(verts, tris)`` (``build_clip_volume``에 준 것)
+        inTargetTris: 목표 삼각형 수
+        inMaxShrink: 붕괴 하나의 최대 이동 거리(기본 제한 없음)
+
+    Returns:
+        (버텍스, 삼각형, ``DecimateStats``)
+    """
+    base = verify_clip(inVolume.verts, inVolume.tris, inTargets, inVolume.expected)
+    protect: List[Vec3] = []
+    keep: List[Vec3] = []
+    for name, (verts, _tris) in inTargets.items():
+        expected = inVolume.expected.get(name, set())
+        clipped = base.targets[name].clipped
+        for i, p in enumerate(verts):
+            if i not in expected:
+                protect.append(p)
+            elif i in clipped:
+                keep.append(p)
+    return decimate(inVolume.verts, inVolume.tris, inTargetTris, inMaxShrink=inMaxShrink, inProtect=protect, inKeep=keep)
 
 
 def signed_volume(inVerts: Sequence[Vec3], inTris: Sequence[Tri]) -> float:
