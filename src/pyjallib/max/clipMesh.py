@@ -662,9 +662,12 @@ class VoxelGrid:
 
 
 def voxelize_union(inUnion: TetUnion, inCellSize: float) -> VoxelGrid:
-    """합집합을 복셀화한다 - 칸 중심이 합집합 안이면 점유. 격자는 bbox + 사방 1칸 이상 여백(바깥 flood fill 시작점).
+    """합집합을 **보수적으로** 복셀화한다 - 칸의 8꼭짓점이 모두 합집합 안일 때만 점유. 격자는 bbox + 사방 1칸 이상 여백.
 
-    사면체마다 그 bbox 안의 칸 중심만 시험한다(격자 전체를 돌지 않는다). 격자 원점은 ``LATTICE_OFFSET``만큼 어긋난다.
+    꼭짓점 격자(``(nx+1)(ny+1)(nz+1)``)를 사면체마다 그 bbox 안에서만 시험해 표시하고, 칸은 8꼭짓점 AND다. 부피가 합집합
+    안쪽에 머물러 **과다 클립을 만들지 않는다** - 칸 중심 판정(이전 규칙)은 ±s/2가 옆 경계에서 기대 집합 밖 버텍스를 삼켜
+    실기 3슬롯에서 감축 없이도 과다 클립이 났다(PRD §9, A11). 대가는 경계 띠의 과소 클립이다. 격자 원점은 ``LATTICE_OFFSET``만큼
+    어긋난다.
 
     Args:
         inUnion: 사면체 합집합
@@ -680,26 +683,46 @@ def voxelize_union(inUnion: TetUnion, inCellSize: float) -> VoxelGrid:
     origin = tuple(math.floor(lo[k] / s) * s - s - s * LATTICE_OFFSET for k in range(3))
     dims = tuple(int(math.ceil((hi[k] - origin[k]) / s)) + 2 for k in range(3))
     grid = VoxelGrid(origin, s, dims)
-    occ = grid.occ
-    nx, ny = dims[0], dims[1]
+    nx, ny, nz = dims
+    cx, cy = nx + 1, ny + 1
+    corner = bytearray(cx * cy * (nz + 1))
     for idx, (bmin, bmax) in enumerate(inUnion.tet_boxes()):
-        i0 = max(0, int(math.ceil((bmin[0] - origin[0]) / s - 0.5)))
-        i1 = min(dims[0] - 1, int(math.floor((bmax[0] - origin[0]) / s - 0.5)))
-        j0 = max(0, int(math.ceil((bmin[1] - origin[1]) / s - 0.5)))
-        j1 = min(dims[1] - 1, int(math.floor((bmax[1] - origin[1]) / s - 0.5)))
-        k0 = max(0, int(math.ceil((bmin[2] - origin[2]) / s - 0.5)))
-        k1 = min(dims[2] - 1, int(math.floor((bmax[2] - origin[2]) / s - 0.5)))
+        i0 = max(0, int(math.ceil((bmin[0] - origin[0]) / s)))
+        i1 = min(nx, int(math.floor((bmax[0] - origin[0]) / s)))
+        j0 = max(0, int(math.ceil((bmin[1] - origin[1]) / s)))
+        j1 = min(ny, int(math.floor((bmax[1] - origin[1]) / s)))
+        k0 = max(0, int(math.ceil((bmin[2] - origin[2]) / s)))
+        k1 = min(nz, int(math.floor((bmax[2] - origin[2]) / s)))
         for k in range(k0, k1 + 1):
-            z = origin[2] + (k + 0.5) * s
+            z = origin[2] + k * s
             for j in range(j0, j1 + 1):
-                y = origin[1] + (j + 0.5) * s
-                row = nx * (j + ny * k)
+                y = origin[1] + j * s
+                row = cx * (j + cy * k)
                 for i in range(i0, i1 + 1):
-                    cell = i + row
-                    if occ[cell]:
+                    point = i + row
+                    if corner[point]:
                         continue
-                    if inUnion.tet_contains(idx, (origin[0] + (i + 0.5) * s, y, z)):
-                        occ[cell] = 1
+                    if inUnion.tet_contains(idx, (origin[0] + i * s, y, z)):
+                        corner[point] = 1
+    occ = grid.occ
+    strideZ = cx * cy
+    for k in range(nz):
+        for j in range(ny):
+            base = cx * j + strideZ * k
+            row = nx * (j + ny * k)
+            for i in range(nx):
+                p = base + i
+                if (
+                    corner[p]
+                    and corner[p + 1]
+                    and corner[p + cx]
+                    and corner[p + cx + 1]
+                    and corner[p + strideZ]
+                    and corner[p + strideZ + 1]
+                    and corner[p + strideZ + cx]
+                    and corner[p + strideZ + cx + 1]
+                ):
+                    occ[row + i] = 1
     return grid
 
 
