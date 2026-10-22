@@ -1148,7 +1148,8 @@ def decimate(
     3. 새 면이 퇴화하지 않고(면적 ~0) 노멀이 뒤집히지 않는다(옛/새 노멀 내적 > 0)
     4. 보호 인자가 없으면 **수축 전용** - v가 모든 새 면 평면의 바깥쪽(노멀 쪽, 부호 거리 >= -tol)이다. 붕괴가 v 둘레의 부피를
        깎기만 하고 밖으로 부풀지 않는다. 보호 인자(``inProtect``/``inKeep``)를 주면 **보호된 성장** - 새 면마다 사면체(v, 새 면)가
-       성장 쪽이면 보호 점을, 수축 쪽이면 유지 점을 품지 않아야 한다(클립 부피는 ``decimate_clip_volume``이 이 방식으로 부른다)
+       보호 점도 유지 점도 품지 않아야 한다. 사면체 안의 점은 감김수가 ±1 바뀌어 엔진 홀짝이 **방향과 무관하게** 뒤집힌다(수축
+       사면체가 밖의 보호 점을 품으면 접힘으로 "안"이 된다). 클립 부피는 ``decimate_clip_volume``이 이 방식으로 부른다
     5. 이동 거리(v에서 새 면 평면까지 최댓값)가 ``inMaxShrink`` 이하다
 
     삼각형이 ``inTargetTris`` 이하가 되거나 붕괴 후보가 떨어지면 멈춘다(목표 미달이어도 그때의 메쉬를 돌려준다).
@@ -1216,7 +1217,10 @@ def decimate(
             key = (int(math.floor(p[0] / guardCell)), int(math.floor(p[1] / guardCell)), int(math.floor(p[2] / guardCell)))
             guardBuckets.setdefault(key, []).append((tuple(p), isKeep))
 
-    def guard_violation(inTet: Tet, inShrink: bool) -> Optional[str]:
+    def guard_violation(inTet: Tet) -> Optional[str]:
+        # 쓸린 사면체 안의 점은 감김수가 ±1 바뀐다 - 엔진은 홀짝으로 판정하므로 **방향과 무관하게** 안/밖이 뒤집힌다.
+        # 수축 사면체가 이미 밖인 보호 점을 품으면 감김수 0 -> -1(면이 뒤집힌 접힘)로 "안"이 된다. 수축 쪽에서 유지 점만
+        # 보던 이전 규칙은 이 경우를 놓쳐 실기 Upper에서 과다 1이 났다(probe r19·r20, 21,706번째 붕괴).
         lo = [min(q[k] for q in inTet) for k in range(3)]
         hi = [max(q[k] for q in inTet) for k in range(3)]
         c0 = [int(math.floor(lo[k] / guardCell)) for k in range(3)]
@@ -1225,10 +1229,8 @@ def decimate(
             for j in range(c0[1], c1[1] + 1):
                 for k in range(c0[2], c1[2] + 1):
                     for p, isKeep in guardBuckets.get((i, j, k), ()):
-                        if isKeep != inShrink:
-                            continue
                         if _point_in_tet(p, *inTet):
-                            return REJECT_RELEASE if inShrink else REJECT_CAPTURE
+                            return REJECT_RELEASE if isKeep else REJECT_CAPTURE
         return None
 
     def check(inV: int, inU: int) -> Optional[str]:
@@ -1265,7 +1267,7 @@ def decimate(
                 return REJECT_GROW
             shrink = max(shrink, abs(dist) if guarded else dist)
             if guarded:
-                violation = guard_violation((pv, qa, qb, qc), dist >= 0.0)
+                violation = guard_violation((pv, qa, qb, qc))
                 if violation is not None:
                     return violation
         if shrink > inMaxShrink:

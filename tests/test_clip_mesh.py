@@ -76,6 +76,45 @@ def grid_box(inHalf, inDivs, inZMin=None, inOpenBottom=False):
     return verts, tris
 
 
+def uv_sphere(inR, inSegs, inRings, inZMin=None):
+    """원점 UV 구(바깥 향 감김). inZMin을 주면 그 아래 고리를 버려 아래가 열린 옷을 만든다."""
+    verts = []
+    rings = []
+    for r in range(1, inRings):
+        th = math.pi * r / inRings
+        z = inR * math.cos(th)
+        if inZMin is not None and z < inZMin:
+            break
+        row = []
+        for s in range(inSegs):
+            ph = 2.0 * math.pi * s / inSegs
+            row.append(len(verts))
+            verts.append((inR * math.sin(th) * math.cos(ph), inR * math.sin(th) * math.sin(ph), z))
+        rings.append(row)
+    top = len(verts)
+    verts.append((0.0, 0.0, inR))
+    tris = [(top, rings[0][s], rings[0][(s + 1) % inSegs]) for s in range(inSegs)]
+    for a, b in zip(rings, rings[1:]):
+        for s in range(inSegs):
+            s1 = (s + 1) % inSegs
+            tris.extend([(a[s], b[s], b[s1]), (a[s], b[s1], a[s1])])
+    if inZMin is None:
+        bot = len(verts)
+        verts.append((0.0, 0.0, -inR))
+        tris.extend((bot, rings[-1][(s + 1) % inSegs], rings[-1][s]) for s in range(inSegs))
+    return verts, tris
+
+
+def lumpy(inMesh, inAmp, inFreq=0.7):
+    """버텍스를 사인 변위로 울퉁불퉁하게(축 정렬·대칭을 깬다)."""
+    verts, tris = inMesh
+    moved = [
+        (x + inAmp * math.sin(inFreq * y), y + inAmp * math.sin(inFreq * z), z + inAmp * math.sin(inFreq * x))
+        for x, y, z in verts
+    ]
+    return moved, tris
+
+
 # ---------------------------------------------------------------------------
 # 기하
 # ---------------------------------------------------------------------------
@@ -607,6 +646,23 @@ def test_decimate_clip_volume_keeps_guard_points_inside(half_cover_fine):
     assert before.guardInside == before.guardTotal > 0
     assert after.guardInside == before.guardInside
     assert after.passed()
+
+
+def test_decimate_guard_checks_both_orientations_lumpy_garment():
+    """쓸린 사면체는 **방향과 무관하게** 보호 점을 품으면 안 된다 - 수축 사면체가 밖의 보호 점을 품으면 접힘(감김수 -1)으로 "안"이 된다.
+
+    수축 쪽에서 유지 점만 보던 규칙은 이 도형(울퉁불퉁한 구 바디 + 아래가 열린 옷, F 250)에서 과다 1을 냈다(실기 Upper와 같은 기제,
+    probe r19·r20·r22). 복셀 부피 자체는 과다 0이다 - 과다는 감축에서만 생긴다.
+    """
+    body = lumpy(uv_sphere(10.0, 32, 16), 1.5)
+    garment = lumpy(uv_sphere(11.2, 20, 10, inZMin=-3.0), 1.5)
+    targets = {"Body": body}
+    vol = cm.build_clip_volume([garment], targets, 1.0, 1.0, 0.0, 3.0, 10.0)
+    assert cm.verify_clip(vol.verts, vol.tris, targets, vol.expected).passed()
+    verts, tris, _stats = cm.decimate_clip_volume(vol, targets, 250)
+    check = cm.verify_clip(verts, tris, targets, vol.expected)
+    assert check.closed
+    assert check.targets["Body"].over == []
 
 
 def test_guard_capture_keeps_protected_point_in_groove_outside():
