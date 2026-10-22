@@ -422,6 +422,76 @@ def test_close_grid_refills_cavity_created_by_fix():
     assert cm.is_mesh_closed(*cm.extract_surface(grid))
 
 
+# ---------------------------------------------------------------------------
+# 감축 - 닫힘 보존·수축 전용 (PRD A10)
+# ---------------------------------------------------------------------------
+
+
+def _voxels(inDims, inCells):
+    g = cm.VoxelGrid((0.0, 0.0, 0.0), 1.0, inDims)
+    for c in inCells:
+        g.occ[g.index(*c)] = 1
+    return cm.extract_surface(g)
+
+
+def test_decimate_voxel_box_to_exact_cube():
+    verts, tris = _voxels((5, 5, 5), [(i, j, k) for i in range(1, 4) for j in range(1, 4) for k in range(1, 4)])
+    assert len(tris) == 108
+    v2, t2, stats = cm.decimate(verts, tris, 12)
+    assert len(t2) == 12 and stats.reachedTarget
+    assert cm.is_mesh_closed(v2, t2)
+    assert cm.signed_volume(v2, t2) == pytest.approx(27.0)
+    corners = {(float(x), float(y), float(z)) for x in (1, 4) for y in (1, 4) for z in (1, 4)}
+    assert set(v2) == corners
+
+
+def test_decimate_keeps_closedness_and_genus_of_ring():
+    ring = [(i, j, k) for i in range(1, 7) for j in range(1, 7) for k in (1, 2) if not (2 < i < 5 and 2 < j < 5)]
+    verts, tris = _voxels((8, 8, 4), ring)
+    assert cm.is_mesh_closed(verts, tris) and _euler(verts, tris) == 0
+    v2, t2, stats = cm.decimate(verts, tris, 40)
+    assert cm.is_mesh_closed(v2, t2)
+    assert _euler(v2, t2) == 0  # 종수 1 유지
+    assert set(v2) <= set(verts)  # 새 좌표를 만들지 않는다
+    assert len(t2) < len(tris) and stats.collapses > 0
+
+
+def test_decimate_is_shrink_only_groove_stays_outside():
+    """홈 안(원 부피 밖)의 점은 감축 뒤에도 밖이다 - 부피를 밖으로 부풀리면 과다 클립이 된다(수축 전용 축)."""
+    cells = [(i, j, k) for i in range(1, 7) for j in range(1, 7) for k in range(1, 4) if not (k == 3 and 3 <= i <= 4)]
+    verts, tris = _voxels((8, 8, 5), cells)
+    groove = [(4.0, float(j) + 0.5, 3.6) for j in range(1, 7)]  # 홈 바닥(z 3) 위, 원 윗면(z 4) 아래
+    assert cm.classify_vertices(groove, verts, tris) == [False] * len(groove)
+    v2, t2, stats = cm.decimate(verts, tris, 12)
+    assert cm.is_mesh_closed(v2, t2)
+    assert cm.classify_vertices(groove, v2, t2) == [False] * len(groove)
+    assert cm.signed_volume(v2, t2) <= cm.signed_volume(verts, tris) + 1e-9
+    assert stats.rejected.get(cm.REJECT_GROW, 0) > 0
+
+
+def test_decimate_max_shrink_limits_collapses():
+    sphere = [
+        (i, j, k) for i in range(12) for j in range(12) for k in range(12)
+        if (i - 5.5) ** 2 + (j - 5.5) ** 2 + (k - 5.5) ** 2 <= 25
+    ]
+    verts, tris = _voxels((12, 12, 12), sphere)
+    free = cm.decimate(verts, tris, 50)
+    limited = cm.decimate(verts, tris, 50, inMaxShrink=0.2)
+    assert free[2].trianglesAfter < limited[2].trianglesAfter
+    assert not limited[2].reachedTarget
+    assert limited[2].rejected.get(cm.REJECT_SHRINK_LIMIT, 0) > 0
+    assert cm.is_mesh_closed(limited[0], limited[1])
+
+
+def test_decimate_tetrahedron_is_not_flattened():
+    verts = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]
+    tris = [(0, 2, 1), (0, 1, 3), (1, 2, 3), (0, 3, 2)]
+    assert cm.is_mesh_closed(verts, tris)
+    v2, t2, stats = cm.decimate(verts, tris, 2)
+    assert len(t2) == 4 and not stats.reachedTarget
+    assert cm.is_mesh_closed(v2, t2)
+
+
 def test_verify_reports_over_and_under():
     body = grid_box(10.0, 2)
     clip = cube(11.0, (0.0, 0.0, 11.0))  # z 0~22 상자 - z >= 0 버텍스를 자른다
