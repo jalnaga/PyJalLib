@@ -424,17 +424,23 @@ def test_protect_cells_do_not_swallow_vertices_below_rim():
     assert check.closed and check.guard_ratio() == 1.0
 
 
-def test_voxel_volume_encloses_occluder_and_push_points(half_cover):
+def test_voxel_volume_encloses_occluder_and_push_points():
     """클립이 덮는 메쉬를 감싼다(갈림길 3, 6.5 실기 지적) - 덮는 면 버텍스 g와 푸쉬 점 g + d·n이 전부 클립 안이다.
 
-    보수적 점유(8꼭짓점 AND)는 바깥 면을 최대 √3·s 깎아 이 도형에서도 푸쉬 점이 밖으로 나간다(실기 Shoes 포함 56%, probe r15).
+    감쌀 점은 칸 강제 점유로 버텍스 단위로는 늘 안이다 - **버텍스 사이**(덮는 면 무게중심)까지 감싸는 것은 관대한 점유의 몫이다.
+    보수적 점유(8꼭짓점 AND)는 바깥 면을 최대 √3·s 깎아 깎임이 d(0.25)를 넘으면 무게중심이 밖으로 나간다(실기 Shoes 포함 56%, probe r15).
     """
-    body, vol = half_cover
+    body = grid_box(10.0, 4)
     garment = grid_box(11.0, 4, inZMin=-2.5)
+    vol = cm.build_clip_volume(
+        [garment], {"Body": body}, inPush=0.25, inVoxelSize=1.0, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
+    )
     check = cm.verify_clip(vol.verts, vol.tris, {"Body": body}, vol.expected, vol.guardPoints)
-    covered = sum(1 for p in garment[0] if p[2] >= -2.5)
-    assert check.guardTotal == 2 * covered
+    assert check.guardTotal == 2 * len(garment[0])
     assert check.guardInside == check.guardTotal
+    gv, gt = garment
+    centroids = [tuple(sum(gv[i][k] for i in t) / 3.0 for k in range(3)) for t in gt]
+    assert all(cm.classify_vertices(centroids, vol.verts, vol.tris))
     assert check.passed()
 
 
