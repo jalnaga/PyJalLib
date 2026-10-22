@@ -31,10 +31,13 @@
 
 ## 이산화 - 복셀 합집합의 겉면 (구성상 닫힌 2-다양체)
 
-복셀 중심이 부피 안이면 점유 -> 바깥 flood fill로 닿지 않은 빈 칸(내부 공동)을 점유로 -> 2x2x2 블록마다 점유 칸과
-빈 칸이 각각 면 이웃으로 하나로 이어지게 빈 칸을 채운다(엣지·꼭짓점만 맞닿는 배치 제거) -> 보정이 막아 새로 생긴
-공동을 다시 메운다(``close_grid``) -> 점유/비점유 경계의 정육면체 면을 버텍스 공유 메쉬로 뽑는다. 점유는 **보수적**이다 -
-칸의 8꼭짓점이 모두 부피 안일 때만 점유해 부피가 기둥 합집합 안에 머문다(과다 클립 방지, 대가는 경계 띠의 과소).
+칸의 꼭짓점 하나라도 부피 안이면 점유 + 덮는 면 버텍스 g와 푸쉬 점 g'가 든 칸 점유(**클립이 덮는 메쉬를 감싼다**) ->
+기대 집합 밖 대상 버텍스(보호 점)가 든 칸은 비우고 금지 -> 바깥 flood fill로 닿지 않은 빈 칸(내부 공동)을 점유로 ->
+2x2x2 블록마다 점유 칸과 빈 칸이 각각 면 이웃으로 하나로 이어지게 빈 칸을 채운다(엣지·꼭짓점만 맞닿는 배치 제거) ->
+보정이 막아 새로 생긴 공동을 다시 메운다(``close_grid``, 메움·보정 모두 금지 칸은 채우지 않는다) -> 점유/비점유 경계의
+정육면체 면을 버텍스 공유 메쉬로 뽑는다. 겉면이 칸 면이라 점의 안/밖은 그 점이 든 칸의 점유로만 정해지므로, 과다 클립은
+보호 칸 금지로 막히고 그 밖은 넉넉하게 채운다. 강제 점과 보호 점이 한 칸이면 **보호가 이긴다**(PRD 갈림길 3 - 이전의
+보수적 점유는 바깥 면을 깎아 클립이 덮는 메쉬보다 작아졌다).
 
 ## 감축 - 닫힘 보존 반-엣지 붕괴 + 보호된 성장
 
@@ -628,6 +631,10 @@ class VoxelGrid:
         cellSize: 칸 크기
         dims: 칸 수 ``(nx, ny, nz)``
         occ: 칸마다 0/1 (``bytearray``, 인덱스 = i + nx * (j + ny * k))
+        forbidden: 채우면 안 되는 칸 인덱스(보호 점이 든 칸 + 비다양체 보정이 비운 칸). 공동 메움·비다양체 보정도 채우지 않는다
+        forced: 강제 점유 칸 인덱스(감쌀 점이 든 칸). 비다양체 보정이 비울 칸을 고를 때 뒤로 미룬다
+        carved: 비다양체 보정이 비운 칸 수(``fix_nonmanifold``가 기록)
+        unresolved: 끝내 고치지 못한 2x2x2 블록 수(``fix_nonmanifold``가 기록 - 0이 아니면 닫힘 검사가 잡는다)
     """
 
     def __init__(self, inOrigin: Vec3, inCellSize: float, inDims: Tuple[int, int, int]) -> None:
@@ -644,6 +651,10 @@ class VoxelGrid:
         self.cellSize = float(inCellSize)
         self.dims = tuple(int(n) for n in inDims)
         self.occ = bytearray(self.dims[0] * self.dims[1] * self.dims[2])
+        self.forbidden: Set[int] = set()
+        self.forced: Set[int] = set()
+        self.carved = 0
+        self.unresolved = 0
 
     def index(self, inI: int, inJ: int, inK: int) -> int:
         """칸 인덱스."""
@@ -668,18 +679,39 @@ class VoxelGrid:
         """점유 칸 수."""
         return sum(self.occ)
 
+    def cell_of(self, inPoint: Vec3) -> Optional[int]:
+        """점이 든 칸 인덱스(격자 밖이면 None)."""
+        s = self.cellSize
+        i = int(math.floor((inPoint[0] - self.origin[0]) / s))
+        j = int(math.floor((inPoint[1] - self.origin[1]) / s))
+        k = int(math.floor((inPoint[2] - self.origin[2]) / s))
+        if 0 <= i < self.dims[0] and 0 <= j < self.dims[1] and 0 <= k < self.dims[2]:
+            return self.index(i, j, k)
+        return None
 
-def voxelize_union(inUnion: TetUnion, inCellSize: float) -> VoxelGrid:
-    """합집합을 **보수적으로** 복셀화한다 - 칸의 8꼭짓점이 모두 합집합 안일 때만 점유. 격자는 bbox + 사방 1칸 이상 여백.
 
-    꼭짓점 격자(``(nx+1)(ny+1)(nz+1)``)를 사면체마다 그 bbox 안에서만 시험해 표시하고, 칸은 8꼭짓점 AND다. 부피가 합집합
-    안쪽에 머물러 **과다 클립을 만들지 않는다** - 칸 중심 판정(이전 규칙)은 ±s/2가 옆 경계에서 기대 집합 밖 버텍스를 삼켜
-    실기 3슬롯에서 감축 없이도 과다 클립이 났다(PRD §9, A11). 대가는 경계 띠의 과소 클립이다. 격자 원점은 ``LATTICE_OFFSET``만큼
-    어긋난다.
+def voxelize_union(
+    inUnion: TetUnion,
+    inCellSize: float,
+    inForce: Optional[Sequence[Vec3]] = None,
+    inProtect: Optional[Sequence[Vec3]] = None,
+) -> VoxelGrid:
+    """합집합을 복셀화한다 - **관대한 점유 + 강제 점유 + 보호 칸 금지**(PRD 갈림길 3). 격자는 bbox + 사방 1칸 이상 여백.
+
+    1. 칸의 8꼭짓점 중 하나라도 합집합 안이면 점유(꼭짓점 격자 ``(nx+1)(ny+1)(nz+1)``를 사면체마다 그 bbox 안에서만 시험).
+    2. ``inForce`` 점(덮는 면 버텍스·푸쉬 점)이 든 칸은 점유 - 클립이 덮는 메쉬를 감싼다.
+    3. ``inProtect`` 점(기대 집합 밖 대상 버텍스)이 든 칸은 비우고 ``forbidden``에 넣는다 - 2와 겹치면 **보호가 이긴다**.
+
+    겉면이 칸 면이므로 점의 안/밖은 **그 점이 든 칸의 점유로만** 정해진다(격자 원점 ``LATTICE_OFFSET`` 어긋남 - 칸 면 위 점 없음).
+    그래서 과다 클립을 막는 데는 보호 점이 든 칸만 비우면 된다. 이전 규칙(보수적 - 8꼭짓점 AND, A11)은 바깥 면을 최대 √3·s 깎아
+    실기 Shoes에서 덮는 버텍스의 44%가 클립 밖으로 나왔다(probe r15). 그보다 앞선 칸 중심 규칙의 과다 클립(A11의 이유)은 보호
+    칸 금지가 직접 막는다.
 
     Args:
         inUnion: 사면체 합집합
         inCellSize: 복셀 크기
+        inForce: 반드시 점유할 점(None이면 없음). 격자 범위에 포함한다
+        inProtect: 그 칸을 비울 점(None이면 없음)
 
     Returns:
         ``VoxelGrid`` (합집합이 비면 1칸짜리 빈 격자)
@@ -687,7 +719,11 @@ def voxelize_union(inUnion: TetUnion, inCellSize: float) -> VoxelGrid:
     if inUnion.bounds is None:
         return VoxelGrid((0.0, 0.0, 0.0), inCellSize, (1, 1, 1))
     s = float(inCellSize)
+    force = list(inForce or ())
     lo, hi = inUnion.bounds
+    if force:
+        lo = tuple(min(lo[k], min(p[k] for p in force)) for k in range(3))
+        hi = tuple(max(hi[k], max(p[k] for p in force)) for k in range(3))
     origin = tuple(math.floor(lo[k] / s) * s - s - s * LATTICE_OFFSET for k in range(3))
     dims = tuple(int(math.ceil((hi[k] - origin[k]) / s)) + 2 for k in range(3))
     grid = VoxelGrid(origin, s, dims)
@@ -722,20 +758,33 @@ def voxelize_union(inUnion: TetUnion, inCellSize: float) -> VoxelGrid:
                 p = base + i
                 if (
                     corner[p]
-                    and corner[p + 1]
-                    and corner[p + cx]
-                    and corner[p + cx + 1]
-                    and corner[p + strideZ]
-                    and corner[p + strideZ + 1]
-                    and corner[p + strideZ + cx]
-                    and corner[p + strideZ + cx + 1]
+                    or corner[p + 1]
+                    or corner[p + cx]
+                    or corner[p + cx + 1]
+                    or corner[p + strideZ]
+                    or corner[p + strideZ + 1]
+                    or corner[p + strideZ + cx]
+                    or corner[p + strideZ + cx + 1]
                 ):
                     occ[row + i] = 1
+    for point in force:
+        cell = grid.cell_of(point)
+        if cell is not None:
+            occ[cell] = 1
+            grid.forced.add(cell)
+    for point in inProtect or ():
+        cell = grid.cell_of(point)
+        if cell is not None:
+            occ[cell] = 0
+            grid.forbidden.add(cell)
+    grid.forced -= grid.forbidden
     return grid
 
 
 def fill_cavities(inGrid: VoxelGrid) -> int:
-    """바깥 테두리에서 6-이웃으로 닿지 않는 빈 칸(내부 공동)을 점유로 바꾼다.
+    """바깥 테두리에서 6-이웃으로 닿지 않는 빈 칸(내부 공동)을 점유로 바꾼다. 금지 칸(``forbidden``)은 채우지 않는다.
+
+    남은 금지 공동은 겉면 추출에서 안쪽 껍질이 되어 그 안의 보호 점이 홀짝상 **밖**이 된다 - 의도한 결과다.
 
     Args:
         inGrid: 격자(제자리 수정)
@@ -774,9 +823,10 @@ def fill_cavities(inGrid: VoxelGrid) -> int:
             if 0 <= ni < nx and 0 <= nj < ny and 0 <= nk < nz and not occ[nidx] and not outside[nidx]:
                 outside[nidx] = 1
                 queue.append(nidx)
+    forbidden = inGrid.forbidden
     filled = 0
     for idx in range(total):
-        if not occ[idx] and not outside[idx]:
+        if not occ[idx] and not outside[idx] and idx not in forbidden:
             occ[idx] = 1
             filled += 1
     return filled
@@ -816,16 +866,38 @@ def fix_nonmanifold(inGrid: VoxelGrid) -> int:
     """엣지·꼭짓점만 맞닿는 점유 배치를 빈 칸을 채워 없앤다(결정론, 변화 없을 때까지).
 
     2x2x2 블록마다 점유 칸과 빈 칸이 각각 블록 안 면 이웃으로 하나로 이어져야 한다. 아니면 그 블록의 빈 칸 중
-    국소 순서가 가장 앞선 칸을 채우고 주변 블록을 다시 본다. 채우기만 하므로(점유 칸 단조 증가) 끝난다.
+    국소 순서가 가장 앞선 **금지 칸이 아닌** 칸을 채우고 주변 블록을 다시 본다.
+
+    빈 칸이 금지 칸뿐이면(보호 점 칸끼리 엣지·꼭짓점으로 맞닿음) 채울 수 없으므로 **점유 칸 하나를 비워** 고친다 - 블록을 바로
+    고치는 칸을 우선하고, 강제 점유 칸(감쌀 점)은 뒤로 미룬다. 비운 칸은 금지 칸에 넣어 다시 채우지 않는다. 채우기는 금지
+    아닌 칸만, 비우기는 금지 칸을 늘리므로 끝난다. 비우기는 그 칸의 기대 버텍스를 과소로, 감쌀 점을 밖으로 만들 수 있다 -
+    바디 보호 우선(PRD 갈림길 3)의 대가다. 실기 3슬롯에서 금지 칸만 남은 블록이 31 / 13 / 38개였고 고치지 않으면 닫힘이 깨졌다.
 
     Args:
         inGrid: 격자(제자리 수정)
 
     Returns:
-        채운 칸 수
+        채운 칸 수(비운 칸 수는 ``inGrid.carved``에 누적)
     """
     nx, ny, nz = inGrid.dims
     occ = inGrid.occ
+    forbidden = inGrid.forbidden
+    forced = inGrid.forced
+    unresolved: Set[Tuple[int, int, int]] = set()
+
+    def carve(inBi: int, inBj: int, inBk: int, inMask: int) -> Optional[Tuple[int, int, int]]:
+        """블록의 점유 칸 중 비울 칸을 고른다(블록을 고치는 칸 > 아닌 칸, 강제 아닌 칸 > 강제 칸, 국소 순서)."""
+        best = None
+        bestKey = None
+        for c, (dx, dy, dz) in enumerate(_BLOCK_CELLS):
+            if not (inMask >> c) & 1:
+                continue
+            i, j, k = inBi + dx, inBj + dy, inBk + dz
+            idx = i + nx * (j + ny * k)
+            key = (0 if _BLOCK_OK[inMask & ~(1 << c)] else 1, 1 if idx in forced else 0, c)
+            if bestKey is None or key < bestKey:
+                best, bestKey = (i, j, k), key
+        return best
 
     def mask_at(bi: int, bj: int, bk: int) -> int:
         m = 0
@@ -850,18 +922,41 @@ def fix_nonmanifold(inGrid: VoxelGrid) -> int:
         for bi, bj, bk in work:
             m = mask_at(bi, bj, bk)
             if _BLOCK_OK[m]:
+                unresolved.discard((bi, bj, bk))
                 continue
+            fixedHere = False
             for c, (dx, dy, dz) in enumerate(_BLOCK_CELLS):
                 if (m >> c) & 1:
                     continue
                 i, j, k = bi + dx, bj + dy, bk + dz
                 if not (0 <= i < nx and 0 <= j < ny and 0 <= k < nz):
                     continue
-                occ[i + nx * (j + ny * k)] = 1
+                idx = i + nx * (j + ny * k)
+                if idx in forbidden:
+                    continue
+                occ[idx] = 1
                 filled += 1
                 for ex, ey, ez in _BLOCK_CELLS:
                     pending.add((i - ex, j - ey, k - ez))
+                fixedHere = True
                 break
+            if not fixedHere:
+                target = carve(bi, bj, bk, m)
+                if target is not None:
+                    i, j, k = target
+                    idx = i + nx * (j + ny * k)
+                    occ[idx] = 0
+                    forbidden.add(idx)
+                    forced.discard(idx)
+                    inGrid.carved += 1
+                    for ex, ey, ez in _BLOCK_CELLS:
+                        pending.add((i - ex, j - ey, k - ez))
+                    fixedHere = True
+            if fixedHere:
+                unresolved.discard((bi, bj, bk))
+            else:
+                unresolved.add((bi, bj, bk))
+    inGrid.unresolved = len(unresolved)
     return filled
 
 
@@ -1243,9 +1338,11 @@ def decimate_clip_volume(
 ) -> Tuple[List[Vec3], List[Tri], DecimateStats]:
     """클립 부피를 **보호된 성장**으로 줄인다(PRD A10, 갈림길 2).
 
-    감축 전 부피를 엔진 규칙으로 한 번 판정해 유지 점 = 기대 집합 E 중 지금 잘리는 버텍스(E ∩ C0), 보호 점 = 대상 버텍스 중
-    E 밖을 만들고 ``decimate(..., inProtect, inKeep)``를 부른다. 붕괴가 쓸고 지나가는 사면체가 보호 점을 삼키거나 유지 점을
-    놓으면 거부하고 그 밖의 성장은 허용한다 - 몸속 안쪽 벽(오목면)이 자유롭게 줄어든다.
+    감축 전 부피를 엔진 규칙으로 한 번 판정해 유지 점 = 기대 집합 E 중 지금 잘리는 버텍스(E ∩ C0) + 감쌀 점
+    (``guardPoints`` - 덮는 면 버텍스·푸쉬 점) 중 지금 안인 것, 보호 점 = 대상 버텍스 중 E 밖을 만들고
+    ``decimate(..., inProtect, inKeep)``를 부른다. 붕괴가 쓸고 지나가는 사면체가 보호 점을 삼키거나 유지 점을
+    놓으면 거부하고 그 밖의 성장은 허용한다 - 몸속 안쪽 벽(오목면)이 자유롭게 줄어든다. 감쌀 점을 유지하지 않으면 감축이 바깥
+    면을 덮는 메쉬 안쪽으로 끌어들인다(실기 Shoes 포함 56% -> 48%, probe r15 - PRD 갈림길 3).
 
     수축 전용(``decimate`` 기본)은 이 부피(몸을 감싼 4~5 cm 껍질)에서 오목한 안쪽 벽을 줄이지 못해 실기 Lower·Upper 과소가
     46~92%였다. 보호된 성장은 같은 슬롯에서 F 250 도달·닫힘·과다 0·과소 1~4%였다(2026-10-22 실측). 벽끼리 지나쳐 홀짝이
@@ -1271,6 +1368,9 @@ def decimate_clip_volume(
                 protect.append(p)
             elif i in clipped:
                 keep.append(p)
+    guard = inVolume.guardPoints
+    if guard:
+        keep.extend(p for p, flag in zip(guard, classify_vertices(guard, inVolume.verts, inVolume.tris)) if flag)
     return decimate(inVolume.verts, inVolume.tris, inTargetTris, inMaxShrink=inMaxShrink, inProtect=protect, inKeep=keep)
 
 
@@ -1523,8 +1623,9 @@ class ClipVolume:
         tris: 복셀 겉면 삼각형
         expected: 대상 이름마다 기대 클립 버텍스 집합 E(대상 메쉬의 0-based 인덱스)
         coverCounts: 덮는 면 분류별 삼각형 수
-        stats: 점유 칸·공동 메움·비다양체 보정 칸·사면체 수
+        stats: 점유 칸·공동 메움·비다양체 보정 칸·사면체 수, 금지 칸·강제/금지 충돌 칸·못 고친 비다양체 블록 수
         timings: 단계별 초
+        guardPoints: 클립이 감쌀 점 - 덮는 면 버텍스 g와 푸쉬 점 g + d·n(포함률의 분모, 감축 유지 점 후보)
     """
 
     verts: List[Vec3]
@@ -1533,6 +1634,7 @@ class ClipVolume:
     coverCounts: Dict[str, int]
     stats: Dict[str, int] = field(default_factory=dict)
     timings: Dict[str, float] = field(default_factory=dict)
+    guardPoints: List[Vec3] = field(default_factory=list)
 
 
 def build_clip_volume(
@@ -1604,8 +1706,17 @@ def build_clip_volume(
     _progress(4, "voxelize")
 
     t0 = time.perf_counter()
-    grid = voxelize_union(union, inVoxelSize)
+    coveredVerts = sorted({i for ti in coverage.prismTris for i in occTris[ti]})
+    guardPoints = [occVerts[i] for i in coveredVerts] + [coverage.tops[i] for i in coveredVerts]
+    protect = [
+        tgtVerts[i]
+        for name, (start, end) in zip(names, tgtRanges)
+        for i in range(start, end)
+        if (i - start) not in expected[name]
+    ]
+    grid = voxelize_union(union, inVoxelSize, guardPoints, protect)
     occupied = grid.count()
+    guardCells = {c for c in (grid.cell_of(p) for p in guardPoints) if c is not None}
     cavities, nonManifold = close_grid(grid)
     timings["voxelize"] = time.perf_counter() - t0
     _progress(5, "surface")
@@ -1626,8 +1737,13 @@ def build_clip_volume(
             "cavityFilled": cavities,
             "nonManifoldFilled": nonManifold,
             "gridCells": grid.dims[0] * grid.dims[1] * grid.dims[2],
+            "forbidden": len(grid.forbidden),
+            "guardConflicts": len(guardCells & grid.forbidden),
+            "carved": grid.carved,
+            "unresolvedBlocks": grid.unresolved,
         },
         timings=timings,
+        guardPoints=guardPoints,
     )
 
 
@@ -1670,15 +1786,25 @@ class ClipCheck:
         closed: 엔진 규칙 닫힘
         triangleCount: 클립 메쉬 삼각형 수
         targets: 대상 이름 -> ``TargetCheck``
+        guardTotal: 포함률 분모 - 감쌀 점(``ClipVolume.guardPoints``) 수(주지 않았으면 0)
+        guardInside: 그중 클립 안인 점 수
     """
 
     closed: bool
     triangleCount: int
     targets: Dict[str, TargetCheck]
+    guardTotal: int = 0
+    guardInside: int = 0
 
     def over_total(self) -> int:
         """전 대상 과다 클립 버텍스 수."""
         return sum(len(t.over) for t in self.targets.values())
+
+    def guard_ratio(self) -> float:
+        """포함률 - 감쌀 점 중 클립 안 비율(점이 없으면 1). **판정 축이 아니라 기록**이다(바디 보호 우선, PRD 갈림길 3)."""
+        if self.guardTotal == 0:
+            return 1.0
+        return self.guardInside / self.guardTotal
 
     def passed(self) -> bool:
         """닫힘 + 과다 클립 0 (fail-closed 판정 축)."""
@@ -1690,14 +1816,16 @@ def verify_clip(
     inClipTris: Sequence[Tri],
     inTargets: Dict[str, MeshData],
     inExpected: Optional[Dict[str, Set[int]]] = None,
+    inGuardPoints: Optional[Sequence[Vec3]] = None,
 ) -> ClipCheck:
-    """클립 메쉬를 엔진 규칙으로 판정한다 - 닫힘, 대상별 에뮬레이션 클립 집합과 기대 집합 비교.
+    """클립 메쉬를 엔진 규칙으로 판정한다 - 닫힘, 대상별 에뮬레이션 클립 집합과 기대 집합 비교, 포함률.
 
     Args:
         inClipVerts: 클립 메쉬 버텍스(월드)
         inClipTris: 클립 메쉬 삼각형
         inTargets: 대상 이름 -> ``(verts, tris)`` (월드)
         inExpected: 대상 이름 -> 기대 집합 E. None이면 비교하지 않는다(수작업 클립 판정)
+        inGuardPoints: 클립이 감쌀 점(``ClipVolume.guardPoints``). None이면 포함률을 재지 않는다
 
     Returns:
         ``ClipCheck``
@@ -1736,4 +1864,8 @@ def verify_clip(
             facesAll=len(cull_faces(tris, inside, CULL_ALL_VERTICES)),
             facesOne=len(cull_faces(tris, inside, CULL_ONE_VERTEX)),
         )
-    return ClipCheck(closed=closed, triangleCount=len(inClipTris), targets=results)
+    guard = list(inGuardPoints or ())
+    guardInside = sum(classify_vertices(guard, inClipVerts, inClipTris)) if guard else 0
+    return ClipCheck(
+        closed=closed, triangleCount=len(inClipTris), targets=results, guardTotal=len(guard), guardInside=guardInside
+    )

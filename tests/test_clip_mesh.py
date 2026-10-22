@@ -260,6 +260,38 @@ def test_vertex_contact_is_fixed():
     assert _euler(verts, tris) == 2
 
 
+def test_forbidden_cavity_is_not_filled_and_stays_outside():
+    """금지 칸(보호 점 칸)은 공동 메움이 채우지 않는다 - 남은 공동은 안쪽 껍질이 되어 그 안의 점이 홀짝상 밖이다(갈림길 3)."""
+    shell = [(i, j, k) for i in range(1, 4) for j in range(1, 4) for k in range(1, 4) if (i, j, k) != (2, 2, 2)]
+    g = _grid((5, 5, 5), shell)
+    g.forbidden.add(g.index(2, 2, 2))
+    assert cm.fill_cavities(g) == 0
+    assert g.get(2, 2, 2) == 0
+    verts, tris = cm.extract_surface(g)
+    assert cm.is_mesh_closed(verts, tris)
+    assert cm.classify_vertices([(2.3, 2.6, 2.4), (1.3, 1.6, 1.4)], verts, tris) == [False, True]
+
+
+def _forbidden_edge_contact_grid():
+    """2x2x2 꽉 찬 블록에서 금지 칸 둘이 엣지로만 맞닿는다 - 빈 칸이 금지 칸뿐이라 채워서는 고칠 수 없다."""
+    g = _grid((4, 4, 4), [(i, j, k) for i in (1, 2) for j in (1, 2) for k in (1, 2)])
+    for cell in ((1, 1, 1), (2, 2, 1)):
+        idx = g.index(*cell)
+        g.occ[idx] = 0
+        g.forbidden.add(idx)
+    return g
+
+
+def test_fix_nonmanifold_carves_when_only_forbidden_cells_are_empty():
+    """빈 칸이 금지 칸뿐인 비다양체 블록은 점유 칸을 비워 고친다 - 금지 칸은 끝까지 비고, 겉면은 닫힌다(실기 31 / 13 / 38블록)."""
+    g = _forbidden_edge_contact_grid()
+    assert not cm.is_mesh_closed(*cm.extract_surface(g))
+    cm.close_grid(g)
+    assert g.carved >= 1 and g.unresolved == 0
+    assert g.get(1, 1, 1) == 0 and g.get(2, 2, 1) == 0
+    assert cm.is_mesh_closed(*cm.extract_surface(g))
+
+
 # ---------------------------------------------------------------------------
 # 엔진 포팅 - 닫힘
 # ---------------------------------------------------------------------------
@@ -371,22 +403,44 @@ def test_half_cover_voxel_surface_reproduces_expected(half_cover):
     assert target.facesAll > 0 and target.facesOne >= target.facesAll
 
 
-def test_conservative_occupancy_does_not_swallow_vertices_below_rim():
-    """보수적 점유(PRD A11) - 옷 테두리(z -2.9) 0.1 아래의 바디 고리(z -3.0)를 자르지 않는다.
+def test_protect_cells_do_not_swallow_vertices_below_rim():
+    """보호 칸 금지(갈림길 3, 이전 A11의 목적 그대로) - 옷 테두리(z -2.9) 0.1 아래의 바디 고리(z -3.0)를 자르지 않는다.
 
-    칸 중심 판정이면 이 고리가 든 칸의 중심(-2.818)이 테두리 위라 점유되어 고리 80버텍스가 전부 과다가 된다(실측) -
-    실기 3슬롯의 감축 없는 과다 클립과 같은 기제다(PRD §9).
+    관대한 점유만으로는 이 고리가 든 칸이 점유된다(꼭짓점이 테두리 위) - 칸 중심 판정 때와 같이 고리 80버텍스가 전부 과다가
+    된다. 보호 점(기대 집합 밖 대상 버텍스) 칸을 비워 막는다. 같은 도형에서 옷은 감싼다(포함률 1).
     """
     body = grid_box(10.0, 20)
     garment = grid_box(11.0, 20, inZMin=-2.9)
     vol = cm.build_clip_volume(
         [garment], {"Body": body}, inPush=1.0, inVoxelSize=1.0, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
     )
-    target = cm.verify_clip(vol.verts, vol.tris, {"Body": body}, vol.expected).targets["Body"]
+    check = cm.verify_clip(vol.verts, vol.tris, {"Body": body}, vol.expected, vol.guardPoints)
+    target = check.targets["Body"]
     ring = [i for i, p in enumerate(body[0]) if abs(p[2] + 3.0) < 1e-9]
     assert len(ring) == 80 and not any(i in vol.expected["Body"] for i in ring)
     assert target.over == []
     assert not any(i in target.clipped for i in ring)
+    assert vol.stats["forbidden"] > 0
+    assert check.closed and check.guard_ratio() == 1.0
+
+
+def test_voxel_volume_encloses_occluder_and_push_points(half_cover):
+    """클립이 덮는 메쉬를 감싼다(갈림길 3, 6.5 실기 지적) - 덮는 면 버텍스 g와 푸쉬 점 g + d·n이 전부 클립 안이다.
+
+    보수적 점유(8꼭짓점 AND)는 바깥 면을 최대 √3·s 깎아 이 도형에서도 푸쉬 점이 밖으로 나간다(실기 Shoes 포함 56%, probe r15).
+    """
+    body, vol = half_cover
+    garment = grid_box(11.0, 4, inZMin=-2.5)
+    check = cm.verify_clip(vol.verts, vol.tris, {"Body": body}, vol.expected, vol.guardPoints)
+    covered = sum(1 for p in garment[0] if p[2] >= -2.5)
+    assert check.guardTotal == 2 * covered
+    assert check.guardInside == check.guardTotal
+    assert check.passed()
+
+
+def test_guard_ratio_without_points_is_one():
+    check = cm.verify_clip(*cube(1.0), {"Body": cube(0.5)}, None)
+    assert check.guardTotal == 0 and check.guard_ratio() == 1.0
 
 
 def _channel_grid():
@@ -532,6 +586,21 @@ def test_decimate_clip_volume_guarded_growth(half_cover_fine):
     assert after.over == []
     assert len(after.under) <= len(before.under)
     assert len(tris) <= 60 and stats.reachedTarget
+
+
+def test_decimate_clip_volume_keeps_guard_points_inside(half_cover_fine):
+    """감축이 바깥 면을 덮는 메쉬 안쪽으로 끌어들이지 않는다 - 감축 전 안이던 감쌀 점은 감축 뒤에도 안이다(갈림길 3).
+
+    유지 점에 감쌀 점을 넣지 않으면 실기 Shoes 포함률이 감축에서 56% -> 48%로 떨어졌다(probe r15).
+    """
+    body, vol = half_cover_fine
+    targets = {"Body": body}
+    before = cm.verify_clip(vol.verts, vol.tris, targets, vol.expected, vol.guardPoints)
+    verts, tris, _stats = cm.decimate_clip_volume(vol, targets, 60)
+    after = cm.verify_clip(verts, tris, targets, vol.expected, vol.guardPoints)
+    assert before.guardInside == before.guardTotal > 0
+    assert after.guardInside == before.guardInside
+    assert after.passed()
 
 
 def test_guard_capture_keeps_protected_point_in_groove_outside():

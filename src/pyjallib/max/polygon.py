@@ -192,7 +192,7 @@ class ClipMeshResult:
         return not self.reasons and self.check.passed()
 
     def summary(self) -> Dict[str, Any]:
-        """로그·리포트용 요약(대상별 |E|·|C|·과다·과소)."""
+        """로그·리포트용 요약(대상별 |E|·|C|·과다·과소, 덮는 메쉬 포함률 ``guardRatio`` - 기록 축)."""
         targets = {}
         for name, t in self.check.targets.items():
             targets[name] = {
@@ -215,6 +215,7 @@ class ClipMeshResult:
             "faceBudget": self.faceBudget,
             "coverCounts": dict(self.coverCounts),
             "stats": dict(self.stats),
+            "guardRatio": round(self.check.guard_ratio(), 4),
             "targets": targets,
             "reasons": list(self.reasons),
             "decimate": dict(self.decimate) if self.decimate else None,
@@ -634,7 +635,7 @@ class Polygon:
             rt.pyjal_clip_finalize(node)
             t0 = time.perf_counter()
             clipVerts, clipTris = self.read_world_triangles(node)
-            check = cm.verify_clip(clipVerts, clipTris, tgtMeshes, volume.expected)
+            check = cm.verify_clip(clipVerts, clipTris, tgtMeshes, volume.expected, volume.guardPoints)
             timings["verify"] = time.perf_counter() - t0
         except Exception:
             if node is not None and rt.isValidNode(node):
