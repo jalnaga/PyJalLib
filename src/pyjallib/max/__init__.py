@@ -30,6 +30,8 @@ from pyjallib.max.attribute import Attribute
 from pyjallib.max.polygon import Polygon
 # UV 마스크 순수 모듈(래스터화·TGA). pymxs 없이도 import할 수 있고, 어댑터는 Polygon.bake_face_mask.
 from pyjallib.max import uvMask
+# 클립 메쉬 순수 모듈(부피·복셀·Mutable 판정 포팅). pymxs 없이도 import할 수 있고, 어댑터는 Polygon.build_clip_mesh.
+from pyjallib.max import clipMesh
 
 from pyjallib.max.rig.boneChain import BoneChain
 
@@ -98,6 +100,7 @@ __all__ = [
     "Attribute",
     "Polygon",
     "uvMask",
+    "clipMesh",
     "BoneChain",
     "TwistBone",
     "GroinBone",

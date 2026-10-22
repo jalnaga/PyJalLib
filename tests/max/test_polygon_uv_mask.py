@@ -210,10 +210,13 @@ try:
         f"info={info} result={result}",
     )
     header = Header.get_instance()
+    # 재명세(2026-10-22 0.5.8 clipMesh 가산): 원래 "== 0.5.7"로 이 기능이 들어간 버전을 단정했다. 다음 가산 bump마다 깨지므로
+    # "uvMask가 들어간 버전(0.5.7) 이상"으로 바꾼다 - 지키는 축(기능 등록 + 버전 bump 누락 방지)은 그대로다.
+    versionTuple = tuple(int(x) for x in pyjallib.__version__.split(".")[:3])
     reporter.assert_test(
         hasattr(header.polygon, "bake_face_mask") and hasattr(header.polygon, "read_map_faces")
-        and pyjallib.__version__ == "0.5.7" and hasattr(pyjallib.max, "uvMask"),
-        "TC09 Header.polygon에 bake_face_mask·read_map_faces, 버전 0.5.7, max.uvMask 노출",
+        and versionTuple >= (0, 5, 7) and hasattr(pyjallib.max, "uvMask"),
+        "TC09 Header.polygon에 bake_face_mask·read_map_faces, 버전 0.5.7 이상, max.uvMask 노출",
         f"version={pyjallib.__version__}",
     )
 except Exception:

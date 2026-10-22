@@ -3,10 +3,16 @@
 
 """폴리곤 모듈 - 3ds Max 메쉬 폴리곤 질의.
 
-현재 기능: **다른 오브젝트에 가려진 면 추출**(``Polygon.find_occluded_faces``). 판정 규칙은 순수 모듈
-``polygonMath``에 있고, 이 어댑터는 씬에서 재료(평가 형상의 버텍스·면·법선)를 읽고 레이 질의를 만든다.
-**씬을 바꾸지 않는다** - 레이 그리드용 임시 노드는 undo 기록 밖에서 만들고 ``finally``에서 지우며,
-씬 저장 필요 플래그도 호출 전 값으로 되돌린다.
+기능:
+
+- **다른 오브젝트에 가려진 면 추출**(``Polygon.find_occluded_faces``). 판정 규칙은 순수 모듈 ``polygonMath``에
+  있고, 이 어댑터는 씬에서 재료(평가 형상의 버텍스·면·법선)를 읽고 레이 질의를 만든다. **씬을 바꾸지 않는다** -
+  레이 그리드용 임시 노드는 undo 기록 밖에서 만들고 ``finally``에서 지우며, 씬 저장 필요 플래그도 호출 전 값으로 되돌린다.
+- **UV 마스크 베이크**(``read_map_faces`` / ``bake_face_mask``, 순수 규칙 ``uvMask``).
+- **클립 메쉬 생성·판정**(``build_clip_mesh`` / ``classify_clip``, 순수 규칙 ``clipMesh``). 덮는 메쉬로 닫힌 클립
+  부피 노드를 **하나 만든다**(원본은 바꾸지 않는다). 감축은 순수 모듈의 ``clipMesh.decimate_clip_volume``(닫힘 보존 +
+  보호된 성장)이다. Max 감축기(ProOptimizer·MultiRes)는 쓰지 않는다 - 2026-10-22 실기 슬롯에서 F에 따라 닫힘을 들쭉날쭉하게
+  깼다(Upper F 250~4000 전부). 덧붙여 모디파이어를 얹고 속성만 쓰면 스택 평가 전까지 **조용히 무동작**이었다.
 
 ## 레이 엔진 (2026-10-19 실측, 3ds Max 2024)
 
@@ -31,11 +37,14 @@ Modify 패널이 스택 **아래** 레벨(예: Skin 밑 baseObject의 서브오�
 않는다 - **호출자가 패널을 벗어난 상태(예: ``max create mode``)에서 부른다.**
 """
 
+import time
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pymxs
 from pymxs import runtime as rt
 
+from pyjallib.max import clipMesh as cm
 from pyjallib.max import polygonMath as pm
 from pyjallib.max import uvMask
 from pyjallib.max.polygonMath import OccludedFaceResult, ProgressCallback, Vec3
@@ -103,9 +112,115 @@ fn pyjal_polygon_cast rm pts nrms dirsLocal eps = (
     )
     res
 )
+fn pyjal_clip_tri_data node = (
+    local m = snapshotAsMesh node
+    local nv = m.numverts
+    local nf = m.numfaces
+    local vs = #()
+    if nv > 0 do vs[nv * 3] = 0.0
+    for i = 1 to nv do (
+        local p = getVert m i
+        vs[i * 3 - 2] = p.x
+        vs[i * 3 - 1] = p.y
+        vs[i * 3] = p.z
+    )
+    local fs = #()
+    if nf > 0 do fs[nf * 3] = 0
+    for i = 1 to nf do (
+        local f = getFace m i
+        fs[i * 3 - 2] = f.x as integer
+        fs[i * 3 - 1] = f.y as integer
+        fs[i * 3] = f.z as integer
+    )
+    #(vs, fs)
+)
+fn pyjal_clip_make_mesh nm vs fs = (
+    local nv = vs.count / 3
+    local nf = fs.count / 3
+    local pts = for i = 1 to nv collect [vs[i * 3 - 2], vs[i * 3 - 1], vs[i * 3]]
+    local tris = for i = 1 to nf collect [fs[i * 3 - 2], fs[i * 3 - 1], fs[i * 3]]
+    local m = mesh vertices:pts faces:tris name:nm
+    m.wireColor = color 255 128 0
+    m
+)
+fn pyjal_clip_finalize node = (
+    convertToMesh node
+    meshop.setMapSupport node 1 true
+    meshop.setNumMapVerts node 1 1
+    meshop.setMapVert node 1 1 [1, 1, 0]
+    for i = 1 to node.numfaces do meshop.setMapFace node 1 i [1, 1, 1]
+    update node
+    node.numfaces
+)
 """
 
 _TEMP_NODE_NAME = "PyJalPolygon_tmpOccluder"
+
+
+@dataclass
+class ClipMeshResult:
+    """``Polygon.build_clip_mesh`` 결과.
+
+    Attributes:
+        node: 만든 클립 메쉬 노드(씬에 남는다 - 지우는 것은 호출자의 몫)
+        name: 노드 이름
+        voxelTriangles: 감축 전 복셀 겉면 삼각형 수
+        triangles: 최종 삼각형 수
+        faceBudget: 요청한 목표 삼각형 수(0이면 감축 안 함)
+        coverCounts: 덮는 면 분류별 삼각형 수(``clipMesh.COVER_*``)
+        stats: 부피 통계(사면체·점유 칸·공동 메움·비다양체 보정)
+        check: 최종 메쉬의 엔진 판정(``clipMesh.ClipCheck``)
+        timings: 단계별 초
+        reasons: 실패 사유(감축 무동작 등). 비어 있고 ``check.passed()``면 통과
+        decimate: 감축 통계(``clipMesh.DecimateStats.as_dict()``, 감축하지 않았으면 None) - 목표 미달은 실패가 아니라 기록이다
+    """
+
+    node: Any
+    name: str
+    voxelTriangles: int
+    triangles: int
+    faceBudget: int
+    coverCounts: Dict[str, int]
+    stats: Dict[str, int]
+    check: cm.ClipCheck
+    timings: Dict[str, float] = field(default_factory=dict)
+    reasons: List[str] = field(default_factory=list)
+    decimate: Optional[Dict[str, Any]] = None
+
+    def passed(self) -> bool:
+        """닫힘 + 과다 클립 0 + 실패 사유 없음 (fail-closed 축)."""
+        return not self.reasons and self.check.passed()
+
+    def summary(self) -> Dict[str, Any]:
+        """로그·리포트용 요약(대상별 |E|·|C|·과다·과소, 덮는 메쉬 포함률 ``guardRatio`` - 기록 축)."""
+        targets = {}
+        for name, t in self.check.targets.items():
+            targets[name] = {
+                "vertices": t.vertexCount,
+                "expected": len(t.expected or ()),
+                "clipped": len(t.clipped),
+                "over": len(t.over),
+                "under": len(t.under),
+                "underRatio": round(t.under_ratio(), 4),
+                "overDistanceMax": round(t.overDistanceMax, 3),
+                "facesAll": t.facesAll,
+                "facesOne": t.facesOne,
+            }
+        return {
+            "name": self.name,
+            "passed": self.passed(),
+            "closed": self.check.closed,
+            "voxelTriangles": self.voxelTriangles,
+            "triangles": self.triangles,
+            "faceBudget": self.faceBudget,
+            "coverCounts": dict(self.coverCounts),
+            "stats": dict(self.stats),
+            "guardRatio": round(self.check.guard_ratio(), 4),
+            "targets": targets,
+            "reasons": list(self.reasons),
+            "decimate": dict(self.decimate) if self.decimate else None,
+            "timings": {k: round(v, 3) for k, v in self.timings.items()},
+        }
 
 
 class Polygon:
@@ -379,3 +494,194 @@ class Polygon:
             f"칠한 픽셀 {stats.paintedPixels}, 0픽셀 면 {stats.zeroPixelFaces} -> {inPath}",
         )
         return result
+
+    # -----------------------------------------------------------------
+    # 클립 메쉬 (2026-10-22 가산 - 순수 규칙은 pyjallib.max.clipMesh)
+    # -----------------------------------------------------------------
+
+    def read_world_triangles(self, inNode: Any) -> Tuple[List[Vec3], List[Tuple[int, int, int]]]:
+        """노드의 평가된 월드 삼각형 메쉬를 벌크로 읽는다(``snapshotAsMesh``, 0-based, 씬 무변경).
+
+        Modify 패널 함정(모듈 docstring "호출 조건")은 여기에도 그대로 걸린다 - 호출자가 패널을 벗어나 부른다.
+
+        Args:
+            inNode: 지오메트리 노드
+
+        Returns:
+            (버텍스 월드 좌표, 삼각형)
+
+        Raises:
+            ValueError: 지오메트리 노드가 아님
+        """
+        if not self._is_geometry(inNode):
+            raise ValueError("유효한 지오메트리 노드가 아니다")
+        self._ensure_functions()
+        data = rt.pyjal_clip_tri_data(inNode)
+        flat = list(data[0])
+        idx = list(data[1])
+        verts = [(float(flat[i]), float(flat[i + 1]), float(flat[i + 2])) for i in range(0, len(flat), 3)]
+        tris = [(int(idx[i]) - 1, int(idx[i + 1]) - 1, int(idx[i + 2]) - 1) for i in range(0, len(idx), 3)]
+        return verts, tris
+
+    def _check_node_sets(self, inOccluders: Sequence[Any], inTargets: Sequence[Any]) -> None:
+        if not inOccluders:
+            raise ValueError("가리는 오브젝트가 1개 이상 필요하다")
+        if not inTargets:
+            raise ValueError("대상이 1개 이상 필요하다")
+        seen: Dict[int, str] = {}
+        for role, nodes in (("가리는 오브젝트", inOccluders), ("대상", inTargets)):
+            for node in nodes:
+                if not self._is_geometry(node):
+                    raise ValueError(f"{role} 중 유효한 지오메트리 노드가 아닌 것이 있다")
+                handle = self._handle(node)
+                if handle in seen:
+                    raise ValueError(f"'{node.name}'이(가) {seen[handle]}와 {role}에 중복됐다")
+                seen[handle] = role
+
+    @staticmethod
+    def _target_names(inTargets: Sequence[Any]) -> List[str]:
+        names: List[str] = []
+        for node in inTargets:
+            base = str(node.name)
+            name = base
+            n = 2
+            while name in names:
+                name = f"{base}#{n}"
+                n += 1
+            names.append(name)
+        return names
+
+    def build_clip_mesh(
+        self,
+        inOccluders: Sequence[Any],
+        inTargets: Sequence[Any],
+        inPush: float,
+        inVoxelSize: float,
+        inInset: float,
+        inInnerDepth: float,
+        inMaxHeight: float,
+        inFaceBudget: int,
+        inName: Optional[str] = None,
+        inProgressCallback: Optional[ProgressCallback] = None,
+        inMaxShrink: float = float("inf"),
+    ) -> ClipMeshResult:
+        """덮는 오브젝트로 닫힌 클립 메쉬 노드를 만들고 엔진 규칙으로 판정한다(원본 무변경).
+
+        부피 정의·이산화·감축은 ``clipMesh`` 모듈 docstring(감축 = ``decimate_clip_volume``, 보호된 성장). 노드를 만든 뒤
+        결과 메쉬를 **씬에서 다시 읽어** 판정한다 - 노드 왕복이 좌표·면을 바꾸지 않았는지까지 포함해, 벽끼리 지나쳐 홀짝이
+        깨진 경우도 여기서 드러난다. 감축을 요청했는데 붕괴가 0번이면 실패 사유로 남긴다(목표 미달 자체는 기록). 노드는 통과
+        여부와 무관하게 씬에 남는다(눈으로 보게).
+
+        Args:
+            inOccluders: 덮는 노드 목록(옷)
+            inTargets: 덮히는 노드 목록(바디 등) - 표면은 합쳐 하나로 본다
+            inPush: 푸쉬 거리 d
+            inVoxelSize: 복셀 크기 s
+            inInset: 경계 물림 거리 m
+            inInnerDepth: 바디 안쪽 깊이 T
+            inMaxHeight: 덮임 최대 거리 Hmax
+            inFaceBudget: 목표 삼각형 수(0이면 감축하지 않는다)
+            inName: 노드 이름. None이면 ``{첫 덮는 노드}_Clip``
+            inProgressCallback: (작업명, 현재, 전체) 콜백
+            inMaxShrink: 감축 붕괴 하나의 최대 이동 거리(기본 제한 없음 - 과다·과소는 보호된 성장이 버텍스 단위로 막는다)
+
+        Returns:
+            ``ClipMeshResult``
+
+        Raises:
+            ValueError: 노드가 지오메트리가 아님·비었음·중복, 파라미터 범위 밖(``clipMesh.build_clip_volume``), 덮는 면이 없어
+                부피가 빔(노드를 만들지 않는다)
+        """
+        occluders = list(inOccluders)
+        targets = list(inTargets)
+        self._check_node_sets(occluders, targets)
+        if inFaceBudget < 0:
+            raise ValueError(f"목표 삼각형 수는 0 이상이어야 한다: {inFaceBudget}")
+        timings: Dict[str, float] = {}
+        t0 = time.perf_counter()
+        occMeshes = [self.read_world_triangles(n) for n in occluders]
+        names = self._target_names(targets)
+        tgtMeshes = {name: self.read_world_triangles(n) for name, n in zip(names, targets)}
+        timings["read"] = time.perf_counter() - t0
+
+        volume = cm.build_clip_volume(
+            occMeshes, tgtMeshes, inPush, inVoxelSize, inInset, inInnerDepth, inMaxHeight,
+            inProgressCallback=inProgressCallback,
+        )
+        timings.update(volume.timings)
+        nodeName = inName or f"{occluders[0].name}_Clip"
+        reasons: List[str] = []
+        if not volume.tris:
+            # 빈 메쉬 노드는 만들 의미가 없다 - 덮는 면 분류를 사유에 실어 던진다(관통·Hmax 초과·경계 물림으로 전부 빠진 경우)
+            raise ValueError(f"덮는 면이 없어 클립 부피가 비었다(덮는 면 분류 {volume.coverCounts})")
+
+        meshVerts, meshTris = volume.verts, volume.tris
+        decimateStats = None
+        voxelTris = len(volume.tris)
+        if inFaceBudget > 0 and voxelTris > inFaceBudget:
+            meshVerts, meshTris, stats = cm.decimate_clip_volume(volume, tgtMeshes, inFaceBudget, inMaxShrink)
+            decimateStats = stats.as_dict()
+            timings["decimate"] = stats.seconds
+            if stats.collapses == 0:
+                reasons.append(f"감축이 동작하지 않았다(삼각형 {voxelTris}, 목표 {inFaceBudget})")
+
+        node = None
+        try:
+            t0 = time.perf_counter()
+            flatVerts = [c for p in meshVerts for c in p]
+            flatTris = [i + 1 for t in meshTris for i in t]
+            node = rt.pyjal_clip_make_mesh(nodeName, rt.Array(*flatVerts), rt.Array(*flatTris))
+            timings["makeNode"] = time.perf_counter() - t0
+            rt.pyjal_clip_finalize(node)
+            t0 = time.perf_counter()
+            clipVerts, clipTris = self.read_world_triangles(node)
+            check = cm.verify_clip(clipVerts, clipTris, tgtMeshes, volume.expected, volume.guardPoints)
+            timings["verify"] = time.perf_counter() - t0
+        except Exception:
+            if node is not None and rt.isValidNode(node):
+                rt.delete(node)
+            raise
+
+        result = ClipMeshResult(
+            node=node,
+            name=str(node.name),
+            voxelTriangles=len(volume.tris),
+            triangles=len(clipTris),
+            faceBudget=int(inFaceBudget),
+            coverCounts=dict(volume.coverCounts),
+            stats=dict(volume.stats),
+            check=check,
+            timings=timings,
+            reasons=reasons,
+            decimate=decimateStats,
+        )
+        summary = result.summary()
+        self._log(
+            "info",
+            f"[Polygon] 클립 메쉬 '{result.name}' (가리개 {[str(n.name) for n in occluders]}, 대상 {names}, "
+            f"d={inPush}, s={inVoxelSize}, m={inInset}, T={inInnerDepth}, Hmax={inMaxHeight}, F={inFaceBudget}): "
+            f"passed={summary['passed']} closed={summary['closed']} tris {summary['voxelTriangles']}->{summary['triangles']} "
+            f"targets={summary['targets']} reasons={summary['reasons']}",
+        )
+        return result
+
+    def classify_clip(self, inClipNode: Any, inTargets: Sequence[Any]) -> cm.ClipCheck:
+        """기존 클립 메쉬(수작업 포함)를 엔진 규칙으로 판정한다(기대 집합 없이 C·닫힘·면 제거 수, 씬 무변경).
+
+        Args:
+            inClipNode: 클립 메쉬 노드
+            inTargets: 판정할 대상 노드 목록
+
+        Returns:
+            ``clipMesh.ClipCheck`` (대상 이름 = 노드 이름)
+
+        Raises:
+            ValueError: 노드가 지오메트리가 아님·대상이 비었음
+        """
+        targets = list(inTargets)
+        if not targets:
+            raise ValueError("대상이 1개 이상 필요하다")
+        clipVerts, clipTris = self.read_world_triangles(inClipNode)
+        names = self._target_names(targets)
+        tgtMeshes = {name: self.read_world_triangles(n) for name, n in zip(names, targets)}
+        return cm.verify_clip(clipVerts, clipTris, tgtMeshes, None)

@@ -53,38 +53,12 @@ from pyjallib.max.header import Header
 from pyjallib.max.polygon import Polygon
 from pyjallib.testKit import TestReporter
 
+from _legPantsFixture import make_body as _make_body  # noqa: E402 - 공유 픽스처(복붙 금지, 모듈 docstring)
+from _legPantsFixture import make_pants as _make_pants  # noqa: E402
+from _legPantsFixture import reset as _reset  # noqa: E402
+
 LOG_DIR = Path(__file__).parent.parent / "logs"
 reporter = TestReporter("PolygonOcclusion", LOG_DIR)
-
-
-def _reset():
-    rt.resetMaxFile(rt.Name("noPrompt"))
-
-
-def _poly(inNode):
-    rt.convertToPoly(inNode)
-    return inNode
-
-
-def _make_body(inOffsetX=0.0, inWithBoxes=True):
-    leg = _poly(rt.Cylinder(radius=5.0, height=40.0, heightsegs=16, sides=16, capsegs=1))
-    leg.pos = rt.Point3(inOffsetX, 0.0, 0.0)
-    leg.name = "Body"
-    if inWithBoxes:
-        hip = _poly(rt.Box(length=30.0, width=30.0, height=8.0))
-        hip.pos = rt.Point3(0.0, 0.0, 34.0)
-        foot = _poly(rt.Box(length=30.0, width=30.0, height=6.0))
-        foot.pos = rt.Point3(0.0, 0.0, -4.0)
-        rt.polyop.attach(leg, hip)
-        rt.polyop.attach(leg, foot)
-    return leg
-
-
-def _make_pants():
-    tube = _poly(rt.Tube(radius1=12.5, radius2=12.0, height=34.0, sides=32, heightsegs=1, capsegs=1))
-    tube.pos = rt.Point3(0.0, 0.0, 1.0)
-    tube.name = "Pants"
-    return tube
 
 
 def _is_box_outer(inPts):

@@ -77,6 +77,8 @@ TEST_SCRIPTS = [
     "test_polygon_occlusion.py",
     # UV 마스크 베이크(맵 면 벌크 읽기·TGA·씬 무변경·입력 거부·등록). 기대 TC 10 (TC00~TC09)
     "test_polygon_uv_mask.py",
+    # 클립 메쉬 생성·판정(공유 다리+바지 픽스처, 관통, 감축 F, 원본 무변경, classify_clip, 빈 부피). 기대 TC 13 (TC00~TC12)
+    "test_polygon_clip_mesh.py",
 ]
 
 # TestReporter SuiteName 오버라이드:
@@ -98,6 +100,7 @@ LOG_NAME_OVERRIDES = {
     "test_skin_ext.py": "SkinExt",
     "test_polygon_occlusion.py": "PolygonOcclusion",
     "test_polygon_uv_mask.py": "PolygonUvMask",
+    "test_polygon_clip_mesh.py": "PolygonClipMesh",
 }
 
 
