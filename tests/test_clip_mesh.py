@@ -371,6 +371,24 @@ def test_half_cover_voxel_surface_reproduces_expected(half_cover):
     assert target.facesAll > 0 and target.facesOne >= target.facesAll
 
 
+def test_conservative_occupancy_does_not_swallow_vertices_below_rim():
+    """보수적 점유(PRD A11) - 옷 테두리(z -2.9) 0.1 아래의 바디 고리(z -3.0)를 자르지 않는다.
+
+    칸 중심 판정이면 이 고리가 든 칸의 중심(-2.818)이 테두리 위라 점유되어 고리 80버텍스가 전부 과다가 된다(실측) -
+    실기 3슬롯의 감축 없는 과다 클립과 같은 기제다(PRD §9).
+    """
+    body = grid_box(10.0, 20)
+    garment = grid_box(11.0, 20, inZMin=-2.9)
+    vol = cm.build_clip_volume(
+        [garment], {"Body": body}, inPush=1.0, inVoxelSize=1.0, inInset=0.0, inInnerDepth=3.0, inMaxHeight=10.0
+    )
+    target = cm.verify_clip(vol.verts, vol.tris, {"Body": body}, vol.expected).targets["Body"]
+    ring = [i for i, p in enumerate(body[0]) if abs(p[2] + 3.0) < 1e-9]
+    assert len(ring) == 80 and not any(i in vol.expected["Body"] for i in ring)
+    assert target.over == []
+    assert not any(i in target.clipped for i in ring)
+
+
 def _channel_grid():
     """보정이 통로를 막아 공동을 만드는 격자 - 꽉 찬 상자 안에 주머니(3,3,2)와 위로 뚫린 통로(3,3,3~7),
     통로 칸 (3,3,5)와 대각으로만 맞닿는 두 번째 통로(4,4,5 -> +x)."""
