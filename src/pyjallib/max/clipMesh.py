@@ -1009,12 +1009,30 @@ def _quadric_error(inQ: Sequence[float], inP: Vec3) -> float:
     )
 
 
+REJECT_CAPTURE = "capture"
+REJECT_RELEASE = "release"
+
+
+def _point_in_tet(inP: Vec3, inA: Vec3, inB: Vec3, inC: Vec3, inD: Vec3) -> bool:
+    frame = _tet_frame((inA, inB, inC, inD))
+    if frame is None:
+        return False
+    p0, r1, r2, r3 = frame
+    d = _sub(inP, p0)
+    u = _dot(r1, d)
+    v = _dot(r2, d)
+    w = _dot(r3, d)
+    return u >= 0.0 and v >= 0.0 and w >= 0.0 and (u + v + w) <= 1.0
+
+
 def decimate(
     inVerts: Sequence[Vec3],
     inTris: Sequence[Tri],
     inTargetTris: int,
     inMaxShrink: float = math.inf,
     inTolerance: float = 1e-9,
+    inProtect: Optional[Sequence[Vec3]] = None,
+    inKeep: Optional[Sequence[Vec3]] = None,
 ) -> Tuple[List[Vec3], List[Tri], DecimateStats]:
     """닫힌 2-다양체를 닫힘을 지키며 **수축 쪽으로만** 줄인다(반-엣지 붕괴 QEM).
 
@@ -1084,6 +1102,29 @@ def decimate(
             push(x, y)
             push(y, x)
 
+    guarded = inProtect is not None or inKeep is not None
+    guardCell = 2.0
+    guardBuckets: Dict[Tuple[int, int, int], List[Tuple[Vec3, bool]]] = {}
+    for points, isKeep in ((inProtect or (), False), (inKeep or (), True)):
+        for p in points:
+            key = (int(math.floor(p[0] / guardCell)), int(math.floor(p[1] / guardCell)), int(math.floor(p[2] / guardCell)))
+            guardBuckets.setdefault(key, []).append((tuple(p), isKeep))
+
+    def guard_violation(inTet: Tet, inShrink: bool) -> Optional[str]:
+        lo = [min(q[k] for q in inTet) for k in range(3)]
+        hi = [max(q[k] for q in inTet) for k in range(3)]
+        c0 = [int(math.floor(lo[k] / guardCell)) for k in range(3)]
+        c1 = [int(math.floor(hi[k] / guardCell)) for k in range(3)]
+        for i in range(c0[0], c1[0] + 1):
+            for j in range(c0[1], c1[1] + 1):
+                for k in range(c0[2], c1[2] + 1):
+                    for p, isKeep in guardBuckets.get((i, j, k), ()):
+                        if isKeep != inShrink:
+                            continue
+                        if _point_in_tet(p, *inTet):
+                            return REJECT_RELEASE if inShrink else REJECT_CAPTURE
+        return None
+
     def check(inV: int, inU: int) -> Optional[str]:
         fv, fu = vfaces[inV], vfaces[inU]
         shared = fv & fu
@@ -1114,9 +1155,13 @@ def decimate(
             if _dot(nOld, nNew) <= 0.0:
                 return REJECT_FLIP
             dist = _dot(nNew, _sub(pv, pu)) / lenNew
-            if dist < -inTolerance:
+            if dist < -inTolerance and not guarded:
                 return REJECT_GROW
-            shrink = max(shrink, dist)
+            shrink = max(shrink, abs(dist) if guarded else dist)
+            if guarded:
+                violation = guard_violation((pv, qa, qb, qc), dist >= 0.0)
+                if violation is not None:
+                    return violation
         if shrink > inMaxShrink:
             return REJECT_SHRINK_LIMIT
         return None
