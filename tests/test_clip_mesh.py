@@ -456,6 +456,20 @@ def test_decimate_keeps_closedness_and_genus_of_ring():
     assert len(t2) < len(tris) and stats.collapses > 0
 
 
+def test_decimate_link_condition_keeps_small_ring_closed():
+    """구멍 1칸짜리 고리를 최소 한계까지 몰아도 닫힘·종수를 지킨다.
+
+    link 조건이 없으면 이 도형이 비다양체로 접혀 닫힘을 잃는다(실측 오일러 4) - 다른 거부(중복·퇴화·뒤집힘)로는 막히지
+    않는 경우다. 큰 고리(``test_decimate_keeps_closedness_and_genus_of_ring``)는 link 조건 없이도 통과해 판별력이 없었다(2.14 변이).
+    """
+    cells = [(i, j, 1) for i in range(1, 4) for j in range(1, 4) if (i, j) != (2, 2)]
+    verts, tris = _voxels((5, 5, 3), cells)
+    v2, t2, stats = cm.decimate(verts, tris, 8)
+    assert cm.is_mesh_closed(v2, t2)
+    assert _euler(v2, t2) == 0
+    assert stats.rejected.get(cm.REJECT_LINK, 0) > 0
+
+
 def test_decimate_is_shrink_only_groove_stays_outside():
     """홈 안(원 부피 밖)의 점은 감축 뒤에도 밖이다 - 부피를 밖으로 부풀리면 과다 클립이 된다(수축 전용 축)."""
     cells = [(i, j, k) for i in range(1, 7) for j in range(1, 7) for k in range(1, 4) if not (k == 3 and 3 <= i <= 4)]
