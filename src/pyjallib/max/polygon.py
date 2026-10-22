@@ -10,8 +10,9 @@
   레이 그리드용 임시 노드는 undo 기록 밖에서 만들고 ``finally``에서 지우며, 씬 저장 필요 플래그도 호출 전 값으로 되돌린다.
 - **UV 마스크 베이크**(``read_map_faces`` / ``bake_face_mask``, 순수 규칙 ``uvMask``).
 - **클립 메쉬 생성·판정**(``build_clip_mesh`` / ``classify_clip``, 순수 규칙 ``clipMesh``). 덮는 메쉬로 닫힌 클립
-  부피 노드를 **하나 만든다**(원본은 바꾸지 않는다). 감축은 ProOptimizer - 모디파이어를 얹고 속성만 쓰면 **조용히
-  무동작**이라(2026-10-22 실측, 배치·GUI 양쪽) 스택 평가를 강제하는 순서로 부른다.
+  부피 노드를 **하나 만든다**(원본은 바꾸지 않는다). 감축은 순수 모듈의 ``clipMesh.decimate_clip_volume``(닫힘 보존 +
+  보호된 성장)이다. Max 감축기(ProOptimizer·MultiRes)는 쓰지 않는다 - 2026-10-22 실기 슬롯에서 F에 따라 닫힘을 들쭉날쭉하게
+  깼다(Upper F 250~4000 전부). 덧붙여 모디파이어를 얹고 속성만 쓰면 스택 평가 전까지 **조용히 무동작**이었다.
 
 ## 레이 엔진 (2026-10-19 실측, 3ds Max 2024)
 
@@ -142,21 +143,6 @@ fn pyjal_clip_make_mesh nm vs fs = (
     m.wireColor = color 255 128 0
     m
 )
-fn pyjal_clip_force node = (
-    classOf node
-    node.mesh.numfaces
-)
-fn pyjal_clip_decimate node percent = (
-    local mod = ProOptimizer()
-    addModifier node mod
-    pyjal_clip_force node
-    mod.VertexPercent = percent
-    pyjal_clip_force node
-    mod.Calculate = true
-    pyjal_clip_force node
-    maxOps.CollapseNodeTo node 1 true
-    node.mesh.numfaces
-)
 fn pyjal_clip_finalize node = (
     convertToMesh node
     meshop.setMapSupport node 1 true
@@ -186,6 +172,7 @@ class ClipMeshResult:
         check: 최종 메쉬의 엔진 판정(``clipMesh.ClipCheck``)
         timings: 단계별 초
         reasons: 실패 사유(감축 무동작 등). 비어 있고 ``check.passed()``면 통과
+        decimate: 감축 통계(``clipMesh.DecimateStats.as_dict()``, 감축하지 않았으면 None) - 목표 미달은 실패가 아니라 기록이다
     """
 
     node: Any
@@ -198,6 +185,7 @@ class ClipMeshResult:
     check: cm.ClipCheck
     timings: Dict[str, float] = field(default_factory=dict)
     reasons: List[str] = field(default_factory=list)
+    decimate: Optional[Dict[str, Any]] = None
 
     def passed(self) -> bool:
         """닫힘 + 과다 클립 0 + 실패 사유 없음 (fail-closed 축)."""
@@ -229,6 +217,7 @@ class ClipMeshResult:
             "stats": dict(self.stats),
             "targets": targets,
             "reasons": list(self.reasons),
+            "decimate": dict(self.decimate) if self.decimate else None,
             "timings": {k: round(v, 3) for k, v in self.timings.items()},
         }
 
@@ -573,12 +562,14 @@ class Polygon:
         inFaceBudget: int,
         inName: Optional[str] = None,
         inProgressCallback: Optional[ProgressCallback] = None,
+        inMaxShrink: float = float("inf"),
     ) -> ClipMeshResult:
         """덮는 오브젝트로 닫힌 클립 메쉬 노드를 만들고 엔진 규칙으로 판정한다(원본 무변경).
 
-        부피 정의·이산화는 ``clipMesh`` 모듈 docstring. 감축은 ProOptimizer(평가 강제 순서). 감축 뒤 결과 메쉬를
-        **다시 읽어** 판정한다 - 감축이 닫힘을 깨거나 면이 서로 뚫고 들어가면 홀짝 판정으로 드러난다. 감축을 요청했는데
-        삼각형 수가 그대로면(무동작) 실패 사유로 남긴다. 노드는 통과 여부와 무관하게 씬에 남는다(눈으로 보게).
+        부피 정의·이산화·감축은 ``clipMesh`` 모듈 docstring(감축 = ``decimate_clip_volume``, 보호된 성장). 노드를 만든 뒤
+        결과 메쉬를 **씬에서 다시 읽어** 판정한다 - 노드 왕복이 좌표·면을 바꾸지 않았는지까지 포함해, 벽끼리 지나쳐 홀짝이
+        깨진 경우도 여기서 드러난다. 감축을 요청했는데 붕괴가 0번이면 실패 사유로 남긴다(목표 미달 자체는 기록). 노드는 통과
+        여부와 무관하게 씬에 남는다(눈으로 보게).
 
         Args:
             inOccluders: 덮는 노드 목록(옷)
@@ -591,6 +582,7 @@ class Polygon:
             inFaceBudget: 목표 삼각형 수(0이면 감축하지 않는다)
             inName: 노드 이름. None이면 ``{첫 덮는 노드}_Clip``
             inProgressCallback: (작업명, 현재, 전체) 콜백
+            inMaxShrink: 감축 붕괴 하나의 최대 이동 거리(기본 제한 없음 - 과다·과소는 보호된 성장이 버텍스 단위로 막는다)
 
         Returns:
             ``ClipMeshResult``
@@ -620,21 +612,23 @@ class Polygon:
         if not volume.tris:
             reasons.append("덮는 면이 없어 클립 부피가 비었다")
 
+        meshVerts, meshTris = volume.verts, volume.tris
+        decimateStats = None
+        voxelTris = len(volume.tris)
+        if inFaceBudget > 0 and voxelTris > inFaceBudget:
+            meshVerts, meshTris, stats = cm.decimate_clip_volume(volume, tgtMeshes, inFaceBudget, inMaxShrink)
+            decimateStats = stats.as_dict()
+            timings["decimate"] = stats.seconds
+            if stats.collapses == 0:
+                reasons.append(f"감축이 동작하지 않았다(삼각형 {voxelTris}, 목표 {inFaceBudget})")
+
         node = None
         try:
             t0 = time.perf_counter()
-            flatVerts = [c for p in volume.verts for c in p]
-            flatTris = [i + 1 for t in volume.tris for i in t]
+            flatVerts = [c for p in meshVerts for c in p]
+            flatTris = [i + 1 for t in meshTris for i in t]
             node = rt.pyjal_clip_make_mesh(nodeName, rt.Array(*flatVerts), rt.Array(*flatTris))
             timings["makeNode"] = time.perf_counter() - t0
-            voxelTris = len(volume.tris)
-            if inFaceBudget > 0 and voxelTris > inFaceBudget:
-                t0 = time.perf_counter()
-                percent = 100.0 * (inFaceBudget // 2 + 2) / max(1, len(volume.verts))
-                after = int(rt.pyjal_clip_decimate(node, percent))
-                timings["decimate"] = time.perf_counter() - t0
-                if after >= voxelTris:
-                    reasons.append(f"감축이 동작하지 않았다(삼각형 {voxelTris} -> {after})")
             rt.pyjal_clip_finalize(node)
             t0 = time.perf_counter()
             clipVerts, clipTris = self.read_world_triangles(node)
@@ -656,6 +650,7 @@ class Polygon:
             check=check,
             timings=timings,
             reasons=reasons,
+            decimate=decimateStats,
         )
         summary = result.summary()
         self._log(

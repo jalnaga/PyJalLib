@@ -11,7 +11,9 @@
 - 관 가운데(z 10..25)의 다리 측면 버텍스 -> 클립된다
 - 박스 모서리 버텍스(엉덩이·발 박스 겉) -> 클립되지 않는다
 - 관통(다리를 x로 9.5 밀어 관 벽을 뚫고 나오게 함): 관 축 거리 r_t > 13.5 인 다리 버텍스 -> 클립되지 않는다,
-  r_t < 11.0 이고 z 10..25 -> 클립된다
+  결과는 통과(닫힘·과다 0)하고 덮임 정의(E)에 든 버텍스가 있다. **"관 안 다리 버텍스는 전부 클립"은 단정하지 않는다** -
+  이 관은 다리에서 7~16 cm 떨어진 헐렁한 관이라 먼 쪽 절반이 Hmax 10을 넘어 부피가 없다(PRD §9 관측). 그 기대는 직전
+  사이클의 가시성 정의(가려진 면)를 끌어온 것이었고 클립 부피 정의(D1)와 맞지 않았다(2026-10-22 재명세)
 - 결과 노드는 닫힘·과다 클립 0(``passed``), 목표 삼각형 수 F ±10%, 형식상 맵 채널 1, 매테리얼 없음
 - 원본 노드의 면·버텍스 수·선택 불변, 새 노드는 클립 노드 하나뿐
 - ``classify_clip``: 손으로 만든 박스 클립이 그 안의 버텍스만 자른다
@@ -36,7 +38,6 @@ bootstrap_pyjallib()
 from pymxs import runtime as rt
 
 import pyjallib
-from pyjallib.max import clipMesh as cm
 from pyjallib.max.polygon import ClipMeshResult, Polygon
 from pyjallib.testKit import TestReporter
 
@@ -143,16 +144,16 @@ try:
     clipped = result.check.targets["Body"].clipped
     side = _leg_side(pts, offset)
     outside = [i for i in side if math.hypot(pts[i][0], pts[i][1]) > 13.5 and 3.0 <= pts[i][2] <= 33.0]
-    inside = [i for i in side if math.hypot(pts[i][0], pts[i][1]) < 11.0 and 10.0 <= pts[i][2] <= 25.0]
+    expected = result.check.targets["Body"].expected or set()
     reporter.assert_test(
         len(outside) > 0 and not any(i in clipped for i in outside),
         "TC07 관을 뚫고 나온 다리 버텍스는 클립되지 않는다",
         f"outside {len(outside)} clipped {[i for i in outside if i in clipped]} cover={result.coverCounts}",
     )
     reporter.assert_test(
-        len(inside) > 0 and all(i in clipped for i in inside) and result.passed(),
-        "TC08 관 안 다리 버텍스는 클립되고 결과가 통과한다",
-        f"inside {len(inside)} / clipped {len([i for i in inside if i in clipped])} summary={result.summary()}",
+        result.passed() and len(expected) > 0 and len(clipped) > 0 and clipped <= expected,
+        "TC08 관통 픽스처 결과가 통과한다(닫힘·과다 0, 잘린 버텍스는 전부 덮임 정의 안)",
+        f"E {len(expected)} C {len(clipped)} summary={result.summary()}",
     )
 except Exception:
     reporter.error("TC07~08 관통", traceback.format_exc())
