@@ -370,6 +370,22 @@ def test_half_cover_voxel_surface_reproduces_expected(half_cover):
     assert target.facesAll > 0 and target.facesOne >= target.facesAll
 
 
+def test_close_grid_leaves_no_cavity():
+    """보정이 막아 만든 공동까지 메운다 - close_grid 뒤 바깥에서 닿지 않는 빈 칸이 0이다.
+
+    이 정답 도형은 보정(fix_nonmanifold)이 가는 통로를 막아 공동을 새로 만든다(실측 63칸). 재메움이 없으면 그 공동이
+    겉면의 안쪽 껍질이 된다. 공동 위치가 대상 버텍스의 레이 경로 밖이라 C == E 단정만으로는 잡히지 않아 따로 둔다.
+    """
+    body = grid_box(10.0, 4)
+    garment = grid_box(11.0, 4, inZMin=-2.5)
+    surf = cm.TriangleSurface(*body, inCellSize=2.0)
+    cov = cm.compute_coverage(garment[0], garment[1], surf, 1.0, 10.0, 0.0, 3.0)
+    grid = cm.voxelize_union(cm.build_prism_union(cov, garment[1], 1.0), 0.5)
+    cavities, fixed = cm.close_grid(grid)
+    assert fixed > 0
+    assert cm.fill_cavities(grid) == 0
+
+
 def test_verify_reports_over_and_under():
     body = grid_box(10.0, 2)
     clip = cube(11.0, (0.0, 0.0, 11.0))  # z 0~22 상자 - z >= 0 버텍스를 자른다
