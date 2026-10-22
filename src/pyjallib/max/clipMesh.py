@@ -937,6 +937,248 @@ def extract_surface(inGrid: VoxelGrid) -> Tuple[List[Vec3], List[Tri]]:
     return verts, tris
 
 
+# =====================================================================
+# 감축 - 닫힘 보존·수축 전용 반-엣지 붕괴 (PRD A10)
+# =====================================================================
+
+#: 붕괴 거부 사유.
+REJECT_EDGE = "edge"
+REJECT_LINK = "link"
+REJECT_DUPLICATE = "duplicate"
+REJECT_DEGENERATE = "degenerate"
+REJECT_FLIP = "flip"
+REJECT_GROW = "grow"
+REJECT_SHRINK_LIMIT = "shrinkLimit"
+
+
+@dataclass
+class DecimateStats:
+    """``decimate`` 통계.
+
+    Attributes:
+        trianglesBefore: 감축 전 삼각형 수
+        trianglesAfter: 감축 후 삼각형 수
+        target: 목표 삼각형 수
+        reachedTarget: 목표 이하로 줄었는가
+        collapses: 수행한 붕괴 수
+        rejected: 거부 사유별 수(``REJECT_*``)
+        seconds: 소요 초
+    """
+
+    trianglesBefore: int
+    trianglesAfter: int
+    target: int
+    reachedTarget: bool
+    collapses: int
+    rejected: Dict[str, int]
+    seconds: float
+
+    def as_dict(self) -> Dict[str, object]:
+        """로그·리포트용 사전."""
+        return {
+            "trianglesBefore": self.trianglesBefore,
+            "trianglesAfter": self.trianglesAfter,
+            "target": self.target,
+            "reachedTarget": self.reachedTarget,
+            "collapses": self.collapses,
+            "rejected": dict(self.rejected),
+            "seconds": round(self.seconds, 3),
+        }
+
+
+def _face_quadric(inA: Vec3, inB: Vec3, inC: Vec3) -> List[float]:
+    """면 평면의 면적 가중 이차식(대칭 4x4의 위 삼각 10성분)."""
+    n = _cross(_sub(inB, inA), _sub(inC, inA))
+    area2 = _length(n)
+    if area2 < 1e-15:
+        return [0.0] * 10
+    a, b, c = n[0] / area2, n[1] / area2, n[2] / area2
+    d = -(a * inA[0] + b * inA[1] + c * inA[2])
+    w = area2 * 0.5
+    return [w * a * a, w * a * b, w * a * c, w * a * d, w * b * b, w * b * c, w * b * d, w * c * c, w * c * d, w * d * d]
+
+
+def _quadric_error(inQ: Sequence[float], inP: Vec3) -> float:
+    x, y, z = inP
+    q = inQ
+    return (
+        q[0] * x * x + 2.0 * q[1] * x * y + 2.0 * q[2] * x * z + 2.0 * q[3] * x
+        + q[4] * y * y + 2.0 * q[5] * y * z + 2.0 * q[6] * y
+        + q[7] * z * z + 2.0 * q[8] * z
+        + q[9]
+    )
+
+
+def decimate(
+    inVerts: Sequence[Vec3],
+    inTris: Sequence[Tri],
+    inTargetTris: int,
+    inMaxShrink: float = math.inf,
+    inTolerance: float = 1e-9,
+) -> Tuple[List[Vec3], List[Tri], DecimateStats]:
+    """닫힌 2-다양체를 닫힘을 지키며 **수축 쪽으로만** 줄인다(반-엣지 붕괴 QEM).
+
+    붕괴 v -> u는 v를 지우고 v의 면을 u로 잇는다(새 좌표를 만들지 않는다 - 결과 버텍스는 원 버텍스의 부분집합). 비용은
+    버텍스 이차식 합(Garland-Heckbert)을 u 위치에서 잰 값이라 평면 안·직선 모서리 위 버텍스(비용 0)가 먼저 붕괴한다 - 복셀
+    겉면의 계단 평면은 모양을 바꾸지 않고 줄어든다. 붕괴 조건(어기면 거부, ``DecimateStats.rejected``):
+
+    1. 엣지 uv를 면 정확히 2개가 공유하고 link 조건 N(u) ∩ N(v) == {두 면의 반대 버텍스}를 만족한다 - 2-다양체(= 엔진 닫힘)를 지킨다
+    2. 새 면이 u의 기존 면과 같은 버텍스 집합이 아니다(사면체 같은 최소 도형이 납작해지지 않게)
+    3. 새 면이 퇴화하지 않고(면적 ~0) 노멀이 뒤집히지 않는다(옛/새 노멀 내적 > 0)
+    4. **수축 전용** - v가 모든 새 면 평면의 바깥쪽(노멀 쪽, 부호 거리 >= -tol)이다. 붕괴가 v 둘레의 부피를 깎기만 하고 밖으로 부풀지
+       않으므로 과다 클립을 새로 만들지 않는다
+    5. 수축 거리(v에서 새 면 평면까지의 최댓값)가 ``inMaxShrink`` 이하다 - 과소 클립을 억제한다
+
+    삼각형이 ``inTargetTris`` 이하가 되거나 붕괴 후보가 떨어지면 멈춘다(목표 미달이어도 그때의 메쉬를 돌려준다).
+
+    Args:
+        inVerts: 버텍스(닫힌 2-다양체, 바깥 향 감김)
+        inTris: 삼각형
+        inTargetTris: 목표 삼각형 수
+        inMaxShrink: 붕괴 하나의 최대 수축 거리(씬 단위). 기본 제한 없음
+        inTolerance: 수축 판정 허용오차(평면 위 = 0으로 본다)
+
+    Returns:
+        (버텍스, 삼각형, ``DecimateStats``) - 버텍스는 압축·재번호된다
+    """
+    import heapq
+
+    t0 = time.perf_counter()
+    pos = [tuple(p) for p in inVerts]
+    faces: List[Optional[List[int]]] = [list(t) for t in inTris]
+    nV = len(pos)
+    vfaces: List[Set[int]] = [set() for _ in range(nV)]
+    quad = [[0.0] * 10 for _ in range(nV)]
+    for fi, (a, b, c) in enumerate(inTris):
+        vfaces[a].add(fi)
+        vfaces[b].add(fi)
+        vfaces[c].add(fi)
+        fq = _face_quadric(pos[a], pos[b], pos[c])
+        for vi in (a, b, c):
+            qv = quad[vi]
+            for k in range(10):
+                qv[k] += fq[k]
+    alive = len(faces)
+    dead = [False] * nV
+    version = [0] * nV
+    rejected: Dict[str, int] = {}
+    heap: List[Tuple[float, int, int, int, int, int]] = []
+    counter = 0
+
+    def neighbors(inV: int) -> Set[int]:
+        out: Set[int] = set()
+        for f in vfaces[inV]:
+            out.update(faces[f])
+        out.discard(inV)
+        return out
+
+    def push(inV: int, inU: int) -> None:
+        nonlocal counter
+        qv, qu = quad[inV], quad[inU]
+        cost = _quadric_error([qv[k] + qu[k] for k in range(10)], pos[inU])
+        counter += 1
+        heapq.heappush(heap, (cost, counter, inV, inU, version[inV], version[inU]))
+
+    for a, b, c in inTris:
+        for x, y in ((a, b), (b, c), (c, a)):
+            push(x, y)
+            push(y, x)
+
+    def check(inV: int, inU: int) -> Optional[str]:
+        fv, fu = vfaces[inV], vfaces[inU]
+        shared = fv & fu
+        if len(shared) != 2:
+            return REJECT_EDGE
+        opposite: Set[int] = set()
+        for f in shared:
+            opposite.update(faces[f])
+        opposite.discard(inV)
+        opposite.discard(inU)
+        if len(opposite) != 2 or (neighbors(inV) & neighbors(inU)) != opposite:
+            return REJECT_LINK
+        pu, pv = pos[inU], pos[inV]
+        uSets = {frozenset(faces[f]) for f in fu - shared}
+        shrink = 0.0
+        for f in fv - shared:
+            old = faces[f]
+            new = [inU if x == inV else x for x in old]
+            if frozenset(new) in uSets:
+                return REJECT_DUPLICATE
+            pa, pb, pc = pos[old[0]], pos[old[1]], pos[old[2]]
+            nOld = _cross(_sub(pb, pa), _sub(pc, pa))
+            qa, qb, qc = pos[new[0]], pos[new[1]], pos[new[2]]
+            nNew = _cross(_sub(qb, qa), _sub(qc, qa))
+            lenNew = _length(nNew)
+            if lenNew < 1e-12:
+                return REJECT_DEGENERATE
+            if _dot(nOld, nNew) <= 0.0:
+                return REJECT_FLIP
+            dist = _dot(nNew, _sub(pv, pu)) / lenNew
+            if dist < -inTolerance:
+                return REJECT_GROW
+            shrink = max(shrink, dist)
+        if shrink > inMaxShrink:
+            return REJECT_SHRINK_LIMIT
+        return None
+
+    collapses = 0
+    while alive > inTargetTris and heap:
+        _cost, _n, v, u, sv, su = heapq.heappop(heap)
+        if dead[v] or dead[u] or version[v] != sv or version[u] != su:
+            continue
+        reason = check(v, u)
+        if reason is not None:
+            rejected[reason] = rejected.get(reason, 0) + 1
+            continue
+        shared = vfaces[v] & vfaces[u]
+        for f in shared:
+            for w in faces[f]:
+                vfaces[w].discard(f)
+            faces[f] = None
+            alive -= 1
+        for f in list(vfaces[v]):
+            faces[f] = [u if x == v else x for x in faces[f]]
+            vfaces[u].add(f)
+        vfaces[v] = set()
+        dead[v] = True
+        qu, qv = quad[u], quad[v]
+        for k in range(10):
+            qu[k] += qv[k]
+        collapses += 1
+        ring = neighbors(u)
+        version[u] += 1
+        for w in ring:
+            version[w] += 1
+        for w in ring | {u}:
+            for x in neighbors(w):
+                push(w, x)
+                push(x, w)
+
+    remap: Dict[int, int] = {}
+    outVerts: List[Vec3] = []
+    outTris: List[Tri] = []
+    for f in faces:
+        if f is None:
+            continue
+        tri = []
+        for x in f:
+            if x not in remap:
+                remap[x] = len(outVerts)
+                outVerts.append(pos[x])
+            tri.append(remap[x])
+        outTris.append((tri[0], tri[1], tri[2]))
+    stats = DecimateStats(
+        trianglesBefore=len(inTris),
+        trianglesAfter=len(outTris),
+        target=int(inTargetTris),
+        reachedTarget=len(outTris) <= inTargetTris,
+        collapses=collapses,
+        rejected=rejected,
+        seconds=time.perf_counter() - t0,
+    )
+    return outVerts, outTris, stats
+
+
 def signed_volume(inVerts: Sequence[Vec3], inTris: Sequence[Tri]) -> float:
     """닫힌 메쉬의 부호 있는 부피(바깥 향 감김이면 +)."""
     total = 0.0
