@@ -588,7 +588,8 @@ class Polygon:
             ``ClipMeshResult``
 
         Raises:
-            ValueError: 노드가 지오메트리가 아님·비었음·중복, 파라미터 범위 밖(``clipMesh.build_clip_volume``)
+            ValueError: 노드가 지오메트리가 아님·비었음·중복, 파라미터 범위 밖(``clipMesh.build_clip_volume``), 덮는 면이 없어
+                부피가 빔(노드를 만들지 않는다)
         """
         occluders = list(inOccluders)
         targets = list(inTargets)
@@ -610,7 +611,8 @@ class Polygon:
         nodeName = inName or f"{occluders[0].name}_Clip"
         reasons: List[str] = []
         if not volume.tris:
-            reasons.append("덮는 면이 없어 클립 부피가 비었다")
+            # 빈 메쉬 노드는 만들 의미가 없다 - 덮는 면 분류를 사유에 실어 던진다(관통·Hmax 초과·경계 물림으로 전부 빠진 경우)
+            raise ValueError(f"덮는 면이 없어 클립 부피가 비었다(덮는 면 분류 {volume.coverCounts})")
 
         meshVerts, meshTris = volume.verts, volume.tris
         decimateStats = None

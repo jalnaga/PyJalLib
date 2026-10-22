@@ -19,7 +19,7 @@
 - ``classify_clip``: 손으로 만든 박스 클립이 그 안의 버텍스만 자른다
 - 입력 거부: 가리개 == 대상, 빈 목록
 
-기대 TC 수: 12 (TC00~TC11)
+기대 TC 수: 13 (TC00~TC12)
 
 실행:
     uv run python tests/run_max_tests.py test_polygon_clip_mesh.py
@@ -205,6 +205,30 @@ try:
     reporter.assert_test(raised == 2, "TC11 빈 가리개·빈 대상은 ValueError")
 except Exception:
     reporter.error("TC11 빈 목록 거부", traceback.format_exc())
+
+# ============================================================
+# TC12: 덮는 면이 없으면(가리개가 Hmax 10보다 멀리 = 전부 tooFar) ValueError, 노드 없음
+# (처음엔 "관 버텍스가 박스 안 양끝뿐 = 전부 관통"으로 잡았으나, 1분할 박스는 최근접점 노멀이 꼭짓점 노멀 보간이라 기울어
+#  h + d가 조금 양수가 되어 덮는 면이 남았다 - 빈 부피 픽스처로 쓸 수 없다)
+# ============================================================
+try:
+    reset()
+    body = make_body()
+    far = poly(rt.Box(length=4.0, width=4.0, height=4.0))
+    far.pos = rt.Point3(100.0, 0.0, 20.0)
+    before = len(list(rt.objects))
+    message = ""
+    try:
+        polygon.build_clip_mesh([far], [body], inFaceBudget=BUDGET, **PARAMS)
+    except ValueError as exc:
+        message = str(exc)
+    reporter.assert_test(
+        "덮는 면이 없어" in message and "tooFar" in message and len(list(rt.objects)) == before,
+        "TC12 덮는 면이 없으면 ValueError(덮는 면 분류 포함), 빈 노드를 만들지 않는다",
+        f"message={message!r} objects {before} -> {len(list(rt.objects))}",
+    )
+except Exception:
+    reporter.error("TC12 빈 부피", traceback.format_exc())
 
 reset()
 reporter.summary()
