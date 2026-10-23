@@ -886,3 +886,31 @@ def test_half_cover_real_native_wrap_is_closed_without_over(half_prism):
     dv, dt, _stats = cm.decimate_clip_volume(vol, targets, budget)
     after = cm.verify_clip(dv, dt, targets, vol.expected)
     assert after.closed and after.targets["Body"].over == []
+
+
+def test_prism_distance_inside_zero_and_outside_exact():
+    coverage, tris = _single_prism()  # 밑변 (0,0)-(2,0)-(0,2), z -1..1
+    assert cm.prism_distance((0.4, 0.3, 0.2), tris[0], coverage.tops, coverage.bottoms) == 0.0
+    assert cm.prism_distance((0.5, 0.5, 3.0), tris[0], coverage.tops, coverage.bottoms) == pytest.approx(2.0)
+    assert cm.prism_distance((2.0, 2.0, 0.0), tris[0], coverage.tops, coverage.bottoms) == pytest.approx(math.sqrt(2.0))
+
+
+def test_wrap_clip_volume_keeps_large_prism_whose_bbox_but_not_shape_is_near():
+    """제거는 형상까지의 거리로 판정한다(실기 판정 1회차 "구멍") - 큰 덮는 면의 bbox + R 안이어도 빗변에서 먼 과다 점은 기둥을 빼지 않는다.
+
+    직각삼각형 (0,0)-(10,0)-(0,10) 기둥과 점 (9, 9): bbox(0..10) 안이지만 빗변까지 약 5.66. 반경 1.1이면 남아야 한다 - 처음 규칙
+    (bbox + R)은 이 기둥을 뺐다. 감싸기 가짜는 이 기둥이 있으면 그 점을 품는 상자를 돌려준다 -> 과다가 남고 더 뺄 것이 없어 멈춘다.
+    """
+    tops = [(0.0, 0.0, 1.0), (10.0, 0.0, 1.0), (0.0, 10.0, 1.0)]
+    bottoms = [(0.0, 0.0, -1.0), (10.0, 0.0, -1.0), (0.0, 10.0, -1.0)]
+    coverage = cm.Coverage(tops, bottoms, [1.0, 1.0, 1.0], [cm.COVER_COVERED], [0], set())
+    occTris = [(0, 1, 2)]
+    leak = (9.0, 9.0, 0.0)
+    prism = cm.PrismVolume(
+        occVerts=[(0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (0.0, 10.0, 0.0)], occTris=occTris, coverage=coverage,
+        union=cm.build_prism_union(coverage, occTris), expected={"Body": set()}, guardPoints=[], protectPoints=[leak],
+    )
+    fake = _FakeWrap((0, 1, 2), leak)
+    vol = cm.wrap_clip_volume(prism, 1.0, 0.1, fake, 0.0, 5)
+    assert len(fake.calls) == 1
+    assert vol.stats["prismsKept"] == 1 and vol.stats["overRemaining"] == 1 and vol.stats["pruneIterations"] == 0

@@ -1887,6 +1887,35 @@ def prism_soup(inCoverage: Coverage, inTris: Sequence[Tri]) -> Tuple[List[Vec3],
     return list(inCoverage.tops) + list(inCoverage.bottoms), tris
 
 
+def prism_distance(inPoint: Vec3, inTri: Tri, inTops: Sequence[Vec3], inBottoms: Sequence[Vec3]) -> float:
+    """점에서 삼각 기둥 하나까지의 거리 - 기둥(사면체 3개) 안이면 0, 밖이면 경계 8삼각형까지 최근접 거리.
+
+    Args:
+        inPoint: 점
+        inTri: 덮는 면(전역 버텍스 인덱스)
+        inTops: 버텍스마다 위 점
+        inBottoms: 버텍스마다 아래 점
+
+    Returns:
+        거리(씬 단위)
+    """
+    for tet in prism_tetrahedra(inTri, inTops, inBottoms):
+        if _point_in_tet(inPoint, *tet):
+            return 0.0
+    a, b, c = inTri
+    tops = (inTops[a], inTops[b], inTops[c])
+    bottoms = (inBottoms[a], inBottoms[b], inBottoms[c])
+    faces = [tops, bottoms]
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        faces.append((tops[i], bottoms[i], bottoms[j]))
+        faces.append((tops[i], bottoms[j], tops[j]))
+    best = math.inf
+    for p0, p1, p2 in faces:
+        q, _bary = closest_point_on_triangle(inPoint, p0, p1, p2)
+        best = min(best, _length(_sub(inPoint, q)))
+    return best
+
+
 def face_budget_from_ratio(inTriangles: int, inKeepRatio: float) -> int:
     """남길 비율(%)을 목표 삼각형 수로 바꾼다(PRD D3) - ``max(4, ceil(감축 전 x r / 100))``, r = 100이면 0(감축 안 함).
 
@@ -1919,10 +1948,14 @@ def wrap_clip_volume(
 
     감싸기는 입력을 offset만큼 띄우고 alpha보다 좁은 틈을 메운다 - 기둥 옆면 바로 밖과 관통 구멍(바디가 옷을 뚫고 나와
     기둥이 빠진 자리)의 대상 버텍스가 안에 든다(실기 3슬롯 144조합 전부 과다 1~31, PRD §8.2). 그래서 감싼 결과를 엔진
-    규칙으로 판정해 안에 든 보호 점(E 밖 대상 버텍스)이 있으면, 그 점을 (기둥 6점 bbox를 R = alpha + offset + 여유만큼 넓힌
-    상자) 안에 품는 기둥을 수프에서 빼고 다시 감싼다. 과다 0이 되거나 ``inMaxPruneIterations``번 뺐으면 멈춘다. E·감쌀 점은
-    처음 기둥 부피 그대로다 - 뺀 기둥 자리의 E는 과소가 된다(B8이 받아들인 대가, 실기 Upper Body 6~11%). 남은 과다는
-    호출자의 판정(``verify_clip``)이 fail-closed로 막는다.
+    규칙으로 판정해 안에 든 보호 점(E 밖 대상 버텍스)이 있으면, 그 점에서 **기둥 형상까지의 거리**(``prism_distance``)가
+    R = alpha + offset + 여유 이하인 기둥을 수프에서 빼고 다시 감싼다. 과다 0이 되거나 ``inMaxPruneIterations``번 뺐으면 멈춘다.
+    E·감쌀 점은 처음 기둥 부피 그대로다 - 뺀 기둥 자리의 E는 과소가 되고 그 자리 덮는 메쉬는 클립 밖으로 드러난다(B8이 받아들인
+    대가). 남은 과다는 호출자의 판정(``verify_clip``)이 fail-closed로 막는다.
+
+    처음 규칙(기둥 6점 bbox를 R만큼 넓힌 상자에 들면 제거)은 큰 덮는 면의 기둥을 점과 상관없이 넓게 뺐다 - 실기 Upper 기본값에서
+    덮는 면 넓이 5.2% 제거·포함률 94%, 실기 판정 1회차 "구멍"(2026-10-23). 거리 기준은 같은 입력에서 2.5% 제거·포함률 97.4%·과다 0
+    (PRD §8.10). bbox는 거리 계산 전 거르기로만 쓴다.
 
     Args:
         inPrism: ``build_prism_volume`` 결과
@@ -1988,9 +2021,8 @@ def wrap_clip_volume(
         kept = []
         for ti in active:
             lo, hi = boxes[ti]
-            if not any(
-                lo[0] <= q[0] <= hi[0] and lo[1] <= q[1] <= hi[1] and lo[2] <= q[2] <= hi[2] for q in overPoints
-            ):
+            near = [q for q in overPoints if lo[0] <= q[0] <= hi[0] and lo[1] <= q[1] <= hi[1] and lo[2] <= q[2] <= hi[2]]
+            if not any(prism_distance(q, occTris[ti], coverage.tops, coverage.bottoms) <= radius for q in near):
                 kept.append(ti)
         timings["prune"] += time.perf_counter() - t0
         if not kept or len(kept) == len(active):
