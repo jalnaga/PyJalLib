@@ -899,18 +899,20 @@ def test_wrap_clip_volume_keeps_large_prism_whose_bbox_but_not_shape_is_near():
     """제거는 형상까지의 거리로 판정한다(실기 판정 1회차 "구멍") - 큰 덮는 면의 bbox + R 안이어도 빗변에서 먼 과다 점은 기둥을 빼지 않는다.
 
     직각삼각형 (0,0)-(10,0)-(0,10) 기둥과 점 (9, 9): bbox(0..10) 안이지만 빗변까지 약 5.66. 반경 1.1이면 남아야 한다 - 처음 규칙
-    (bbox + R)은 이 기둥을 뺐다. 감싸기 가짜는 이 기둥이 있으면 그 점을 품는 상자를 돌려준다 -> 과다가 남고 더 뺄 것이 없어 멈춘다.
+    (bbox + R)은 이 기둥을 뺐다. 멀리 작은 기둥을 하나 더 둔다 - 기둥이 하나뿐이면 처음 규칙도 "전부 빠지면 멈춤"으로 같은 결과가
+    나와 두 규칙이 갈리지 않는다(변이 확인에서 드러남). 감싸기 가짜는 큰 기둥이 있으면 그 점을 품는 상자를 돌려준다 -> 거리 기준은
+    뺄 기둥이 없어 1회로 멈추고(과다 남음, 판정이 막는다), 처음 규칙은 큰 기둥을 빼고 2회차로 간다.
     """
-    tops = [(0.0, 0.0, 1.0), (10.0, 0.0, 1.0), (0.0, 10.0, 1.0)]
-    bottoms = [(0.0, 0.0, -1.0), (10.0, 0.0, -1.0), (0.0, 10.0, -1.0)]
-    coverage = cm.Coverage(tops, bottoms, [1.0, 1.0, 1.0], [cm.COVER_COVERED], [0], set())
-    occTris = [(0, 1, 2)]
+    tops = [(0.0, 0.0, 1.0), (10.0, 0.0, 1.0), (0.0, 10.0, 1.0), (30.0, 0.0, 1.0), (31.0, 0.0, 1.0), (30.0, 1.0, 1.0)]
+    bottoms = [(x, y, -1.0) for x, y, _z in tops]
+    coverage = cm.Coverage(tops, bottoms, [1.0] * 6, [cm.COVER_COVERED] * 2, [0, 1], set())
+    occTris = [(0, 1, 2), (3, 4, 5)]
     leak = (9.0, 9.0, 0.0)
     prism = cm.PrismVolume(
-        occVerts=[(0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (0.0, 10.0, 0.0)], occTris=occTris, coverage=coverage,
+        occVerts=[(x, y, 0.0) for x, y, _z in tops], occTris=occTris, coverage=coverage,
         union=cm.build_prism_union(coverage, occTris), expected={"Body": set()}, guardPoints=[], protectPoints=[leak],
     )
     fake = _FakeWrap((0, 1, 2), leak)
     vol = cm.wrap_clip_volume(prism, 1.0, 0.1, fake, 0.0, 5)
     assert len(fake.calls) == 1
-    assert vol.stats["prismsKept"] == 1 and vol.stats["overRemaining"] == 1 and vol.stats["pruneIterations"] == 0
+    assert vol.stats["prismsKept"] == 2 and vol.stats["overRemaining"] == 1 and vol.stats["pruneIterations"] == 0
