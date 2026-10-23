@@ -13,6 +13,8 @@
   부피 노드를 **하나 만든다**(원본은 바꾸지 않는다). 감축은 순수 모듈의 ``clipMesh.decimate_clip_volume``(닫힘 보존 +
   보호된 성장)이다. Max 감축기(ProOptimizer·MultiRes)는 쓰지 않는다 - 2026-10-22 실기 슬롯에서 F에 따라 닫힘을 들쭉날쭉하게
   깼다(Upper F 250~4000 전부). 덧붙여 모디파이어를 얹고 속성만 쓰면 스택 평가 전까지 **조용히 무동작**이었다.
+  ``build_clip_mesh_alpha``(2026-10-23)는 복셀화 대신 기둥 부피를 Alpha Wrap(``pyjallib.native``, C++)으로 감싸고 과다 반복
+  제거를 거친다 - 노드 규격·감축·판정은 같다. 두 경로 모두 감축 목표를 "남길 비율 %"(``inKeepRatio``)로 줄 수 있다.
 
 ## 레이 엔진 (2026-10-19 실측, 3ds Max 2024)
 
@@ -156,6 +158,10 @@ fn pyjal_clip_finalize node = (
 
 _TEMP_NODE_NAME = "PyJalPolygon_tmpOccluder"
 
+#: 클립 메쉬 생성 경로(``ClipMeshResult.algorithm``).
+ALGORITHM_VOXEL = "voxel"
+ALGORITHM_ALPHA_WRAP = "alphaWrap"
+
 
 @dataclass
 class ClipMeshResult:
@@ -164,15 +170,18 @@ class ClipMeshResult:
     Attributes:
         node: 만든 클립 메쉬 노드(씬에 남는다 - 지우는 것은 호출자의 몫)
         name: 노드 이름
-        voxelTriangles: 감축 전 복셀 겉면 삼각형 수
+        voxelTriangles: 감축 전 삼각형 수(복셀 경로 = 복셀 겉면, Alpha Wrap 경로 = 감싼 메쉬 W)
         triangles: 최종 삼각형 수
-        faceBudget: 요청한 목표 삼각형 수(0이면 감축 안 함)
+        faceBudget: 목표 삼각형 수(0이면 감축 안 함). 남길 비율을 줬으면 그 환산값
         coverCounts: 덮는 면 분류별 삼각형 수(``clipMesh.COVER_*``)
-        stats: 부피 통계(사면체·점유 칸·공동 메움·비다양체 보정)
+        stats: 부피 통계(복셀: 사면체·점유 칸·공동 메움·비다양체 보정 / Alpha Wrap: 기둥·제거 횟수·남은 과다·``wrap_*``)
         check: 최종 메쉬의 엔진 판정(``clipMesh.ClipCheck``)
         timings: 단계별 초
         reasons: 실패 사유(감축 무동작 등). 비어 있고 ``check.passed()``면 통과
         decimate: 감축 통계(``clipMesh.DecimateStats.as_dict()``, 감축하지 않았으면 None) - 목표 미달은 실패가 아니라 기록이다
+        algorithm: ``ALGORITHM_VOXEL`` 또는 ``ALGORITHM_ALPHA_WRAP``
+        keepRatio: 요청한 남길 비율 %(절대값 목표로 불렀으면 None)
+        iterations: Alpha Wrap 과다 반복 제거 회차별 ``{prisms, triangles, over}``(복셀 경로는 빈 목록)
     """
 
     node: Any
@@ -186,6 +195,9 @@ class ClipMeshResult:
     timings: Dict[str, float] = field(default_factory=dict)
     reasons: List[str] = field(default_factory=list)
     decimate: Optional[Dict[str, Any]] = None
+    algorithm: str = ALGORITHM_VOXEL
+    keepRatio: Optional[float] = None
+    iterations: List[Dict[str, int]] = field(default_factory=list)
 
     def passed(self) -> bool:
         """닫힘 + 과다 클립 0 + 실패 사유 없음 (fail-closed 축)."""
@@ -208,6 +220,9 @@ class ClipMeshResult:
             }
         return {
             "name": self.name,
+            "algorithm": self.algorithm,
+            "keepRatio": self.keepRatio,
+            "iterations": [dict(it) for it in self.iterations],
             "passed": self.passed(),
             "closed": self.check.closed,
             "voxelTriangles": self.voxelTriangles,
@@ -564,6 +579,7 @@ class Polygon:
         inName: Optional[str] = None,
         inProgressCallback: Optional[ProgressCallback] = None,
         inMaxShrink: float = float("inf"),
+        inKeepRatio: Optional[float] = None,
     ) -> ClipMeshResult:
         """덮는 오브젝트로 닫힌 클립 메쉬 노드를 만들고 엔진 규칙으로 판정한다(원본 무변경).
 
@@ -584,19 +600,23 @@ class Polygon:
             inName: 노드 이름. None이면 ``{첫 덮는 노드}_Clip``
             inProgressCallback: (작업명, 현재, 전체) 콜백
             inMaxShrink: 감축 붕괴 하나의 최대 이동 거리(기본 제한 없음 - 과다·과소는 보호된 성장이 버텍스 단위로 막는다)
+            inKeepRatio: 남길 비율 %(0 초과 100 이하). 주면 ``inFaceBudget`` 대신 감축 전 삼각형 수로 목표를 정한다
+                (``clipMesh.face_budget_from_ratio`` - 100이면 감축 안 함). None이면 ``inFaceBudget`` 그대로(기존 동작)
 
         Returns:
             ``ClipMeshResult``
 
         Raises:
-            ValueError: 노드가 지오메트리가 아님·비었음·중복, 파라미터 범위 밖(``clipMesh.build_clip_volume``), 덮는 면이 없어
-                부피가 빔(노드를 만들지 않는다)
+            ValueError: 노드가 지오메트리가 아님·비었음·중복, 파라미터 범위 밖(``clipMesh.build_clip_volume``, 비율), 덮는 면이
+                없어 부피가 빔(노드를 만들지 않는다)
         """
         occluders = list(inOccluders)
         targets = list(inTargets)
         self._check_node_sets(occluders, targets)
         if inFaceBudget < 0:
             raise ValueError(f"목표 삼각형 수는 0 이상이어야 한다: {inFaceBudget}")
+        if inKeepRatio is not None:
+            cm.face_budget_from_ratio(1, inKeepRatio)  # 무거운 단계 전에 범위를 거부한다
         timings: Dict[str, float] = {}
         t0 = time.perf_counter()
         occMeshes = [self.read_world_triangles(n) for n in occluders]
@@ -608,62 +628,175 @@ class Polygon:
             occMeshes, tgtMeshes, inPush, inVoxelSize, inInset, inInnerDepth, inMaxHeight,
             inProgressCallback=inProgressCallback,
         )
-        timings.update(volume.timings)
-        nodeName = inName or f"{occluders[0].name}_Clip"
-        reasons: List[str] = []
-        if not volume.tris:
-            # 빈 메쉬 노드는 만들 의미가 없다 - 덮는 면 분류를 사유에 실어 던진다(관통·Hmax 초과·경계 물림으로 전부 빠진 경우)
-            raise ValueError(f"덮는 면이 없어 클립 부피가 비었다(덮는 면 분류 {volume.coverCounts})")
+        budget = inFaceBudget if inKeepRatio is None else cm.face_budget_from_ratio(len(volume.tris), inKeepRatio)
+        result = self._finish_clip_mesh(
+            volume, tgtMeshes, timings, inName or f"{occluders[0].name}_Clip", budget, inMaxShrink,
+            ALGORITHM_VOXEL, inKeepRatio,
+        )
+        summary = result.summary()
+        self._log(
+            "info",
+            f"[Polygon] 클립 메쉬 '{result.name}' (가리개 {[str(n.name) for n in occluders]}, 대상 {names}, "
+            f"d={inPush}, s={inVoxelSize}, m={inInset}, T={inInnerDepth}, Hmax={inMaxHeight}, F={budget}, "
+            f"r={inKeepRatio}): passed={summary['passed']} closed={summary['closed']} "
+            f"tris {summary['voxelTriangles']}->{summary['triangles']} targets={summary['targets']} reasons={summary['reasons']}",
+        )
+        return result
 
-        meshVerts, meshTris = volume.verts, volume.tris
+    def build_clip_mesh_alpha(
+        self,
+        inOccluders: Sequence[Any],
+        inTargets: Sequence[Any],
+        inPush: float,
+        inInset: float,
+        inInnerDepth: float,
+        inMaxHeight: float,
+        inAlpha: float,
+        inOffset: float,
+        inPruneMargin: float,
+        inMaxPruneIterations: int,
+        inKeepRatio: float,
+        inName: Optional[str] = None,
+        inProgressCallback: Optional[ProgressCallback] = None,
+        inMaxShrink: float = float("inf"),
+    ) -> ClipMeshResult:
+        """덮는 오브젝트의 기둥 부피를 **Alpha Wrap으로 감싸** 닫힌 클립 메쉬 노드를 만들고 판정한다(원본 무변경).
+
+        ``build_clip_mesh``와 부피 정의·기대 집합·감축·노드 규격·판정이 같고 복셀화 대신 감싸기를 쓴다(``clipMesh`` 모듈 docstring
+        "Alpha Wrap 경로"). 감싸기가 삼킨 보호 점은 과다 반복 제거로 없앤다 - 그 자리 기대 집합은 과소가 된다(기록). 반복 제거
+        뒤에도 남은 과다는 판정이 fail-closed로 잡는다(``passed`` False). 감싸기는 ``pyjallib.native.alpha_wrap``(C++)이다.
+
+        Args:
+            inOccluders: 덮는 노드 목록(옷)
+            inTargets: 덮히는 노드 목록(바디 등)
+            inPush: 푸쉬 거리 d
+            inInset: 경계 물림 거리 m
+            inInnerDepth: 바디 안쪽 깊이 T
+            inMaxHeight: 덮임 최대 거리 Hmax
+            inAlpha: 감싸는 공 반지름(> 0, 씬 단위) - 이보다 좁은 틈은 메워진다
+            inOffset: 기둥에서 띄우는 거리(> 0)
+            inPruneMargin: 반복 제거 반경 여유(>= 0) - 반경 = alpha + offset + 여유
+            inMaxPruneIterations: 최대 제거 횟수(>= 0)
+            inKeepRatio: 남길 비율 %(0 초과 100 이하, 감싼 메쉬 삼각형 수 기준, 100이면 감축 안 함)
+            inName: 노드 이름. None이면 ``{첫 덮는 노드}_Clip``
+            inProgressCallback: (작업명, 현재, 전체) 콜백
+            inMaxShrink: 감축 붕괴 하나의 최대 이동 거리
+
+        Returns:
+            ``ClipMeshResult`` (``algorithm == ALGORITHM_ALPHA_WRAP``, ``iterations``에 반복 제거 회차)
+
+        Raises:
+            RuntimeError: ``pyjallib.native``의 Alpha Wrap 모듈이 없음(사유 포함, 노드를 만들지 않는다)
+            ValueError: 노드 집합·파라미터 범위 밖, 덮는 면이 없어 부피가 빔(노드를 만들지 않는다)
+        """
+        from pyjallib import native
+
+        if not native.HAS_ALPHA_WRAP:
+            raise RuntimeError(f"Alpha Wrap 네이티브 모듈을 쓸 수 없다: {native.ALPHA_WRAP_IMPORT_ERROR}")
+        occluders = list(inOccluders)
+        targets = list(inTargets)
+        self._check_node_sets(occluders, targets)
+        cm.face_budget_from_ratio(1, inKeepRatio)
+        if inAlpha <= 0.0 or inOffset <= 0.0 or inPruneMargin < 0.0 or inMaxPruneIterations < 0:
+            raise ValueError(
+                f"파라미터 범위 밖: alpha={inAlpha}, offset={inOffset}, margin={inPruneMargin}, "
+                f"iterations={inMaxPruneIterations}"
+            )
+        timings: Dict[str, float] = {}
+        t0 = time.perf_counter()
+        occMeshes = [self.read_world_triangles(n) for n in occluders]
+        names = self._target_names(targets)
+        tgtMeshes = {name: self.read_world_triangles(n) for name, n in zip(names, targets)}
+        timings["read"] = time.perf_counter() - t0
+
+        def _progress(inName: str, inStep: int, _inTotal: int) -> None:
+            if inProgressCallback is not None:
+                inProgressCallback(inName, inStep, 5)
+
+        prism = cm.build_prism_volume(
+            occMeshes, tgtMeshes, inPush, inInset, inInnerDepth, inMaxHeight, inProgressCallback=_progress
+        )
+        _progress("wrap", 4, 5)
+        volume = cm.wrap_clip_volume(prism, inAlpha, inOffset, native.alpha_wrap, inPruneMargin, inMaxPruneIterations)
+        _progress("done", 5, 5)
+        budget = cm.face_budget_from_ratio(len(volume.tris), inKeepRatio)
+        result = self._finish_clip_mesh(
+            volume, tgtMeshes, timings, inName or f"{occluders[0].name}_Clip", budget, inMaxShrink,
+            ALGORITHM_ALPHA_WRAP, inKeepRatio,
+        )
+        summary = result.summary()
+        self._log(
+            "info",
+            f"[Polygon] 클립 메쉬(Alpha Wrap) '{result.name}' (가리개 {[str(n.name) for n in occluders]}, 대상 {names}, "
+            f"d={inPush}, m={inInset}, T={inInnerDepth}, Hmax={inMaxHeight}, alpha={inAlpha}, offset={inOffset}, "
+            f"margin={inPruneMargin}, r={inKeepRatio}): passed={summary['passed']} closed={summary['closed']} "
+            f"tris {summary['voxelTriangles']}->{summary['triangles']} iterations={summary['iterations']} "
+            f"targets={summary['targets']} reasons={summary['reasons']}",
+        )
+        return result
+
+    def _finish_clip_mesh(
+        self,
+        inVolume: cm.ClipVolume,
+        inTargetMeshes: Dict[str, Any],
+        inTimings: Dict[str, float],
+        inNodeName: str,
+        inFaceBudget: int,
+        inMaxShrink: float,
+        inAlgorithm: str,
+        inKeepRatio: Optional[float],
+    ) -> ClipMeshResult:
+        """감축 -> 노드 생성 -> 씬에서 다시 읽어 판정(두 경로 공통). 빈 부피는 노드를 만들지 않고 ValueError."""
+        timings = inTimings
+        timings.update(inVolume.timings)
+        reasons: List[str] = []
+        if not inVolume.tris:
+            # 빈 메쉬 노드는 만들 의미가 없다 - 덮는 면 분류를 사유에 실어 던진다(관통·Hmax 초과·경계 물림으로 전부 빠진 경우)
+            raise ValueError(f"덮는 면이 없어 클립 부피가 비었다(덮는 면 분류 {inVolume.coverCounts})")
+
+        meshVerts, meshTris = inVolume.verts, inVolume.tris
         decimateStats = None
-        voxelTris = len(volume.tris)
-        if inFaceBudget > 0 and voxelTris > inFaceBudget:
-            meshVerts, meshTris, stats = cm.decimate_clip_volume(volume, tgtMeshes, inFaceBudget, inMaxShrink)
+        beforeTris = len(inVolume.tris)
+        if inFaceBudget > 0 and beforeTris > inFaceBudget:
+            meshVerts, meshTris, stats = cm.decimate_clip_volume(inVolume, inTargetMeshes, inFaceBudget, inMaxShrink)
             decimateStats = stats.as_dict()
             timings["decimate"] = stats.seconds
             if stats.collapses == 0:
-                reasons.append(f"감축이 동작하지 않았다(삼각형 {voxelTris}, 목표 {inFaceBudget})")
+                reasons.append(f"감축이 동작하지 않았다(삼각형 {beforeTris}, 목표 {inFaceBudget})")
 
         node = None
         try:
             t0 = time.perf_counter()
             flatVerts = [c for p in meshVerts for c in p]
             flatTris = [i + 1 for t in meshTris for i in t]
-            node = rt.pyjal_clip_make_mesh(nodeName, rt.Array(*flatVerts), rt.Array(*flatTris))
+            node = rt.pyjal_clip_make_mesh(inNodeName, rt.Array(*flatVerts), rt.Array(*flatTris))
             timings["makeNode"] = time.perf_counter() - t0
             rt.pyjal_clip_finalize(node)
             t0 = time.perf_counter()
             clipVerts, clipTris = self.read_world_triangles(node)
-            check = cm.verify_clip(clipVerts, clipTris, tgtMeshes, volume.expected, volume.guardPoints)
+            check = cm.verify_clip(clipVerts, clipTris, inTargetMeshes, inVolume.expected, inVolume.guardPoints)
             timings["verify"] = time.perf_counter() - t0
         except Exception:
             if node is not None and rt.isValidNode(node):
                 rt.delete(node)
             raise
 
-        result = ClipMeshResult(
+        return ClipMeshResult(
             node=node,
             name=str(node.name),
-            voxelTriangles=len(volume.tris),
+            voxelTriangles=beforeTris,
             triangles=len(clipTris),
             faceBudget=int(inFaceBudget),
-            coverCounts=dict(volume.coverCounts),
-            stats=dict(volume.stats),
+            coverCounts=dict(inVolume.coverCounts),
+            stats=dict(inVolume.stats),
             check=check,
             timings=timings,
             reasons=reasons,
             decimate=decimateStats,
+            algorithm=inAlgorithm,
+            keepRatio=inKeepRatio,
+            iterations=[dict(it) for it in inVolume.iterations],
         )
-        summary = result.summary()
-        self._log(
-            "info",
-            f"[Polygon] 클립 메쉬 '{result.name}' (가리개 {[str(n.name) for n in occluders]}, 대상 {names}, "
-            f"d={inPush}, s={inVoxelSize}, m={inInset}, T={inInnerDepth}, Hmax={inMaxHeight}, F={inFaceBudget}): "
-            f"passed={summary['passed']} closed={summary['closed']} tris {summary['voxelTriangles']}->{summary['triangles']} "
-            f"targets={summary['targets']} reasons={summary['reasons']}",
-        )
-        return result
 
     def classify_clip(self, inClipNode: Any, inTargets: Sequence[Any]) -> cm.ClipCheck:
         """기존 클립 메쉬(수작업 포함)를 엔진 규칙으로 판정한다(기대 집합 없이 C·닫힘·면 제거 수, 씬 무변경).

@@ -77,7 +77,7 @@ TEST_SCRIPTS = [
     "test_polygon_occlusion.py",
     # UV 마스크 베이크(맵 면 벌크 읽기·TGA·씬 무변경·입력 거부·등록). 기대 TC 10 (TC00~TC09)
     "test_polygon_uv_mask.py",
-    # 클립 메쉬 생성·판정(공유 다리+바지 픽스처, 관통, 감축 F, 원본 무변경, classify_clip, 빈 부피). 기대 TC 13 (TC00~TC12)
+    # 클립 메쉬 생성·판정(공유 다리+바지 픽스처, 관통, 감축 F·비율, 원본 무변경, classify_clip, 빈 부피, Alpha Wrap). 기대 TC 21 (TC00~TC20)
     "test_polygon_clip_mesh.py",
 ]
 
