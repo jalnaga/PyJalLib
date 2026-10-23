@@ -1911,9 +1911,23 @@ def prism_distance(inPoint: Vec3, inTri: Tri, inTops: Sequence[Vec3], inBottoms:
         faces.append((tops[i], bottoms[j], tops[j]))
     best = math.inf
     for p0, p1, p2 in faces:
+        if _length(_cross(_sub(p1, p0), _sub(p2, p0))) < 1e-12:
+            # 퇴화 면(덮는 메쉬의 같은 위치 버텍스 등) - closest_point_on_triangle은 0으로 나눈다. 세 변까지의 거리로 잰다
+            # (2026-10-23 pyjallib Type C TC18 관통 픽스처에서 ZeroDivisionError)
+            best = min(best, _segment_distance(inPoint, p0, p1), _segment_distance(inPoint, p1, p2), _segment_distance(inPoint, p2, p0))
+            continue
         q, _bary = closest_point_on_triangle(inPoint, p0, p1, p2)
         best = min(best, _length(_sub(inPoint, q)))
     return best
+
+
+def _segment_distance(inP: Vec3, inA: Vec3, inB: Vec3) -> float:
+    ab = _sub(inB, inA)
+    denom = _dot(ab, ab)
+    if denom < 1e-24:
+        return _length(_sub(inP, inA))
+    t = max(0.0, min(1.0, _dot(_sub(inP, inA), ab) / denom))
+    return _length(_sub(inP, _add(inA, _scale(ab, t))))
 
 
 def face_budget_from_ratio(inTriangles: int, inKeepRatio: float) -> int:

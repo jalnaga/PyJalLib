@@ -895,6 +895,14 @@ def test_prism_distance_inside_zero_and_outside_exact():
     assert cm.prism_distance((2.0, 2.0, 0.0), tris[0], coverage.tops, coverage.bottoms) == pytest.approx(math.sqrt(2.0))
 
 
+def test_prism_distance_degenerate_prism_does_not_divide_by_zero():
+    """덮는 면의 두 버텍스가 같은 위치(심 분리)면 기둥 옆면이 퇴화한다 - 세 변 거리로 잰다(pyjallib Type C TC18 ZeroDivisionError 재현)."""
+    tops = [(0.0, 0.0, 1.0), (0.0, 0.0, 1.0), (2.0, 0.0, 1.0)]
+    bottoms = [(0.0, 0.0, -1.0), (0.0, 0.0, -1.0), (2.0, 0.0, -1.0)]
+    assert cm.prism_distance((1.0, 3.0, 0.0), (0, 1, 2), tops, bottoms) == pytest.approx(3.0)
+    assert cm.prism_distance((0.0, 0.0, 5.0), (0, 1, 2), tops, bottoms) == pytest.approx(4.0)
+
+
 def test_wrap_clip_volume_keeps_large_prism_whose_bbox_but_not_shape_is_near():
     """제거는 형상까지의 거리로 판정한다(실기 판정 1회차 "구멍") - 큰 덮는 면의 bbox + R 안이어도 빗변에서 먼 과다 점은 기둥을 빼지 않는다.
 
