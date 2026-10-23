@@ -46,6 +46,14 @@
 삼키거나 지워야 할 버텍스(기대 집합 안)를 놓으면 거부하고, 그 밖의 성장은 허용한다. Max 감축기(ProOptimizer·MultiRes)는 실기
 슬롯에서 닫힘을 들쭉날쭉하게 깼고, 수축 전용은 오목한 안쪽 벽을 줄이지 못해 과소가 46~92%였다(2026-10-22 실측).
 
+## Alpha Wrap 경로 - 복셀화 대신 기둥을 감싼다 (2026-10-23 가산)
+
+``build_prism_volume``(위 1~6, 복셀 경로와 같은 함수) -> ``prism_soup``(기둥 경계면 수프) -> ``wrap_clip_volume``(주입받은
+감싸기 함수 - 어댑터가 ``pyjallib.native.alpha_wrap``을 넘긴다 + **과다 반복 제거**) -> ``decimate_clip_volume`` -> ``verify_clip``.
+감싸기는 구성상 닫힌 2-다양체를 주지만 보호 칸이 없어 offset 팽창·alpha 메움으로 기둥 옆면 바로 밖과 관통 구멍의 대상
+버텍스를 삼킨다 - 그 점을 품는 기둥을 빼고 다시 감싼다(과소와 맞바꾼다). 이 모듈은 네이티브를 import하지 않는다(stdlib만).
+감축 목표는 ``face_budget_from_ratio``로 "남길 비율 %"에서 정할 수 있다(두 경로 공통).
+
 ## 데이터 표현
 
 - **인덱스는 0-based**다. 1-based 변환은 어댑터 경계에서 한다.
@@ -1628,6 +1636,7 @@ class ClipVolume:
         stats: 점유 칸·공동 메움·비다양체 보정 칸·사면체 수, 금지 칸·강제/금지 충돌 칸·못 고친 비다양체 블록 수
         timings: 단계별 초
         guardPoints: 클립이 감쌀 점 - 덮는 면 버텍스 g와 푸쉬 점 g + d·n(포함률의 분모, 감축 유지 점 후보)
+        iterations: Alpha Wrap 경로(``wrap_clip_volume``)의 회차별 ``{prisms, triangles, over}``. 복셀 경로는 빈 목록
     """
 
     verts: List[Vec3]
@@ -1637,6 +1646,7 @@ class ClipVolume:
     stats: Dict[str, int] = field(default_factory=dict)
     timings: Dict[str, float] = field(default_factory=dict)
     guardPoints: List[Vec3] = field(default_factory=list)
+    iterations: List[Dict[str, int]] = field(default_factory=list)
 
 
 def build_clip_volume(
@@ -1681,42 +1691,16 @@ def build_clip_volume(
         if inProgressCallback is not None:
             inProgressCallback(inName, inStep, steps)
 
-    timings: Dict[str, float] = {}
-    t0 = time.perf_counter()
-    occVerts, occTris, _occRanges = merge_meshes(inOccluders)
-    names = list(inTargets.keys())
-    tgtVerts, tgtTris, tgtRanges = merge_meshes([inTargets[n] for n in names])
-    surface = TriangleSurface(tgtVerts, tgtTris, inSurfaceCell)
-    timings["surface"] = time.perf_counter() - t0
-    _progress(1, "coverage")
-
-    t0 = time.perf_counter()
-    coverage = compute_coverage(occVerts, occTris, surface, inPush, inMaxHeight, inInset, inInnerDepth)
-    timings["coverage"] = time.perf_counter() - t0
-    _progress(2, "prisms")
-
-    t0 = time.perf_counter()
-    union = build_prism_union(coverage, occTris, max(inVoxelSize * 2.0, 1.0))
-    timings["prisms"] = time.perf_counter() - t0
-    _progress(3, "expected")
-
-    t0 = time.perf_counter()
-    expected: Dict[str, Set[int]] = {}
-    for name, (start, end) in zip(names, tgtRanges):
-        expected[name] = {i - start for i in range(start, end) if union.contains(tgtVerts[i])}
-    timings["expected"] = time.perf_counter() - t0
+    prism = _prism_stage(
+        inOccluders, inTargets, inPush, inInset, inInnerDepth, inMaxHeight, inSurfaceCell,
+        max(inVoxelSize * 2.0, 1.0), _progress,
+    )
+    timings = prism.timings
+    coverage, union, expected, guardPoints = prism.coverage, prism.union, prism.expected, prism.guardPoints
     _progress(4, "voxelize")
 
     t0 = time.perf_counter()
-    coveredVerts = sorted({i for ti in coverage.prismTris for i in occTris[ti]})
-    guardPoints = [occVerts[i] for i in coveredVerts] + [coverage.tops[i] for i in coveredVerts]
-    protect = [
-        tgtVerts[i]
-        for name, (start, end) in zip(names, tgtRanges)
-        for i in range(start, end)
-        if (i - start) not in expected[name]
-    ]
-    grid = voxelize_union(union, inVoxelSize, guardPoints, protect)
+    grid = voxelize_union(union, inVoxelSize, guardPoints, prism.protectPoints)
     occupied = grid.count()
     guardCells = {c for c in (grid.cell_of(p) for p in guardPoints) if c is not None}
     cavities, nonManifold = close_grid(grid)
@@ -1747,6 +1731,277 @@ def build_clip_volume(
         timings=timings,
         guardPoints=guardPoints,
     )
+
+
+# =====================================================================
+# Alpha Wrap 경로 - 기둥 부피를 감싸는 닫힌 메쉬 (2026-10-23 가산)
+# =====================================================================
+
+#: 감싸기 함수 - ``(verts, tris, alpha, offset) -> (verts, tris, stats)``. 순수 모듈은 네이티브를 import하지 않고
+#: 주입받는다(어댑터가 ``pyjallib.native.alpha_wrap``을 넘긴다, 테스트는 가짜를 넘긴다).
+WrapFunction = Callable[[Sequence[Vec3], Sequence[Tri], float, float], Tuple[List[Vec3], List[Tri], Dict[str, int]]]
+
+
+@dataclass
+class PrismVolume:
+    """``build_prism_volume`` 결과 - 복셀화 전의 기둥 부피와 판정 재료(모듈 docstring 1~6).
+
+    Attributes:
+        occVerts: 덮는 메쉬 버텍스(합친 것)
+        occTris: 덮는 메쉬 삼각형
+        coverage: ``compute_coverage`` 결과(위·아래 점, 기둥 삼각형)
+        union: 기둥 사면체 합집합
+        expected: 대상 이름마다 기대 클립 집합 E
+        guardPoints: 감쌀 점 - 덮는 면 버텍스 g와 푸쉬 점 g + d·n
+        protectPoints: 보호 점 - E 밖 대상 버텍스(잘리면 과다)
+        timings: 단계별 초
+    """
+
+    occVerts: List[Vec3]
+    occTris: List[Tri]
+    coverage: Coverage
+    union: TetUnion
+    expected: Dict[str, Set[int]]
+    guardPoints: List[Vec3]
+    protectPoints: List[Vec3]
+    timings: Dict[str, float] = field(default_factory=dict)
+
+
+def _prism_stage(
+    inOccluders: Sequence[MeshData],
+    inTargets: Dict[str, MeshData],
+    inPush: float,
+    inInset: float,
+    inInnerDepth: float,
+    inMaxHeight: float,
+    inSurfaceCell: float,
+    inUnionCell: float,
+    inProgress: Callable[[int, str], None],
+) -> PrismVolume:
+    """덮임 -> 기둥 -> 기대 집합 -> 감쌀 점·보호 점(진행 단계 1~3을 ``inProgress``로 알린다). 두 경로가 공유한다."""
+    timings: Dict[str, float] = {}
+    t0 = time.perf_counter()
+    occVerts, occTris, _occRanges = merge_meshes(inOccluders)
+    names = list(inTargets.keys())
+    tgtVerts, tgtTris, tgtRanges = merge_meshes([inTargets[n] for n in names])
+    surface = TriangleSurface(tgtVerts, tgtTris, inSurfaceCell)
+    timings["surface"] = time.perf_counter() - t0
+    inProgress(1, "coverage")
+
+    t0 = time.perf_counter()
+    coverage = compute_coverage(occVerts, occTris, surface, inPush, inMaxHeight, inInset, inInnerDepth)
+    timings["coverage"] = time.perf_counter() - t0
+    inProgress(2, "prisms")
+
+    t0 = time.perf_counter()
+    union = build_prism_union(coverage, occTris, inUnionCell)
+    timings["prisms"] = time.perf_counter() - t0
+    inProgress(3, "expected")
+
+    t0 = time.perf_counter()
+    expected: Dict[str, Set[int]] = {}
+    for name, (start, end) in zip(names, tgtRanges):
+        expected[name] = {i - start for i in range(start, end) if union.contains(tgtVerts[i])}
+    coveredVerts = sorted({i for ti in coverage.prismTris for i in occTris[ti]})
+    guardPoints = [occVerts[i] for i in coveredVerts] + [coverage.tops[i] for i in coveredVerts]
+    protect = [
+        tgtVerts[i]
+        for name, (start, end) in zip(names, tgtRanges)
+        for i in range(start, end)
+        if (i - start) not in expected[name]
+    ]
+    timings["expected"] = time.perf_counter() - t0
+    return PrismVolume(
+        occVerts=occVerts, occTris=occTris, coverage=coverage, union=union, expected=expected,
+        guardPoints=guardPoints, protectPoints=protect, timings=timings,
+    )
+
+
+def build_prism_volume(
+    inOccluders: Sequence[MeshData],
+    inTargets: Dict[str, MeshData],
+    inPush: float,
+    inInset: float,
+    inInnerDepth: float,
+    inMaxHeight: float,
+    inSurfaceCell: float = 2.0,
+    inUnionCell: float = 1.0,
+    inProgressCallback: Optional[ProgressCallback] = None,
+) -> PrismVolume:
+    """덮는 메쉬의 기둥 부피와 기대 집합을 만든다 - ``build_clip_volume``에서 복셀화를 뺀 앞부분(같은 함수를 쓴다).
+
+    Args:
+        inOccluders: 덮는 메쉬 ``(verts, tris)`` 목록(월드)
+        inTargets: 대상 이름 -> 덮히는 메쉬 ``(verts, tris)`` (월드)
+        inPush: 푸쉬 거리 d
+        inInset: 경계 물림 거리 m (>= 0)
+        inInnerDepth: 바디 안쪽 깊이 T (>= 0)
+        inMaxHeight: 최근접 거리 상한 Hmax (> 0)
+        inSurfaceCell: 표면 최근접 격자 셀 크기
+        inUnionCell: 기둥 합집합 버킷 셀 크기(결과 무관, 속도만)
+        inProgressCallback: 진행 콜백(작업명, 현재, 전체 3)
+
+    Returns:
+        ``PrismVolume``
+
+    Raises:
+        ValueError: 덮는 메쉬나 대상이 비었거나 파라미터가 범위 밖
+    """
+    if not inOccluders or not inTargets:
+        raise ValueError("덮는 메쉬와 대상이 모두 있어야 한다")
+    if inMaxHeight <= 0.0 or inInset < 0.0 or inInnerDepth < 0.0:
+        raise ValueError(f"파라미터 범위 밖: maxHeight={inMaxHeight}, inset={inInset}, innerDepth={inInnerDepth}")
+
+    def _progress(inStep: int, inName: str) -> None:
+        if inProgressCallback is not None:
+            inProgressCallback(inName, inStep, 3)
+
+    return _prism_stage(
+        inOccluders, inTargets, inPush, inInset, inInnerDepth, inMaxHeight, inSurfaceCell, inUnionCell, _progress
+    )
+
+
+def prism_soup(inCoverage: Coverage, inTris: Sequence[Tri]) -> Tuple[List[Vec3], List[Tri]]:
+    """기둥 경계면 삼각형 수프 - 기둥마다 위 1 + 아래 1 + 옆면 사각형 3개 x 2 = 8삼각형(바깥 감김).
+
+    버텍스는 ``tops + bottoms``(덮는 메쉬 버텍스 i의 위 점 = i, 아래 점 = n + i)다. 기둥이 아닌 버텍스는 참조되지 않는다.
+    이웃 기둥의 공유 옆면은 양쪽에서 한 번씩 들어간다 - 감싸기는 자기 교차·비다양체 수프를 받으므로 지우지 않는다(PRD D1).
+    덮는 면 (a, b, c)가 바깥(바디 반대쪽)을 보면 위 면은 그대로, 아래 면은 뒤집어, 옆면 (u, v)는 위 u -> 아래 u -> 아래 v로 감는다.
+
+    Args:
+        inCoverage: ``compute_coverage`` 결과
+        inTris: 덮는 메쉬 삼각형(``compute_coverage``에 준 것)
+
+    Returns:
+        (버텍스, 삼각형)
+    """
+    n = len(inCoverage.tops)
+    tris: List[Tri] = []
+    for ti in inCoverage.prismTris:
+        a, b, c = inTris[ti]
+        tris.append((a, b, c))
+        tris.append((n + a, n + c, n + b))
+        for u, v in ((a, b), (b, c), (c, a)):
+            tris.append((u, n + u, n + v))
+            tris.append((u, n + v, v))
+    return list(inCoverage.tops) + list(inCoverage.bottoms), tris
+
+
+def face_budget_from_ratio(inTriangles: int, inKeepRatio: float) -> int:
+    """남길 비율(%)을 목표 삼각형 수로 바꾼다(PRD D3) - ``max(4, ceil(감축 전 x r / 100))``, r = 100이면 0(감축 안 함).
+
+    Args:
+        inTriangles: 감축 전 삼각형 수
+        inKeepRatio: 남길 비율 r (0 < r <= 100)
+
+    Returns:
+        목표 삼각형 수. 0이면 감축하지 않는다(``Polygon.build_clip_mesh``의 ``inFaceBudget`` 규약)
+
+    Raises:
+        ValueError: 비율이 범위 밖
+    """
+    if not 0.0 < inKeepRatio <= 100.0:
+        raise ValueError(f"남길 비율은 0 초과 100 이하여야 한다: {inKeepRatio}")
+    if inKeepRatio >= 100.0:
+        return 0
+    return max(4, math.ceil(round(inTriangles * inKeepRatio / 100.0, 9)))
+
+
+def wrap_clip_volume(
+    inPrism: PrismVolume,
+    inAlpha: float,
+    inOffset: float,
+    inWrapFn: WrapFunction,
+    inPruneMargin: float,
+    inMaxPruneIterations: int,
+) -> ClipVolume:
+    """기둥 부피를 감싸고 **과다 반복 제거**로 과다 클립을 없앤다(PRD B8) - 결과는 ``decimate_clip_volume``이 받는 ``ClipVolume``.
+
+    감싸기는 입력을 offset만큼 띄우고 alpha보다 좁은 틈을 메운다 - 기둥 옆면 바로 밖과 관통 구멍(바디가 옷을 뚫고 나와
+    기둥이 빠진 자리)의 대상 버텍스가 안에 든다(실기 3슬롯 144조합 전부 과다 1~31, PRD §8.2). 그래서 감싼 결과를 엔진
+    규칙으로 판정해 안에 든 보호 점(E 밖 대상 버텍스)이 있으면, 그 점을 (기둥 6점 bbox를 R = alpha + offset + 여유만큼 넓힌
+    상자) 안에 품는 기둥을 수프에서 빼고 다시 감싼다. 과다 0이 되거나 ``inMaxPruneIterations``번 뺐으면 멈춘다. E·감쌀 점은
+    처음 기둥 부피 그대로다 - 뺀 기둥 자리의 E는 과소가 된다(B8이 받아들인 대가, 실기 Upper Body 6~11%). 남은 과다는
+    호출자의 판정(``verify_clip``)이 fail-closed로 막는다.
+
+    Args:
+        inPrism: ``build_prism_volume`` 결과
+        inAlpha: 감싸는 공 반지름(> 0)
+        inOffset: 띄우는 거리(> 0)
+        inWrapFn: 감싸기 함수(``WrapFunction``)
+        inPruneMargin: 제거 반경 여유(>= 0)
+        inMaxPruneIterations: 최대 제거 횟수(>= 0, 0이면 감싸기 1번만)
+
+    Returns:
+        ``ClipVolume`` - ``stats``에 ``prisms``·``prismsKept``·``pruneIterations``·``overRemaining``과 마지막 감싸기 통계
+        (``wrap_*``), ``iterations``에 회차별 ``{prisms, triangles, over}``, ``timings``에 기둥 단계 + ``soup``·``wrap``·``prune``
+
+    Raises:
+        ValueError: 파라미터 범위 밖
+    """
+    if inAlpha <= 0.0 or inOffset <= 0.0 or inPruneMargin < 0.0 or inMaxPruneIterations < 0:
+        raise ValueError(
+            f"파라미터 범위 밖: alpha={inAlpha}, offset={inOffset}, margin={inPruneMargin}, iterations={inMaxPruneIterations}"
+        )
+    coverage, occTris = inPrism.coverage, inPrism.occTris
+    timings = dict(inPrism.timings)
+    timings.update({"soup": 0.0, "wrap": 0.0, "prune": 0.0})
+    base = ClipVolume(
+        verts=[], tris=[], expected=inPrism.expected, coverCounts=coverage.counts(),
+        stats={"tets": inPrism.union.tetCount, "prisms": len(coverage.prismTris), "prismsKept": 0,
+               "pruneIterations": 0, "overRemaining": 0},
+        timings=timings, guardPoints=inPrism.guardPoints,
+    )
+    if not coverage.prismTris:
+        return base
+    radius = inAlpha + inOffset + inPruneMargin
+    boxes: Dict[int, Tuple[List[float], List[float]]] = {}
+    for ti in coverage.prismTris:
+        pts = [coverage.tops[v] for v in occTris[ti]] + [coverage.bottoms[v] for v in occTris[ti]]
+        boxes[ti] = (
+            [min(p[k] for p in pts) - radius for k in range(3)],
+            [max(p[k] for p in pts) + radius for k in range(3)],
+        )
+    active = list(coverage.prismTris)
+    verts: List[Vec3] = []
+    tris: List[Tri] = []
+    wrapStats: Dict[str, int] = {}
+    overPoints: List[Vec3] = []
+    pruned = 0
+    while True:
+        t0 = time.perf_counter()
+        soupVerts, soupTris = prism_soup(
+            Coverage(coverage.tops, coverage.bottoms, coverage.heights, coverage.triClass, active, coverage.boundaryVerts),
+            occTris,
+        )
+        timings["soup"] += time.perf_counter() - t0
+        t0 = time.perf_counter()
+        verts, tris, wrapStats = inWrapFn(soupVerts, soupTris, inAlpha, inOffset)
+        timings["wrap"] += time.perf_counter() - t0
+        t0 = time.perf_counter()
+        inside = classify_vertices(inPrism.protectPoints, verts, tris)
+        overPoints = [p for p, flag in zip(inPrism.protectPoints, inside) if flag]
+        base.iterations.append({"prisms": len(active), "triangles": len(tris), "over": len(overPoints)})
+        if not overPoints or pruned >= inMaxPruneIterations:
+            timings["prune"] += time.perf_counter() - t0
+            break
+        kept = []
+        for ti in active:
+            lo, hi = boxes[ti]
+            if not any(
+                lo[0] <= q[0] <= hi[0] and lo[1] <= q[1] <= hi[1] and lo[2] <= q[2] <= hi[2] for q in overPoints
+            ):
+                kept.append(ti)
+        timings["prune"] += time.perf_counter() - t0
+        if not kept or len(kept) == len(active):
+            # 다 지우면 감쌀 것이 없고, 하나도 못 지우면 다음 회차도 같다 - 지금 결과로 멈춘다(과다는 판정이 막는다)
+            break
+        active = kept
+        pruned += 1
+    base.verts, base.tris = verts, tris
+    base.stats.update({"prismsKept": len(active), "pruneIterations": pruned, "overRemaining": len(overPoints)})
+    base.stats.update({f"wrap_{k}": int(v) for k, v in wrapStats.items()})
+    return base
 
 
 @dataclass

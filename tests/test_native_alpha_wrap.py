@@ -104,6 +104,10 @@ def test_wrap_is_closed_outward_and_encloses_input(shape):
     assert cm.is_mesh_closed(wv, wt)
     assert cm.signed_volume(wv, wt) > cm.signed_volume(verts, tris) > 0.0
     assert all(cm.classify_vertices(verts, wv, wt))
+    # 감싼 버텍스는 입력에서 offset 거리의 등위면 위에 놓인다(실측 0.5% 이내) - offset이 그대로 전달되는지의 판별 축
+    surface = cm.TriangleSurface(verts, tris, 2.0)
+    distances = [surface.nearest(p, 10.0).distance for p in wv]
+    assert 0.049 < min(distances) and max(distances) < 0.0505
 
 
 def test_wrap_is_deterministic_and_ignores_unreferenced_vertices():

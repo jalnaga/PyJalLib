@@ -715,3 +715,174 @@ def test_build_rejects_empty_and_bad_params():
         cm.build_clip_volume([], {"Body": body}, 1.0, 1.0, 0.0, 3.0, 10.0)
     with pytest.raises(ValueError):
         cm.build_clip_volume([cube(11.0)], {"Body": body}, 1.0, 0.0, 0.0, 3.0, 10.0)
+
+
+# ---------------------------------------------------------------------------
+# Alpha Wrap 경로 - 기둥 수프·비율 환산·주입형 감싸기와 과다 반복 제거 (2026-10-23)
+# ---------------------------------------------------------------------------
+
+
+def _single_prism():
+    """덮는 면 하나(+Z를 보는 반시계)의 기둥 - 위 z 1, 아래 z -1."""
+    tops = [(0.0, 0.0, 1.0), (2.0, 0.0, 1.0), (0.0, 2.0, 1.0)]
+    bottoms = [(0.0, 0.0, -1.0), (2.0, 0.0, -1.0), (0.0, 2.0, -1.0)]
+    coverage = cm.Coverage(tops, bottoms, [1.0, 1.0, 1.0], [cm.COVER_COVERED], [0], set())
+    return coverage, [(0, 1, 2)]
+
+
+def test_prism_soup_single_prism_is_closed_outward_prism():
+    coverage, tris = _single_prism()
+    verts, soup = cm.prism_soup(coverage, tris)
+    assert len(soup) == 8
+    assert verts == coverage.tops + coverage.bottoms
+    assert cm.is_mesh_closed(verts, soup)
+    assert cm.signed_volume(verts, soup) == pytest.approx(4.0)  # 밑넓이 2 x 높이 2, 바깥 향이면 +
+
+
+def test_prism_soup_counts_eight_per_prism_and_keeps_shared_sides(half_cover_fine):
+    body, _vol = half_cover_fine
+    garment = grid_box(11.0, 8, inZMin=-2.4)
+    prism = cm.build_prism_volume([garment], {"Body": body}, 1.0, 0.0, 3.0, 10.0)
+    verts, soup = cm.prism_soup(prism.coverage, prism.occTris)
+    assert len(soup) == 8 * len(prism.coverage.prismTris) > 0
+    sides = {}
+    for t in soup:
+        key = frozenset(t)
+        sides[key] = sides.get(key, 0) + 1
+    assert max(sides.values()) == 1  # 공유 옆면은 양쪽 감김이 반대라 같은 삼각형이 두 번 나오지 않는다
+    assert len(verts) == 2 * len(prism.occVerts)
+
+
+def test_build_prism_volume_matches_voxel_path(half_cover):
+    body, vol = half_cover
+    garment = grid_box(11.0, 4, inZMin=-2.5)
+    prism = cm.build_prism_volume([garment], {"Body": body}, 1.0, 0.0, 3.0, 10.0)
+    assert prism.expected == vol.expected
+    assert prism.guardPoints == vol.guardPoints
+    assert len(prism.protectPoints) == len(body[0]) - len(vol.expected["Body"])
+
+
+@pytest.mark.parametrize(
+    "triangles, ratio, budget",
+    [(20396, 10.0, 2040), (168516, 10.0, 16852), (169432, 10.0, 16944), (1000, 100.0, 0), (10, 1.0, 4), (1000, 0.5, 5)],
+)
+def test_face_budget_from_ratio(triangles, ratio, budget):
+    assert cm.face_budget_from_ratio(triangles, ratio) == budget
+
+
+@pytest.mark.parametrize("ratio", [0.0, -1.0, 100.5])
+def test_face_budget_from_ratio_rejects_out_of_range(ratio):
+    with pytest.raises(ValueError):
+        cm.face_budget_from_ratio(1000, ratio)
+
+
+@pytest.fixture(scope="module")
+def half_prism():
+    body = grid_box(10.0, 4)
+    garment = grid_box(11.0, 4, inZMin=-2.5)
+    return body, cm.build_prism_volume([garment], {"Body": body}, 1.0, 0.0, 3.0, 10.0)
+
+
+class _FakeWrap:
+    """감싸기 가짜 - 호출 인자를 기록하고, ``inLeak`` 기둥이 수프에 있으면 보호 점 하나를 품는 상자를 돌려준다."""
+
+    def __init__(self, inLeakTri=None, inLeakPoint=None):
+        self.calls = []
+        self._leakTri = inLeakTri
+        self._leakPoint = inLeakPoint
+
+    def __call__(self, inVerts, inTris, inAlpha, inOffset):
+        self.calls.append((list(inVerts), list(inTris), inAlpha, inOffset))
+        leaking = self._leakTri is not None and tuple(self._leakTri) in {tuple(t) for t in inTris}
+        verts, tris = cube(0.5, self._leakPoint if leaking else (100.3, 100.7, 100.1))
+        return verts, tris, {"output_faces": len(tris), "output_vertices": len(verts)}
+
+
+def test_wrap_clip_volume_passes_soup_and_returns_wrap_result(half_prism):
+    _body, prism = half_prism
+    fake = _FakeWrap()
+    vol = cm.wrap_clip_volume(prism, 1.25, 0.125, fake, 0.0, 5)
+    assert len(fake.calls) == 1
+    verts, tris, alpha, offset = fake.calls[0]
+    assert (verts, tris) == cm.prism_soup(prism.coverage, prism.occTris)
+    assert (alpha, offset) == (1.25, 0.125)
+    assert (vol.verts, vol.tris) == cube(0.5, (100.3, 100.7, 100.1))
+    assert vol.expected is prism.expected and vol.guardPoints is prism.guardPoints
+    assert vol.stats["wrap_output_faces"] == 12 and vol.stats["pruneIterations"] == 0
+    assert vol.stats["prismsKept"] == vol.stats["prisms"] == len(prism.coverage.prismTris)
+    assert vol.iterations == [{"prisms": len(prism.coverage.prismTris), "triangles": 12, "over": 0}]
+
+
+def _leak_setup(inPrism):
+    """보호 점과 가장 가까운 기둥 쌍 - 반경을 그 거리로 두면 그 근처 기둥만 빠진다(먼 쌍이면 반경이 커져 전부 빠진다)."""
+    cov = inPrism.coverage
+    best = None
+    for ti in cov.prismTris:
+        for vi in inPrism.occTris[ti]:
+            for p in inPrism.protectPoints:
+                d = math.dist(p, cov.bottoms[vi])
+                if best is None or d < best[0]:
+                    best = (d, ti, p)
+    dist, ti, leak = best
+    return inPrism.occTris[ti], leak, dist
+
+
+def test_wrap_clip_volume_prunes_prisms_around_over_points(half_prism):
+    """과다 반복 제거(PRD B8) - 1회차에 보호 점이 안이면 그 점을 품는 기둥을 빼고 다시 감싸 과다 0으로 멈춘다."""
+    _body, prism = half_prism
+    leakTri, leak, dist = _leak_setup(prism)
+    fake = _FakeWrap(leakTri, leak)
+    vol = cm.wrap_clip_volume(prism, 1.0, 0.1, fake, dist, 5)
+    assert len(fake.calls) == 2
+    first, second = len(fake.calls[0][1]), len(fake.calls[1][1])
+    assert second < first and (first - second) % 8 == 0
+    assert tuple(leakTri) not in {tuple(t) for t in fake.calls[1][1]}
+    assert vol.stats["pruneIterations"] == 1 and vol.stats["overRemaining"] == 0
+    assert vol.stats["prismsKept"] == second // 8 < vol.stats["prisms"]
+    assert [it["over"] for it in vol.iterations] == [1, 0]
+
+
+def test_wrap_clip_volume_stops_at_max_iterations(half_prism):
+    _body, prism = half_prism
+    leakTri, leak, dist = _leak_setup(prism)
+    fake = _FakeWrap(leakTri, leak)
+    vol = cm.wrap_clip_volume(prism, 1.0, 0.1, fake, dist, 0)
+    assert len(fake.calls) == 1
+    assert vol.stats["overRemaining"] == 1 and vol.stats["pruneIterations"] == 0
+
+
+def test_wrap_clip_volume_rejects_bad_params(half_prism):
+    _body, prism = half_prism
+    for args in ((0.0, 0.1, 0.0, 1), (1.0, 0.0, 0.0, 1), (1.0, 0.1, -0.1, 1), (1.0, 0.1, 0.0, -1)):
+        with pytest.raises(ValueError):
+            cm.wrap_clip_volume(prism, args[0], args[1], _FakeWrap(), args[2], args[3])
+
+
+def test_wrap_clip_volume_without_prisms_does_not_call_wrap():
+    body = grid_box(10.0, 2)
+    far = cube(5.0, (0.0, 0.0, 60.0))  # Hmax 10 밖 - 덮는 면 0
+    prism = cm.build_prism_volume([far], {"Body": body}, 1.0, 0.0, 3.0, 10.0)
+    fake = _FakeWrap()
+    vol = cm.wrap_clip_volume(prism, 1.0, 0.1, fake, 0.0, 3)
+    assert fake.calls == [] and vol.tris == [] and vol.stats["prisms"] == 0
+
+
+def test_half_cover_real_native_wrap_is_closed_without_over(half_prism):
+    """정답 도형에서 실제 네이티브로 - 닫힘·과다 0, |E|·|C|·포함률을 같이 단정한다(대상이 비지 않았는지).
+
+    감싼 결과는 E를 대부분 자른다(과소 비율 상한 0.5 - 반복 제거가 기둥을 빼면 과소가 생긴다, B8). 감축(비율 50%)을 거쳐도 닫힘·과다 0.
+    """
+    native = pytest.importorskip("pyjallib.native")
+    body, prism = half_prism
+    targets = {"Body": body}
+    vol = cm.wrap_clip_volume(prism, 1.0, 0.05, native.alpha_wrap, 0.0, 8)
+    check = cm.verify_clip(vol.verts, vol.tris, targets, vol.expected, vol.guardPoints)
+    target = check.targets["Body"]
+    assert check.closed and target.over == []
+    assert len(vol.expected["Body"]) == 57 and len(target.clipped) > 0
+    assert target.under_ratio() < 0.5
+    assert check.guard_ratio() > 0.5
+    budget = cm.face_budget_from_ratio(len(vol.tris), 50.0)
+    dv, dt, _stats = cm.decimate_clip_volume(vol, targets, budget)
+    after = cm.verify_clip(dv, dt, targets, vol.expected)
+    assert after.closed and after.targets["Body"].over == []
