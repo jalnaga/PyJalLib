@@ -18,8 +18,10 @@
 - 원본 노드의 면·버텍스 수·선택 불변, 새 노드는 클립 노드 하나뿐
 - ``classify_clip``: 손으로 만든 박스 클립이 그 안의 버텍스만 자른다
 - 입력 거부: 가리개 == 대상, 빈 목록
+- (2026-10-23 가산) 남길 비율 ``inKeepRatio``가 절대값보다 우선, ``build_clip_mesh_alpha``(Alpha Wrap + 과다 반복 제거)가
+  같은 해석 영역·규격·원본 무변경·관통을 만족, 네이티브 부재 시 RuntimeError, 범위 밖 인자 거부. TC00은 native ``.pyd`` 출처까지 본다
 
-기대 TC 수: 13 (TC00~TC12)
+기대 TC 수: 21 (TC00~TC20)
 
 실행:
     uv run python tests/run_max_tests.py test_polygon_clip_mesh.py
@@ -28,6 +30,7 @@
 import math
 import sys
 import traceback
+import types
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -38,7 +41,8 @@ bootstrap_pyjallib()
 from pymxs import runtime as rt
 
 import pyjallib
-from pyjallib.max.polygon import ClipMeshResult, Polygon
+from pyjallib.max import clipMesh as cm
+from pyjallib.max.polygon import ALGORITHM_ALPHA_WRAP, ALGORITHM_VOXEL, ClipMeshResult, Polygon
 from pyjallib.testKit import TestReporter
 
 from _legPantsFixture import make_body, make_pants, poly, reset  # noqa: E402 - 공유 픽스처
@@ -48,6 +52,11 @@ reporter = TestReporter("PolygonClipMesh", LOG_DIR)
 
 PARAMS = dict(inPush=1.0, inVoxelSize=1.0, inInset=1.0, inInnerDepth=3.0, inMaxHeight=10.0)
 BUDGET = 500
+RATIO = 20.0
+ALPHA_PARAMS = dict(
+    inPush=1.0, inInset=1.0, inInnerDepth=3.0, inMaxHeight=10.0, inAlpha=1.0, inOffset=0.05, inPruneMargin=0.0,
+    inMaxPruneIterations=8,
+)
 
 
 def _verts(inNode):
@@ -65,10 +74,15 @@ polygon = Polygon()
 # TC00: 로드 출처
 # ============================================================
 try:
+    from pyjallib import native
+
+    nativeFile = native.alpha_wrap_source()["file"]
     reporter.assert_test(
-        assert_loaded_from_checkout(pyjallib),
-        "TC00 pyjallib 로드 출처가 검증 대상 체크아웃",
-        f"pyjallib.__file__={pyjallib.__file__}",
+        assert_loaded_from_checkout(pyjallib)
+        and native.HAS_ALPHA_WRAP
+        and assert_loaded_from_checkout(types.SimpleNamespace(__file__=nativeFile)),
+        "TC00 pyjallib·native .pyd 로드 출처가 검증 대상 체크아웃",
+        f"pyjallib.__file__={pyjallib.__file__} native={native.alpha_wrap_source()}",
     )
 except Exception:  # noqa: BLE001
     reporter.error("TC00 로드 출처", traceback.format_exc())
@@ -229,6 +243,165 @@ try:
     )
 except Exception:
     reporter.error("TC12 빈 부피", traceback.format_exc())
+
+# ============================================================
+# TC13: 남길 비율(inKeepRatio) - 감축 전 삼각형 수로 목표를 정한다(2026-10-23 가산)
+# 이 TC는 목표 F의 규칙만 단정한다. 통과 여부(닫힘·과다)는 상세에 기록만 한다 - 이 픽스처는 복셀 경로 F 2,735(20%)에서
+# 감축 뒤 과다 2(E에서 7.5 cm)가 난다(2026-10-23 첫 실행, F 500 = TC01은 통과). 감축 코드는 이 사이클에서 바꾸지 않았고
+# (Non-Goal) 판정이 fail-closed로 잡는 경로다 - PRD §8.8 기록.
+# ============================================================
+try:
+    reset()
+    body = make_body()
+    pants = make_pants(inHeightSegs=17)
+    result = polygon.build_clip_mesh([pants], [body], inFaceBudget=BUDGET, inKeepRatio=RATIO, **PARAMS)
+    budget = cm.face_budget_from_ratio(result.voxelTriangles, RATIO)
+    reporter.assert_test(
+        result.check.closed
+        and result.faceBudget == budget != BUDGET
+        and abs(result.triangles - budget) <= budget * 0.1
+        and result.keepRatio == RATIO
+        and result.algorithm == ALGORITHM_VOXEL,
+        "TC13 inKeepRatio가 inFaceBudget보다 우선해 감축 전 x 비율로 감축된다(±10%)",
+        f"voxel {result.voxelTriangles} -> {result.triangles} (F {result.faceBudget}, 환산 {budget}) summary={result.summary()}",
+    )
+except Exception:
+    reporter.error("TC13 남길 비율", traceback.format_exc())
+
+# ============================================================
+# TC14~TC18: Alpha Wrap - 열린 관 생성·통과·해석 영역·비율·규격·원본 무변경
+# ============================================================
+try:
+    reset()
+    body = make_body()
+    pants = make_pants(inHeightSegs=17)
+    bodyFaces, bodyVerts = int(rt.polyop.getNumFaces(body)), int(rt.polyop.getNumVerts(body))
+    rt.select(pants)
+    handlesBefore = {int(rt.getHandleByAnim(n)) for n in rt.objects}
+    result = polygon.build_clip_mesh_alpha([pants], [body], inKeepRatio=RATIO, **ALPHA_PARAMS)
+    summary = result.summary()
+    target = result.check.targets["Body"]
+    reporter.assert_test(
+        result.passed()
+        and result.algorithm == ALGORITHM_ALPHA_WRAP
+        and len(result.iterations) >= 1
+        and result.iterations[-1]["over"] == 0
+        and len(target.expected or ()) > 0
+        and len(target.clipped) > 0,
+        "TC14 Alpha Wrap 클립 메쉬가 닫히고 과다 클립 0(반복 제거 기록, |E|·|C| > 0)",
+        f"{summary}",
+    )
+    pts = _verts(body)
+    mid = [i for i in _leg_side(pts, 0.0) if 10.0 <= pts[i][2] <= 25.0]
+    corners = [i for i, p in enumerate(pts) if max(abs(p[0]), abs(p[1])) > 14.99]
+    reporter.assert_test(
+        len(mid) > 0
+        and all(i in target.clipped for i in mid)
+        and len(corners) == 16
+        and not any(i in target.clipped for i in corners),
+        "TC15 관 가운데 다리 측면은 전부 클립, 박스 모서리는 클립되지 않는다",
+        f"mid {len(mid)} clipped {len([i for i in mid if i in target.clipped])} corners {[i for i in corners if i in target.clipped]}",
+    )
+    node = result.node
+    budget = cm.face_budget_from_ratio(result.voxelTriangles, RATIO)
+    tris = int(node.mesh.numfaces)
+    reporter.assert_test(
+        result.faceBudget == budget
+        and result.triangles == tris
+        and (abs(tris - budget) <= budget * 0.1 or not result.decimate["reachedTarget"])
+        and result.voxelTriangles > tris
+        and result.keepRatio == RATIO,
+        "TC16 감싼 메쉬 삼각형 x 남길 비율로 감축된다(±10%, 미달은 감축 기록으로)",
+        f"W {result.voxelTriangles} -> {tris} (F {budget}) decimate={result.decimate}",
+    )
+    handlesAfter = {int(rt.getHandleByAnim(n)) for n in rt.objects}
+    reporter.assert_test(
+        str(rt.classOf(node)) == "Editable_mesh"
+        and bool(rt.meshop.getMapSupport(node, 1))
+        and node.material is None
+        and str(node.name) == "Pants_Clip"
+        and handlesAfter - handlesBefore == {int(rt.getHandleByAnim(node))}
+        and int(rt.polyop.getNumFaces(body)) == bodyFaces
+        and int(rt.polyop.getNumVerts(body)) == bodyVerts
+        and [str(n.name) for n in rt.selection] == ["Pants"],
+        "TC17 Alpha Wrap 노드 규격(복셀과 같음) + 원본 무변경(새 노드 하나, 몸 면·버텍스·선택 그대로)",
+        f"class={rt.classOf(node)} name={node.name} new={len(handlesAfter - handlesBefore)} sel={[str(n.name) for n in rt.selection]}",
+    )
+except Exception:
+    reporter.error("TC14~17 Alpha Wrap 열린 관", traceback.format_exc())
+
+try:
+    reset()
+    offset = 9.5
+    body = make_body(inOffsetX=offset)
+    pants = make_pants(inHeightSegs=17)
+    result = polygon.build_clip_mesh_alpha([pants], [body], inKeepRatio=RATIO, **ALPHA_PARAMS)
+    pts = _verts(body)
+    target = result.check.targets["Body"]
+    side = _leg_side(pts, offset)
+    outside = [i for i in side if math.hypot(pts[i][0], pts[i][1]) > 13.5 and 3.0 <= pts[i][2] <= 33.0]
+    reporter.assert_test(
+        result.passed()
+        and len(outside) > 0
+        and not any(i in target.clipped for i in outside)
+        and len(target.clipped) > 0
+        and target.clipped <= (target.expected or set()),
+        "TC18 Alpha Wrap 관통 - 뚫고 나온 다리는 남고 결과가 통과한다(잘린 버텍스는 전부 덮임 정의 안)",
+        f"outside {len(outside)} clipped-out {[i for i in outside if i in target.clipped]} summary={result.summary()}",
+    )
+except Exception:
+    reporter.error("TC18 Alpha Wrap 관통", traceback.format_exc())
+
+# ============================================================
+# TC19: 네이티브 부재 - 사유를 담은 RuntimeError, 노드를 만들지 않는다
+# ============================================================
+try:
+    from pyjallib import native
+
+    reset()
+    body = make_body()
+    pants = make_pants(inHeightSegs=17)
+    before = len(list(rt.objects))
+    saved = (native.HAS_ALPHA_WRAP, native.ALPHA_WRAP_IMPORT_ERROR)
+    native.HAS_ALPHA_WRAP, native.ALPHA_WRAP_IMPORT_ERROR = False, "ImportError: 모사"
+    message = ""
+    try:
+        polygon.build_clip_mesh_alpha([pants], [body], inKeepRatio=RATIO, **ALPHA_PARAMS)
+    except RuntimeError as exc:
+        message = str(exc)
+    finally:
+        native.HAS_ALPHA_WRAP, native.ALPHA_WRAP_IMPORT_ERROR = saved
+    reporter.assert_test(
+        "모사" in message and len(list(rt.objects)) == before,
+        "TC19 네이티브가 없으면 사유를 담은 RuntimeError, 노드를 만들지 않는다",
+        f"message={message!r} objects {before} -> {len(list(rt.objects))}",
+    )
+except Exception:
+    reporter.error("TC19 네이티브 부재", traceback.format_exc())
+
+# ============================================================
+# TC20: Alpha Wrap 인자 거부 - 범위 밖 alpha·비율은 ValueError, 노드 없음
+# ============================================================
+try:
+    reset()
+    body = make_body()
+    pants = make_pants(inHeightSegs=17)
+    before = len(list(rt.objects))
+    raised = 0
+    for override in ({"inAlpha": 0.0}, {"inOffset": -0.1}, {"inPruneMargin": -1.0}, {"inKeepRatio": 0.0}):
+        kwargs = dict(ALPHA_PARAMS, inKeepRatio=RATIO)
+        kwargs.update(override)
+        try:
+            polygon.build_clip_mesh_alpha([pants], [body], **kwargs)
+        except ValueError:
+            raised += 1
+    reporter.assert_test(
+        raised == 4 and len(list(rt.objects)) == before,
+        "TC20 Alpha Wrap 범위 밖 인자(alpha·offset·여유·비율)는 ValueError, 노드 없음",
+        f"raised {raised}/4 objects {before} -> {len(list(rt.objects))}",
+    )
+except Exception:
+    reporter.error("TC20 Alpha Wrap 인자 거부", traceback.format_exc())
 
 reset()
 reporter.summary()
