@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+JalTools 3DS 패키지
+3DS Max 작업을 위한 모듈 모음
+"""
+
+# 모듈 임포트
+from pyjallib.max.header import Header
+
+from pyjallib.max.name import Name
+from pyjallib.max.anim import Anim
+
+from pyjallib.max.helper import Helper
+from pyjallib.max.constraint import Constraint
+from pyjallib.max.bone import Bone
+
+from pyjallib.max.mirror import Mirror
+from pyjallib.max.layer import Layer
+from pyjallib.max.align import Align
+from pyjallib.max.select import Select
+from pyjallib.max.link import Link
+
+from pyjallib.max.bip import Bip
+from pyjallib.max.skin import Skin
+from pyjallib.max.skeleton import Skeleton
+from pyjallib.max.morph import Morph
+from pyjallib.max.attribute import Attribute
+from pyjallib.max.polygon import Polygon
+# UV 마스크 순수 모듈(래스터화·TGA). pymxs 없이도 import할 수 있고, 어댑터는 Polygon.bake_face_mask.
+from pyjallib.max import uvMask
+# 클립 메쉬 순수 모듈(부피·복셀·Mutable 판정 포팅). pymxs 없이도 import할 수 있고, 어댑터는 Polygon.build_clip_mesh.
+from pyjallib.max import clipMesh
+
+from pyjallib.max.rig.boneChain import BoneChain
+
+from pyjallib.max.rig.twistBone import TwistBone
+from pyjallib.max.rig.groinBone import GroinBone
+from pyjallib.max.rig.autoClavicle import AutoClavicle
+from pyjallib.max.rig.shoulder import Shoulder
+from pyjallib.max.rig.armpit import Armpit
+from pyjallib.max.rig.chest import Chest
+from pyjallib.max.rig.volumeBone import VolumeBone
+from pyjallib.max.rig.elbow import Elbow
+from pyjallib.max.rig.wrist import Wrist
+from pyjallib.max.rig.ankle import Ankle
+from pyjallib.max.rig.inguinal import Inguinal
+from pyjallib.max.rig.kneeBone import KneeBone
+from pyjallib.max.rig.hip import Hip
+from pyjallib.max.rig.jacketPanel import JacketPanel
+from pyjallib.max.ue5Skeleton import UE5Skeleton
+
+from pyjallib.max.rootMotion import RootMotion
+
+from pyjallib.max.dependent import Dependent
+
+# 노드 수집 확장 규칙. 정서(NodeCollectPolicy)는 순수 모듈 소속이라 pymxs 없이도
+# import할 수 있고, 어댑터(NodeCollectResolver)는 씬 접근을 담당한다.
+from pyjallib.max.nodeCollectPolicy import NodeCollectPolicy
+from pyjallib.max.nodeCollectResolver import NodeCollectResolver, build_policy
+
+# 누락 애셋 검사·정리. 계획 엔진(missingAssetPolicy)은 순수 모듈이라 pymxs 없이도
+# import할 수 있고, 어댑터(MissingAsset)가 씬 접근과 삭제 실행을 담당한다.
+from pyjallib.max.missingAssetResolver import MissingAsset
+
+from pyjallib.max.checkViewport import CheckViewport
+from pyjallib.max.checkLayer import CheckLayer
+from pyjallib.max.checkMaterial import CheckMaterial
+from pyjallib.max.checkObject import CheckObject
+
+from pyjallib.max.fbxHandler import FBXHandler
+from pyjallib.max.toolManager import ToolManager
+from pyjallib.max.progress import Progress
+
+# MaxTestRunner는 pymxs에 의존하지 않으므로 이 패키지에서 import하지 않는다.
+# 3ds Max 외부에서도 사용 가능하도록 직접 import를 권장:
+#   from pyjallib.max.maxTestRunner import MaxTestRunner
+
+from pyjallib.max.ui.Container import Container
+from pyjallib.max.ui.toolState import ToolState
+
+# 모듈 내보내기
+__all__ = [
+    "Header",
+    "Name",
+    "Anim",
+    "Helper",
+    "Constraint",
+    "Bone",
+    "Mirror",
+    "Layer",
+    "Align",
+    "Select",
+    "Link",
+    "Bip",
+    "Skin",
+    "Skeleton",
+    "Morph",
+    "Attribute",
+    "Polygon",
+    "uvMask",
+    "clipMesh",
+    "BoneChain",
+    "TwistBone",
+    "GroinBone",
+    "AutoClavicle",
+    "Shoulder",
+    "Armpit",
+    "Chest",
+    "VolumeBone",
+    "Elbow",
+    "Wrist",
+    "Ankle",
+    "Inguinal",
+    "KneeBone",
+    "Hip",
+    "JacketPanel",
+    "UE5Skeleton",
+    "RootMotion",
+    "Dependent",
+    "NodeCollectPolicy",
+    "NodeCollectResolver",
+    "build_policy",
+    "MissingAsset",
+    "CheckViewport",
+    "CheckLayer",
+    "CheckMaterial",
+    "CheckObject",
+    "FBXHandler",
+    "ToolManager",
+    "Progress",
+    "Container",
+    "ToolState",
+]

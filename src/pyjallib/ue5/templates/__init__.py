@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+UE5 템플릿 관리 모듈
+Interchange Framework 기반 템플릿 파일 경로를 쉽게 가져올 수 있는 기능 제공
+"""
+
+from pathlib import Path
+from typing import Dict
+
+# Interchange 템플릿 이름 상수
+INTERCHANGE_ANIM_IMPORT_TEMPLATE = "interchangeAnimImport"
+INTERCHANGE_SKELETON_IMPORT_TEMPLATE = "interchangeSkeletonImport"
+INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE = "interchangeSkeletalMeshImport"
+INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE = "interchangeBatchAnimImport"
+
+# Legacy 템플릿 이름 상수
+LEGACY_ANIM_IMPORT_TEMPLATE = "legacyAnimImport"
+LEGACY_BATCH_ANIM_IMPORT_TEMPLATE = "legacyBatchAnimImport"
+# 2026-08-03 사문화로 제거 → 2026-09-18 호출하는 쪽 툴의 자체 템플릿(175줄)을 pyjallib으로
+# 통합하면서 의도적으로 부활. Static Mesh + 텍스처 +
+# Material Instance를 한 스크립트에서 처리하고 연 파일을 결과 JSON으로 보고한다.
+LEGACY_STATIC_MESH_IMPORT_TEMPLATE = "legacyStaticMeshImport"
+
+# 템플릿 파일 매핑
+_TEMPLATE_FILE_MAP = {
+    INTERCHANGE_ANIM_IMPORT_TEMPLATE: "interchangeAnimImportTemplate.py",
+    INTERCHANGE_SKELETON_IMPORT_TEMPLATE: "interchangeSkeletonImportTemplate.py",
+    INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE: "interchangeSkeletalMeshImportTemplate.py",
+    INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE: "interchangeBatchAnimImportTemplate.py",
+    LEGACY_ANIM_IMPORT_TEMPLATE: "legacyAnimImportTemplate.py",
+    LEGACY_BATCH_ANIM_IMPORT_TEMPLATE: "legacyBatchAnimImportTemplate.py",
+    LEGACY_STATIC_MESH_IMPORT_TEMPLATE: "legacyStaticMeshImportTemplate.py",
+}
+
+def get_template_path(template_name: str) -> str:
+    """
+    템플릿 이름으로 템플릿 파일 경로 반환
+    
+    Args:
+        template_name (str): 템플릿 이름 상수
+    
+    Returns:
+        str: 템플릿 파일의 절대 경로
+        
+    Raises:
+        ValueError: 지원하지 않는 템플릿 이름인 경우
+        FileNotFoundError: 템플릿 파일이 존재하지 않는 경우
+    """
+    if template_name not in _TEMPLATE_FILE_MAP:
+        supported_templates = list(_TEMPLATE_FILE_MAP.keys())
+        raise ValueError(f"지원하지 않는 템플릿 이름: {template_name}. 지원되는 템플릿: {supported_templates}")
+    
+    template_filename = _TEMPLATE_FILE_MAP[template_name]
+    templates_dir = Path(__file__).parent
+    template_path = templates_dir / template_filename
+    
+    if not template_path.exists():
+        raise FileNotFoundError(f"템플릿 파일을 찾을 수 없습니다: {template_path}")
+    
+    return str(template_path.resolve())
+
+def get_all_template_paths() -> Dict[str, str]:
+    """
+    모든 템플릿 경로를 딕셔너리로 반환
+    
+    Returns:
+        Dict[str, str]: 템플릿 이름을 키로 하고 파일 경로를 값으로 하는 딕셔너리
+    """
+    template_paths = {}
+    for template_name in _TEMPLATE_FILE_MAP.keys():
+        try:
+            template_paths[template_name] = get_template_path(template_name)
+        except (ValueError, FileNotFoundError):
+            # 존재하지 않는 템플릿은 건너뛰기
+            continue
+    
+    return template_paths
+
+def get_available_templates() -> list:
+    """
+    사용 가능한 템플릿 목록 반환
+    
+    Returns:
+        list: 사용 가능한 템플릿 이름 목록
+    """
+    available = []
+    templates_dir = Path(__file__).parent
+    
+    for template_name, filename in _TEMPLATE_FILE_MAP.items():
+        template_path = templates_dir / filename
+        if template_path.exists():
+            available.append(template_name)
+    
+    return available
+
+def validate_template_name(template_name: str) -> bool:
+    """
+    템플릿 이름이 유효한지 확인
+    
+    Args:
+        template_name (str): 확인할 템플릿 이름
+        
+    Returns:
+        bool: 유효한 템플릿 이름이면 True, 그렇지 않으면 False
+    """
+    return template_name in _TEMPLATE_FILE_MAP
+
+__all__ = [
+    'get_template_path',
+    'get_all_template_paths',
+    'get_available_templates',
+    'validate_template_name',
+    # Interchange 템플릿 상수
+    'INTERCHANGE_ANIM_IMPORT_TEMPLATE',
+    'INTERCHANGE_SKELETON_IMPORT_TEMPLATE',
+    'INTERCHANGE_SKELETAL_MESH_IMPORT_TEMPLATE',
+    'INTERCHANGE_BATCH_ANIM_IMPORT_TEMPLATE',
+    # Legacy 템플릿 상수
+    'LEGACY_ANIM_IMPORT_TEMPLATE',
+    'LEGACY_BATCH_ANIM_IMPORT_TEMPLATE',
+    'LEGACY_STATIC_MESH_IMPORT_TEMPLATE',
+]

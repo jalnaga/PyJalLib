@@ -1,0 +1,64 @@
+[project]
+name = "pyjallib"
+version = "0.5.9"
+description = "A utility library for 3D game character development pipelines."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Dongseok Kim", email = "jalnagakds@naver.com" }
+]
+requires-python = ">=3.10"
+keywords = ["game", "character", "pipeline", "3dsmax", "unreal"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+dependencies = [
+    "p4python>=2024.2.2682690",
+]
+
+[project.urls]
+Homepage = "https://github.com/jalnaga/PyJalLib"
+Repository = "https://github.com/jalnaga/PyJalLib"
+Issues = "https://github.com/jalnaga/PyJalLib/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+# sdist에는 패키지 소스·네이티브 소스·라이선스·README만 담는다(pyproject.toml 등은 자동 포함).
+only-include = ["src/pyjallib", "native", "LICENSE", "README.md"]
+
+[tool.pdoc]
+modules = ["pyjallib"]
+output_directory = "docs"
+docformat = "markdown"
+
+[dependency-groups]
+dev = [
+    "pyside2>=5.15.2.1",
+    "pytest>=9.0.2",
+    "ruff>=0.14.9",
+]
+
+[tool.pytest.ini_options]
+# DCC 전용 스크립트(pymxs/unreal import) 제외는 `tests/conftest.py`의 `collect_ignore`가
+# 파일 내용으로 자동 판정한다. 손으로 나열하던 `--ignore` 26개는 신규 Type C마다 잠복했고
+# 실측에서 stale 9건 + 누락 5건이 동시에 있었다.
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff.lint.per-file-ignores]
+# 템플릿 파일은 sys.path 조작 후 import가 필요함 (언리얼 에디터 환경)
+"src/pyjallib/ue5/templates/*.py" = ["E402"]
+# 3ds Max 테스트 파일은 sys.path 조작 후 import가 필요함
+"tests/max/test_*.py" = ["E402"]
