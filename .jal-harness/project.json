@@ -1,0 +1,9 @@
+{
+  "central_id": "65981a7c-dff8-4c4b-9cef-75ffad7b2e87",
+  "central_remote": "https://github.com/jalnaga/PyJalWiki",
+  "domains": [
+    "pyjal"
+  ],
+  "id": "pyjallib-release",
+  "schema_version": 1
+}

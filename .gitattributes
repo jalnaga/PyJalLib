@@ -1,2 +1,7 @@
 # Keep every file byte-for-byte as committed (no line-ending conversion).
 * -text
+
+# JalHarness 관리 지침은 snapshot 해시 검증을 위해 줄바꿈 변환 없이 바이트 그대로 둔다.
+/.jal-harness/** -text
+/AGENTS.md -text
+/CLAUDE.md -text

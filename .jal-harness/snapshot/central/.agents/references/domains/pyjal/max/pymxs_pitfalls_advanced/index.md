@@ -1,0 +1,28 @@
+# pymxs_pitfalls_advanced 세부 주제
+
+- [10. rt.mergeMAXFile() 오브젝트 이름은 문자열 배열](section-01.md) - 10. rt.mergeMAXFile() 오브젝트 이름은 문자열 배열
+- [11. WA_DeleteOnClose와 exec_() 모달 다이얼로그 충돌](section-02.md) - 11. WA_DeleteOnClose와 exec_() 모달 다이얼로그 충돌
+- [12. modPanel.setCurrentObject() Modify 모드 필수](section-03.md) - 12. modPanel.setCurrentObject() Modify 모드 필수
+- [13. rt.redrawViews() vs rt.viewport.resetAllViews()](section-04.md) - 13. rt.redrawViews() vs rt.viewport.resetAllViews()
+- [14. 3ds Max 이중 pyjallib 경로 문제](section-05.md) - 14. 3ds Max 이중 pyjallib 경로 문제
+- [15. 임시 파일 경로는 3ds Max getdir #temp 사용](section-06.md) - 15. 임시 파일 경로는 3ds Max getdir #temp 사용
+- [16. MaxScript Name 인터닝과 custAttributes.redefine 한계](section-07.md) - 16. MaxScript Name 인터닝과 custAttributes.redefine 한계
+- [17. custAttributes caBlock 캐시 패턴](section-08.md) - 17. custAttributes caBlock 캐시 패턴
+- [18. rt.Point3/rt.Quat 객체 재사용 패턴](section-09.md) - 18. rt.Point3/rt.Quat 객체 재사용 패턴
+- [19. Float_Layer 컨트롤러와 custAttributes.delete() 파괴](section-10.md) - 19. Float_Layer 컨트롤러와 custAttributes.delete() 파괴
+- [20. Bezier_Float 정적 값 잔류 (키 삭제 후 값이 0으로 돌아가지 않음)](section-11.md) - 20. Bezier_Float 정적 값 잔류 (키 삭제 후 값이 0으로 돌아가지 않음)
+- [21. C++ Max SDK에서 custAttribute는 baseObject에 붙는다](section-12.md) - 21. C++ Max SDK에서 custAttribute는 baseObject에 붙는다
+- [22. rt.pickObject()를 QDialog.exec_() 안에서 호출 시 Max 프리징 (치명)](section-13.md) - 22. rt.pickObject()를 QDialog.exec_() 안에서 호출 시 Max 프리징 (치명)
+- [23. Qt 핸들러에서 rt.select() 후 뷰포트 미갱신 (rt.redrawViews() 필수)](section-14.md) - 23. Qt 핸들러에서 rt.select() 후 뷰포트 미갱신 (rt.redrawViews() 필수)
+- [24. pymxs는 애니메이션 키 조회 API를 노출하지 않는다 - MAXScript 경유가 유일](section-15.md) - 24. pymxs는 애니메이션 키 조회 API를 노출하지 않는다 - MAXScript 경유가 유일
+- [25. 모디파이어 접근 API와 인덱싱 기준이 한 파일 안에서 섞인다](section-16.md) - 25. 모디파이어 접근 API와 인덱싱 기준이 한 파일 안에서 섞인다
+- [26. 노드 동일성은 핸들로만 판정한다 - 래퍼는 조회 경로마다 다른 객체다](section-17.md) - 26. 노드 동일성은 핸들로만 판정한다 - 래퍼는 조회 경로마다 다른 객체다
+- [27. getattr(rt, name) 실패는 두 형태다 - 둘 다 접지 않으면 조용한 전멸](section-18.md) - 27. getattr(rt, name) 실패는 두 형태다 - 둘 다 접지 않으면 조용한 전멸
+- [28. 조회·명령 API가 예외 없이 거짓 답을 준다 - 3형태](section-19.md) - 28. 조회·명령 API가 예외 없이 거짓 답을 준다 - 3형태
+- [29. rt.selection은 스냅샷이 아니라 라이브 뷰다](section-20.md) - 29. rt.selection은 스냅샷이 아니라 라이브 뷰다
+- [30. 버텍스 좌표 공간은 "노드를 넘기는가, mesh 값을 넘기는가"로 갈린다](section-21.md) - 30. 버텍스 좌표 공간은 "노드를 넘기는가, mesh 값을 넘기는가"로 갈린다
+- [31. 링크·부착은 parent가 아니라 트랜스폼 컨트롤러일 수 있다 - 컨트롤러 교체·정렬의 함정](section-22.md) - 31. 링크·부착은 parent가 아니라 트랜스폼 컨트롤러일 수 있다 - 컨트롤러 교체·정렬의 함정
+- [32. 씬 콜백(callbacks.addScript) 실측 - 두 등록 형태, notificationParam, 중복 접힘, 예외 흡수](section-23.md) - 32. 씬 콜백(callbacks.addScript) 실측 - 두 등록 형태, notificationParam, 중복 접힘, 예외 흡수
+- [33. 값이 "보이는 것"과 다른 네 가지 - undo 컨텍스트·스택 평가 결과·localTime·패널 레벨](section-24.md) - 33. 값이 "보이는 것"과 다른 네 가지 - undo 컨텍스트·스택 평가 결과·localTime·패널 레벨
+- [34. 스크립트 컨트롤러 상수는 setConstant로 교체된다](section-25.md) - 34. 스크립트 컨트롤러 상수는 setConstant로 교체된다
+- [35. 트랜스폼 대입 순서 - 회전을 먼저, 위치를 나중에](section-26.md) - 35. 트랜스폼 대입 순서 - 회전을 먼저, 위치를 나중에

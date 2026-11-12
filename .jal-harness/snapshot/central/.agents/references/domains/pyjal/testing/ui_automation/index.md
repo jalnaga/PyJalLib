@@ -1,0 +1,29 @@
+# ui_automation 세부 주제
+
+- [핵심 원칙](section-01.md) - 핵심 원칙
+- [3ds Max 버전 호환성](section-02.md) - 3ds Max 버전 호환성
+- [실행 절차](section-03.md) - 실행 절차
+- [Qt 위젯 트리 탐색](section-04.md) - Qt 위젯 트리 탐색
+- [QTest 이벤트 시뮬레이션](section-05.md) - QTest 이벤트 시뮬레이션
+- [싱글 스레드 제약 및 안정성](section-06.md) - 싱글 스레드 제약 및 안정성
+- [Remote Bridge 디버깅](section-07.md) - Remote Bridge 디버깅
+- [실행 중인 툴 UI 테스트](section-08.md) - 실행 중인 툴 UI 테스트
+- [테스트 스크립트 작성 가이드](section-09.md) - 테스트 스크립트 작성 가이드
+- [Type D 헤드리스 지오메트리 한계 (픽셀 대신 구조 검증)](section-10.md) - Type D 헤드리스 지오메트리 한계 (픽셀 대신 구조 검증)
+- [DCC 의존 rollout을 콘솔에서 Type D로 - Fake 위젯 + offscreen](section-11.md) - DCC 의존 rollout을 콘솔에서 Type D로 - Fake 위젯 + offscreen
+- [실패 시 행동 지침](section-12.md) - 실패 시 행동 지침
+- [CI/CD 자동화 시 라이선스 관리](section-13.md) - CI/CD 자동화 시 라이선스 관리
+- [testKit 통합 패턴](section-14.md) - testKit 통합 패턴
+- [체크리스트](section-15.md) - 체크리스트
+- [콜드 세션 함정: 위젯 self.style()는 위젯 생성을 실패시킨다](section-16.md) - 콜드 세션 함정: 위젯 self.style()는 위젯 생성을 실패시킨다
+- [검증 대상을 라이브 데이터가 아니라 구조로 판별한다](section-17.md) - 검증 대상을 라이브 데이터가 아니라 구조로 판별한다
+- [QMessageBox 3-way 선택 분기 검증](section-18.md) - QMessageBox 3-way 선택 분기 검증
+- [모달 메뉴는 "구성"과 "표시"를 분리하면 Type D로 전부 단정된다](section-19.md) - 모달 메뉴는 "구성"과 "표시"를 분리하면 Type D로 전부 단정된다
+- [헤드리스에서 모달 다이얼로그 경로에 닿으면 프로세스째 죽는다](section-20.md) - 헤드리스에서 모달 다이얼로그 경로에 닿으면 프로세스째 죽는다
+- [협력자 호출 순서 검증은 공유 이벤트 리스트 side_effect로](section-21.md) - 협력자 호출 순서 검증은 공유 이벤트 리스트 side_effect로
+- [거절 경로를 검증하려면 QMessageBox.warning static을 갈고, 정상 경로를 같은 실행에 둔다](section-22.md) - 거절 경로를 검증하려면 QMessageBox.warning static을 갈고, 정상 경로를 같은 실행에 둔다
+- [같은 귀결을 갖는 여러 상태는 상태 코드를 단정해야 판별력이 생긴다](section-23.md) - 같은 귀결을 갖는 여러 상태는 상태 코드를 단정해야 판별력이 생긴다
+- [blockSignals 재진입 가드는 발화 횟수로 검증한다](section-24.md) - blockSignals 재진입 가드는 발화 횟수로 검증한다
+- [테스트의 진단 문자열이 테스트를 죽일 수 있다](section-25.md) - 테스트의 진단 문자열이 테스트를 죽일 수 있다
+- [위젯 오케스트레이션 분기를 Type C로 고정한다 - 언바운드 호출 + 최소 self 대역](section-26.md) - 위젯 오케스트레이션 분기를 Type C로 고정한다 - 언바운드 호출 + 최소 self 대역
+- [Appendix](section-27.md) - Appendix

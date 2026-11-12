@@ -1,0 +1,37 @@
+# 프로젝트 탐색
+
+- [20250627_MeshExporter](20250627_meshexporter.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [20250702_BatchAnimExporter](20250702_batchanimexporter.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [20260121_NewAnimExporter](20260121_newanimexporter.md) - AnimNameSelector 대체용 새로운 애니메이션 익스포터 (UI/기능 분리 + Interchange Framework)
+- [20260202_DependencySelection](20260202_dependencyselection.md) - 3DS Max에서 선택된 오브젝트의 dependency를 수집하고 표시하는 툴
+- [20260205_MeshValidator](20260205_meshvalidator.md) - MeshValidator - Static Mesh Parts/Components Export Tool (슬롯 기반 메쉬 익스포트)
+- [20260213_AnimCopyTool](20260213_animcopytool.md) - 3DS Max 애니메이션 복사 독립 툴
+- [20260327_BatchMorphExporter](20260327_batchmorphexporter.md) - 3DS Max 배치 애니메이션 FBX 익스포터 (Morpher 포함)
+- [20260630_MeshDeformer](20260630_meshdeformer.md) - MeshDeformer - ORV 전용 인하우스 메쉬 디포머 툴
+- [20260710_ORVAssetRename](20260710_orvassetrename.md) - 구 애셋 경로 추적 후 신 네이밍 규칙으로 리네임하는 CLI (DevStorage + UE5)
+- [20260710_ORVNameToPath](20260710_orvnametopath.md) - 에셋 이름을 네이밍/경로 config에 따라 저장 경로로 변환하는 CLI
+- [20260728_LayerRemapper](20260728_layerremapper.md) - LayerRemapper - 구 BaseSkeleton 애니메이션 씬의 레이어를 신 BaseSkeleton 레이어 구조로 재배치하는 ORV 전용 툴
+- [20260731_AnimationBReexport](20260731_animationbreexport.md) - Human-Male AnimationB 애니메이션 씬의 구 규약 레이어 리맵 + 재익스포트 일회성 마이그레이션 스크립트 (ORV 전용)
+- [20260803_AnimationBUE5Import](20260803_animationbue5import.md) - Human-Male AnimationB FBX의 UE5 배치 임포트 일회성 스크립트 (ORV 전용)
+- [20260804_ORVRootMotion](20260804_orvrootmotion.md) - ORVRootMotion - Bip001 root의 어트리뷰트 홀더 모디파이어에 루트 모션 컨트롤러 커스텀 어트리뷰트를 부여하는 툴
+- [20260814_ScaledAnimTransfer](20260814_scaledanimtransfer.md) - smaller.max의 Bip 레이어 애니메이션을 1.7배 리스케일하여 Bigger.max로 이식하는 일회성 스크립트
+- [20260905_BaseSkeletonBuilder](20260905_baseskeletonbuilder.md) - BaseSkeletonBuilder - 열린 Default 씬을 Body/Face용 BaseSkeleton 구조로 변환하는 ORV 전용 3ds Max 툴
+- [20261019_OccludedFaceRemover](20261019_occludedfaceremover.md) - OccludedFaceRemover - 다른 오브젝트(옷)에 덮여 보이지 않는 면을 찾아 지우는 ORV 최적화 툴
+- [20261022_ORVPhysicToggle](20261022_orvphysictoggle.md) - ORVPhysicToggle - 흔들림 본 체인별 Physic On/Off 커브를 스킨 본 root에 두고 Bip001 root에서 편집하는 ORV 리깅 툴
+- [20261026_KDCAnimReexport](20261026_kdcanimreexport.md) - 김독자 컴퍼니 7인 애니메이션 정본 배치 + 비정본 격리 (BatchAnimExporter 재출력 준비, ORV 전용 일회성 툴)
+- [20261029_KDCSceneRebuild](20261029_kdcscenerebuild.md) - KDC 구 스켈레톤 애니 씬을 Default 메쉬 위에 재구성 (BIP 키 보존 + 루트 모션 베이크, ORV 전용 일회성 툴)
+- [프로젝트 직접 의존성 지도](dependencies.md) - 폴더 이름 대신 현재 패키지 선언으로 확인한 공유 라이브러리 의존성.
+- [orvlib](orvlib.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [ORVNamePartsGetter](orvnamepartsgetter.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [PyJal3DSMCP](pyjal3dsmcp.md) - AI 에이전트가 3ds Max를 pyjallib.max API로 조작하게 하는 MCP 서버 + Max 내부 리스너
+- [PyJalBipRePosition](pyjalbipreposition.md) - 같은 토폴로지의 변형 체형 메쉬에 맞춰 Biped 관절을 자동 재배치하는 3ds Max 툴
+- [PyJalFacial-subgroup](pyjalfacial-subgroup.md) - Facial animation tool for 3DS Max by pyjallib
+- [PyJalFacial](pyjalfacial.md) - Facial animation tool for 3DS Max by pyjallib
+- [PyJalFacialBuilder-subgroup](pyjalfacialbuilder-subgroup.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [PyJalFacialBuilder](pyjalfacialbuilder.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [PyJalLib](pyjallib.md) - A utility library for 3D game character development pipelines.
+- [PyJalMaxMorphSplitter](pyjalmaxmorphsplitter.md) - 대칭 모프 타겟을 좌/우 포즈 2개로 분리하는 3ds Max 툴
+- [PyJalMaxNamer](pyjalmaxnamer.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [PyJalMaxRiggingTool](pyjalmaxriggingtool.md) - 설정과 소스 구조에서 시작하는 프로젝트 탐색 카드.
+- [PyJalNameConfig](pyjalnameconfig.md) - Naming config file generator
+- [PyJalSkinKit](pyjalskinkit.md) - 스킨 웨이트 편집 툴박스(SkinKit MaxScript 포팅) - 3ds Max

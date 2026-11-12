@@ -1,0 +1,29 @@
+# 재사용 패턴
+
+- [AnimSlider UI 패턴](animslider_ui_pattern.md) - AnimSlider 관리/실행 UI 구현 시 발견된 패턴과 주의사항.
+- [대량 일괄 처리의 판정 설계 (전수·드라이런 대조·보존 축)](bulk_operation_verification.md) - 한두 개를 고치는 작업은 결과를 눈으로 본다. 수백 개를 고치는 작업은 볼 수 없으므로 판정 코드가 눈을 대신한다. 그래서 이 작업 유형의 실패는 "잘못 고쳤다"가 아니라 "판정이 잘못된 것을 보고 통과시켰다"의 형태로 나타나고, 리포트 어디에도 나타나지 않는다.
+- [변경 범위 (계약을 잃지 않고 기능을 넣는다)](change_scope.md) - 호환성·소유권·실패 계약을 유지하면서 기능의 변경 범위를 정한다.
+- [클립 부피·UV 마스크 기하 - 순수 Python 메쉬 기하 커널의 판정 규칙과 함정](clip_volume_geometry.md) - 출처: 2026-10-21 / 20261019_OccludedFaceRemover MaskBake(pyjallib 0.5.7 uvMask), 2026-10-23 / ClipMesh(0.5.8 clipMesh),
+- [Code/Doc Generation Pattern (소스에서 문서·코드 생성)](code_generation_pattern.md) - 소스 코드를 입력으로 문서/코드를 생성하는 도구(예: docstring→md 생성기)의 재사용 패턴. 출처: 2026-07-08 / PyJal3DSMCP skills_gen + docstring 43모듈 개선.
+- [Conditional Pipeline Pattern](conditional_pipeline_pattern.md) - 복잡한 파이프라인(예: 파일 생성 → 변환 → 임포트 → 버전 관리)을 가진 시스템에서, 특정 상황에서는 일부 단계만 필요한 경우가 있습니다.
+- [Dem Bones C++ 통합 패턴](dem_bones_integration.md) - 블렌드쉐입 타겟 메쉬로부터 본 트랜스폼만 역산하여 기존 LBS(Linear Blend Skinning) 포즈 데이터로 변환할 때 사용. EA의 오픈소스 Dem Bones(MIT) 라이브러리를 vendored C++로 통합한다. 페이셜 포즈 생성처럼 "타겟 형상이 먼저 만들어진 
+- [Facade Pattern Reference](facade_pattern.md) - ├── _sharedData: dict        ← 공유 상태
+- [FBX 익스포트 키 베이크 패턴](fbx_export_bake_pattern.md) - PyJalFacialBuilder는 하이브리드 애니메이션 시스템을 사용한다:
+- [FBX 익스포트 SmoothingGroups 옵션과 Edit Normal 보존](fbx_export_smoothing_groups.md) - 3ds Max에서 아티스트가 Edit Normals 모디파이어 등으로 버텍스 노멀 벡터를 명시적으로 수정한 메쉬를 익스포트할 때, FBX 익스포터의 SmoothingGroups 옵션이 켜져 있으면 익스포트 시 SmoothingGroup 정보로부터 노멀이 재계산되어 아티스트가 손
+- [DCC 의존 패키지 lazy import 패턴 (PEP 562)](lazy_dcc_import.md) - 3DS Max/UE5 등 DCC 환경에서 동작하는 Python 패키지의 부모 __init__.py가 UI 심볼(from .ui.mainWidget import MainWidget)을 모듈 로드 시점에 무조건 import하면:
+- [Logging Pattern (pyjallib Logger)](logging_pattern.md) - 공용 Logger를 지연 생성하고 범용 도구와 ORV 도구의 로그 정책을 구분한다.
+- [3ds Max Tool Package Structure Pattern](max_tool_package_structure.md) - 3ds Max Python 툴을 패키지 구조로 만들 때 따르는 표준 패턴입니다.
+- [MCP Server Pattern (FastMCP 기반 도구 서버)](mcp_server_pattern.md) - FastMCP로 MCP 서버를 만들 때의 재사용 패턴. 출처: 2026-07-08~09 / PyJal3DSMCP (3ds Max MCP 서버 + Skills 문서 노출).
+- [Naming Pattern (pyjallib.naming)](naming_pattern.md) - NamingConfig·Naming·NamePart를 사용한 이름 규칙의 해석과 확장.
+- [Nuitka --module 배포본 - 런타임 거동·시그널 라우팅·빌드 산출물](nuitka_module_build.md) - 배포본을 Nuitka로 컴파일하는 목적은 디컴파일 저항이다. 그런데 컴파일본은 소스 경로 테스트로는
+- [numpy ↔ Eigen 행렬 컨벤션 변환 패턴](numpy_eigen_convention.md) - Python(numpy) row-vector convention 데이터를 C++(Eigen) column-vector convention으로 전달할 때 명시적 transpose가 필수. 누락 시 단순 케이스(identity bind, 원점 메쉬)에서는 우연히 통과하지만 복잡한 
+- [3DS Max 툴 패키지 구조 패턴](package_structure_pattern.md) - 3DS Max Python 툴을 만들 때, 모듈 이름 충돌을 방지하는 패키지 구조 패턴입니다.
+- [성능 측정 방법론 (측정이 스코프를 정한다)](performance_measurement.md) - 실사용 조건·호스트·측정 경로를 맞춰 성능 병목과 개선 효과를 판정한다.
+- [전제 재판정 - 요청·신고·가설을 스코프로 굳히기 전에](premise_verification.md) - 요청과 가설을 관측으로 확인한 뒤 구현 범위를 정한다.
+- [Programmable Pose 패턴 - 드라이버 구동 보정 포즈](programmable_pose_pattern.md) - 출처: 2026-06-25 / PyJalFacial + PyJalFacialBuilder (ProgrammablePose, 2-repo) · 2026-06-26 CorrectionalPose 보강(§1 정정·§4 추가)
+- [Progress Window Pattern](progress_window_pattern.md) - 다단계 작업의 진행 상태를 사용자에게 시각적으로 피드백하는 모달리스 QDialog 패턴입니다.
+- [pybind11 빌드 패턴](pybind11_build_pattern.md) - pyjallib/pyjalfacial 등 Python 패키지에서 성능 크리티컬한 수학 연산(쿼터니언 블렌딩 등)을 C++로 이식할 때 사용하는 빌드 패턴이다. pybind11 + scikit-build-core + CMake 조합으로 pyproject.toml 기반 빌드를 구성
+- [Report → Apply Pattern (스캔 → 보고 → 사람 검토 → 적용)](report_apply_pattern.md) - 저장소를 스캔해 변경안을 제시하고, 사람이 검토·편집한 뒤 적용하는 배치 변경 CLI의 재사용 패턴. 리네임/마이그레이션류 도구에 적용한다.
+- [자식 프로세스의 성공 판정 축](subprocess_verdict_axis.md) - DCC 호스트를 subprocess로 띄우는 구조에서 종료 코드는 성공 판정 축이 될 수 없다.
+- [Texture Extraction Pattern](texture_extraction_pattern.md) - DirectX_9_Shader 매테리얼에서 텍스쳐를 추출하여 표준 경로로 복사하고, 매테리얼 정보 JSON을 생성하는 패턴입니다.
+- [Validation Auto-Fix Pattern](validation_auto_fix_pattern.md) - 자동 검증 및 수정 패턴: 사용자 입력/선택 시 자동으로 데이터를 검증하고 수정 가능한 항목은 즉시 수정하는 패턴입니다.

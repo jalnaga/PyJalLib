@@ -1,0 +1,21 @@
+# automated_console 세부 주제
+
+- [핵심 원칙](section-01.md) - 핵심 원칙
+- [실행 절차](section-02.md) - 실행 절차
+- [테스트 작성 가이드](section-03.md) - 테스트 작성 가이드
+- [실패 시 행동 지침](section-04.md) - 실패 시 행동 지침
+- [체크리스트](section-05.md) - 체크리스트
+- [Appendix](section-06.md) - Appendix
+- [콘솔 환경 패키지 import 안전성 (Type A 전제 조건)](section-07.md) - 콘솔 환경 패키지 import 안전성 (Type A 전제 조건)
+- [디렉토리 스코프 conftest로 sys.modules mock 격리](section-08.md) - 디렉토리 스코프 conftest로 sys.modules mock 격리
+- [Type A 격리 패턴 2종 (순수 모듈 / DCC 글루 클래스)](section-09.md) - Type A 격리 패턴 2종 (순수 모듈 / DCC 글루 클래스)
+- [UI-즉시import 패키지에서 func 계층만 격리 (검증 대상은 real 유지)](section-10.md) - UI-즉시import 패키지에서 func 계층만 격리 (검증 대상은 real 유지)
+- [pytest 디렉토리가 소스 최상위 패키지를 그림자할 때](section-11.md) - pytest 디렉토리가 소스 최상위 패키지를 그림자할 때
+- [신규 Type C/D 테스트는 addopts --ignore에도 등록해야 한다](section-12.md) - 신규 Type C/D 테스트는 addopts --ignore에도 등록해야 한다
+- [환경 결합 config는 skipif로 부재 환경 skip](section-13.md) - 환경 결합 config는 skipif로 부재 환경 skip
+- [모듈 로드 시점에 환경을 읽는 config.py의 Type A 격리](section-14.md) - 모듈 로드 시점에 환경을 읽는 config.py의 Type A 격리
+- [Qt 위젯 캐스케이드를 PySide2 없는 venv에서 검증한다 (FakeComboBox)](section-15.md) - Qt 위젯 캐스케이드를 PySide2 없는 venv에서 검증한다 (FakeComboBox)
+- [다른 테스트 파일의 전역 sys.modules 주입이 내 테스트를 조용히 무력화한다](section-16.md) - 다른 테스트 파일의 전역 sys.modules 주입이 내 테스트를 조용히 무력화한다
+- [단일 출처 가드는 "이름 목록"이 아니라 "리터럴이 등장하지 않음"으로 짠다](section-17.md) - 단일 출처 가드는 "이름 목록"이 아니라 "리터럴이 등장하지 않음"으로 짠다
+- [DCC 툴의 콘솔 테스트는 DCC가 제공하는 바이너리로 정합을 맞춘다 (PySide2 출처)](section-18.md) - DCC 툴의 콘솔 테스트는 DCC가 제공하는 바이너리로 정합을 맞춘다 (PySide2 출처)
+- [20차 복기 추가 - 콘솔 테스트의 작은 함정들](section-19.md) - 20차 복기 추가 - 콘솔 테스트의 작은 함정들
