@@ -34,6 +34,13 @@ Issues = "https://github.com/jalnaga/PyJalLib/issues"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+# 빌드 백엔드는 기본으로 `*.py[cdo]`에 맞는 파일을 배포물에서 뺀다. 미리 빌드해 둔 네이티브 확장 모듈(.pyd)도
+# 이 패턴에 걸리므로, wheel과 sdist에 실을 파일을 루트 기준 경로로 하나씩 적는다. 여기 없는 .pyd는 실리지 않는다.
+artifacts = [
+    "/src/pyjallib/native/alpha_wrap_native.cp310-win_amd64.pyd",
+]
+
 [tool.hatch.build.targets.sdist]
 # sdist에는 패키지 소스·네이티브 소스·라이선스·README만 담는다(pyproject.toml 등은 자동 포함).
 only-include = ["src/pyjallib", "native", "LICENSE", "README.md"]
