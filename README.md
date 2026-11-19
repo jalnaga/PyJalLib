@@ -23,8 +23,8 @@ python -m pip install pyjallib
 
 Use the host application's Python environment for tools that work with a 3ds Max
 scene (`pymxs`) or Unreal Editor assets (`unreal`). Morph splitting requires
-NumPy 1.26 or later in the 3ds Max Python environment. The bundled alpha wrapping
-extension is built for 64-bit Windows with CPython 3.10.
+NumPy 1.26 or later in the 3ds Max Python environment. The native Alpha Wrap
+feature is unavailable in the PyPI distribution.
 
 ## Example
 

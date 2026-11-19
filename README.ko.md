@@ -19,7 +19,7 @@ Python 3.10 이상이 필요합니다. PyPI에 등록된 배포판은 아래 명
 python -m pip install pyjallib
 ```
 
-3ds Max 씬(`pymxs`)이나 Unreal Editor 에셋(`unreal`)을 다루는 도구는 해당 애플리케이션의 Python 환경에서 실행합니다. 모프 분리에는 3ds Max의 Python 환경에 NumPy 1.26 이상이 설치되어 있어야 합니다. 기본 제공되는 알파 래핑 확장은 64비트 Windows의 CPython 3.10용으로 빌드되어 있습니다.
+3ds Max 씬(`pymxs`)이나 Unreal Editor 에셋(`unreal`)을 다루는 도구는 해당 애플리케이션의 Python 환경에서 실행합니다. 모프 분리에는 3ds Max의 Python 환경에 NumPy 1.26 이상이 설치되어 있어야 합니다. PyPI 배포판에서는 네이티브 Alpha Wrap 기능을 사용할 수 없습니다.
 
 ## 예제
 
