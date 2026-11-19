@@ -1,42 +1,62 @@
-# pyjallib
+# PyJalLib
 
-pyjallib Package is a Python library designed to streamline the game character development pipeline. It provides tools and utilities to assist game developers in creating, managing, and optimizing character assets.
+[한국어](https://github.com/jalnaga/PyJalLib/blob/master/README.ko.md) · [API reference](https://jalnaga.github.io/PyJalLib/) · [PyPI](https://pypi.org/project/pyjallib/)
+
+PyJalLib is a Python library for building 3D game character pipelines. It helps
+technical artists and pipeline developers rig characters in Autodesk 3ds Max,
+import assets into Unreal Engine 5, and automate Perforce workflows.
 
 ## Features
-- Character asset management
-- Pipeline automation tools
-- Asset optimization utilities
-- Easy integration with common game engines
+
+- **3ds Max** — Build character rigs, edit skin weights, split morph targets, and automate FBX workflows with `pyjallib.max`.
+- **Unreal Engine 5** — Import skeletal meshes and animations with Interchange or legacy import tools, and run headless imports with `pyjallib.ue5`.
+- **Perforce** — Work with checkouts, changelists, and workspace sync through `pyjallib.perforce`.
+- **Shared utilities** — Apply naming rules, derive asset paths, and scan `.max` files for candidate node and layer names without opening 3ds Max.
 
 ## Installation
+
+PyJalLib requires Python 3.10 or later. Install the published release from PyPI.
+
 ```bash
-pip install pyjallib
+python -m pip install pyjallib
 ```
 
-## Documentation
-The API documentation is published at https://jalnaga.github.io/PyJalLib/.
+Use the host application's Python environment for tools that work with a 3ds Max
+scene (`pymxs`) or Unreal Editor assets (`unreal`). Morph splitting requires
+NumPy 1.26 or later in the 3ds Max Python environment. The bundled alpha wrapping
+extension is built for 64-bit Windows with CPython 3.10.
 
-### 모프 포즈 분리
+## Example
 
-NumPy>=1.26은 정식 의존성이며, 3ds Max 내장 Python 환경에도 설치되어 있어야 한다.
-3ds Max에서는 기존 `Morph` API로 뉴트럴과 포즈의 오브젝트 공간 델타를 분리한다.
+Split a morph pose into left and right targets. Run this in 3ds Max with a
+neutral mesh named `Neutral` and a pose mesh named `Smile` that has matching
+topology and vertex order.
 
 ```python
+from pymxs import runtime as rt
+
 from pyjallib.max import Morph
 
-result = Morph().split_pose(neutralNode, poseNode, inAxis="X", inBandRatio=0.10)
-leftNode, rightNode = result.leftNode, result.rightNode
+neutral_node = rt.getNodeByName("Neutral")
+pose_node = rt.getNodeByName("Smile")
+result = Morph().split_pose(neutral_node, pose_node, inAxis="X", inBandRatio=0.10)
+left_node, right_node = result.leftNode, result.rightNode
 ```
 
-`inPlaneOffset`은 대칭면 오프셋이며 `inBandHalfWidth`를 지정하면 비율보다 우선한다.
-기본 출력 접미사는 `_L`·`_R`이다. 입력 노드와 선택을 보존하고, 이름 충돌이나
-유효하지 않은 입력은 `pyjallib.max.morphSplitService.SplitError`로 보고한다.
-`SplitResult.as_report()`는 실제 밴드 폭과 복원 편차를 반환한다.
+The split uses object-space deltas and creates targets with `_L` and `_R`
+suffixes while preserving the input meshes and selection. Use `inPlaneOffset`
+to move the symmetry plane or `inBandHalfWidth` to override the ratio with an
+explicit blend half-width. Invalid inputs and output name conflicts raise
+`pyjallib.max.morphSplitService.SplitError`. Call `result.as_report()` to see the
+effective blend half-width and maximum reconstruction error. For NumPy arrays
+outside 3ds Max, use `pyjallib.max.morphMath.split_pose_deltas`.
 
-`morphMath`, `morphSpaceTransform`, `morphValidation`, `morphNaming`,
-`morphSplitService`, `morphMeshIO`는 콘솔에서 pymxs·Qt 없이 import할 수 있다.
-`morphMeshIO.SceneOps`의 실제 씬 접근과 `Morph` 사용에는 3ds Max가 필요하다.
-순수 연산은 `pyjallib.max.morphMath.split_pose_deltas`를 사용한다.
+## Contributing
+
+For development setup and testing, see the
+[contribution guide](https://github.com/jalnaga/PyJalLib/blob/master/CONTRIBUTING.md).
+Report bugs or propose changes through [GitHub Issues](https://github.com/jalnaga/PyJalLib/issues).
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+[MIT License](https://github.com/jalnaga/PyJalLib/blob/master/LICENSE).
