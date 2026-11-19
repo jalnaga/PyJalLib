@@ -51,7 +51,7 @@ _BIPED_GROUP_NAMES = (
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()
@@ -65,7 +65,7 @@ def _runtime():
 
 
 def _call_original(inOperation: str, inFunc, *args, **kwargs):
-    """원본 메서드를 부르고 예외를 계약 코드로 바꾼다(명세 C-3).
+    """원본 메서드를 부르고 예외를 계약 코드로 바꾼다.
 
     ``AgentApiError``는 그대로 통과시키고, ``ValueError``는 INVALID_ARGUMENT, 그 밖의 예외는
     OPERATION_FAILED로 감싼다. 원인 예외는 ``details["exception"]``과 예외 체인에 남긴다.
@@ -187,7 +187,7 @@ def _missing_dirs(inPath: str) -> list:
 
 
 def _verify_written(inPath: str, inBeforeStat, inOperation: str, inOriginalReturn) -> int:
-    """출력 파일이 실제로 생기거나 갱신됐는지 확인하고 크기를 돌려준다(명세 C-8).
+    """출력 파일이 실제로 생기거나 갱신됐는지 확인하고 크기를 돌려준다.
 
     Raises:
         AgentApiError: OPERATION_FAILED — 파일이 없거나, 덮어쓰기인데 수정 시각·크기가 그대로일 때

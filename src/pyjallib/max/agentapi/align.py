@@ -23,7 +23,7 @@ _TOLERANCE = 1e-4
 
 
 def _service():
-    """Header의 Align 서비스를 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 Align 서비스를 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().align
@@ -123,7 +123,7 @@ def align_rotation_to_last(inNodes: list) -> dict:
 
     try:
         _service().align_to_last_rot(list(nodes))
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         applied = []
         for node in nodes:
             try:

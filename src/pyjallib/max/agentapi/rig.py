@@ -13,7 +13,7 @@
     ``{"part": "TwistBone" | "VolumeBone", "bones": [NodeRef], "helpers": [NodeRef],
     "sourceBones": [NodeRef], "parameters": {원본 PARAM_SPEC 키: 값}}``. 재생성 함수는 이 dict를 받는다.
     ``parameters`` 키는 원본 철자(``inRotAxises``·``inTransAxises``)이고, ``create_volume_bones``의
-    인자 ``inRotAxes``·``inTransAxes``가 그 키로 옮겨진다(명세 J-15).
+    인자 ``inRotAxes``·``inTransAxes``가 그 키로 옮겨진다.
     원본의 실패 사유는 콘솔이 꺼진 로그 파일 ``pyjallib_rig``에만 남는다(OPERATION_FAILED의
     ``details["log"]``).
     이 모듈은 import할 때 pymxs·header를 불러오지 않고 장면을 바꾸지 않는다.
@@ -41,7 +41,7 @@ _RIG_LOG = "pyjallib_rig"
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()
@@ -85,7 +85,7 @@ def _require_bool(inValue, inArgName: str) -> None:
 
 
 def _check_twist_parameters(inTwistNum, inTwistType) -> None:
-    """트위스트 파라미터 값 검사(R1·R2 공통).
+    """트위스트 파라미터 값 검사.
 
     Raises:
         AgentApiError: INVALID_ARGUMENT
@@ -100,7 +100,7 @@ def _check_twist_parameters(inTwistNum, inTwistType) -> None:
 
 
 def _volume_parameter_values(inParameters: dict) -> dict:
-    """볼륨 파라미터(원본 철자 키, None은 원본 기본값으로 채움)를 검사하고 원본에 넘길 값으로 돌려준다(R3·R4 공통).
+    """볼륨 파라미터(원본 철자 키, None은 원본 기본값으로 채움)를 검사하고 원본에 넘길 값으로 돌려준다.
 
     원본 ``VolumeBone.create_bones``와 같이 None인 축 목록은 원본 PARAM_SPEC 기본값으로 채운 뒤,
     축 목록 길이와 등록 축(원본 공개 함수 ``invalid_axes``)을 본을 만들기 전에 검사한다.
@@ -188,7 +188,7 @@ def _chain_warnings(inChain, inCreated: list) -> list:
 
 
 def _create_chain(inPart: str, inAction: str, inCall, inDetails: dict) -> dict:
-    """원본 생성 메서드(``create_bones``)를 부르고 readback을 만든다(R1·R3 공통).
+    """원본 생성 메서드(``create_bones``)를 부르고 readback을 만든다.
 
     Raises:
         AgentApiError: OPERATION_FAILED(원본 예외·None 반환)
@@ -196,7 +196,7 @@ def _create_chain(inPart: str, inAction: str, inCall, inDetails: dict) -> dict:
     before = _scene.snapshot_handles()
     try:
         chain = inCall()
-    except Exception as error:  # noqa: BLE001 - C-3
+    except Exception as error:  # noqa: BLE001
         raise ags.AgentApiError(
             ags.INVALID_ARGUMENT if isinstance(error, ValueError) else ags.OPERATION_FAILED,
             f"{inAction} 중 원본 처리가 실패했다: {error}",
@@ -217,11 +217,10 @@ def _create_chain(inPart: str, inAction: str, inCall, inDetails: dict) -> dict:
 
 
 def _rebuild_chain(inChain, inConfirm, inPart: str, inServiceName: str) -> dict:
-    """체인 dict 형식을 검사·해석하고 원본 ``create_bones_from_chain``을 그대로 부른다(R2·R4 공통).
+    """체인 dict 형식을 검사·해석하고 원본 ``create_bones_from_chain``을 그대로 부른다.
 
-    명세 5절 R2·R4의 검사(dict 형식·필수 키·part·PARAM_SPEC 밖 키, 체인 노드 해석, J-9 inConfirm)만
-    한다. 원본이 체인을 지운 뒤 실패하는 경로(빈 체인·소스 수·파라미터 값·소스가 삭제 대상에 포함)는
-    막지 않는다(0-1절).
+    체인 dict 형식·필수 키·part·PARAM_SPEC 밖 키, 체인 노드와 inConfirm을 검사한다. 원본이 체인을 지운 뒤 실패하는 경로(빈 체인·소스 수·파라미터 값·소스가 삭제 대상에 포함)는
+    막지 않는다.
 
     Raises:
         AgentApiError: INVALID_ARGUMENT, NODE_NOT_FOUND, NODE_AMBIGUOUS, PRECONDITION_FAILED, OPERATION_FAILED
@@ -254,7 +253,7 @@ def _rebuild_chain(inChain, inConfirm, inPart: str, inServiceName: str) -> dict:
             {"argument": "inChain", "unknown": unknown, "valid": specNames},
         )
 
-    # 체인 노드는 모두 해석돼야 한다(명세 J-9)
+    # 체인 노드는 모두 해석돼야 한다
     bones = ags.resolve_nodes(list(inChain["bones"]))
     helpers = ags.resolve_nodes(list(inChain["helpers"]))
     sources = ags.resolve_nodes(list(inChain["sourceBones"]))
@@ -281,7 +280,7 @@ def _rebuild_chain(inChain, inConfirm, inPart: str, inServiceName: str) -> dict:
     before = _scene.snapshot_handles()
     try:
         newChain = service.create_bones_from_chain(boneChain)
-    except Exception as error:  # noqa: BLE001 - C-3, 지운 노드·부분 생성을 숨기지 않는다
+    except Exception as error:  # noqa: BLE001 - 지운 노드·부분 생성을 숨기지 않는다
         raise ags.AgentApiError(
             ags.INVALID_ARGUMENT if isinstance(error, ValueError) else ags.OPERATION_FAILED,
             f"{inPart} 재생성 중 원본 처리가 실패했다: {error}",
@@ -410,8 +409,8 @@ def create_volume_bones(
 
     관절이 굽을 때 줄어드는 부피를 보정하는 본이다. 루트 본은 관절 회전을 inRotScale만큼 따라가고
     볼륨 본은 굽힘 각도에 비례해 지정 축으로 밀려난다. 인자 ``inRotAxes``·``inTransAxes``는 원본
-    인자 ``inRotAxises``·``inTransAxises``로 넘기며 체인 ``parameters``에는 원본 철자 키로 남는다
-    (명세 J-15). None인 축 목록은 원본 기본값(``["Z"]``·``["PosY"]``·``[1.0]``)이다. 축 목록 길이와 등록 축은
+    인자 ``inRotAxises``·``inTransAxises``로 넘기며 체인 ``parameters``에는 원본 철자 키로 남는다.
+    None인 축 목록은 원본 기본값(``["Z"]``·``["PosY"]``·``[1.0]``)이다. 축 목록 길이와 등록 축은
     본을 만들기 전에 검사한다. 소스 중 하나라도 스킨 본이면 원본이 생성 노드도 스킨 본으로 표시한다.
 
     Args:

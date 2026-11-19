@@ -12,8 +12,8 @@ readback 생성을 한곳에 둔다. agentapi 함수는 이 모듈만 써서 이
     node_ref — 노드를 NodeRef dict ``{"name", "handle", "class"}``로 바꾼다 [none]
     to_json — Point3·Matrix3·Name·Color·노드 등을 재귀적으로 JSON 기본형으로 바꾼다 [none]
     readback — 장면 변경 결과 dict(created·modified·deleted·details·warnings)를 만든다 [none]
-    report_progress — 장시간 함수의 진행 단계를 진행 파일에 원자적으로 기록한다(MCP가 정체를 감시한다) [file]
-    progress_path — 진행 파일 경로 ``%LOCALAPPDATA%\\PyJal3DSMCP\\agentapi-progress\\<pid>.json``을 돌려준다 [none]
+    report_progress — 장시간 함수의 진행 단계를 진행 파일에 원자적으로 기록한다 [file]
+    progress_path — 호출부가 진행 상태를 읽을 프로세스별 JSON 파일 경로를 돌려준다 [none]
 
 공통 오류 코드 상수:
     NODE_NOT_FOUND, NODE_AMBIGUOUS, INVALID_ARGUMENT, PRECONDITION_FAILED, OPERATION_FAILED
@@ -498,12 +498,12 @@ def readback(created=(), modified=(), deleted=(), details=None, warnings=()) -> 
 
 
 # ---------------------------------------------------------------------------
-# 진행 신호 (agentapi 2차 G6 — PyJal3DSMCP가 진행 파일의 정체를 감시한다)
+# 진행 신호
 # ---------------------------------------------------------------------------
 
 #: 진행 파일 형식 버전
 _PROGRESS_SCHEMA_VERSION = 1
-#: 진행 파일 상위 폴더(LOCALAPPDATA 기준). PyJal3DSMCP와 맞춘 계약 경로다
+#: 진행 파일을 쓰는 쪽과 읽는 쪽이 공유하는 상위 폴더(LOCALAPPDATA 기준)
 _PROGRESS_SUBDIR = ("PyJal3DSMCP", "agentapi-progress")
 #: 진행 쓰기 실패 경고를 남길 pyjallib Logger 파일 이름
 _PROGRESS_LOG_NAME = "pyjallib_agentProgress"
@@ -587,8 +587,8 @@ def _write_progress_file(inTargetPath: str, inPayload: bytes) -> None:
 def progress_path(inPid: int | None = None) -> str:
     """진행 파일 경로를 돌려준다.
 
-    경로는 ``%LOCALAPPDATA%\\PyJal3DSMCP\\agentapi-progress\\<pid>.json``이다. LOCALAPPDATA는
-    호출할 때 읽는다. 폴더를 만들거나 파일에 접근하지 않는다.
+    호출할 때 LOCALAPPDATA를 읽어 프로세스별 JSON 파일의 경로를 구한다.
+    폴더를 만들거나 파일에 접근하지 않는다.
 
     Args:
         inPid: 프로세스 ID. None이면 현재 프로세스(3ds Max)의 PID
@@ -627,8 +627,8 @@ def report_progress(inOperation: str, inStep: str, inDetail: dict | None = None)
     깨진 JSON을 보지 않는다. 진행 폴더는 첫 호출 때 만든다.
 
     래퍼는 시작(``start``), 항목 사이, 긴 원본 호출 직전·직후, 끝(``done``/``failed``)에
-    부른다. PyJal3DSMCP는 실행 중 이 파일의 updated_at이 오래 바뀌지 않으면 "진행 없음"을
-    보고한다(Max 호출은 중단하지 않는다).
+    부른다. 진행 상태를 감시하는 호출부는 실행 중 이 파일의 ``updated_at``이 오래
+    바뀌지 않으면 "진행 없음"을 보고한다(Max 호출은 중단하지 않는다).
 
     쓰기 실패(폴더 생성·파일 쓰기·교체 실패)는 예외를 올리지 않고 pyjallib Logger 경고만
     남긴다. 진행 신호는 보고 수단이지 작업의 일부가 아니다. 다음 호출은 다시 쓴다.

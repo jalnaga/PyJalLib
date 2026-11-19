@@ -33,14 +33,14 @@ _SEPARATORS = (" ", "_", "")
 
 
 def _name_service():
-    """Header의 이름 서비스를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 이름 서비스를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().name
 
 
 def _original_error(inError: Exception, inAction: str, inDetails: dict | None = None) -> ags.AgentApiError:
-    """원본 메서드 예외를 AgentApiError로 바꾼다(명세 C-3)."""
+    """원본 메서드 예외를 AgentApiError로 바꾼다."""
     code = ags.INVALID_ARGUMENT if isinstance(inError, ValueError) else ags.OPERATION_FAILED
     details = dict(inDetails or {})
     details["exception"] = repr(inError)

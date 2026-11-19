@@ -3,7 +3,7 @@
 
 agentapi 하위 모듈이 원본 함수가 반환하지 않는 부수 생성물(스냅샷 메시, 대체 Dummy 등)까지
 ``created``에 담을 수 있도록, 호출 전후 장면 노드 handle 집합을 비교한다.
-이 모듈은 에이전트 함수가 아니며 ``agentSupport`` 계약도 넓히지 않는다(명세 J-5).
+이 모듈은 에이전트 함수가 아니며 ``agentSupport`` 계약도 넓히지 않는다.
 
 함수 목록:
     snapshot_handles — 장면 모든 노드의 노드 handle 집합을 돌려준다 [none]

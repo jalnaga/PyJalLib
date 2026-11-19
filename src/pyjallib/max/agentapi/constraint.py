@@ -12,7 +12,7 @@
 
 from pyjallib.max import agentSupport as ags
 
-#: MAXScript 경로 문자열(``$'이름'``)에 넣으면 오동작하는 문자(명세 J-13)
+#: MAXScript 경로 문자열(``$'이름'``)에 넣으면 오동작하는 문자
 _PATH_FORBIDDEN_CHARS = ("'", "*", "?", "\\")
 
 
@@ -29,7 +29,7 @@ def _runtime():
 
 
 def _service():
-    """Header의 Constraint 서비스를 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 Constraint 서비스를 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().constraint
@@ -41,7 +41,7 @@ def _handle(inNode) -> int:
 
 
 def _to_agent_error(inError: Exception, inMessage: str, inDetails: dict | None = None):
-    """원본 예외를 AgentApiError로 바꾼다(명세 C-3). ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED."""
+    """원본 예외를 AgentApiError로 바꾼다. ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED."""
     if isinstance(inError, ags.AgentApiError):
         return inError
     code = ags.INVALID_ARGUMENT if isinstance(inError, ValueError) else ags.OPERATION_FAILED
@@ -77,7 +77,7 @@ def _resolve_unique(inNodes, inArgName: str) -> list:
 def _check_path_safe(inRt, inNode) -> None:
     """``$'이름'`` 경로로 노드를 가리키는 원본을 부르기 전에 이름을 검사한다.
 
-    금지 문자(J-13)가 있으면 INVALID_ARGUMENT. MAXScript 경로는 대소문자를 무시하므로
+    금지 문자가 있으면 INVALID_ARGUMENT. MAXScript 경로는 대소문자를 무시하므로
     대소문자만 다른 동명 노드가 있으면 다른 노드가 바뀔 수 있어 NODE_AMBIGUOUS로 거절한다.
     """
     name = str(inNode.name)
@@ -168,7 +168,7 @@ def collapse_transform_controllers(inNodes: list) -> dict:
     for node in targets:
         try:
             service.collapse(node)
-        except Exception as error:  # noqa: BLE001 - C-3·C-11 변환
+        except Exception as error:  # noqa: BLE001·C-11 변환
             raise _to_agent_error(
                 error,
                 f"'{node.name}'의 컨트롤러 초기화에 실패했다",

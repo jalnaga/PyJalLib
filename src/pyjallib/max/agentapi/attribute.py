@@ -20,7 +20,7 @@ from pyjallib.max import agentSupport as ags
 
 
 def _service():
-    """Header의 Attribute 서비스를 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 Attribute 서비스를 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().attribute
@@ -87,7 +87,7 @@ def remove_attribute_def(inNode: str | int | dict, inDefName: str) -> dict:
 
     try:
         result = service.remove_attribute_def(node, inDefName)
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         code = ags.INVALID_ARGUMENT if isinstance(error, ValueError) else ags.OPERATION_FAILED
         raise ags.AgentApiError(
             code,

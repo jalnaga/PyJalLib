@@ -3,8 +3,7 @@
 
 """근육 본 모듈 - 본 스케일로 근육의 늘고 줄어듦을 흉내 내는 릭 파트 2종.
 
-원본은 JalTools HandyTool의 MaxScript `muscleBone.ms`(`_MuscleBone` 구조체)다. 이 모듈은
-그것을 파이썬으로 옮기되 아래 결정을 따른다(2026-11-10).
+근육 본을 생성하는 리깅 도구의 MaxScript를 파이썬으로 옮겼다.
 
 - `MuscleBone`: 시작·끝 노드 두 개로 근육 본 1개를 만든다. 스플라인이 없다.
 - `MuscleBoneChain`: 스플라인(Line/SplineShape) 하나로 근육 본 N개(N >= 2)를 만든다.
@@ -648,7 +647,7 @@ class MuscleBone(_MusclePartBase):
 class MuscleBoneChain(_MusclePartBase):
     """스플라인으로 근육 본 N개(N >= 2) 체인을 만드는 클래스.
 
-    원본 HandyTool `create()`의 기본 경로(`assign_splineIK` 타입 1 + `create_chain`)를 옮긴다.
+    원본 리깅 도구의 기본 생성 절차(`assign_splineIK` 타입 1 + `create_chain`)를 따른다.
 
     - 소스 스플라인의 매듭마다 컨트롤 헬퍼(Ctrl)를 두고, 소스 스플라인에 직접 Spline_IK_Control을
       걸어 매듭이 컨트롤을 따르게 한다(탄젠트 없음, 매듭 smooth).

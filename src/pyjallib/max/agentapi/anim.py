@@ -19,7 +19,7 @@
 
 from pyjallib.max import agentSupport as ags
 
-#: MAXScript 경로 문자열(``$'이름'``)에 넣으면 오동작하는 문자(명세 J-13)
+#: MAXScript 경로 문자열(``$'이름'``)에 넣으면 오동작하는 문자
 _PATH_FORBIDDEN_CHARS = ("'", "*", "?", "\\")
 
 _XFORM_SPACES = ("World", "Parent")
@@ -38,7 +38,7 @@ def _runtime():
 
 
 def _service():
-    """Header의 Anim 서비스를 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 Anim 서비스를 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().anim
@@ -50,7 +50,7 @@ def _handle(inNode) -> int:
 
 
 def _to_agent_error(inError: Exception, inMessage: str, inDetails: dict | None = None):
-    """원본 예외를 AgentApiError로 바꾼다(명세 C-3). ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED."""
+    """원본 예외를 AgentApiError로 바꾼다. ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED."""
     if isinstance(inError, ags.AgentApiError):
         return inError
     code = ags.INVALID_ARGUMENT if isinstance(inError, ValueError) else ags.OPERATION_FAILED
@@ -118,7 +118,7 @@ def _resolve_unique(inNodes, inArgName: str) -> list:
 def _check_path_safe(inRt, inNode) -> None:
     """``$'이름'`` 경로로 노드를 가리키는 원본을 부르기 전에 이름을 검사한다.
 
-    금지 문자(J-13)가 있으면 INVALID_ARGUMENT. MAXScript 경로는 대소문자를 무시하므로
+    금지 문자가 있으면 INVALID_ARGUMENT. MAXScript 경로는 대소문자를 무시하므로
     대소문자만 다른 동명 노드가 있으면 다른 노드가 바뀔 수 있어 NODE_AMBIGUOUS로 거절한다.
     """
     name = str(inNode.name)
@@ -249,7 +249,7 @@ def bake_world_transforms(
             inTargetStartFrame=inTargetStartFrame,
             inClearTargetKeys=inClearTargetKeys,
         )
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise _to_agent_error(error, "월드 트랜스폼 베이크에 실패했다") from error
 
     targetEnd = inTargetStartFrame + (inEndFrame - inStartFrame)
@@ -305,7 +305,7 @@ def delete_keys_in_range(inNodes: list, inStartFrame: int, inEndFrame: int) -> d
     for node in nodes:
         try:
             result = service.delete_keys_in_range(node, inStartFrame, inEndFrame)
-        except Exception as error:  # noqa: BLE001 - C-3·C-11 변환
+        except Exception as error:  # noqa: BLE001·C-11 변환
             raise _to_agent_error(
                 error,
                 f"'{node.name}'의 키 삭제에 실패했다",
@@ -380,7 +380,7 @@ def match_anim_transform(
 
     try:
         _service().match_anim_transform(node, target, startFrame, endFrame)
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise _to_agent_error(
             error,
             f"'{node.name}'의 애니메이션 변환 일치에 실패했다",
@@ -426,7 +426,7 @@ def save_xform(inNodes: list) -> dict:
     for node in nodes:
         try:
             service.save_xform(node)
-        except Exception as error:  # noqa: BLE001 - C-3·C-11 변환
+        except Exception as error:  # noqa: BLE001·C-11 변환
             raise _to_agent_error(
                 error,
                 f"'{node.name}'의 변환 기록에 실패했다",
@@ -509,7 +509,7 @@ def set_xform(inNodes: list, inSpace: str = "World") -> dict:
     for node in nodes:
         try:
             service.set_xform(node, space=inSpace)
-        except Exception as error:  # noqa: BLE001 - C-3·C-11 변환
+        except Exception as error:  # noqa: BLE001·C-11 변환
             raise _to_agent_error(
                 error,
                 f"'{node.name}'에 기록한 변환 적용에 실패했다",
@@ -548,7 +548,7 @@ def get_average_position_transform(inNodes: list) -> dict:
             "transform": ags.to_json(transform),
             "position": ags.to_json(transform.row4),
         }
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise _to_agent_error(error, "평균 위치 계산에 실패했다") from error
 
 
@@ -580,7 +580,7 @@ def get_average_rotation_transform(inNodes: list) -> dict:
             "transform": ags.to_json(transform),
             "rotationQuat": ags.to_json(transform.rotationPart),
         }
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise _to_agent_error(error, "평균 회전 계산에 실패했다") from error
 
 
@@ -651,7 +651,7 @@ def move_local(inNodes: list, inOffset: list, inDontAffectChildren: bool = False
     for node in nodes:
         try:
             service.move_local(node, offset[0], offset[1], offset[2], dontAffectChildren=inDontAffectChildren)
-        except Exception as error:  # noqa: BLE001 - C-3·C-11 변환
+        except Exception as error:  # noqa: BLE001·C-11 변환
             raise _to_agent_error(
                 error,
                 f"'{node.name}'의 로컬 이동에 실패했다",

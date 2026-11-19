@@ -9,7 +9,7 @@
     결과는 Header 전역 노드 수집 정서(``Header.configure_node_collect_policy``)에 따라 달라진다.
     반환의 ``collectPolicyActive``가 그 상태를 알려 준다.
     원본은 결과가 비어 있지 않으면 결과 노드 전체를 선택한 채 남긴다(호출 전 선택은 되돌리지
-    않는다). 선택이 바뀌므로 부작용을 scene으로 표기한다(명세 J-6, 0-1절).
+    않는다). 선택이 바뀌므로 부작용을 scene으로 표기한다.
     이 모듈은 import할 때 pymxs·header를 불러오지 않고 장면을 바꾸지 않는다.
 
 호출 예:
@@ -25,7 +25,7 @@ from pyjallib.max import agentSupport as ags
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()

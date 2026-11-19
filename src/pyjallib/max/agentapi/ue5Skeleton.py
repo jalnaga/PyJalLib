@@ -16,7 +16,7 @@
     원본은 첫 Biped 스킨 본의 Biped를 기준으로 그룹을 찾는다 — 한 번에 Biped 하나의 스킨 본만 넘긴다.
     이 모듈은 import할 때 pymxs·header를 불러오지 않고 장면을 바꾸지 않는다.
 
-호출 순서(PyJalMaxRiggingTool ``func/bip.py``의 실제 순서):
+리깅 도구에서 Biped 스킨 본을 변환하는 순서:
     1. ``bone.create_skin_bones_from_biped`` — 스킨 본 생성
     2. ``rotate_biped_skin_bones_to_ue5`` — 회전. **한 번만** 부른다(원본이 멱등이 아니라 다시 부르면
        회전이 누적된다). 새 스파인·목 본은 기존 본의 변환을 복사하므로 회전을 먼저 한다
@@ -40,7 +40,7 @@ from pyjallib.max.agentapi import _scene
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()
@@ -59,7 +59,7 @@ def _handle(inNode) -> int:
 
 
 def _original_error(inError: Exception, inAction: str, inDetails: dict | None = None) -> ags.AgentApiError:
-    """원본 메서드 예외를 AgentApiError로 바꾼다(명세 C-3).
+    """원본 메서드 예외를 AgentApiError로 바꾼다.
 
     ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED. ``details.exception``에 repr을 담는다.
     """
@@ -75,7 +75,7 @@ def _call(inAction: str, inFunc, *args, **kwargs):
         return inFunc(*args, **kwargs)
     except ags.AgentApiError:
         raise
-    except Exception as error:  # noqa: BLE001 - C-3
+    except Exception as error:  # noqa: BLE001
         raise _original_error(error, inAction) from error
 
 
@@ -205,7 +205,7 @@ def _missing_error(inAction: str, inMissing: list) -> ags.AgentApiError:
 
 
 def _run_add_bones(inAction: str, inFunc, inNodes: list, inExtraDetails: dict, inWarnings: list) -> dict:
-    """본을 더하는 원본(U3·U4·U5)을 부르고 readback을 만든다.
+    """본을 추가하는 메서드을 부르고 readback을 만든다.
 
     created는 장면 handle 차이, modified는 입력 중 부모가 바뀐 노드다.
     """
@@ -214,7 +214,7 @@ def _run_add_bones(inAction: str, inFunc, inNodes: list, inExtraDetails: dict, i
     before = _scene.snapshot_handles()
     try:
         returned = inFunc(list(inNodes))
-    except Exception as error:  # noqa: BLE001 - C-3, 부분 적용을 숨기지 않는다
+    except Exception as error:  # noqa: BLE001 - 부분 적용을 숨기지 않는다
         raise _original_error(
             error,
             inAction,
@@ -297,7 +297,7 @@ def rotate_biped_skin_bones_to_ue5(inSkinBones: list) -> dict:
     transformsBefore = {_handle(node): _transform_key(node) for node in bipSkinBones}
     try:
         ue5.rotate_bip_skin_bones(list(nodes))
-    except Exception as error:  # noqa: BLE001 - C-3, 부분 적용을 숨기지 않는다
+    except Exception as error:  # noqa: BLE001 - 부분 적용을 숨기지 않는다
         applied = [ags.node_ref(node) for node in bipSkinBones if _transform_key(node) != transformsBefore[_handle(node)]]
         raise _original_error(error, "UE5 회전", {"applied": applied}) from error
 
@@ -367,7 +367,7 @@ def rename_biped_skin_bones_to_ue5(inSkinBones: list) -> dict:
     namesBefore = _scene_names()
     try:
         header.ue5Skeleton.convert_bip_skin_bone_name_to_ue5(list(nodes))
-    except Exception as error:  # noqa: BLE001 - C-3, 부분 적용을 숨기지 않는다
+    except Exception as error:  # noqa: BLE001 - 부분 적용을 숨기지 않는다
         raise _original_error(error, "UE5 이름 변경", {"renamed": _renamed(namesBefore)}) from error
 
     renamed = _renamed(namesBefore)

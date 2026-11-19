@@ -31,7 +31,7 @@ def _runtime():
 
 
 def _service():
-    """Header의 Layer 서비스를 지연 획득한다(명세 C-1·J-14)."""
+    """Header의 Layer 서비스를 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader().layer
@@ -138,7 +138,7 @@ def get_layer_nodes(inLayerName: str, inLimit: int = 1000) -> dict:
     index = _layer_index(service, inLayerName)
     try:
         nodes = list(service.get_nodes_from_layer(index))
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise ags.AgentApiError(
             ags.OPERATION_FAILED,
             f"레이어 '{inLayerName}'의 노드 조회에 실패했다: {error}",
@@ -174,7 +174,7 @@ def find_layers(inPattern: str) -> dict:
     _require_name(inPattern, "inPattern")
     try:
         names = _service().get_layer_by_namepattern(inPattern)
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         raise ags.AgentApiError(
             ags.OPERATION_FAILED,
             f"레이어 패턴 검색에 실패했다: {error}",
@@ -223,7 +223,7 @@ def create_layer_from_nodes(inLayerName: str, inNodes: list) -> dict:
 
     try:
         service.create_layer_from_array(list(nodes), inLayerName)
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         code = ags.INVALID_ARGUMENT if isinstance(error, ValueError) else ags.OPERATION_FAILED
         raise ags.AgentApiError(
             code,
@@ -323,7 +323,7 @@ def set_parent_layer(inLayerName: str, inParentName: str) -> dict:
 
     try:
         result = service.set_parent_layer(inLayerName, inParentName)
-    except Exception as error:  # noqa: BLE001 - C-3 변환
+    except Exception as error:  # noqa: BLE001 변환
         code = ags.INVALID_ARGUMENT if isinstance(error, ValueError) else ags.OPERATION_FAILED
         raise ags.AgentApiError(
             code,

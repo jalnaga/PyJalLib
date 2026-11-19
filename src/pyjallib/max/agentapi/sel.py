@@ -23,7 +23,7 @@ from pyjallib.max import agentSupport as ags
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()

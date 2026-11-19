@@ -379,68 +379,59 @@ class Skin:
         
         # 본 데이터 처리
         bones_data = rt.execute(tempData[0])
-        hierarchy = []
-        
+        # 이름 -> 노드 목록(rt.objects 순서) 색인. 본마다 씬 전체를 훑지 않는다.
+        name_index = self._load_skin_name_index()
+        # 바인드 포즈 파일은 루프 밖에서 한 번만 읽는다
+        bind_poses = self._load_skin_bind_poses(file_path) if load_bind_pose else []
+        # 계층 = 해석된 본 + 그 연결 성분(부모·자식으로 이어진 트리)의 유효 본. 노드 동일성은 핸들로 판정한다.
+        hierarchy: Set[int] = set()
+        # 연결 성분 탐색을 이미 마친 노드 핸들 - 새로 해석된 본의 성분만 한 번씩 확장한다
+        visited: Set[int] = set()
+        # addBone 갱신은 마지막 본에서만 한다. 본마다 갱신하면 본 수에 비례해 느려진다
+        # (본 300·버텍스 2222에서 약 58초 -> 약 7초, 2026-11-19 실측). 갱신을 한 번도 하지 않으면
+        # 뒤의 SetVertexWeights가 "Exceeded the vertex count"로 실패하므로 마지막 본은 반드시 갱신한다.
+        # 본이 0개면 루프가 돌지 않아 addBone 자체가 없다(종전과 같다).
+        last_bone_index = len(bones_data) - 1
+
         for i in range(len(bones_data)):
+            bone_name = str(bones_data[i])
             # 본 이름으로 노드 찾기
-            my_bone = [node for node in rt.objects if node.name == bones_data[i]]
-            
+            my_bone = list(name_index.get(bone_name, []))
+
             # 없는 본인 경우 더미 생성
             if len(my_bone) == 0:
-                print(f"Missing bone: {bones_data[i]}")
-                tmp = rt.Dummy(name=bones_data[i])
+                print(f"Missing bone: {bone_name}")
+                tmp = rt.Dummy(name=bone_name)
                 my_bone = [tmp]
                 missing_bones.append(tmp)
-                
+                # 뒤에서 같은 이름이 다시 나오면 rt.objects 재조회처럼 이 Dummy가 잡히도록 색인에 반영한다
+                name_index.setdefault(str(tmp.name), []).append(tmp)
+
             # 계층 구조 확인
             if len(my_bone) > 1 and len(hierarchy) != 0:
                 print(f"Multiple bones are named: {my_bone[0].name} ({len(my_bone)})")
                 good_bone = None
                 for o in my_bone:
-                    if o in hierarchy:
+                    if _node_handle(o) in hierarchy:
                         good_bone = o
                         break
                 if good_bone is not None:
                     my_bone = [good_bone]
-                    
+
             # 사용할 본 결정
             my_bone = my_bone[0]
-            
-            # 계층에 추가
-            if my_bone not in hierarchy:
-                hierarchy.append(my_bone)
-                all_nodes = list(hierarchy)
-                
-                for node in all_nodes:
-                    # 자식 노드 추가
-                    for child in node.children:
-                        if child not in all_nodes:
-                            all_nodes.append(child)
-                    # 부모 노드 추가
-                    if node.parent is not None and node.parent not in all_nodes:
-                        all_nodes.append(node.parent)
-                        
-                    # 계층에 추가
-                    for node in all_nodes:
-                        if self.is_valid_bone(node) and node not in hierarchy:
-                            hierarchy.append(node)
-                            
+            bone_handle = _node_handle(my_bone)
+
+            # 계층에 추가 - 이미 모은 계층은 다시 훑지 않고 새 본의 연결 성분만 확장한다
+            if bone_handle not in hierarchy:
+                hierarchy.add(bone_handle)
+                self._load_skin_collect_component(my_bone, bone_handle, hierarchy, visited)
+
             # 본 추가
-            rt.skinOps.addBone(new_skin, my_bone, 1.0)
-            
-            # 바인드 포즈 로드
+            rt.skinOps.addBone(new_skin, my_bone, 1.0 if i == last_bone_index else 0)
+
+            # 바인드 포즈 적용
             if load_bind_pose:
-                bind_pose_file = os.path.splitext(file_path)[0] + "bp"
-                bind_poses = []
-                
-                if os.path.exists(bind_pose_file):
-                    try:
-                        with open(bind_pose_file, 'r') as f:
-                            for line in f:
-                                bind_poses.append(rt.execute(line.strip()))
-                    except:
-                        pass
-                        
                 if i < len(bind_poses) and bind_poses[i] is not None:
                     rt.skinUtils.SetBoneBindTM(obj, my_bone, bind_poses[i])
         
@@ -467,9 +458,65 @@ class Skin:
             if len(bone_id) != 0:
                 rt.skinOps.SetVertexWeights(new_skin, i, bone_id[0], 1.0)  # Max 2014 sp5 hack
                 rt.skinOps.ReplaceVertexWeights(new_skin, i, bone_id, bone_weight)
-                
+
         return missing_bones
-    
+
+    @staticmethod
+    def _load_skin_name_index() -> Dict[str, List[Any]]:
+        """``load_skin`` 전용: ``rt.objects``를 한 번 훑어 이름 -> 노드 목록(씬 순서 유지) 색인을 만든다."""
+        index: Dict[str, List[Any]] = {}
+        for node in rt.objects:
+            index.setdefault(str(node.name), []).append(node)
+        return index
+
+    @staticmethod
+    def _load_skin_bind_poses(inFilePath: str) -> List[Any]:
+        """``load_skin`` 전용: 바인드 포즈 파일(``splitext(경로)[0] + "bp"``)을 읽어 줄별 평가값을 돌려준다.
+
+        파일이 없으면 빈 리스트, 읽는 도중 실패하면 그때까지 읽은 값만 돌려준다(종전 동작 유지).
+        """
+        bind_pose_file = os.path.splitext(inFilePath)[0] + "bp"
+        bind_poses: List[Any] = []
+        if os.path.exists(bind_pose_file):
+            try:
+                with open(bind_pose_file, 'r') as f:
+                    for line in f:
+                        bind_poses.append(rt.execute(line.strip()))
+            except Exception:  # noqa: BLE001 - 종전과 같이 읽기 실패는 무시한다
+                pass
+        return bind_poses
+
+    def _load_skin_collect_component(
+        self, inStart: Any, inStartHandle: int, ioHierarchy: Set[int], ioVisited: Set[int]
+    ) -> None:
+        """``load_skin`` 전용: ``inStart``의 연결 성분(부모·자식으로 이어진 노드)에서 유효 본 핸들을 계층에 더한다.
+
+        이미 탐색한 성분이면 아무것도 하지 않는다. 노드마다 한 번씩만 방문하므로 성분 크기에 선형이다.
+
+        Args:
+            inStart: 탐색을 시작할 노드
+            inStartHandle: ``inStart``의 핸들
+            ioHierarchy: 계층 핸들 집합(갱신됨)
+            ioVisited: 성분 탐색을 마친 노드 핸들 집합(갱신됨)
+        """
+        if inStartHandle in ioVisited:
+            return
+        ioVisited.add(inStartHandle)
+        stack: List[Tuple[Any, int]] = [(inStart, inStartHandle)]
+        while stack:
+            node, handle = stack.pop()
+            if self.is_valid_bone(node):
+                ioHierarchy.add(handle)
+            neighbors = list(node.children)
+            parent = node.parent
+            if parent is not None:
+                neighbors.append(parent)
+            for neighbor in neighbors:
+                neighborHandle = _node_handle(neighbor)
+                if neighborHandle not in ioVisited:
+                    ioVisited.add(neighborHandle)
+                    stack.append((neighbor, neighborHandle))
+
     def save_skin(self, obj=None, file_path=None, save_bind_pose=False):
         """현재 모디파이 패널의 스킨 모디파이어에서 본·가중치 데이터를 파일로 저장한다.
 

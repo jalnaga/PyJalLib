@@ -36,7 +36,7 @@ _BONE_SCALE_TYPES = ("none", "scale", "squash")
 
 
 def _header():
-    """pyjallib Max 헤더를 함수 안에서 지연 획득한다(명세 C-1·J-14)."""
+    """pyjallib Max 헤더를 함수 안에서 지연 획득한다."""
     from pyjallib.max.header import get_pyjallibmaxheader
 
     return get_pyjallibmaxheader()
@@ -55,7 +55,7 @@ def _handle(inNode) -> int:
 
 
 def _original_error(inError: Exception, inAction: str, inDetails: dict | None = None) -> ags.AgentApiError:
-    """원본 메서드 예외를 AgentApiError로 바꾼다(명세 C-3).
+    """원본 메서드 예외를 AgentApiError로 바꾼다.
 
     ValueError는 INVALID_ARGUMENT, 그 밖은 OPERATION_FAILED. ``details.exception``에 repr을 담는다.
     """
@@ -506,12 +506,12 @@ def is_bip_skin_bone(inNodes: list) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 스킨 본 생성(B8·B9) 공통 보조
+# 스킨 본 생성 공통 보조
 # ---------------------------------------------------------------------------
 
 
 def _require_skin_bone_args(inNodes, inSkipNub, inMesh, inLink, inSkinBoneBaseName) -> None:
-    """B8·B9 공통 인자 형 검사. 노드 해석 전에 끝낸다.
+    """스킨 본 생성에 필요한 공통 인자의 형을 검사한다. 노드 해석 전에 끝낸다.
 
     Raises:
         AgentApiError: INVALID_ARGUMENT
@@ -607,7 +607,7 @@ def _run_skin_bone_creation(
     inSkinBoneBaseName,
     inSkipReason: str,
 ) -> dict:
-    """원본 스킨 본 생성 메서드를 부르고 readback을 만든다(B8·B9 공통).
+    """원본 스킨 본 생성 메서드를 부르고 readback을 만든다.
 
     Args:
         inOperation: 오류 문구에 쓸 작업 이름
@@ -627,7 +627,7 @@ def _run_skin_bone_creation(
     before = _scene.snapshot_handles()
     try:
         returned = inCall()
-    except Exception as error:  # noqa: BLE001 - 원본 예외(C-3), 부분 생성을 숨기지 않는다
+    except Exception as error:  # noqa: BLE001 - 원본 예외, 부분 생성을 숨기지 않는다
         partial = [ags.node_ref(node) for node in _scene.created_since(before)]
         raise _original_error(error, inOperation, {"inputs": inputRefs, "created": partial}) from error
     created = _scene.created_since(before)
@@ -686,7 +686,7 @@ def _run_skin_bone_creation(
 
 
 # ---------------------------------------------------------------------------
-# 스킨 본 생성(B8·B9)
+# 스킨 본 생성
 # ---------------------------------------------------------------------------
 
 
